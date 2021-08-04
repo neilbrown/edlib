@@ -30,10 +30,12 @@ struct event_info {
 	struct pane *home safe;
 	int dont_block;
 	int deactivated;
-	struct command read, signal, timer, run, deactivate,
+	struct command read, signal, timer, poll, run, deactivate,
 		free, refresh, noblock;
 };
 
+/* A 'poll' event has fd of -2 */
+#define POLL_FD (-2)
 struct evt {
 	struct event *l safe;
 	struct pane *home safe;
@@ -49,7 +51,6 @@ struct evt {
 static void call_event(int thing, short sev, void *evv)
 {
 	struct evt *ev safe = safe_cast evv;
-	int ret;
 	int oldfd = ev->fd;
 	int type;
 
@@ -60,7 +61,7 @@ static void call_event(int thing, short sev, void *evv)
 
 	ev->active = 1;
 	time_start(type);
-	if ((ret=comm_call(ev->comm, "callback:event", ev->home, thing)) < 0 ||
+	if (comm_call(ev->comm, "callback:event", ev->home, thing) < 0 ||
 	    ev->active == 2) {
 		if (oldfd == ev->fd)
 			/* No early removal */
@@ -192,11 +193,39 @@ DEF_CB(libevent_timer)
 	return 1;
 }
 
+DEF_CB(libevent_poll)
+{
+	struct event_info *ei = container_of(ci->comm, struct event_info, poll);
+	struct evt *ev;
+
+	if (!ci->comm2)
+		return Enoarg;
+
+	ev = malloc(sizeof(*ev));
+
+	if (!ei->base)
+		ei->base = event_base_new();
+
+	ev->l = safe_cast NULL;
+	ev->home = ci->focus;
+	ev->comm = command_get(ci->comm2);
+	ev->mseconds = ci->num;
+	ev->fd = POLL_FD;
+	ev->num = ci->num;
+	ev->active = 0;
+	ev->event = "event:poll";
+	pane_add_notify(ei->home, ev->home, "Notify:Close");
+	list_add(&ev->lst, &ei->event_list);
+	return 1;
+}
+
 DEF_CB(libevent_run)
 {
 	struct event_info *ei = container_of(ci->comm, struct event_info, run);
 	struct event_base *b = ei->base;
 	int dont_block = ei->dont_block;
+	struct evt *ev;
+	struct list_head *tmp;
 
 	ei->dont_block = 0;
 
@@ -209,16 +238,33 @@ DEF_CB(libevent_run)
 		return 0;
 	}
 
+	/* First run any 'poll' events */
+	list_for_each_entry_safe(ev, tmp, &ei->event_list, lst)
+		if (ev->fd == POLL_FD) {
+			ev->active = 1;
+			if (comm_call(ev->comm, "callback:poll", ev->home,
+				      POLL_FD) >= 1)
+				dont_block = True;
+			if (ev->active == 2) {
+				list_del(&ev->lst);
+				command_put(ev->comm);
+				free(ev);
+			} else
+				ev->active = 0;
+		}
+
 	/* Disable any alarm set by python (or other interpreter) */
 	alarm(0);
 	event_base_loop(b, dont_block ? EVLOOP_NONBLOCK : EVLOOP_ONCE);
 	if (ei->base == b)
 		return 1;
 	while (!list_empty(&ei->event_list)) {
-		struct evt *ev = list_first_entry(&ei->event_list, struct evt, lst);
+		ev = list_first_entry(&ei->event_list, struct evt, lst);
 		list_del(&ev->lst);
-		event_del(ev->l);
-		event_free(ev->l);
+		if (ev->fd != POLL_FD) {
+			event_del(ev->l);
+			event_free(ev->l);
+		}
 		command_put(ev->comm);
 		free(ev);
 	}
@@ -250,7 +296,8 @@ DEF_CB(libevent_free)
 			if (ev->active)
 				ev->active = 2;
 			else {
-				event_del(ev->l);
+				if (ev->fd != POLL_FD)
+					event_del(ev->l);
 				command_put(ev->comm);
 				free(ev);
 			}
@@ -268,7 +315,8 @@ DEF_CB(libevent_refresh)
 	list_add(&old, &ei->event_list);
 	list_del_init(&ei->event_list);
 	list_for_each_entry_safe(ev, tmp, &old, lst) {
-		event_del(ev->l);
+		if (ev->fd != POLL_FD)
+			event_del(ev->l);
 		list_del(&ev->lst);
 		call_comm(ev->event, ev->home, ev->comm, ev->num);
 		command_put(ev->comm);
@@ -304,6 +352,7 @@ DEF_CMD(libevent_activate)
 	ei->read = libevent_read;
 	ei->signal = libevent_signal;
 	ei->timer = libevent_timer;
+	ei->poll = libevent_poll;
 	ei->run = libevent_run;
 	ei->deactivate = libevent_deactivate;
 	ei->free = libevent_free;
@@ -321,6 +370,8 @@ DEF_CMD(libevent_activate)
 		  0, NULL, "event:signal-zz");
 	call_comm("global-set-command", ci->focus, &ei->timer,
 		  0, NULL, "event:timer-zz");
+	call_comm("global-set-command", ci->focus, &ei->poll,
+		  0, NULL, "event:poll-zz");
 	call_comm("global-set-command", ci->focus, &ei->run,
 		  0, NULL, "event:run-zz");
 	call_comm("global-set-command", ci->focus, &ei->deactivate,

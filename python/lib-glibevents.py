@@ -17,6 +17,7 @@ class events(edlib.Pane):
         self.active = True
         self.events = {}
         self.sigs = {}
+        self.poll_list = []
         self.ev_num = 0
         self.dont_block = False
         self.maxloops = 10
@@ -88,6 +89,10 @@ class events(edlib.Pane):
         self.events[ev].append(gev)
         return 1
 
+    def poll(self, key, focus, comm2, **a):
+        ev = self.add_ev(focus, comm2, 'event:poll', -2)
+        self.poll_list.append(ev)
+
     def dotimeout(self, comm2, focus, ev):
         if ev not in self.events:
             return False
@@ -109,6 +114,10 @@ class events(edlib.Pane):
         if self.active:
             dont_block = self.dont_block
             self.dont_block = False
+            for s in self.poll_list:
+                f,c,e,n = self.events[s]
+                if c("callback:poll", f, -1) > 0:
+                    dont_block = True
             if not dont_block:
                 # Disable any alarm set by python (or other interpreter)
                 signal.alarm(0)
@@ -151,6 +160,8 @@ class events(edlib.Pane):
                     except:
                         # must be already gone
                         pass
+                if source in self.poll_list:
+                    self.poll_list.remove(source)
                 try_again = True
                 break
 
@@ -180,6 +191,7 @@ def events_activate(focus):
     focus.call("global-set-command", "event:read-python", ev.read)
     focus.call("global-set-command", "event:signal-python", ev.signal)
     focus.call("global-set-command", "event:timer-python", ev.timer)
+    focus.call("global-set-command", "event:poll-python", ev.poll)
     focus.call("global-set-command", "event:run-python", ev.run)
     focus.call("global-set-command", "event:deactivate-python", ev.deactivate)
     focus.call("global-set-command", "event:free-python", ev.free)

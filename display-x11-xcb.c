@@ -1272,8 +1272,14 @@ DEF_CMD(xcb_input)
 {
 	struct xcb_data *xd = ci->home->data;
 	xcb_generic_event_t *ev;
+	int ret = 1;
+
+	if (ci->num < 0)
+		/* This is a poll - only return 1 on something happening */
+		ret = Efalse;
 
 	while ((ev = xcb_poll_for_event(xd->conn)) != NULL) {
+		ret = 1;
 		switch (ev->response_type & 0x7f) {
 		case XCB_KEY_PRESS:
 			time_start(TIME_KEY);
@@ -1325,7 +1331,7 @@ DEF_CMD(xcb_input)
 		}
 		xcb_flush(xd->conn);
 	}
-	return 1;
+	return ret;
 }
 
 static struct pane *xcb_display_init(const char *d safe, struct pane *focus safe)
@@ -1458,6 +1464,7 @@ static struct pane *xcb_display_init(const char *d safe, struct pane *focus safe
 		goto abort;
 	pane_resize(p, 0, 0, xd->charwidth*80, xd->lineheight*26);
 	call_comm("event:read", p, &xcb_input, xcb_get_file_descriptor(conn));
+	call_comm("event:poll", p, &xcb_input);
 	attr_set_str(&p->attrs, "DISPLAY", d);
 	snprintf(scale, sizeof(scale), "%dx%d", xd->charwidth, xd->lineheight);
 	attr_set_str(&p->attrs, "scale:M", scale);

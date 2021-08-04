@@ -305,18 +305,18 @@ Module features
 
 ### display-x11-xcb
 
-- [ ] C-_ isn't recognized
-- [ ] clip backing-image size against parents so it gets redrawn when no-longer
+- [X] C-_ isn't recognized
+- [X] clip backing-image size against parents so it gets redrawn when no-longer
       clipped
-- [ ] window doesn't redraw immediately after full-screen
+- [X] window doesn't redraw immediately after full-screen
 - [ ] always do SOURCE drawing to  server-side pixmaps.  So keep a client-side
       pixmap for assembling image
 - [ ] set window name and woth _NET_WM things
 - [ ] would GraphicsMagick be better than ImageMagick?
-- [ ] When email with images scolls, the images aren't cleared first.
+- [X] When email with images scolls, the images aren't cleared first.
 - [ ] is connection-close handled properly?
 - [ ] share connections among multiple windows
-- [ ] always poll for input before waiting on fd.  Need new "event:poll".
+- [X] always poll for input before waiting on fd.  Need new "event:poll".
 - [ ] Check that cursor is always removed when focus changes.  Sometimes
       it gets left behind.
 
