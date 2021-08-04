@@ -2203,16 +2203,12 @@ class notmuch_master_view(edlib.Pane):
                 self.query_pane.call("doc:notmuch:set-filter")
                 if key != "doc:char-Q":
                     return 1
-            if key != "doc:char-x":
-                self.query_pane.call("doc:notmuch:mark-seen")
+            if key == "doc:char-x":
+                self.query_pane.call("notmuch:clear-seen")
             p = self.query_pane
             self.query_pane = None
             pnt = self.list_pane.call("doc:point", ret='mark')
             pnt['notmuch:query-name'] = ""
-
-            s = p.call("get-attr", "qname", 1, ret='str')
-            if s:
-                p.call("doc:notmuch:update-one", s)
 
             p.call("Window:close", "notmuch")
         elif key == "doc:char-Q":
@@ -2268,13 +2264,6 @@ class notmuch_master_view(edlib.Pane):
             p = self.message_pane
             self("notmuch-close-message", 1)
             p.call("Window:close", "notmuch")
-        if self.query_pane:
-            self.query_pane.call("doc:notmuch:mark-seen")
-        if self.query_pane:
-            # update summaries for the query pane we are replacing.
-            s = self.query_pane.call("get-attr", "qname", 1, ret='str')
-            if s:
-                self.list_pane.call("doc:notmuch:update-one", s)
 
         p0 = self.list_pane.call("doc:notmuch:query", str, ret='pane')
         p1 = self.list_pane.call("OtherPane", "notmuch", "threads", 15,
@@ -2456,6 +2445,17 @@ class notmuch_query_view(edlib.Pane):
         p = notmuch_query_view(focus)
         self.clone_children(focus.focus)
         return 1
+
+    def handle_close(self, key, focus, **a):
+        "handle:Close"
+
+        for i in self.seen_threads:
+            focus.call("doc:notmuch:remember-seen-thread", i)
+        for i in self.seen_msgs:
+            focus.call("doc:notmuch:remember-seen-msg", i)
+
+        focus.call("doc:notmuch:mark-seen")
+        self.call("doc:notmuch:update-one", self['qname'])
 
     def handle_matched_mids(self, key, focus, str, str2, comm2, **a):
         "handle-prefix:doc:notmuch-query:matched-"
@@ -2828,13 +2828,11 @@ class notmuch_query_view(edlib.Pane):
             if self.next(m) is None:
                 break
 
-    def handle_mark_seen(self, key, focus, mark, mark2, str, **a):
-        "handle:doc:notmuch:mark-seen"
-        for i in self.seen_threads:
-            focus.call("doc:notmuch:remember-seen-thread", i)
-        for i in self.seen_msgs:
-            focus.call("doc:notmuch:remember-seen-msg", i)
-        return edlib.Efallthrough
+    def handle_clear_seen(self, key, focus, **a):
+        "handle:notmuch:clear-seen"
+        self.seen_threads =  {}
+        self.seen_msgs = {}
+        return 1
 
 class notmuch_message_view(edlib.Pane):
     def __init__(self, focus):
