@@ -900,8 +900,12 @@ static void handle_button(struct pane *home safe,
 			strcat(mod, ":S");
 		strcpy(key, mod);
 		strcat(key, ":Press-X");
-	} else
+	} else if (be->detail >= 4)
+		/* ignore 'release' for scroll wheel */
+		return;
+	else
 		strcpy(key, ":Release-X");
+
 	key[strlen(key) - 1] = '0' + be->detail;
 	xd->last_event = time(NULL);
 	call("Mouse-event", home, be->detail, NULL, key,
