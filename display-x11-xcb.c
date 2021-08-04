@@ -832,7 +832,7 @@ DEF_CMD(xcb_refresh_post)
 		cairo_save(xd->cairo);
 		cairo_set_source_surface(xd->cairo, ps->surface,
 					 rel.x, rel.y);
-		cairo_rectangle(xd->cairo, lox, loy, hix, hiy);
+		cairo_rectangle(xd->cairo, lox, loy, hix-lox, hiy-loy);
 		cairo_fill(xd->cairo);
 		cairo_restore(xd->cairo);
 	}
