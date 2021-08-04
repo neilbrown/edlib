@@ -248,11 +248,68 @@ struct b64c {
 	struct command c;
 	struct command *cb;
 	struct pane *p safe;
+	struct pane *home safe;
 	struct mark *m safe; /* trails 1 b64 char behind main mark */
 	int pos;
 	int size;
 	char c1;
+	bool nobulk;
 };
+
+static int b64_bulk(struct b64c *c, wchar_t first, const char *s safe, int len)
+{
+	/* Parse out 4char->3byte section of 's' and then
+	 * pass them to c->cb.
+	 * Return the number of chars processed.
+	 */
+	int ret = 0;
+	char *out = malloc((len+1)*3/4);
+	int b[4];
+	int in_pos = 0, out_pos = 0, buf_pos = 0;
+	int i;
+
+	if (!out)
+		return ret;
+	if (is_b64(first))
+		b[buf_pos++] = from_b64(first);
+	while (len > 0) {
+		wint_t wc = (unsigned char)s[in_pos++];
+		len -= 1;
+		if (!is_b64(wc))
+			continue;
+		b[buf_pos++] = from_b64(wc);
+		if (buf_pos < 4)
+			continue;
+		out[out_pos++] = ((b[0] << 2) & 0xFC) | (b[1] >> 4);
+		out[out_pos++] = ((b[1] << 4) & 0xF0) | (b[2] >> 2);
+		out[out_pos++] = ((b[2] << 6) & 0xC0) | (b[3] >> 0);
+		ret = in_pos;
+		buf_pos = 0;
+	}
+
+	/* Now send 'out' to callback */
+	i = 0;
+	while (i < out_pos) {
+		int rv = comm_call(c->cb, "cb", c->p, out[i], c->m,
+				   out+i+1, out_pos - i, NULL, NULL,
+				   c->size, 0);
+		c->size = 0;
+		if (rv <= 0 || rv > (out_pos - i) + 1) {
+			ret = rv;
+			c->nobulk = True;
+			break;
+		}
+		i += rv;
+		if (i < out_pos)
+			/* Only some was consumed, so need to
+			 * advance c->m by the amount that
+			 * was consumed - in the parent.
+			 */
+			call("doc:char", c->home->parent, rv, c->m);
+	}
+	free(out);
+	return ret;
+}
 
 DEF_CMD(base64_content_cb)
 {
@@ -265,7 +322,14 @@ DEF_CMD(base64_content_cb)
 	if (!ci->mark)
 		return Enoarg;
 	if (ci->x)
-		c->size = ci->x;
+		c->size = ci->x * 3 / 4;
+
+	if (!c->nobulk && (c->pos % 4) == 0 && ci->str && ci->num2 >= 4) {
+		mark_to_mark(c->m, ci->mark);
+		ret = b64_bulk(c, wc, ci->str, ci->num2);
+		if (ret > 0)
+			return ret;
+	}
 
 	if (!is_b64(wc))
 		return 1;
@@ -329,8 +393,10 @@ DEF_CMD(base64_content)
 	 */
 
 	c.c = base64_content_cb;
+	c.nobulk = False;
 	c.cb = ci->comm2;
 	c.p = ci->focus;
+	c.home = ci->home;
 	c.pos = locate_mark(ci->home->parent, ci->home, bi->view, ci->mark);
 	c.size = 0;
 	c.m = mark_dup(ci->mark);
