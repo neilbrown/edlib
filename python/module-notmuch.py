@@ -257,6 +257,9 @@ class searches:
             self.worker.enqueue(search, True)
 
     def updated(self, q, count, unread, new, slow, more):
+        changed = (self.count[q] != count or
+                   self.unread[q] != unread or
+                   self.new[q] != new)
         self.count[q] = count
         self.unread[q] = unread
         self.new[q] = new
@@ -264,8 +267,9 @@ class searches:
             self.slow[q] = slow
         elif q in self.slow:
             del self.slow[q]
-        self.cb(self.worker.pending != None and
-                self.slow_worker.pending != None)
+        self.cb(q, changed,
+                self.worker.pending == None and
+                self.slow_worker.pending == None)
 
     patn = "\\b(saved|query):([-_A-Za-z0-9]*)\\b"
     def map_search(self, query):
@@ -373,10 +377,12 @@ class notmuch_main(edlib.Doc):
         edlib.Doc.__init__(self, focus)
         self.searches = searches(self, self.updated)
         self.timer_set = False
-        self.updating = None
+        self.updating = False
+        self.querying = False
         self.seen_threads = {}
         self.seen_msgs = {}
         self.container = edlib.Pane(self.root)
+        self.changed_queries = []
         self.db = notmuch_db()
 
     def handle_shares_ref(self, key, **a):
@@ -565,12 +571,7 @@ class notmuch_main(edlib.Doc):
                 self.searches.set_tags(tags)
             except notmuch.NotmuchError:
                 pass
-        if self.searches.load(False):
-            # there are (possibly) new searches, trigger a refresh
-            self.notify("doc:replaced")
-        self.updating = "counts"
-        if not self.searches.update():
-            self.update_next()
+        self.tick('tick')
         return 1
 
     def handle_notmuch_update_one(self, key, str, **a):
@@ -603,7 +604,7 @@ class notmuch_main(edlib.Doc):
             # Also I should use an edlib call to get notmuch_query
             nm.reparent(self.container)
             nm.call("doc:set-name", str)
-        elif int(nm['last-refresh']) + 60 < int(time.time()):
+        elif nm['need-update'] or int(nm['last-refresh']) + 60 < int(time.time()):
             nm.call("doc:notmuch:query-refresh")
         if comm2:
             comm2("callback", focus, nm)
@@ -657,7 +658,7 @@ class notmuch_main(edlib.Doc):
     def handle_notmuch_query_updated(self, key, **a):
         "handle:doc:notmuch:query-updated"
         # A child search document has finished updating.
-        self.update_next()
+        self.next_query()
         return 1
 
     def handle_notmuch_mark_read(self, key, str, str2, **a):
@@ -787,38 +788,41 @@ class notmuch_main(edlib.Doc):
 
     def tick(self, key, **a):
         if not self.updating:
-            self.updating = "counts"
-            self.searches.load(False)
-            if not self.searches.update():
-                self.update_next()
+            if self.searches.load(False):
+                # there are (possibly) new searches, trigger a refresh
+                self.notify("doc:replaced")
+            self.updating = True
+            self.searches.update()
+        for c in self.container.children():
+            if c.notify("doc:notify-viewers") == 0:
+                # no point refreshing this, might be time to close it
+                lr = c['last-refresh']
+                if int(lr) + 8*60*60 < int(time.time()):
+                    c.call("doc:closed")
         return 1
 
-    def updated(self, finished):
+    def updated(self, query, changed, finished):
         if finished:
-            self.update_next()
-        self.notify("doc:replaced")
+            self.updating = False
+        if changed:
+            self.changed_queries.append(query)
+            if not self.querying:
+                self.next_query()
+            self.notify("doc:replaced")
 
-    def update_next(self):
-        if self.updating == "counts":
-            self.updating = "queries"
-            qlist = []
+    def next_query(self):
+        self.querying = False
+        while self.changed_queries:
+            q = self.changed_queries.pop(0)
             for c in self.container.children():
-                if c.notify("doc:notify-viewers") == 0:
-                    # no point refreshing this, might be time to close it
-                    lr = c['last-refresh']
-                    if int(lr) + 8*60*60 < int(time.time()):
-                        c.call("doc:closed")
-                else:
-                    qlist.append(c['query'])
-            self.qlist = qlist
-        while self.updating == "queries":
-            if not self.qlist:
-                self.updating = None
-            else:
-                q = self.qlist.pop(0)
-                for c in self.container.children():
-                    if c['query'] == q:
+                if c['query'] == q:
+                    if c.notify("doc:notify-viewers") == 0:
+                        # Just mark for refresh-on-visit
+                        c.call("doc:set:need-update", "true")
+                    else:
+                        self.querying = True
                         c("doc:notmuch:query-refresh")
+                        # will get callback when time to continue
                         return
 
 # notmuch_query document
@@ -835,6 +839,7 @@ class notmuch_query(edlib.Doc):
         self['query'] = query
         self['filter'] = ""
         self['last-refresh'] = "%d" % int(time.time())
+        self['need-update'] = ""
         self.threadids = []
         self.threads = {}
         self.messageids = {}
@@ -924,6 +929,7 @@ class notmuch_query(edlib.Doc):
         self.offset = 0
         self.tindex = 0
         self.pos = edlib.Mark(self)
+        self['need-update'] = ""
         self.start_load()
 
     def load_update(self):
@@ -937,6 +943,7 @@ class notmuch_query(edlib.Doc):
         self.offset = 0
         self.tindex = 0
         self.pos = edlib.Mark(self)
+        self['need-update'] = ""
         self.start_load()
 
     def start_load(self):
