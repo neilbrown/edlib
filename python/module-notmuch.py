@@ -604,6 +604,9 @@ class notmuch_main(edlib.Doc):
             # Also I should use an edlib call to get notmuch_query
             nm.reparent(self.container)
             nm.call("doc:set-name", str)
+        elif nm.notify("doc:notify-viewers") == 0 and nm['need-update']:
+            # no viewers, so trigger a full update to discard old content
+            nm.call("doc:notmuch:query:reload")
         elif nm['need-update'] or int(nm['last-refresh']) + 60 < int(time.time()):
             nm.call("doc:notmuch:query-refresh")
         if comm2:
