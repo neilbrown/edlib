@@ -736,13 +736,13 @@ static int render(struct mark *pm, struct pane *p safe,
 		refresh_all = True;
 	s = pane_attr_get(focus, "background");
 	if (s && strncmp(s, "call:", 5) == 0) {
-		home_call(focus, "Draw:clear", p);
+		home_call(focus, "Draw:clear", p, 0, NULL, "");
 		home_call(focus, s+5, p, 0, m);
 		refresh_all = True;
 	} else if (rl->background_drawn)
 		;
 	else if (!s)
-		home_call(focus, "Draw:clear", p);
+		home_call(focus, "Draw:clear", p, 0, NULL, "");
 	else if (strncmp(s, "color:", 6) == 0) {
 		char *a = strdup(s);
 		strcpy(a, "bg:");
@@ -753,7 +753,7 @@ static int render(struct mark *pm, struct pane *p safe,
 		home_call(focus, "Draw:clear", p);
 		home_call(focus, "Draw:image", p, 1, NULL, s+6);
 	} else
-		home_call(focus, "Draw:clear", p);
+		home_call(focus, "Draw:clear", p, 0, NULL, "");
 	rl->background_drawn = True;
 
 	if (rl->header && vmark_is_valid(rl->header)) {

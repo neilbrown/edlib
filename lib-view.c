@@ -166,7 +166,7 @@ DEF_CMD(view_refresh)
 	if (vd->line_height <= 0)
 		return 1;
 
-	call("Draw:clear", p);
+	call("Draw:clear", p, 0, NULL, "bg:white");
 	pm = call_ret(mark, "doc:point", ci->focus);
 	status = pane_attr_get(ci->focus, "status-line");
 	if (!status)

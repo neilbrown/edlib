@@ -682,6 +682,7 @@ DEF_CMD(mp_forward_by_num)
 	struct mark *m1 = NULL, *m2 = NULL;
 	const char *key;
 	int d;
+	int ret;
 
 	key = ksuffix(ci, "doc:multipart-");
 	d = atoi(key);
@@ -698,8 +699,9 @@ DEF_CMD(mp_forward_by_num)
 	if (ci->mark2 && ci->mark2->ref.docnum == d)
 		m2 = ci->mark2->ref.m;
 
-	return call(key, mpi->parts[d].pane, ci->num, m1, ci->str,
+	ret = call(key, mpi->parts[d].pane, ci->num, m1, ci->str,
 		    ci->num2, m2, ci->str2, ci->x, ci->y, ci->comm2);
+	return ret;
 }
 
 DEF_CMD(mp_forward)

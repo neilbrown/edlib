@@ -22,9 +22,11 @@ class EdDisplay(edlib.Pane):
         self['DISPLAY'] = display
         self.win = Gtk.Window()
         # panes[] is a mapping from edlib.Pane objects to cairo surface objects.
-        # Where a pane has the same size as its parent, only the parent can have
-        # a surface.
+        # A pane only has a surface if it has been explicitly cleared.
+        # When a pane is cleared to a colour with nothing drawn, self.bg
+        # records the colour for the pane
         self.panes = {}
+        self.bg = {}
         self.win.set_title("EDLIB")
         self.win.connect('destroy', self.close_win)
         self.create_ui()
@@ -104,6 +106,9 @@ class EdDisplay(edlib.Pane):
         attr = str1
         if attr is not None:
             fg, bg, ul = self.get_colours(attr)
+            if not bg:
+                bg = Gdk.RGBA()
+                bg.parse("white")
         else:
             bg = None
         src = None
@@ -111,16 +116,22 @@ class EdDisplay(edlib.Pane):
             src = self.find_pixmap(focus.parent)
             if not src:
                 fg, bg, ul = self.get_colours("bg:white")
+            else:
+                bg = src[3]
         pm = self.get_pixmap(focus)
-        if src:
-            (pm2, x, y) = src
+        cr = cairo.Context(pm)
+        if bg:
+            cr.set_source_rgb(bg.red, bg.green, bg.blue)
+            cr.rectangle(0,0,pm.get_width(), pm.get_height())
+            cr.fill()
+        else:
+            (pm2, x, y, bg) = src
             x += focus.x
             y += focus.y
-            cr = cairo.Context(pm)
             cr.set_source_surface(pm2, -x, -y)
             cr.paint()
-        else:
-            self.do_clear(pm, bg)
+        self.bg[focus] = bg
+
         self.damaged(edlib.DAMAGED_POSTORDER)
         return True
 
@@ -171,10 +182,10 @@ class EdDisplay(edlib.Pane):
 
         fg, bg, ul = self.get_colours(attr)
 
-        pm = self.find_pixmap(focus)
+        pm = self.find_pixmap(focus, True)
         if pm is None:
             return edlib.Einval
-        pm, xo, yo = pm
+        pm, xo, yo, pbg = pm
         x += xo; y += yo
         cr = cairo.Context(pm)
         pl = PangoCairo.create_layout(cr)
@@ -293,7 +304,7 @@ class EdDisplay(edlib.Pane):
                     x = w - w2
                 w = w2
         scale = pb.scale_simple(w, h, GdkPixbuf.InterpType.HYPER)
-        pm, xo, yo = self.find_pixmap(focus)
+        pm, xo, yo, pbg = self.find_pixmap(focus, True)
         cr = cairo.Context(pm)
         Gdk.cairo_set_source_pixbuf(cr, scale, x + xo, y + yo)
         cr.paint()
@@ -304,6 +315,8 @@ class EdDisplay(edlib.Pane):
         if focus and focus in self.panes:
             del self.panes[focus]
             self.damaged(edlib.DAMAGED_POSTORDER)
+        if focus and focus in self.bg:
+            del self.bg[focus]
         return True
 
     styles=["oblique","italic","bold","small-caps"]
@@ -400,12 +413,14 @@ class EdDisplay(edlib.Pane):
             if w == p.w and h == p.h:
                 return pm
             del self.panes[p]
+            if p in self.bg:
+                del self.bg[p]
         else:
             self.add_notify(p, "Notify:Close")
         self.panes[p] = cairo.ImageSurface(cairo.Format.RGB24, p.w, p.h)
         return self.panes[p]
 
-    def find_pixmap(self, p):
+    def find_pixmap(self, p, clearbg = False):
         # Find a pixmap already existing on this pane
         # or an ancestor, and return the pixmap with x and y
         # offset of this pane in the pixmap.
@@ -416,7 +431,13 @@ class EdDisplay(edlib.Pane):
             y += p.y
             p = p.parent
         if p in self.panes:
-            return (self.panes[p], x, y)
+            if p not in self.bg:
+                return (self.panes[p], x, y, None)
+            elif clearbg:
+                del self.bg[p]
+                return (self.panes[p], x, y, None)
+            else:
+                return (self.panes[p], x, y, self.bg[p])
         # This must not happen. What should I do?
 
     def close_win(self, *a):
@@ -650,13 +671,6 @@ class EdDisplay(edlib.Pane):
         self.last_event = int(time.time())
         self.call("Keystroke", s)
         edlib.time_stop(edlib.TIME_KEY)
-
-    def do_clear(self, pm, colour):
-        # FIXME surface
-        cr = cairo.Context(pm)
-        cr.set_source_rgb(colour.red, colour.green, colour.blue)
-        cr.rectangle(0,0,pm.get_width(), pm.get_height())
-        cr.fill()
 
 def new_display(key, focus, comm2, str1, **a):
     if not str1:

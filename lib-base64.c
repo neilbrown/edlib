@@ -288,7 +288,6 @@ DEF_CMD(base64_content_cb)
 		mark_to_mark(c->m, ci->mark);
 		return 1;
 	}
-
 	/* Have 2 b64 chars, can report one char */
 	switch(c->pos) {
 	case 1:

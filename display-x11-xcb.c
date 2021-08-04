@@ -149,6 +149,10 @@ static char *atom_names[NR_ATOMS] = {
 	[a_STATE_FULLSCREEN]	= "_NET_WM_STATE_FULLSCREEN",
 };
 
+struct rgb {
+	double r,g,b;
+};
+
 struct xcb_data {
 	xcb_connection_t	*conn safe;
 	char			*display safe;
@@ -183,6 +187,7 @@ struct xcb_data {
 		struct pane	*p safe;
 		int		w,h;
 		cairo_t		*ctx safe;
+		struct rgb	bg;
 		xcb_pixmap_t	draw;
 		cairo_surface_t	*surface safe;
 	}			*panes;
@@ -191,8 +196,8 @@ struct xcb_data {
 static struct map *xcb_map;
 DEF_LOOKUP_CMD(xcb_handle, xcb_map);
 
-static cairo_t *get_pixmap(struct pane *home safe,
-			   struct pane *p safe)
+static struct panes *get_pixmap(struct pane *home safe,
+				struct pane *p safe)
 {
 	struct xcb_data *xd = home->data;
 	struct panes **pp, *ps;
@@ -203,7 +208,7 @@ static cairo_t *get_pixmap(struct pane *home safe,
 		if (ps->p != p)
 			continue;
 		if (ps->w == p->w && ps->h == p->h)
-			return ps->ctx;
+			return ps;
 		*pp = ps->next;
 		cairo_destroy(ps->ctx);
 		cairo_surface_destroy(ps->surface);
@@ -215,6 +220,7 @@ static cairo_t *get_pixmap(struct pane *home safe,
 	ps->p = p;
 	ps->w = p->w;
 	ps->h = p->h;
+	ps->bg.g = -1;
 	ps->draw = xcb_generate_id(xd->conn);
 	xcb_create_pixmap(xd->conn, xd->screen->root_depth, ps->draw,
 			  xd->win, p->w, p->h);
@@ -231,7 +237,7 @@ static cairo_t *get_pixmap(struct pane *home safe,
 	pane_add_notify(home, p, "Notify:Close");
 	ps->next = *pp;
 	*pp = ps;
-	return ps->ctx;
+	return ps;
 free_surface:
 	cairo_surface_destroy(surface);
 free_ps:
@@ -263,10 +269,6 @@ static struct panes *find_pixmap(struct xcb_data *xd safe, struct pane *p safe,
 	*yp = y;
 	return ret;
 }
-
-struct rgb {
-	double r,g,b;
-};
 
 static inline double cvt(int i)
 {
@@ -460,32 +462,41 @@ DEF_CMD(xcb_clear)
 {
 	struct xcb_data *xd = ci->home->data;
 	const char *attr = ci->str;
-	struct panes *src = NULL;
-	cairo_t *pm;
+	struct panes *src = NULL, *dest;
 	struct rgb bg;
 	int x, y;
 
-	if (attr)
+	if (attr) {
 		parse_attrs(ci->home, attr, PANGO_SCALE, NULL, &bg, NULL, NULL);
-	else {
+		if (bg.g < 0)
+			bg.r = bg.g = bg.b = 1.0;
+	} else {
 		src = find_pixmap(xd, ci->focus->parent, &x, &y);
 		x += ci->focus->x;
 		y += ci->focus->y;
-		bg.r = bg.g = bg.b = 1.0;
+		if (!src)
+			bg.r = bg.g = bg.b = 1.0;
+		else if (src->bg.g >= 0)
+			bg = src->bg;
+		else
+			bg.g = -1;
 	}
 
-	pm = get_pixmap(ci->home, ci->focus);
-	if (!pm)
+	dest = get_pixmap(ci->home, ci->focus);
+	if (!dest)
 		return 1;
-	if (src) {
-		cairo_set_source_surface(pm, src->surface, -x, -y);
-		cairo_paint(pm);
-	} else {
-		cairo_set_source_rgb(pm, bg.r, bg.g, bg.b);
-		cairo_rectangle(pm, 0.0, 0.0,
+	if (bg.g >= 0) {
+		cairo_set_source_rgb(dest->ctx, bg.r, bg.g, bg.b);
+		cairo_rectangle(dest->ctx, 0.0, 0.0,
 				(double)ci->focus->w, (double)ci->focus->h);
-		cairo_fill(pm);
-	}
+		cairo_fill(dest->ctx);
+		dest->bg = bg;
+	} else if (src) {
+		cairo_set_source_surface(dest->ctx, src->surface, -x, -y);
+		cairo_paint(dest->ctx);
+		dest->bg.g = -1;
+	} else
+		LOG("ERROR neither src or bg");
 	pane_damaged(ci->home, DAMAGED_POSTORDER);
 	return 1;
 }
@@ -552,6 +563,7 @@ DEF_CMD(xcb_draw_text)
 	ps = find_pixmap(xd, ci->focus, &xo, &yo);
 	if (!ps)
 		return Einval;
+	ps->bg.g = -1;
 	ctx = ps->ctx;
 
 	pane_damaged(ci->home, DAMAGED_POSTORDER);
@@ -672,6 +684,7 @@ DEF_CMD(xcb_draw_image)
 	ps = find_pixmap(xd, ci->focus, &xo, &yo);
 	if (!ps)
 		return Einval;
+	ps->bg.g = -1;
 	if (strncmp(ci->str, "file:", 5) == 0) {
 		wd = NewMagickWand();
 		status = MagickReadImage(wd, ci->str + 5);
