@@ -122,6 +122,7 @@ struct rl_data {
 	short		cols; /* columns used for longest line */
 	short		margin; /* distance from top/bottom required for cursor */
 	bool		background_drawn;
+	bool		background_uniform;
 
 	/* If cursor not visible, we add this pane in bottom-right and place
 	 * cursor there.
@@ -692,7 +693,10 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	for (m = vmark_first(focus, rl->typenum, p);
 	     m && m->mdata ; m = vmark_next(m)) {
 		struct pane *hp = m->mdata;
+		hp->damaged &= ~DAMAGED_SIZE;
 		pane_resize(hp, hp->x, y, hp->w, hp->h);
+		if (hp->damaged & DAMAGED_SIZE && !rl->background_uniform)
+			pane_damaged(hp, DAMAGED_REFRESH);
 		y += hp->h;
 	}
 	pane_damaged(p, DAMAGED_REFRESH);
@@ -732,13 +736,16 @@ static int render(struct mark *pm, struct pane *p safe,
 
 	rl->cols = 0;
 	m = vmark_first(focus, rl->typenum, p);
-	if (!rl->background_drawn)
+	if (!rl->background_drawn) {
 		refresh_all = True;
+		rl->background_uniform = True;
+	}
 	s = pane_attr_get(focus, "background");
 	if (s && strncmp(s, "call:", 5) == 0) {
 		home_call(focus, "Draw:clear", p, 0, NULL, "");
 		home_call(focus, s+5, p, 0, m);
 		refresh_all = True;
+		rl->background_uniform = False;
 	} else if (rl->background_drawn)
 		;
 	else if (!s)
@@ -752,6 +759,7 @@ static int render(struct mark *pm, struct pane *p safe,
 	} else if (strncmp(s, "image:", 6) == 0) {
 		home_call(focus, "Draw:clear", p);
 		home_call(focus, "Draw:image", p, 1, NULL, s+6);
+		rl->background_uniform = False;
 	} else
 		home_call(focus, "Draw:clear", p, 0, NULL, "");
 	rl->background_drawn = True;
@@ -966,7 +974,10 @@ static int revalidate_start(struct rl_data *rl safe,
 
 		if (y != hp->y) {
 			pane_damaged(p, DAMAGED_REFRESH);
+			hp->damaged &= ~DAMAGED_SIZE;
 			pane_resize(hp, hp->x, y, hp->w, hp->h);
+			if (hp->damaged & DAMAGED_SIZE && !rl->background_uniform)
+				pane_damaged(hp, DAMAGED_REFRESH);
 		}
 		y += hp->h;
 		m2 = vmark_next(m);
