@@ -109,9 +109,12 @@ void time_stop(enum timetype type)
 
 	if (type < 0 || type >= __TIME_COUNT || !stats_enabled)
 		return;
+	if (!tstart[type])
+		return;
 	clock_gettime(CLOCK_MONOTONIC, &stop);
 
 	nsec = (stop.tv_sec * NSEC + stop.tv_nsec) - tstart[type];
+	tstart[type] = 0;
 	tcount[type] += 1;
 	tsum[type] += nsec;
 
