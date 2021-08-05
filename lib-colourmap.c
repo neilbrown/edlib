@@ -104,6 +104,7 @@ DEF_CMD(colour_map)
 	char *col;
 	char *m, *p;
 	int rgb[3] = { 500, 500, 500};
+	int ret;
 
 	if (!ci->str)
 		return Enoarg;
@@ -125,9 +126,11 @@ DEF_CMD(colour_map)
 	free(col);
 	asprintf(&col, "#%02x%02x%02x", rgb[0]*255/1000,
 		 rgb[1]*255/1000, rgb[2]*255/1000);
-	return comm_call(ci->comm2, "colour:callback", ci->focus,
-			 rgb[0], NULL, col,
-			 rgb[1], NULL, NULL, rgb[2], 0);
+	ret = comm_call(ci->comm2, "colour:callback", ci->focus,
+			rgb[0], NULL, col,
+			rgb[1], NULL, NULL, rgb[2], 0);
+	free(col);
+	return ret;
 }
 
 void edlib_init(struct pane *ed safe)
