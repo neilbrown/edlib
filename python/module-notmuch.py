@@ -577,6 +577,8 @@ class notmuch_main(edlib.Doc):
     def handle_notmuch_update_one(self, key, str, **a):
         "handle:doc:notmuch:update-one"
         self.searches.update_one(str)
+        # update display of updating status flags
+        self.notify("doc:replaced")
         return 1
 
     def handle_notmuch_query(self, key, focus, str, comm2, **a):
@@ -791,11 +793,11 @@ class notmuch_main(edlib.Doc):
 
     def tick(self, key, **a):
         if not self.updating:
-            if self.searches.load(False):
-                # there are (possibly) new searches, trigger a refresh
-                self.notify("doc:replaced")
+            self.searches.load(False)
             self.updating = True
             self.searches.update()
+            # updating status flags might have change
+            self.notify("doc:replaced")
         for c in self.container.children():
             if c.notify("doc:notify-viewers") == 0:
                 # no point refreshing this, might be time to close it
@@ -811,7 +813,8 @@ class notmuch_main(edlib.Doc):
             self.changed_queries.append(query)
             if not self.querying:
                 self.next_query()
-            self.notify("doc:replaced")
+        # always trigger 'replaced' as scan-status symbols may change
+        self.notify("doc:replaced")
 
     def next_query(self):
         self.querying = False
@@ -2212,6 +2215,7 @@ class notmuch_master_view(edlib.Pane):
             self.query_pane = None
             pnt = self.list_pane.call("doc:point", ret='mark')
             pnt['notmuch:query-name'] = ""
+            self.list_pane.call("view:changed")
 
             p.call("Window:close", "notmuch")
         elif key == "doc:char-Q":
@@ -2275,6 +2279,7 @@ class notmuch_master_view(edlib.Pane):
 
         pnt = self.list_pane.call("doc:point", ret='mark')
         pnt['notmuch:query-name'] = str
+        self.list_pane.call("view:changed");
 
         if num:
             self.query_pane.take_focus()
