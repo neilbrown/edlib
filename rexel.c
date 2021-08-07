@@ -812,7 +812,7 @@ enum rxl_found rxl_advance(struct match_state *st safe, wint_t ch)
 	return RXL_NOMATCH;
 }
 
-void rxl_info(struct match_state *st safe, int *lenp safe, int *totalp,
+int rxl_info(struct match_state *st safe, int *lenp safe, int *totalp,
 	      int *startp, int *since_startp)
 {
 	*lenp = st->len;
@@ -830,6 +830,11 @@ void rxl_info(struct match_state *st safe, int *lenp safe, int *totalp,
 		else
 			*since_startp = st->total - st->start;
 	}
+	/* Return 'true' if there might be something here and
+	 * we cannot safely skip forward
+	 */
+	return st->anchored ||
+		(st->link[st->active] && st->link[st->active][0] != 0);
 }
 
 #define RESIZE(buf)							\
@@ -1751,6 +1756,49 @@ static bool parse_branch(struct parse_state *st safe)
 		}
 	} while (*st->patn && *st->patn != '|' && *st->patn != ')');
 	return True;
+}
+
+/* rxl_fatch_match
+ * like 'strstr', but length is passed for both 'needle' and
+ * 'haystack', and it also finds a match for a prefix of needle
+ * at the very end.
+ * This can be used to accelerate search for verbatim content.
+ */
+int rxl_fast_match(const char *needle safe, int nlen,
+		   const char *haystack safe, int hlen)
+{
+	int ret = 0;
+
+	while (hlen >= nlen) {
+		int nl = nlen;
+		int i = 0;
+
+		while (haystack[i] == needle[i]) {
+			i++;
+			nl--;
+			if (!nl)
+				return ret;
+		}
+		haystack++;
+		hlen--;
+		ret++;
+	}
+	/* Maybe a suffix of haystack is a prefix of needle */
+	while (hlen) {
+		int nl = hlen;
+		int i = 0;
+
+		while (haystack[i] == needle[i]) {
+			i++;
+			nl--;
+			if (!nl)
+				return ret;
+		}
+		haystack++;
+		hlen--;
+		ret++;
+	}
+	return ret;
 }
 
 static int parse_prefix(struct parse_state *st safe)
