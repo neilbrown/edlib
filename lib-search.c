@@ -373,6 +373,7 @@ DEF_CB(equal_test)
 {
 	struct texteql *te = container_of(ci->comm, struct texteql, c);
 	wint_t have, want;
+	int i;
 
 	if (!te->text[0])
 		return Efalse;
@@ -380,9 +381,18 @@ DEF_CB(equal_test)
 	want = get_utf8(&te->text, NULL);
 	if (have != want)
 		return Efalse;
+	for (i = 0;
+	     i < ci->num2 && ci->str;
+	     i++)
+		if (!te->text[i] || te->text[i] != ci->str[i])
+			break;
+	te->text += i;
 	if (!te->text[0])
 		te->matched = True;
-	return 1;
+	if (ci->str && i < ci->num2)
+		/* Stop looking */
+		return Efalse;
+	return 1 + i;
 }
 
 DEF_CMD(text_equals)

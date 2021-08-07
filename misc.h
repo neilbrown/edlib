@@ -21,6 +21,19 @@ char *safe put_utf8(char *buf safe, wchar_t ch);
 int utf8_strlen(const char *s safe);
 int utf8_strnlen(const char *s safe, int n);
 int utf8_round_len(const char *text safe, int len);
+static inline int utf8_bytes(wchar_t ch)
+{
+	if (ch < 0x80)
+		return 1;
+	else if (ch < 0x800)
+		return 2;
+	else if (ch < 0x10000)
+		return 3;
+	else if (ch < 0x200000)
+		return 4;
+	else
+		return 0;
+}
 
 struct buf {
 	char *b safe;

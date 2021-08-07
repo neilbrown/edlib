@@ -214,7 +214,7 @@ Module features
 
 ### rexel
 
-- [1] add "get-prefix" function to extract the longest constant
+- [X] add "get-prefix" function to extract the longest constant
       prefix from the pattern, so that a 'strstr' can be used to expedite 
       search
 - [ ] move to separate git repo and document well.

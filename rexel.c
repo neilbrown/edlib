@@ -253,12 +253,13 @@ static inline void clear_bit(int bit, unsigned long *set safe)
 #define	REC_SET		0xa000
 #define	REC_CAPTURE	0xc000
 #define	REC_CAPTURED	0xc800
+/* 0xd??? unused */
 #define	REC_BACKREF	0xe000
 #define	REC_ISCHAR(x)	(!((x) & 0x8000))
 #define	REC_ISSPEC(x)	((x) >= REC_ANY)
 #define	REC_ISFORK(x)	(((x) & 0xe000) == REC_FORK)
 #define	REC_ISSET(x)	(((x) & 0xe000) == REC_SET)
-#define	REC_ISCAPTURE(x) (((x) & 0xe000) == REC_CAPTURE)
+#define	REC_ISCAPTURE(x) (((x) & 0xf000) == REC_CAPTURE)
 #define	REC_ISBACKREF(x) (((x) & 0xf000) == REC_BACKREF)
 #define	REC_ADDR(x)	((x) & 0x0fff)
 #define	REC_ISFIRST(x)	(!!((x) & (REC_FORKFIRST ^ REC_FORKLAST)))
@@ -1995,6 +1996,39 @@ unsigned short *safe rxl_parse_verbatim(const char *patn safe, int nocase)
 	return st.rxl;
 }
 
+int rxl_prefix(unsigned short *rxl safe, char *ret safe, int max)
+{
+	/* Return in ret a contant prefix of the search string,
+	 * if there is one.  Report the number of bytes.
+	 */
+	int len = RXL_PATNLEN(rxl);
+	int i;
+	int found = 0;
+
+	for (i = 1; i < len; i++) {
+		if (REC_ISCHAR(rxl[i])) {
+			int l = utf8_bytes(rxl[i]);
+			if (l == 0 || found + l > max)
+				/* No more room */
+				break;
+			put_utf8(ret + found, rxl[i]);
+			found += l;
+			continue;
+		}
+		if (rxl[i] >= REC_SOL && rxl[i] <= REC_POINT)
+			/* zero-width match doesn't change prefix */
+			continue;
+		if (rxl[i] == REC_USECASE)
+			/* Insisting on case-correct doesn't change prefix */
+			continue;
+		if (REC_ISCAPTURE(rxl[i]))
+			continue;
+		/* Nothing more that is fixed */
+		break;
+	}
+	return found;
+}
+
 struct match_state *safe rxl_prepare(unsigned short *rxl safe, int flags)
 {
 	struct match_state *st;
@@ -2017,7 +2051,7 @@ struct match_state *safe rxl_prepare(unsigned short *rxl safe, int flags)
 	st->ignorecase = calloc(BITSET_SIZE(len), sizeof(*st->ignorecase));
 	st->active = 0;
 	st->match = -1;
-	for (i = 0; i < len; i++) {
+	for (i = 1; i < len; i++) {
 		if (rxl[i] == REC_IGNCASE)
 			ic = True;
 		if (rxl[i] == REC_USECASE)
@@ -2491,6 +2525,8 @@ int main(int argc, char *argv[])
 	int opt;
 	int trace = False;
 	const char *patn, *target, *t;
+	char prefix[100];
+	int plen;
 
 	while ((opt = getopt(argc, argv, "itvlTf")) > 0)
 		switch (opt) {
@@ -2546,6 +2582,12 @@ int main(int argc, char *argv[])
 		exit(2);
 	}
 	rxl_print(rxl);
+
+	plen = rxl_prefix(rxl, prefix, sizeof(prefix)-1);
+	if (plen)
+		printf("Prefix: \"%.*s\"\n", plen, prefix);
+	else
+		printf("No static prefix\n");
 
 	st = rxl_prepare(rxl, 0);
 	st->trace = trace;
