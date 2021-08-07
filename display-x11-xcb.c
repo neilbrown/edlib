@@ -186,11 +186,11 @@ struct xcb_data {
 		struct panes	*next;
 		struct pane	*p safe;
 		int		w,h;
-		cairo_t		*ctx safe;
+		cairo_t		*ctx;
 		struct rgb	bg;
 		xcb_pixmap_t	draw;
-		cairo_surface_t	*surface safe;
-	}			*panes;
+		cairo_surface_t	*surface;
+	} *panes;
 };
 
 static struct map *xcb_map;
@@ -201,8 +201,6 @@ static struct panes *get_pixmap(struct pane *home safe,
 {
 	struct xcb_data *xd = home->data;
 	struct panes **pp, *ps;
-	cairo_surface_t *surface;
-	cairo_t *ctx = NULL;
 
 	for (pp = &xd->panes; (ps = *pp) != NULL; pp = &(*pp)->next) {
 		if (ps->p != p)
@@ -210,9 +208,12 @@ static struct panes *get_pixmap(struct pane *home safe,
 		if (ps->w == p->w && ps->h == p->h)
 			return ps;
 		*pp = ps->next;
-		cairo_destroy(ps->ctx);
-		cairo_surface_destroy(ps->surface);
-		xcb_free_pixmap(xd->conn, ps->draw);
+		if (ps->ctx)
+			cairo_destroy(ps->ctx);
+		if (ps->surface)
+			cairo_surface_destroy(ps->surface);
+		if (ps->draw)
+			xcb_free_pixmap(xd->conn, ps->draw);
 		free(ps);
 		break;
 	}
@@ -220,30 +221,37 @@ static struct panes *get_pixmap(struct pane *home safe,
 	ps->p = p;
 	ps->w = p->w;
 	ps->h = p->h;
-	ps->bg.g = -1;
-	ps->draw = xcb_generate_id(xd->conn);
-	xcb_create_pixmap(xd->conn, xd->screen->root_depth, ps->draw,
-			  xd->win, p->w, p->h);
-	surface = cairo_xcb_surface_create(
-		xd->conn, ps->draw, xd->visual, p->w, p->h);
-	if (!surface)
-		goto free_ps;
-	ctx = cairo_create(surface);
-	if (!ctx)
-		goto free_surface;
-	ps->ctx = ctx;
-	ps->surface = surface;
+	ps->bg.r = ps->bg.g = ps->bg.b = 0;
 
 	pane_add_notify(home, p, "Notify:Close");
 	ps->next = *pp;
 	*pp = ps;
 	return ps;
+}
+
+static void instantiate_pixmap(struct xcb_data *xd safe,
+			  struct panes *ps safe)
+{
+	ps->draw = xcb_generate_id(xd->conn);
+	xcb_create_pixmap(xd->conn, xd->screen->root_depth, ps->draw,
+			  xd->win, ps->w, ps->h);
+	ps->surface = cairo_xcb_surface_create(
+		xd->conn, ps->draw, xd->visual, ps->w, ps->h);
+	if (!ps->surface)
+		goto free_ps;
+	ps->ctx = cairo_create(ps->surface);
+	if (!ps->ctx)
+		goto free_surface;
+	cairo_set_source_rgb(ps->ctx, ps->bg.r, ps->bg.g, ps->bg.b);
+	cairo_paint(ps->ctx);
+	return;
+
 free_surface:
-	cairo_surface_destroy(surface);
+	cairo_surface_destroy(ps->surface);
+	ps->surface = NULL;
 free_ps:
 	xcb_free_pixmap(xd->conn, ps->draw);
-	unalloc(ps, pane);
-	return NULL;
+	ps->draw = 0;
 }
 
 static struct panes *find_pixmap(struct xcb_data *xd safe, struct pane *p safe,
@@ -478,6 +486,8 @@ DEF_CMD(xcb_clear)
 			bg.r = bg.g = bg.b = 1.0;
 		else if (src->bg.g >= 0)
 			bg = src->bg;
+		else if (src->surface == NULL)
+			bg.r = bg.g = bg.b = 1.0;
 		else
 			bg.g = -1;
 	}
@@ -486,15 +496,21 @@ DEF_CMD(xcb_clear)
 	if (!dest)
 		return 1;
 	if (bg.g >= 0) {
-		cairo_set_source_rgb(dest->ctx, bg.r, bg.g, bg.b);
-		cairo_rectangle(dest->ctx, 0.0, 0.0,
-				(double)ci->focus->w, (double)ci->focus->h);
-		cairo_fill(dest->ctx);
+		if (dest->ctx) {
+			cairo_set_source_rgb(dest->ctx, bg.r, bg.g, bg.b);
+			cairo_rectangle(dest->ctx, 0.0, 0.0,
+					(double)ci->focus->w, (double)ci->focus->h);
+			cairo_fill(dest->ctx);
+		}
 		dest->bg = bg;
 	} else if (src) {
-		cairo_set_source_surface(dest->ctx, src->surface, -x, -y);
-		cairo_paint(dest->ctx);
-		dest->bg.g = -1;
+		if (!dest->ctx)
+			instantiate_pixmap(xd, dest);
+		if (dest->ctx) {
+			cairo_set_source_surface(dest->ctx, src->surface, -x, -y);
+			cairo_paint(dest->ctx);
+			dest->bg.g = -1;
+		}
 	} else
 		LOG("ERROR neither src or bg");
 	pane_damaged(ci->home, DAMAGED_POSTORDER);
@@ -563,8 +579,12 @@ DEF_CMD(xcb_draw_text)
 	ps = find_pixmap(xd, ci->focus, &xo, &yo);
 	if (!ps)
 		return Einval;
+	if (!ps->ctx)
+		instantiate_pixmap(xd, ps);
 	ps->bg.g = -1;
 	ctx = ps->ctx;
+	if (!ctx)
+		return Efail;
 
 	pane_damaged(ci->home, DAMAGED_POSTORDER);
 
@@ -684,7 +704,11 @@ DEF_CMD(xcb_draw_image)
 	ps = find_pixmap(xd, ci->focus, &xo, &yo);
 	if (!ps)
 		return Einval;
+	if (!ps->ctx)
+		instantiate_pixmap(xd, ps);
 	ps->bg.g = -1;
+	if (!ps->ctx)
+		return Efail;
 	if (strncmp(ci->str, "file:", 5) == 0) {
 		wd = NewMagickWand();
 		status = MagickReadImage(wd, ci->str + 5);
@@ -746,7 +770,7 @@ DEF_CMD(xcb_draw_image)
 	// Cairo expects 32bit values with A in the high byte, then RGB.
 	// Magick provides 8bit values in the order requests.
 	// So depending on byte order, a different string is needed
-	
+
 	fmt[0] = ('A'<<24) | ('R' << 16) | ('G' << 8) | ('B' << 0);
 	fmt[1] = 0;
 	MagickExportImagePixels(wd, 0, 0, w, h, (char*)fmt, CharPixel, buf);

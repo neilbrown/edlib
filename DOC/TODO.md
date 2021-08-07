@@ -314,7 +314,7 @@ Module features
 
 ### display-x11-xcb
 
-- [1] don't create server-side pixmap for uniform-colour panes.
+- [X] don't create server-side pixmap for uniform-colour panes.
        delay creation until image or text is drawn
 - [1] find way to sort pane so over-lap detection is easier
 - [1] track a rectangle that needs refresh and clip all refresh
@@ -444,6 +444,7 @@ Module features
 
 ### shell mode
 
+- [ ] non-utf8 in output makes python spit the dummy
 - [X] If current directory doesn't exist, cope somehow
 - [X] make sure PWD env var doesn't end '/'.
 - [X] 'shell-command' should try to use same pane even though it
