@@ -1203,7 +1203,7 @@ static void handle_key_press(struct pane *home safe,
 			s[1] += '@';
 			if (s[1] < 'A' || s[1] > 'Z')
 				shift = False;
-		} else if (s[0] == '-' && !s[1]) {
+		} else if (s[0] == '-' && !s[1] && strcmp(key, "space") == 0) {
 			/* 'nul' becomes "C- " (ctrl-space) */
 			ctrl = True;
 			s[1] = ' ';
