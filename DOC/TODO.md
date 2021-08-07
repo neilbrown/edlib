@@ -31,7 +31,7 @@ Bugs to be fixed
 
 - [1] optimize all doc:content handlers to use the 'string' if possible
      - libsearch
-     - fix charset
+     + fix charset
      - qprint
      - utf8
 - [ ] don't allow starting macro inside a macro

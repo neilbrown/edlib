@@ -1334,17 +1334,50 @@ struct charsetcb {
 	struct command c;
 	struct command *cb safe;
 	struct pane *p safe;
-	wchar_t *tbl;
+	bool noalloc;
+	wchar_t *tbl safe;
 };
 
 DEF_CB(charset_content_cb)
 {
 	struct charsetcb *c = container_of(ci->comm, struct charsetcb, c);
+	char *buf, *up;
+	int rv, i, bsize;
 
-	return comm_call(c->cb, ci->key, c->p,
-			 c->tbl[ci->num & 0xff], ci->mark, ci->str,
-			 ci->num2, ci->mark2, ci->str2,
-			 ci->x, ci->y);
+	/* Buffer for utf8 content could be as much as 4 times ->str,
+	 * but that is unlikely.  Allocate room for double.
+	 */
+	bsize = ci->num2 * 2;
+	if (!ci->str || ci->num2 <= 0 || c->noalloc ||
+	    (buf = malloc(bsize)) == NULL)
+		return comm_call(c->cb, ci->key, c->p,
+				 c->tbl[ci->num & 0xff], ci->mark, ci->str,
+				 ci->num2, NULL, NULL,
+				 ci->x, 0);
+	up = buf;
+	for (i = 0, up = buf; i < ci->num2 && up+4 < buf + bsize; i++) {
+		unsigned char cc = ci->str[i];
+		up = put_utf8(up, c->tbl[cc]);
+	}
+	rv = comm_call(c->cb, ci->key, c->p,
+		       c->tbl[ci->num & 0xff], ci->mark, buf,
+		       up - buf, NULL, NULL, ci->x, 0);
+	if (rv <= 0) {
+		/* None of the extra was consumed. Assume that will continue */
+		c->noalloc = True;
+		free(buf);
+		return rv;
+	}
+	if (rv >= (up - buf) + 1) {
+		/* All of the extra (that we decoded) was consumed */
+		free(buf);
+		return i + 1;
+	}
+	/* Only some was consumed.  We needed to map back to number of bytes. */
+	for (i = 0, up = buf; i < ci->num2 && up < buf + (rv-1); i++)
+		up = put_utf8(up, c->tbl[(unsigned char)ci->str[i]]);
+	free(buf);
+	return (up - buf) + 1;
 }
 
 DEF_CMD(charset_content)
@@ -1359,6 +1392,7 @@ DEF_CMD(charset_content)
 	c.cb = ci->comm2;
 	c.p = ci->focus;
 	c.tbl = tbl;
+	c.noalloc = False;
 	return home_call_comm(ci->home->parent, ci->key, ci->home,
 			      &c.c, 0, ci->mark, NULL, 0, ci->mark2);
 }
