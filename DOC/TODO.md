@@ -33,7 +33,7 @@ Bugs to be fixed
      - libsearch
      + fix charset
      - qprint
-     - utf8
+     + utf8
 - [ ] don't allow starting macro inside a macro
 - [ ] Num-C-l doesn't work if it would require part of a wrapped line
       off top of screen

@@ -110,11 +110,13 @@ DEF_CMD(utf8_content_cb)
 		c->size = ci->x;
 
 	if ((wc & ~0x7f) == 0) {
-		/* 7bit char - easy */
+		/* 7bit char - easy.  Pass following string too,
+		 * utf8 is expected.
+		 */
 		if (c->expect)
 			c->expect = c->have = 0;
-		ret = comm_call(c->cb, ci->key, c->p, wc, ci->mark, NULL,
-				0, NULL, NULL, c->size, 0);
+		ret = comm_call(c->cb, ci->key, c->p, wc, ci->mark, ci->str,
+				ci->num2, NULL, NULL, c->size, 0);
 		c->size = 0;
 		return ret;
 	}
@@ -129,8 +131,8 @@ DEF_CMD(utf8_content_cb)
 			wc = get_utf8(&b, b+c->have);
 			c->expect = 0;
 			ret = comm_call(c->cb, ci->key, c->p,
-					wc, ci->mark, NULL,
-					0, NULL, NULL, c->size, 0);
+					wc, ci->mark, ci->str,
+					ci->num2, NULL, NULL, c->size, 0);
 			c->size = 0;
 		}
 		return ret;
@@ -156,9 +158,6 @@ DEF_CMD(utf8_content)
 
 	if (!ci->comm2 || !ci->mark)
 		return Enoarg;
-	if (ci->num)
-		/* Fall through and let parent provide bytes */
-		return Efallthrough;
 
 	c.c = utf8_content_cb;
 	c.cb = ci->comm2;
