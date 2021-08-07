@@ -31,6 +31,8 @@ struct search_state {
 	struct mark *point;
 	wint_t prev_ch;
 	struct command c;
+	char prefix[64];
+	int prefix_len;
 
 	unsigned short *rxl safe;
 };
@@ -75,6 +77,7 @@ DEF_CB(search_test)
 		wint_t flags = 0;
 		int maxlen, since_start;
 		enum rxl_found found;
+		int anchored;
 
 		if ((unsigned int)ci->num == WEOF) {
 			wch = 0;
@@ -103,7 +106,7 @@ DEF_CB(search_test)
 		found = rxl_advance(ss->st, wch | flags);
 		if (ss->point && ci->mark && mark_same(ss->point, ci->mark))
 			found = rxl_advance(ss->st, RXL_POINT);
-		rxl_info(ss->st, &maxlen, NULL, NULL, &since_start);
+		anchored = rxl_info(ss->st, &maxlen, NULL, NULL, &since_start);
 
 		if (found >= RXL_MATCH && ss->endmark && ci->mark &&
 		    since_start - maxlen <= 1) {
@@ -117,6 +120,24 @@ DEF_CB(search_test)
 		if (found == RXL_DONE)
 			/* No match here */
 			return Efalse;
+		if (!anchored && ci->str &&
+		    ss->prefix_len && ci->num2 > ss->prefix_len) {
+			/* It is worth searching for the prefix to improve
+			 * search speed.
+			 */
+			int pstart = rxl_fast_match(ss->prefix, ss->prefix_len,
+						    ci->str, ci->num2);
+			/* This may not be a full match even for the prefix,
+			 * but it is a good place to skip too
+			 */
+			if (pstart > 0) {
+				const char *s;
+				int prev = utf8_round_len(ci->str, pstart-1);
+				s = ci->str+prev;
+				ss->prev_ch = get_utf8(&s, NULL);
+				return pstart + 1;
+			}
+		}
 		ss->prev_ch = wch;
 		return 1;
 	}
@@ -191,6 +212,7 @@ static int search_forward(struct pane *p safe,
 	if (m2 && m->seq >= m2->seq)
 		return -1;
 	ss.st = rxl_prepare(rxl, anchored ? RXL_ANCHORED : 0);
+	ss.prefix_len = rxl_prefix(rxl, ss.prefix, sizeof(ss.prefix));
 	ss.end = m2;
 	ss.endmark = endmark;
 	ss.point = point;
@@ -221,6 +243,7 @@ static int search_backward(struct pane *p safe,
 	ss.endmark = NULL;
 	ss.point = point;
 	ss.c = search_test;
+	ss.prefix_len = 0;
 
 	pane_set_time(p);
 	do {
@@ -351,6 +374,7 @@ DEF_CMD(make_search)
 		return Einval;
 	ss = calloc(1, sizeof(*ss));
 	ss->rxl = rxl;
+	ss->prefix_len = rxl_prefix(rxl, ss->prefix, sizeof(ss->prefix));
 	ss->c = search_test;
 	ss->c.free = state_free;
 	command_get(&ss->c);

@@ -30,7 +30,7 @@ Bugs to be fixed
 ----------------
 
 - [1] optimize all doc:content handlers to use the 'string' if possible
-     - libsearch
+     + libsearch
      + fix charset
      - qprint
      + utf8
@@ -472,6 +472,7 @@ Module features
 
 ### Notmuch - overview
 
+- [ ] 'm' in 'move marks on tid to before self.pos' was reportedly NULL once.
 - [ ] Two threads with same timestamp swap order on reload
 - [X] "date:-months" doesn't do what I thought.  It start from beginning
       of this month, not one month ago.  So use a number of days.
