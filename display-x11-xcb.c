@@ -843,8 +843,12 @@ DEF_CMD(xcb_refresh_post)
 		lox = lo.x; loy = lo.y;
 		hix = hi.x; hiy = hi.y;
 		cairo_save(xd->cairo);
-		cairo_set_source_surface(xd->cairo, ps->surface,
-					 rel.x, rel.y);
+		if (ps->bg.g >= 0)
+			cairo_set_source_rgb(xd->cairo,
+					     ps->bg.r, ps->bg.g, ps->bg.b);
+		else
+			cairo_set_source_surface(xd->cairo, ps->surface,
+						 rel.x, rel.y);
 		cairo_rectangle(xd->cairo, lox, loy, hix-lox, hiy-loy);
 		cairo_fill(xd->cairo);
 		cairo_restore(xd->cairo);
