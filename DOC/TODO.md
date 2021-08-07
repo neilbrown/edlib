@@ -29,6 +29,11 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [1] optimize all doc:content handlers to use the 'string' if possible
+     - libsearch
+     - fix charset
+     - qprint
+     - utf8
 - [ ] don't allow starting macro inside a macro
 - [ ] Num-C-l doesn't work if it would require part of a wrapped line
       off top of screen
@@ -92,7 +97,7 @@ Core features
 - [X] centralize handling of the creation of a pane stack for a new display.
 - [X] have standard way for slow testing of order of marks
 - [X] have a debug mode where mark consistency is checked v.often
-- [1] improve timeout.  Set timer once, then set a flag so that all commands fail
+- [ ] improve timeout.  Set timer once, then set a flag so that all commands fail
       until some top-level clears the flag.
 - [ ] reconsider all 'return comm_call()' calls.  Do we every really
       care if the callback succeeded?
@@ -119,7 +124,7 @@ Core features
       running.  For a call handler it does.  This inconsistency is awkward for
       messageline_msg which wants to allow fallthrough, but needs to acknowledge.
       How can I resolve this? Use Efallthrough as -1.
-- [1] make a doc read-only if dir doesn't exist or isn't writable
+- [ ] make a doc read-only if dir doesn't exist or isn't writable
 - [ ] account all mem allocation types separately, and (optionally) report
       stats regularly
 - [X] When I call DocPane I normally doc:attach-view a doc there. But it is
@@ -186,6 +191,7 @@ Module features
 
 ### render-format
 
+- [1] fix start-line-ref problem
 - [ ] improve caching of attributes
 - [ ] profile performance to find opporunities for optimisation.
 - [ ] ensure doc_refs can be stable.  '0' must always be valid.
@@ -208,6 +214,9 @@ Module features
 
 ### rexel
 
+- [1] add "get-prefix" function to extract the longest constant
+      prefix from the pattern, so that a 'strstr' can be used to expedite 
+      search
 - [ ] move to separate git repo and document well.
 - [ ] review return code of rxl_advance().  What should be
       returned if a flag allowed a match, but the char didn't.
@@ -292,8 +301,8 @@ Module features
 ### pygtk
 
 - [ ] can we capture the substates of character composition, and give feed-back?
-- [1] make sure pixmap handling in optimal - I want the per-pane images to be server-side
-      See cairo_xcb_surface_create.
+- [X] make sure pixmap handling in optimal - I want the per-pane images to be server-side
+      See cairo_xcb_surface_create. DONE IN display-x11-xcb
 - [X] If a net connection to a display goes away, we can block on IO to that display.
       Particularly an ssh connection to an ncurses display.
       The problem is the x11selection X connection. When it is closed, the
@@ -305,6 +314,14 @@ Module features
 
 ### display-x11-xcb
 
+- [1] don't create server-side pixmap for uniform-colour panes.
+       delay creation until image or text is drawn
+- [1] find way to sort pane so over-lap detection is easier
+- [1] track a rectangle that needs refresh and clip all refresh
+      to that
+- [1] before drawing, clip pane against anything that overlaps.  Track an
+      internal rectangle which is hidden and external rectangle which is
+      visible.
 - [X] C-_ isn't recognized
 - [X] clip backing-image size against parents so it gets redrawn when no-longer
       clipped
@@ -344,9 +361,9 @@ Module features
       to find a cursor and compare with ->mdata and get confusion.  How can I avoid this?
 - [ ] view:changed shouldn't destroy the view, else Move-CursorXY
       gets confused.
-- [1] make renderlines "refresh everything when point moves" optional.
+- [ ] make renderlines "refresh everything when point moves" optional.
 - [ ] if flush_line from render_line() keeps returning zero, abort
-- [1] render-lines should always re-render the line containing point, so
+- [ ] render-lines should always re-render the line containing point, so
       the location of “point” can affect the rendering.
 
 ### lib-macro
@@ -455,6 +472,7 @@ Module features
 
 ### Notmuch - overview
 
+- [ ] Two threads with same timestamp swap order on reload
 - [X] "date:-months" doesn't do what I thought.  It start from beginning
       of this month, not one month ago.  So use a number of days.
 - [ ] When main_doc notices counts increase, it should ensure the next
@@ -466,7 +484,7 @@ Module features
 - [X] don't use '-' for tag removal, use it for numeric prefix instead.  Maybe
       '--' can do tag removal.
 - [1] messages shouldn't disappear from open thread when background refresh happens.
-- [1] archived threads SHOULD disappear when a query is closed.
+- [X] archived threads SHOULD disappear when a query is closed.
 - [1] add command to go to first new message? 'N'?
 - [ ] saved queries that are not mentioned in any other query should get
       presented in the search list. ... except maybe current/unread/new ???
