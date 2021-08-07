@@ -1330,7 +1330,7 @@ DEF_CMD(charset_char)
 	return ret;
 }
 
-struct win1251cb {
+struct charsetcb {
 	struct command c;
 	struct command *cb safe;
 	struct pane *p safe;
@@ -1339,7 +1339,7 @@ struct win1251cb {
 
 DEF_CB(charset_content_cb)
 {
-	struct win1251cb *c = container_of(ci->comm, struct win1251cb, c);
+	struct charsetcb *c = container_of(ci->comm, struct charsetcb, c);
 
 	return comm_call(c->cb, ci->key, c->p,
 			 c->tbl[ci->num & 0xff], ci->mark, ci->str,
@@ -1349,7 +1349,7 @@ DEF_CB(charset_content_cb)
 
 DEF_CMD(charset_content)
 {
-	struct win1251cb c;
+	struct charsetcb c;
 	wchar_t *tbl = ci->home->data;
 
 	if (!ci->comm2 || !ci->mark)
