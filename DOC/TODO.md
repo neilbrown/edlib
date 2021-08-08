@@ -290,6 +290,12 @@ Module features
 
 ### ncurses
 
+- [X] enable bracketed paste mode on xterm
+     \e[?2004h  enables
+     \e[?2004l  disables
+     \e[200~  signals start of paste
+     \e[201~  signals end of paste
+     Report the content with copy:save and send :Paste.
 - [ ] add full list of colour names (to lib-colourmap)
 - [ ] allow a pane to require 'true-colour' and discover number of colours available
       Colour map gets changed when it becomes the focus.

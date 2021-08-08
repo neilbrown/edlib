@@ -2441,6 +2441,32 @@ DEF_CMD(emacs_paste)
 	return 1;
 }
 
+DEF_CMD(emacs_paste_direct)
+{
+	/* This command is an explicit paste command and the content
+	 * is available via "Paste:get".
+	 * It might come via the mouse (with x,y) or via a keystroke.
+	 */
+	char *s;
+	if (ci->key[0] == 'M') {
+		call("Move-CursorXY", ci->focus,
+		     0, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
+		pane_focus(ci->focus);
+	}
+
+	s = call_ret(str, "Paste:get", ci->focus);
+	if (s && *s) {
+		struct mark *pt = call_ret(mark, "doc:point", ci->focus);
+		struct mark *mk;
+		call("Move-to", ci->focus, 1);
+		mk = call_ret(mark2, "doc:point", ci->focus);
+		call("Replace", ci->focus, 0, mk, s, 0, pt);
+		set_selection(ci->focus, pt, mk, 2);
+	}
+	free(s);
+	return 1;
+}
+
 DEF_CMD(emacs_sel_claimed)
 {
 	/* Should possibly just change the color of our selection */
@@ -3053,6 +3079,8 @@ static void emacs_init(void)
 	key_add(m, "M:Click-2", &emacs_paste);
 	key_add(m, "M:C:Click-1", &emacs_paste);
 	key_add(m, "M:Motion", &emacs_motion);
+	key_add(m, "K:Paste", &emacs_paste_direct);
+	key_add(m, "M:Paste", &emacs_paste_direct);
 
 	key_add(m, "Notify:selection:claimed", &emacs_sel_claimed);
 	key_add(m, "Notify:selection:commit", &emacs_sel_commit);

@@ -60,6 +60,11 @@ struct display_data {
 	int			report_position;
 	long			last_event;
 
+	struct buf		paste_buf;
+	time_t			paste_start;
+	char			*paste_latest;
+	int			paste_pending;
+
 	char			*rs1, *rs2, *rs3, *clear;
 	char			attr_buf[1024];
 	#ifdef RECORD_REPLAY
@@ -550,6 +555,15 @@ static void ncurses_end(struct pane *p safe)
 
 	set_screen(p);
 	close_recrep(p);
+
+	if (dd->is_xterm) {
+		/* disable bracketed-paste */
+		fprintf(dd->scr_file, "\033[?2004l");
+		fflush(dd->scr_file);
+	}
+	if (dd->paste_start)
+		free(buf_final(&dd->paste_buf));
+	free(dd->paste_latest);
 	nl();
 	endwin();
 	if (dd->rs1)
@@ -1044,6 +1058,11 @@ static struct pane *ncurses_init(struct pane *ed,
 		  BUTTON_CTRL | BUTTON_SHIFT | BUTTON_ALT |
 		  REPORT_MOUSE_POSITION, NULL);
 	mouseinterval(0);
+	if (dd->is_xterm) {
+		/* Enable bracketed-paste */
+		fprintf(dd->scr_file, "\033[?2004h");
+		fflush(dd->scr_file);
+	}
 
 	getmaxyx(stdscr, rows, cols);
 	pane_resize(p, 0, 0, cols, rows);
@@ -1320,37 +1339,142 @@ static void send_mouse(MEVENT *mev safe, struct pane *p safe)
 		do_send_mouse(p, x, y, ":Motion", 0, "", 3);
 }
 
+static void paste_start(struct pane *home safe)
+{
+	struct display_data *dd = home->data;
+
+	dd->paste_start = time(NULL);
+	buf_init(&dd->paste_buf);
+}
+
+static void paste_flush(struct pane *home safe)
+{
+	struct display_data *dd = home->data;
+
+	if (!dd->paste_start)
+		return;
+	free(dd->paste_latest);
+	dd->paste_latest = buf_final(&dd->paste_buf);
+	if (dd->paste_buf.len > 0)
+		dd->paste_pending = 1;
+	dd->paste_start = 0;
+}
+
+static bool paste_recv(struct pane *home safe, int is_keycode, wint_t ch)
+{
+	struct display_data *dd = home->data;
+	time_t now;
+	if (dd->paste_start == 0)
+		return False;
+	now = time(NULL);
+	if (dd->paste_start < now || dd->paste_start > now + 2 ||
+	    is_keycode != OK || ch == KEY_MOUSE) {
+		/* time to close */
+		paste_flush(home);
+		return False;
+	}
+	if (ch == '\r')
+		/* I really don't want carriage-returns... */
+		ch = '\n';
+	buf_append(&dd->paste_buf, ch);
+	if (ch == '~' && dd->paste_buf.len >= 6 &&
+	    strcmp("\e[201~",
+		   buf_final(&dd->paste_buf) + dd->paste_buf.len - 6) == 0) {
+		dd->paste_buf.len -= 6;
+		paste_flush(home);
+	}
+	return True;
+}
+
+DEF_CMD(nc_get_paste)
+{
+	struct display_data *dd = ci->home->data;
+
+	comm_call(ci->comm2, "cb", ci->focus,
+		  dd->paste_start, NULL, dd->paste_latest);
+	return 1;
+}
+
 REDEF_CMD(input_handle)
 {
 	struct pane *p = ci->home;
-
+	struct display_data *dd = p->data;
+	static const char paste_seq[] = "\e[200~";
 	wint_t c;
 	int is_keycode;
 	int have_escape = 0;
+	int i;
 
 	if (!(void*)p->data)
 		/* already closed */
 		return 0;
 	set_screen(p);
 	while ((is_keycode = get_wch(&c)) != ERR) {
+		if (paste_recv(p, is_keycode, c))
+			continue;
 		if (c == KEY_MOUSE) {
 			MEVENT mev;
-			while (getmouse(&mev) != ERR)
+			paste_flush(p);
+			while (getmouse(&mev) != ERR) {
+				if (dd->paste_pending &&
+				    mev.bstate == REPORT_MOUSE_POSITION) {
+					/* xcfe-terminal is a bit weird.
+					 * It captures middle-press to
+					 * sanitise the paste, but lets
+					 * middle-release though. It comes
+					 * here as REPORT_MOUSE_POSTION
+					 * and we can use that to find the
+					 * position of the paste.
+					 * '6' is an unused button, and
+					 * ensures lib-input doesn't expect
+					 * matching press/release
+					 */
+					call("Mouse-event", ci->home,
+					     1, NULL, ":Paste",
+					     6, NULL, NULL, mev.x, mev.y);
+					dd->paste_pending = 0;
+				}
 				send_mouse(&mev, p);
-		} else if (have_escape) {
+			}
+		} else if (c == (wint_t)paste_seq[have_escape]) {
+			have_escape += 1;
+			if (!paste_seq[have_escape]) {
+				paste_start(p);
+				have_escape = 0;
+			}
+		} else if (have_escape == 1) {
 			send_key(is_keycode, c, 1, p);
 			have_escape = 0;
-		} else if (c == '\e')
-			have_escape = 1;
-		else
+		} else if (have_escape) {
+			send_key(OK, paste_seq[1], 1, p);
+			for (i = 2; i < have_escape; i++)
+				send_key(OK, paste_seq[i], 0, p);
 			send_key(is_keycode, c, 0, p);
+			have_escape = 0;
+		} else {
+			send_key(is_keycode, c, 0, p);
+		}
 		/* Don't know what other code might have done,
 		 * so re-set the screen
 		 */
 		set_screen(p);
 	}
-	if (have_escape)
+	if (have_escape == 1)
 		send_key(is_keycode, '\e', 0, p);
+	else if (have_escape > 1) {
+		send_key(OK, paste_seq[1], 1, p);
+		for (i = 2; i < have_escape; i++)
+			send_key(OK, paste_seq[i], 0, p);
+	}
+	if (dd->paste_pending == 2) {
+		/* no mouse event to give postion, so treat as keyboard */
+		call("Keystroke", ci->home, 0, NULL, ":Paste");
+		dd->paste_pending = 0;
+	} else if (dd->paste_pending == 1) {
+		/* Wait for possible mouse-position update. */
+		dd->paste_pending = 2;
+		call_comm("event:timer", p, &input_handle, 200);
+	}
 	return 1;
 }
 
@@ -1387,6 +1511,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(nc_map, "Draw:text", &nc_draw_text);
 	key_add(nc_map, "Refresh:size", &nc_refresh_size);
 	key_add(nc_map, "Refresh:postorder", &nc_refresh_post);
+	key_add(nc_map, "Paste:get", &nc_get_paste);
 	key_add(nc_map, "all-displays", &nc_notify_display);
 	key_add(nc_map, "Sig:Winch", &handle_winch);
 	key_add(nc_map, "Notify:Close", &nc_pane_close);
