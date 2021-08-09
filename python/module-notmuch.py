@@ -821,7 +821,7 @@ class notmuch_main(edlib.Doc):
         while self.changed_queries:
             q = self.changed_queries.pop(0)
             for c in self.container.children():
-                if c['query'] == q:
+                if c['qname'] == q:
                     if c.notify("doc:notify-viewers") == 0:
                         # Just mark for refresh-on-visit
                         c.call("doc:set:need-update", "true")
