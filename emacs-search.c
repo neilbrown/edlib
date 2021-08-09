@@ -820,11 +820,11 @@ DEF_CMD(emacs_hl_attrs)
 		return Efallthrough;
 
 	if (strcmp(ci->str, "render:search") == 0) {
-		/* Current search match -  "20" is a priority */
+		/* Current search match -  "220" is a priority */
 		if (hi->view >= 0 && ci->mark && ci->mark->viewnum == hi->view) {
 			int len = atoi(ci->str2) ?: 1;
 			return comm_call(ci->comm2, "attr:callback", ci->focus, len,
-					 ci->mark, "fg:red,inverse,focus,vis-nl", 20);
+					 ci->mark, "fg:red,inverse,focus,vis-nl", 220);
 		}
 	}
 	if (strcmp(ci->str, "render:search2") == 0) {
@@ -832,16 +832,16 @@ DEF_CMD(emacs_hl_attrs)
 		if (hi->view >= 0 && ci->mark && ci->mark->viewnum == hi->view) {
 			int len = atoi(ci->str2) ?: 1;
 			return comm_call(ci->comm2, "attr:callback", ci->focus, len,
-					 ci->mark, "fg:blue,inverse,vis-nl", 20);
+					 ci->mark, "fg:blue,inverse,vis-nl", 220);
 		}
 	}
 	if (strcmp(ci->str, "render:replacement") == 0) {
-		/* Replacement -  "20" is a priority */
+		/* Replacement -  "220" is a priority */
 		if (hi->replace_view >= 0 && ci->mark &&
 		    ci->mark->viewnum == hi->replace_view) {
 			int len = atoi(ci->str2) ?: 1;
 			return comm_call(ci->comm2, "attr:callback", ci->focus, len,
-					 ci->mark, "fg:green-40,inverse,vis-nl", 20);
+					 ci->mark, "fg:green-40,inverse,vis-nl", 220);
 		}
 	}
 	if (strcmp(ci->str, "start-of-line") == 0 && ci->mark && hi->view >= 0) {
@@ -850,25 +850,25 @@ DEF_CMD(emacs_hl_attrs)
 			m = NULL;
 		if (m && attr_find_int(m->attrs, "render:search") > 0)
 			return comm_call(ci->comm2, "attr:callback", ci->focus, 0,
-					 ci->mark, "fg:red,inverse,vis-nl", 20);
+					 ci->mark, "fg:red,inverse,vis-nl", 220);
 		if (m && attr_find_int(m->attrs, "render:search2") > 0)
 			return comm_call(ci->comm2, "attr:callback", ci->focus, 0,
-					 ci->mark, "fg:blue,inverse,vis-nl", 20);
+					 ci->mark, "fg:blue,inverse,vis-nl", 220);
 	}
 	if (strcmp(ci->str, "render:search-end") ==0) {
 		/* Here endeth the match */
 		return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
-				 ci->mark, "fg:red,inverse,vis-nl", 20);
+				 ci->mark, "fg:red,inverse,vis-nl", 220);
 	}
 	if (strcmp(ci->str, "render:search2-end") ==0) {
 		/* Here endeth the match */
 		return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
-				 ci->mark, "fg:blue,inverse,vis-nl", 20);
+				 ci->mark, "fg:blue,inverse,vis-nl", 220);
 	}
 	if (strcmp(ci->str, "render:replacement-end") ==0) {
 		/* Here endeth the replacement */
 		return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
-				 ci->mark, "fg:green-40,inverse,vis-nl", 20);
+				 ci->mark, "fg:green-40,inverse,vis-nl", 220);
 	}
 	return Efallthrough;
 }
