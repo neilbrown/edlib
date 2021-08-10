@@ -880,17 +880,21 @@ DEF_CMD(xcb_refresh_post)
 		rel = pane_mapxy(ps->p, ci->home, 0, 0, False);
 		if (rel.x != ps->x || rel.y != ps->y) {
 			/* Moved, so refresh all.
-			 * This rectangle might be too big if it is clipped
+			 * This rectangle might be too big if it is clipped,
+			 * but that doesn't really matter.
 			 */
 			cairo_rectangle_int_t r = {
-				.x = rel.x,
-				.y = rel.y,
+				.x = ps->x
+				.y = ps->y,
 				.width = ps->w,
 				.height = ps->h,
 			};
 			cairo_region_union_rectangle(xd->need_update, &r);
 			ps->x = rel.x;
 			ps->y = rel.y;
+			r.x = ps->x;
+			r.y = ps->y;
+			cairo_region_union_rectangle(xd->need_update, &r);
 		} else if (ps->need_update) {
 			cairo_region_translate(ps->need_update, rel.x, rel.y);
 			cairo_region_union(xd->need_update, ps->need_update);
