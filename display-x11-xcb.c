@@ -169,6 +169,7 @@ struct xcb_data {
 	PangoFontDescription	*fd safe;
 	char			*noclose;
 	int			charwidth, lineheight;
+	cairo_region_t		*need_update;
 
 	bool			motion_blocked;
 	bool			in_focus;
@@ -185,11 +186,13 @@ struct xcb_data {
 	struct panes {
 		struct panes	*next;
 		struct pane	*p safe;
+		int		x,y;
 		int		w,h;
 		cairo_t		*ctx;
 		struct rgb	bg;
 		xcb_pixmap_t	draw;
 		cairo_surface_t	*surface;
+		cairo_region_t	*need_update;
 	} *panes;
 };
 
@@ -462,7 +465,9 @@ DEF_CMD(xcb_close)
 	struct xcb_data *xd = ci->home->data;
 	xcb_destroy_window(xd->conn, xd->win);
 	xcb_disconnect(xd->conn);
-	/* free stuff */
+	if (xd->need_update)
+		cairo_region_destroy(xd->need_update);
+	/* FIXME free stuff */
 	return 1;
 }
 
@@ -473,6 +478,7 @@ DEF_CMD(xcb_clear)
 	struct panes *src = NULL, *dest;
 	struct rgb bg;
 	int x, y;
+	cairo_rectangle_int_t r;
 
 	if (attr) {
 		parse_attrs(ci->home, attr, PANGO_SCALE, NULL, &bg, NULL, NULL);
@@ -514,6 +520,14 @@ DEF_CMD(xcb_clear)
 	} else
 		LOG("ERROR neither src or bg");
 	pane_damaged(ci->home, DAMAGED_POSTORDER);
+
+	if (!dest->need_update)
+		dest->need_update = cairo_region_create();
+	r.x = 0;
+	r.y = 0;
+	r.width = ci->focus->w;
+	r.height = ci->focus->h;
+	cairo_region_union_rectangle(dest->need_update, &r);
 	return 1;
 }
 
@@ -803,7 +817,7 @@ static struct panes *sort_split(struct panes *p)
 		 * 'end', and make 'end' point to &p->next.
 		 */
 		next = p->next;
-		if (p->p->abs_z <= next->p->abs_z)
+		if (p->p->abs_z >= next->p->abs_z)
 			continue;
 		*end = next;
 		end = &p->next;
@@ -823,12 +837,12 @@ static struct panes *sort_merge(struct panes *p1, struct panes *p2)
 		 * least, else choose largest
 		 */
 		struct panes *lo, *hi, *choice;
-		if (p1->p->abs_z <= p2->p->abs_z) {
+		if (p1->p->abs_z >= p2->p->abs_z) {
 			lo = p1; hi = p2;
 		} else {
 			lo = p2; hi = p1;
 		}
-		if (lo->p->abs_z >= lastz || hi->p->abs_z <= lastz)
+		if (lo->p->abs_z >= lastz || hi->p->abs_z >= lastz)
 			choice = lo;
 		else
 			choice = hi;
@@ -856,16 +870,46 @@ DEF_CMD(xcb_refresh_post)
 	while ((ps = sort_split(xd->panes)) != NULL)
 		xd->panes = sort_merge(xd->panes, ps);
 
-	/* Now copy all panes onto the window */
-	for (ps = xd->panes; ps; ps = ps->next) {
-		double lox, hix, loy, hiy;
-		struct xy rel, lo, hi;
+	/* Then merge all update rectanges, checking for movement */
+	if (!xd->need_update)
+		xd->need_update = cairo_region_create();
+	for (ps = xd->panes; ps ; ps = ps->next)
+	{
+		struct xy rel;
 
 		rel = pane_mapxy(ps->p, ci->home, 0, 0, False);
-		lo = pane_mapxy(ps->p, ci->home, 0, 0, True);
-		hi = pane_mapxy(ps->p, ci->home, ps->p->w, ps->p->h, True);
-		lox = lo.x; loy = lo.y;
-		hix = hi.x; hiy = hi.y;
+		if (rel.x != ps->x || rel.y != ps->y) {
+			/* Moved, so refresh all.
+			 * This rectangle might be too big if it is clipped
+			 */
+			cairo_rectangle_int_t r = {
+				.x = rel.x,
+				.y = rel.y,
+				.width = ps->w,
+				.height = ps->h,
+			};
+			cairo_region_union_rectangle(xd->need_update, &r);
+			ps->x = rel.x;
+			ps->y = rel.y;
+		} else if (ps->need_update) {
+			cairo_region_translate(ps->need_update, rel.x, rel.y);
+			cairo_region_union(xd->need_update, ps->need_update);
+		}
+		if (ps->need_update)
+			cairo_region_destroy(ps->need_update);
+		ps->need_update = NULL;
+	}
+	/* Now copy all panes onto the window where an update is needed */
+	for (ps = xd->panes; ps ; ps = ps->next) {
+		struct xy rel, lo, hi;
+		cairo_region_t *cr;
+		cairo_rectangle_int_t r;
+		int nr, i;
+
+		cr = cairo_region_copy(xd->need_update);
+
+		rel = pane_mapxy(ps->p, ci->home, 0, 0, False);
+
 		cairo_save(xd->cairo);
 		if (ps->bg.g >= 0)
 			cairo_set_source_rgb(xd->cairo,
@@ -873,10 +917,23 @@ DEF_CMD(xcb_refresh_post)
 		else
 			cairo_set_source_surface(xd->cairo, ps->surface,
 						 rel.x, rel.y);
-		cairo_rectangle(xd->cairo, lox, loy, hix-lox, hiy-loy);
-		cairo_fill(xd->cairo);
+
+		lo = pane_mapxy(ps->p, ci->home, 0, 0, True);
+		hi = pane_mapxy(ps->p, ci->home, ps->p->w, ps->p->h, True);
+		r.x = lo.x; r.y = lo.y;
+		r.width = hi.x - lo.x; r.height = hi.y - lo.y;
+		cairo_region_intersect_rectangle(cr, &r);
+		cairo_region_subtract_rectangle(xd->need_update, &r);
+		nr = cairo_region_num_rectangles(cr);
+		for (i = 0; i < nr; i++) {
+			cairo_region_get_rectangle(cr, i, &r);
+			cairo_rectangle(xd->cairo, r.x, r.y, r.width, r.height);
+			cairo_fill(xd->cairo);
+		}
 		cairo_restore(xd->cairo);
 	}
+	cairo_region_destroy(xd->need_update);
+	xd->need_update = NULL;
 	time_stop(TIME_WINDOW);
 	xcb_flush(xd->conn);
 	return 1;
@@ -888,10 +945,22 @@ DEF_CMD(xcb_pane_close)
 	struct panes **pp, *ps;
 
 	for (pp = &xd->panes; (ps = *pp) != NULL; pp = &(*pp)->next) {
+		cairo_rectangle_int_t r;
 		if (ps->p != ci->focus)
 			continue;
+
+		if (!xd->need_update)
+			xd->need_update = cairo_region_create();
+		r.x = ps->x;
+		r.y = ps->y;
+		r.width = ps->w;
+		r.height = ps->h;
+		cairo_region_union_rectangle(xd->need_update, &r);
+
 		*pp = ps->next;
 		ps->next = NULL;
+		if (ps->need_update)
+			cairo_region_destroy(ps->need_update);
 		cairo_destroy(ps->ctx);
 		cairo_surface_destroy(ps->surface);
 		xcb_free_pixmap(xd->conn, ps->draw);
@@ -1296,6 +1365,24 @@ static void handle_configure(struct pane *home safe,
 	cairo_xcb_surface_set_size(xd->surface, cne->width, cne->height);
 }
 
+static void handle_expose(struct pane *home safe,
+			  xcb_expose_event_t *ee safe)
+{
+	struct xcb_data *xd = home->data;
+	cairo_rectangle_int_t r = {
+		.x = ee->x,
+		.y = ee->y,
+		.width = ee->width,
+		.height = ee->height,
+	};
+
+	if (!xd->need_update)
+		xd->need_update = cairo_region_create();
+	cairo_region_union_rectangle(xd->need_update, &r);
+	if (ee->count == 0)
+		pane_damaged(home, DAMAGED_POSTORDER);
+}
+
 DEF_CMD(xcb_input)
 {
 	struct xcb_data *xd = ci->home->data;
@@ -1335,7 +1422,9 @@ DEF_CMD(xcb_input)
 			time_stop(TIME_WINDOW);
 			break;
 		case XCB_EXPOSE:
-			pane_damaged(ci->home, DAMAGED_POSTORDER);
+			time_start(TIME_WINDOW);
+			handle_expose(ci->home, (void*)ev);
+			time_stop(TIME_WINDOW);
 			break;
 		case XCB_CONFIGURE_NOTIFY:
 			time_start(TIME_WINDOW);

@@ -320,24 +320,25 @@ Module features
 
 ### display-x11-xcb
 
+- [ ] Add test option, fetching image back from server after 'post'
 - [X] don't create server-side pixmap for uniform-colour panes.
        delay creation until image or text is drawn
-- [1] find way to sort pane so over-lap detection is easier
-- [1] track a rectangle that needs refresh and clip all refresh
+- [X] find way to sort pane so over-lap detection is easier
+- [X] track a rectangle that needs refresh and clip all refresh
       to that
-- [1] before drawing, clip pane against anything that overlaps.  Track an
+- [X] before drawing, clip pane against anything that overlaps.  Track an
       internal rectangle which is hidden and external rectangle which is
       visible.
 - [X] C-_ isn't recognized
 - [X] clip backing-image size against parents so it gets redrawn when no-longer
       clipped
 - [X] window doesn't redraw immediately after full-screen
-- [ ] always do SOURCE drawing to  server-side pixmaps.  So keep a client-side
+- [X] NONEED always do SOURCE drawing to  server-side pixmaps.  So keep a client-side
       pixmap for assembling image
 - [ ] set window name and woth _NET_WM things
 - [ ] would GraphicsMagick be better than ImageMagick?
 - [X] When email with images scolls, the images aren't cleared first.
-- [ ] is connection-close handled properly?
+- [ ] is connection-close handled properly?- I don't free stuff!
 - [ ] share connections among multiple windows
 - [X] always poll for input before waiting on fd.  Need new "event:poll".
 - [ ] Check that cursor is always removed when focus changes.  Sometimes
@@ -695,6 +696,7 @@ Module features
 
 ### test suite
 
+- [ ] add test infrastructure to display-x11
 - [ ] tests for double-click and drag.
 - [ ] test for recent search improvements
 - [ ] Add mechanism to easily run a command with pre-canned output.
