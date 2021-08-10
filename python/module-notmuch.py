@@ -1898,7 +1898,10 @@ class notmuch_master_view(edlib.Pane):
         direction = 1 if key[-1] in "na" else -1
         if op:
             # secondary window exists so move, otherwise just select
-            p.call("Move-Line", direction)
+            try:
+                p.call("Move-Line", direction)
+            except edlib.commandfailed:
+                pass
 
         m = p.call("doc:dup-point", 0, edlib.MARK_UNGROUPED, ret='mark')
         p.call("notmuch:select", m, direction)
@@ -2669,7 +2672,7 @@ class notmuch_query_view(edlib.Pane):
                 if mid == self.selmsg:
                     comm2("cb", focus, "bg:magenta+60", mark, attr)
                 elif self.whole_thread:
-                    # only delete background for matched messages
+                    # only set background for matched messages
                     mt = self.call("doc:get-attr", mark, "matched", ret='str')
                     if mt and mt == "True":
                         comm2("cb", focus, "bg:yellow+60", mark, attr)
