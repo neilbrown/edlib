@@ -22,7 +22,7 @@ struct rf_data {
 	unsigned short alloc_fields;
 	struct rf_field {
 		/* 'field' can end at most one attribute, start at most one,
-		 * can contain one text source, wither var or literal.
+		 * can contain one text source, either var or literal.
 		 */
 		const char *val safe;	/* pointer into 'format' */
 		const char *attr;	/* pointer into 'format', or NULL */
@@ -42,7 +42,7 @@ struct rf_data {
 
 static inline short FIELD_NUM(int i) { return i >> 16; }
 static inline short FIELD_OFFSET(int i) { return i & 0xFFFF; }
-static inline int MAKE_INDEX(short f, short i) { return (int)f << 16 | i;}
+static inline unsigned int MAKE_INDEX(short f, short i) { return (int)f << 16 | i;}
 
 static char *do_format(struct pane *focus safe,
 		       struct mark *m safe, struct mark *pm,
@@ -457,13 +457,25 @@ static int normalize(struct pane *home safe, struct pane *focus safe,
 	return MAKE_INDEX(f, o);
 }
 
-static void update_offset(struct mark *m safe, unsigned int o)
+static void update_offset(struct mark *m safe, struct rf_data *rd safe,
+			  unsigned int o)
 {
 	struct mark *m2 = m;
 	struct mark *target = m;
+	int f;
 
+	/* If o is the first visible field, it needs to be 0 */
+	if (o) {
+		for (f = 0; f < rd->nfields; f++)
+			if (rd->fields[f].var ||
+			    rd->fields[f].val_len)
+				break;
+		if (o <= MAKE_INDEX(f, 0))
+			o = 0;
+	}
 	if (m->ref.i == o)
 		return;
+
 	if (o > m->ref.i) {
 		while (m2 && m2->ref.p == m->ref.p && m2->ref.i <= o) {
 			target = m2;
@@ -486,19 +498,20 @@ static void prev_line(struct pane *home safe, struct mark *m safe)
 	/* Move m to end of previous line, just before the newline */
 	if (doc_prev(home->parent, m) == WEOF) {
 		/* At the start already */
-		update_offset(m, 0);
+		update_offset(m, rd, 0);
 		return;
 	}
-	update_offset(m, MAKE_INDEX(rd->nfields, 0));
+	update_offset(m, rd, MAKE_INDEX(rd->nfields, 0));
 	mark_step(m, 0);
 }
 
 static void next_line(struct pane *home safe, struct pane *focus safe,
 		      struct mark *m safe)
 {
+	struct rf_data *rd = home->data;
+
 	doc_next(home->parent, m);
-	update_offset(m, MAKE_INDEX(0, 0));
-	update_offset(m, normalize(home, focus, m, 0));
+	update_offset(m, rd, MAKE_INDEX(0, 0));
 	mark_step(m, 1);
 }
 
@@ -554,10 +567,10 @@ static int format_step(struct pane *home safe, struct pane *focus safe,
 			next_line(home, focus, m);
 			return CHAR_RET('\n');
 		}
-		update_offset(m, index);
+		update_offset(m, rd, index);
 	} else if (move && !forward) {
 		mark_step(m, forward);
-		update_offset(m, index);
+		update_offset(m, rd, index);
 	}
 
 	if (!rf->var) {
@@ -689,7 +702,7 @@ DEF_CMD(format_content2)
 			nxt = '\n';
 			continue;
 		}
-		update_offset(m, index);
+		update_offset(m, rd, index);
 
 		if (!rf->var) {
 			const char *vend = rf->val + rf->val_len;
@@ -707,7 +720,7 @@ DEF_CMD(format_content2)
 							      prev, m) <= 0)
 							break;
 						mark_step(m, 1);
-						update_offset(m, MAKE_INDEX(f, i+1));
+						update_offset(m, rd, MAKE_INDEX(f, i+1));
 					}
 					prev = nxt;
 				}
@@ -754,7 +767,7 @@ DEF_CMD(format_content2)
 						      prev, m) <= 0)
 						break;
 					mark_step(m, 1);
-					update_offset(m, MAKE_INDEX(f, i+1));
+					update_offset(m, rd, MAKE_INDEX(f, i+1));
 				}
 				prev = nxt;
 			}
@@ -775,6 +788,7 @@ DEF_CMD(format_attr)
 	struct mark *m = ci->mark;
 	int previ;
 	int f0, f;
+	int idx;
 	bool need_attr = False;
 
 	if (!m || !ci->str)
@@ -786,7 +800,11 @@ DEF_CMD(format_attr)
 	if (ci->num2 && strncmp(ci->str, "render:format", strlen(ci->str)) != 0)
 		return Efallthrough;
 
-	if (FIELD_OFFSET(m->ref.i) > 0)
+	idx = m->ref.i;
+	/* idx of 0 is special and may not be normalized */
+	if (idx == 0)
+		idx = normalize(ci->home, ci->focus, m, 0);
+	if (FIELD_OFFSET(idx) > 0)
 		/* attribute changes only happen at start of a field */
 		return 1;
 
@@ -799,9 +817,9 @@ DEF_CMD(format_attr)
 		f0 = 0;
 	else
 		f0 = FIELD_NUM(previ)+1;
-	for(f = f0; f <= FIELD_NUM(m->ref.i); f++) {
+	for(f = f0; f <= FIELD_NUM(idx); f++) {
 		if (f < rd->nfields) {
-			if (rd->fields[f].attr_end > FIELD_NUM(m->ref.i) ||
+			if (rd->fields[f].attr_end > FIELD_NUM(idx) ||
 			    rd->fields[f].attr_start < f0)
 				need_attr = True;
 		}
@@ -820,7 +838,7 @@ DEF_CMD(format_map)
 {
 	struct rf_data *rd = ci->home->data;
 	struct mark *m = ci->mark;
-	int previ;
+	int idx, previ;
 	int f0, f;
 
 	if (!m || !ci->str)
@@ -829,10 +847,13 @@ DEF_CMD(format_map)
 		return Efallthrough;
 	if (m->ref.p == NULL)
 		return Efallthrough;
-	if (FIELD_OFFSET(m->ref.i) > 0)
+	idx = m->ref.i;
+	if (idx == 0)
+		idx = normalize(ci->home, ci->focus, m, 0);
+	if (FIELD_OFFSET(idx) > 0)
 		/* attribute changes only happen at start of a field */
 		return 1;
-	f = FIELD_NUM(m->ref.i);
+	f = FIELD_NUM(idx);
 
 	/* There may be several previous fields that are empty.
 	 * We need to consider the possibility that any of those
@@ -843,7 +864,7 @@ DEF_CMD(format_map)
 		f0 = 0;
 	else
 		f0 = FIELD_NUM(previ)+1;
-	for(f = f0; f <= FIELD_NUM(m->ref.i); f++) {
+	for(f = f0; f <= FIELD_NUM(idx); f++) {
 		if (f >= rd->nfields)
 			continue;
 		/* Each depth gets a priority level from 0 up.
@@ -856,7 +877,7 @@ DEF_CMD(format_map)
 			comm_call(ci->comm2, "", ci->focus, -1, m,
 				  NULL, st->attr_depth);
 		}
-		if (rd->fields[f].attr_end > FIELD_NUM(m->ref.i)) {
+		if (rd->fields[f].attr_end > FIELD_NUM(idx)) {
 			struct rf_field *st = &rd->fields[f];
 			const char *attr = st->attr;
 			if (attr && attr[0] == '%')
@@ -870,6 +891,7 @@ DEF_CMD(format_map)
 
 DEF_CMD(render_line_prev2)
 {
+	struct rf_data *rd = ci->home->data;
 	struct mark *m = ci->mark;
 	struct mark *m2, *mn;
 
@@ -886,7 +908,7 @@ DEF_CMD(render_line_prev2)
 	       mn->ref.i > 0)
 		m2 = mn;
 	mark_to_mark(m, m2);
-	update_offset(m, 0);
+	update_offset(m, rd, 0);
 
 	return 1;
 }

@@ -191,7 +191,7 @@ Module features
 
 ### render-format
 
-- [1] fix start-line-ref problem
+- [X] fix start-line-ref problem
 - [ ] improve caching of attributes
 - [ ] profile performance to find opporunities for optimisation.
 - [ ] ensure doc_refs can be stable.  '0' must always be valid.
