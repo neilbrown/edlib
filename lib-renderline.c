@@ -312,6 +312,15 @@ static void update_line_height_attr(struct pane *p safe,
 		*w += cr.x;
 }
 
+static void strip_ctrl(char *s safe)
+{
+	while (*s) {
+		if (*s < ' ' || ((unsigned)*s >= 128 && (unsigned)*s < 128+' '))
+			*s = 'M';
+		s += 1;
+	}
+}
+
 static void update_line_height(struct pane *p safe, struct pane *focus safe,
 			       int *h safe, int *a safe,
 			       int *w safe, int *center, const char *line safe,
@@ -341,6 +350,7 @@ static void update_line_height(struct pane *p safe, struct pane *focus safe,
 
 		if (line - 1 > segstart) {
 			char *l = strndup(segstart, line - 1 - segstart);
+			strip_ctrl(l);
 			update_line_height_attr(p, focus, h, a, w,
 						buf_final(&attr), l, scale);
 			free(l);
@@ -385,6 +395,7 @@ static void update_line_height(struct pane *p safe, struct pane *focus safe,
 		line -= 1;
 	if (line > segstart || !attr_found) {
 		char *l = strndup(segstart, line - segstart);
+		strip_ctrl(l);
 		update_line_height_attr(p, focus, h, a, w,
 					buf_final(&attr), l, scale);
 		free(l);

@@ -348,7 +348,7 @@ Module features
 
 - [X] improve 'margin' to permit cursor in margin at start of file
 - [X] improve 'margin' to honour previous view of doc
-- [ ] update_line_height should handle TAB (and any control) - cannot expect
+- [X] update_line_height should handle TAB (and any control) - cannot expect
       Draw:text-size to handle it.
 - [X] Give lib-renderline a Refresh:view which calls something in the render-line
       pane which does call_render_line().  Use pane_damaged() to mark panes as invalid
