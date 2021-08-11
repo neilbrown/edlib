@@ -690,6 +690,8 @@ DEF_CMD(xcbc_input)
 		free(ev);
 	}
 	xcb_flush(xci->conn);
+	if (xcb_connection_has_error(xci->conn))
+		pane_close(ci->home);
 	return 1;
 }
 
@@ -936,7 +938,7 @@ static struct command *xcb_register(struct pane *p safe, char *display safe)
 	int i;
 
 	conn = xcb_connect(display, &screen);
-	if (!conn)
+	if (!conn || xcb_connection_has_error(conn))
 		return NULL;
 
 	alloc(xci, pane);
