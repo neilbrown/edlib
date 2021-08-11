@@ -338,7 +338,7 @@ Module features
 - [X] set window name and other _NET_WM things
 - [ ] would GraphicsMagick be better than ImageMagick?
 - [X] When email with images scolls, the images aren't cleared first.
-- [ ] is connection-close handled properly?- I don't free stuff!
+- [X] is connection-close handled properly?- I don't free stuff!
 - [ ] share connections among multiple windows
 - [X] always poll for input before waiting on fd.  Need new "event:poll".
 - [ ] Check that cursor is always removed when focus changes.  Sometimes

@@ -477,14 +477,38 @@ DEF_CMD(xcb_fullscreen)
 	return 1;
 }
 
+static void panes_free(struct xcb_data *xd safe)
+{
+	while (xd->panes) {
+		struct panes *ps = xd->panes;
+		xd->panes = ps->next;
+		if (ps->ctx)
+			cairo_destroy(ps->ctx);
+		if (ps->surface)
+			cairo_surface_destroy(ps->surface);
+		if (ps->draw)
+			xcb_free_pixmap(xd->conn, ps->draw);
+		free(ps);
+	}
+}
+
+static void kbd_free(struct xcb_data *xd safe);
+
 DEF_CMD(xcb_close)
 {
 	struct xcb_data *xd = ci->home->data;
 	xcb_destroy_window(xd->conn, xd->win);
+
+	kbd_free(xd);
+	pango_font_description_free(xd->fd);
+	panes_free(xd);
+	cairo_destroy(xd->cairo);
+	cairo_surface_destroy(xd->surface);
+	free(xd->display);
+	free(xd->noclose);
 	xcb_disconnect(xd->conn);
 	if (xd->need_update)
 		cairo_region_destroy(xd->need_update);
-	/* FIXME free stuff */
 	return 1;
 }
 
@@ -1496,6 +1520,8 @@ DEF_CMD(xcb_input)
 		}
 		xcb_flush(xd->conn);
 	}
+	if (xcb_connection_has_error(xd->conn))
+		pane_close(ci->home);
 	return ret;
 }
 
@@ -1560,8 +1586,8 @@ static struct pane *xcb_display_init(const char *d safe, struct pane *focus safe
 	// FIXME SCALE from environ?? or pango_cairo_context_set_resolution dpi
 	// 254 * width_in_pixels / width_in_millimeters / 10
 
-	conn = xcb_connect(d, &screen);
-	if (!conn)
+	conn = safe_cast xcb_connect(d, &screen);
+	if (xcb_connection_has_error(conn))
 		return NULL;
 
 	alloc(xd, pane);
@@ -1621,8 +1647,8 @@ static struct pane *xcb_display_init(const char *d safe, struct pane *focus safe
 	if (!surface)
 		goto abort;
 	xd->surface = surface;
-	cairo = cairo_create(xd->surface);
-	if (!cairo)
+	cairo = safe_cast cairo_create(xd->surface);
+	if (cairo_status(cairo) != CAIRO_STATUS_SUCCESS)
 		goto abort;
 	xd->cairo = cairo;
 	fd = pango_font_description_new();
@@ -1699,7 +1725,7 @@ abort:
 	cairo_destroy(xd->cairo);
 	cairo_surface_destroy(xd->surface);
 	xcb_disconnect(conn);
-	// FIXME free stuff;
+	free(xd->display);
 	unalloc(xd, pane);
 	return NULL;
 }
