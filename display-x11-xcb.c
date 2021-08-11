@@ -1034,6 +1034,10 @@ static void handle_motion(struct pane *home safe,
 		   3, NULL, NULL, x, y);
 	if (ret <= 0)
 		xd->motion_blocked = True;
+
+	/* This doesn't seem to be needed, but the spec says
+	 * I should do this when using POINTER_MOTION_HINT
+	 */
 	c = xcb_query_pointer(xd->conn, xd->win);
 	qpr = xcb_query_pointer_reply(xd->conn, c, NULL);
 	free(qpr);
@@ -1597,8 +1601,8 @@ static struct pane *xcb_display_init(const char *d safe, struct pane *focus safe
 		     XCB_EVENT_MASK_FOCUS_CHANGE |
 		     XCB_EVENT_MASK_STRUCTURE_NOTIFY |
 		     XCB_EVENT_MASK_EXPOSURE |
-		     XCB_EVENT_MASK_POINTER_MOTION |
-		     // FIXME XCB_EVENT_MASK_POINTER_MOTION_HINT |
+		     XCB_EVENT_MASK_BUTTON_MOTION |
+		     XCB_EVENT_MASK_POINTER_MOTION_HINT |
 		     0);
 
 	xcb_create_window(conn, XCB_COPY_FROM_PARENT, xd->win,
@@ -1666,6 +1670,17 @@ static struct pane *xcb_display_init(const char *d safe, struct pane *focus safe
 	gethostname(hostname, sizeof(hostname));
 	set_str_prop(xd, a_WM_CLIENT_MACHINE, hostname);
 	set_atom_prop(xd, a_WM_PROTOCOLS, a_WM_DELETE_WINDOW, a_NET_WM_PING, 0);
+
+	/* Configure passive grabs */
+	xcb_grab_button(xd->conn, 0, xd->win,
+			XCB_EVENT_MASK_BUTTON_PRESS |
+			XCB_EVENT_MASK_BUTTON_RELEASE |
+			XCB_EVENT_MASK_BUTTON_MOTION,
+			XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,
+			XCB_WINDOW_NONE, XCB_CURSOR_NONE,
+			XCB_BUTTON_INDEX_ANY,
+			XCB_MOD_MASK_ANY);
+
 	xcb_map_window(conn, xd->win);
 	xcb_flush(conn);
 	p = pane_register(pane_root(focus), 1, &xcb_handle.c, xd);
