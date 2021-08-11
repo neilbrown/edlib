@@ -335,7 +335,7 @@ Module features
 - [X] window doesn't redraw immediately after full-screen
 - [X] NONEED always do SOURCE drawing to  server-side pixmaps.  So keep a client-side
       pixmap for assembling image
-- [ ] set window name and woth _NET_WM things
+- [X] set window name and other _NET_WM things
 - [ ] would GraphicsMagick be better than ImageMagick?
 - [X] When email with images scolls, the images aren't cleared first.
 - [ ] is connection-close handled properly?- I don't free stuff!

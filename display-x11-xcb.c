@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <xcb/xcb.h>
+#include <stdarg.h>
 #ifndef __CHECKER__
 #include <xcb/xkb.h>
 #else
@@ -141,12 +142,29 @@ void pango_layout_index_to_pos(PangoLayout*, int, PangoRectangle*);
 #include "core.h"
 
 enum my_atoms {
+	a_NONE = 0,
 	a_WM_STATE, a_STATE_FULLSCREEN,
+	a_WM_NAME, a_NET_WM_NAME,
+	a_WM_ICON_NAME, a_NET_WM_ICON_NAME,
+	a_WM_PROTOCOLS, a_WM_DELETE_WINDOW,
+	a_NET_WM_PING,
+	a_WM_CLIENT_MACHINE,
+	a_UTF8_STRING,
 	NR_ATOMS
 };
 static char *atom_names[NR_ATOMS] = {
+	[a_NONE]		= "NONE",
 	[a_WM_STATE]		= "_NET_WM_STATE",
 	[a_STATE_FULLSCREEN]	= "_NET_WM_STATE_FULLSCREEN",
+	[a_WM_NAME]		= "WM_NAME",
+	[a_NET_WM_NAME]		= "_NET_WM_NAME",
+	[a_WM_ICON_NAME]	= "WM_ICON_NAME",
+	[a_NET_WM_ICON_NAME]	= "_NET_WM_ICON_NAME",
+	[a_WM_PROTOCOLS]	= "WM_PROTOCOLS",
+	[a_WM_DELETE_WINDOW]	= "WM_DELETE_WINDOW",
+	[a_NET_WM_PING]		= "_NET_WM_PING",
+	[a_WM_CLIENT_MACHINE]	= "WM_CLIENT_MACHINE",
+	[a_UTF8_STRING]		= "UTF8_STRING",
 };
 
 struct rgb {
@@ -1374,6 +1392,36 @@ static void handle_expose(struct pane *home safe,
 		pane_damaged(home, DAMAGED_POSTORDER);
 }
 
+static void handle_client_message(struct pane *home safe,
+				  xcb_client_message_event_t *cme safe)
+{
+	struct xcb_data *xd = home->data;
+
+	if (cme->type == xd->atoms[a_WM_PROTOCOLS] &&
+	    cme->format == 32 &&
+	    cme->window == xd->win &&
+	    cme->data.data32[0] == xd->atoms[a_WM_DELETE_WINDOW]) {
+		pane_call(home, "Display:close", pane_leaf(home));
+		return;
+	}
+
+	if (cme->type == xd->atoms[a_WM_PROTOCOLS] &&
+	    cme->format == 32 &&
+	    cme->window == xd->win &&
+	    cme->data.data32[0] == xd->atoms[a_NET_WM_PING]) {
+		cme->window = xd->screen->root;
+		xcb_send_event(xd->conn, 0, xd->screen->root,
+			       XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
+			       XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT,
+			       (void*)cme);
+		return;
+	}
+	LOG("x11 %s got unexpected client message type=%d/%d win=%x data=%d",
+	    xd->display,
+	    cme->type, cme->format, cme->window, cme->data.data32[0]);
+
+}
+
 DEF_CMD(xcb_input)
 {
 	struct xcb_data *xd = ci->home->data;
@@ -1422,6 +1470,11 @@ DEF_CMD(xcb_input)
 			handle_configure(ci->home, (void*)ev);
 			time_stop(TIME_WINDOW);
 			break;
+		case XCB_CLIENT_MESSAGE:
+			time_start(TIME_WINDOW);
+			handle_client_message(ci->home, (void*)ev);
+			time_stop(TIME_WINDOW);
+			break;
 		case XCB_REPARENT_NOTIFY:
 			/* Not interested */
 			break;
@@ -1442,6 +1495,46 @@ DEF_CMD(xcb_input)
 	return ret;
 }
 
+static void set_str_prop(struct xcb_data *xd safe,
+			 enum my_atoms a, const char *str safe)
+{
+	xcb_change_property(xd->conn,
+			    XCB_PROP_MODE_REPLACE,
+			    xd->win, xd->atoms[a], XCB_ATOM_STRING,
+			    8, strlen(str), str);
+}
+
+static void set_utf8_prop(struct xcb_data *xd safe,
+			 enum my_atoms a, const char *str safe)
+{
+	xcb_change_property(xd->conn,
+			    XCB_PROP_MODE_REPLACE,
+			    xd->win, xd->atoms[a],
+			    xd->atoms[a_UTF8_STRING],
+			    8, strlen(str), str);
+}
+
+static void set_atom_prop(struct xcb_data *xd safe,
+			  enum my_atoms prop, enum my_atoms alist, ...)
+{
+	uint32_t atoms[16];
+	int anum = 0;
+	va_list ap;
+	enum my_atoms a;
+
+	atoms[anum++] = xd->atoms[alist];
+	va_start(ap, alist);
+	while ((a = va_arg(ap, enum my_atoms)) != a_NONE)
+		if (anum < 16)
+			atoms[anum++] = xd->atoms[a];
+	va_end(ap);
+	xcb_change_property(xd->conn,
+			    XCB_PROP_MODE_REPLACE,
+			    xd->win, xd->atoms[prop],
+			    XCB_ATOM_ATOM,
+			    32, anum, atoms);
+}
+
 static struct pane *xcb_display_init(const char *d safe, struct pane *focus safe)
 {
 	struct xcb_data *xd;
@@ -1451,6 +1544,7 @@ static struct pane *xcb_display_init(const char *d safe, struct pane *focus safe
 	xcb_screen_iterator_t iter;
 	xcb_depth_iterator_t di;
 	char scale[20];
+	char hostname[128];
 	uint32_t valwin[2];
 	int screen = 0;
 	int i;
@@ -1560,11 +1654,18 @@ static struct pane *xcb_display_init(const char *d safe, struct pane *focus safe
 	}
 
 	/* FIXME set:
-	 * WM_NAME
-	 * WM_PROTOCOLS WM_DELETE_WINDOW WM_TAKE_FOCUS _NET_WM_PING  _NET_WM_SYN_REQUEST??
+	 *
+	 * WM_PROTOCOLS _NET_WM_SYN_REQUEST??
 	 * WM_NORMAL_HINTS WM_HINTS
 	 * WM_CLIENT_MACHINE
 	 */
+	set_str_prop(xd, a_WM_NAME, "EdLib");
+	set_utf8_prop(xd, a_NET_WM_NAME, "EdLib");
+	set_str_prop(xd, a_WM_ICON_NAME, "EdLib");
+	set_utf8_prop(xd, a_NET_WM_ICON_NAME, "EdLib");
+	gethostname(hostname, sizeof(hostname));
+	set_str_prop(xd, a_WM_CLIENT_MACHINE, hostname);
+	set_atom_prop(xd, a_WM_PROTOCOLS, a_WM_DELETE_WINDOW, a_NET_WM_PING, 0);
 	xcb_map_window(conn, xd->win);
 	xcb_flush(conn);
 	p = pane_register(pane_root(focus), 1, &xcb_handle.c, xd);
