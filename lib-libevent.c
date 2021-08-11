@@ -225,7 +225,6 @@ DEF_CB(libevent_run)
 	struct event_base *b = ei->base;
 	int dont_block = ei->dont_block;
 	struct evt *ev;
-	struct list_head *tmp;
 
 	ei->dont_block = 0;
 
@@ -239,7 +238,7 @@ DEF_CB(libevent_run)
 	}
 
 	/* First run any 'poll' events */
-	list_for_each_entry_safe(ev, tmp, &ei->event_list, lst)
+	list_for_each_entry(ev, &ei->event_list, lst)
 		if (ev->fd == POLL_FD) {
 			ev->active = 1;
 			if (comm_call(ev->comm, "callback:poll", ev->home,
@@ -249,8 +248,12 @@ DEF_CB(libevent_run)
 				list_del(&ev->lst);
 				command_put(ev->comm);
 				free(ev);
+				break;
 			} else
 				ev->active = 0;
+			if (dont_block)
+				/* Other things might have been removed from list */
+				break;
 		}
 
 	/* Disable any alarm set by python (or other interpreter) */
