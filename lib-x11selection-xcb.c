@@ -472,7 +472,7 @@ static void handle_selection_request(struct xcbc_info *xci safe,
 	// FIXME
 	// convert to iso-8859-15 for COMPOUND_TEXT and may for
 	// TEXT
-	LOG("sel request %d", sre->target);
+	//LOG("sel request %d", sre->target);
 
 	sne.response_type = XCB_SELECTION_NOTIFY;
 	sne.time = sre->time;
@@ -490,10 +490,9 @@ static void handle_selection_request(struct xcbc_info *xci safe,
 	if (sre->selection == xci->atoms[a_CLIPBOARD])
 		when = xci->have_clipboard;
 
-	if (when == XCB_CURRENT_TIME ||
-	    (sre->time != XCB_CURRENT_TIME &&
-	     sre->time < when)) {
-		LOG("request for selection not held %d %d %d",
+	if (when == XCB_CURRENT_TIME) {
+		/* I want to require sre->time >= when, but sometimes it isn't. */
+		LOG("x11selection-xcb request for selection not held %d %d %d",
 		    sre->selection, when, sre->time);
 		sne.property = XCB_ATOM_NONE;
 	} else if (a >= NR_TARGETS) {
@@ -501,7 +500,7 @@ static void handle_selection_request(struct xcbc_info *xci safe,
 		sne.property = XCB_ATOM_NONE;
 	} else if (a >= a_TEXT) {
 		char *content = NULL;
-		LOG("Request for text");
+		// LOG("Request for text");
 		if ((sre->selection == xci->atoms[a_PRIMARY] &&
 		     xci->have_primary) ||
 		    (sre->selection == xci->atoms[a_CLIPBOARD] &&
@@ -509,14 +508,14 @@ static void handle_selection_request(struct xcbc_info *xci safe,
 			pane_notify("Notify:xcb-commit", xci->p);
 			content = call_ret(str, "copy:get", xci->p);
 		}
-		LOG("...returning content: %s", content);
+		// LOG("...returning content: %s", content);
 		if (content)
 			store_content(xci, sre->requestor, sre->property,
 				      sre->target, content);
 		else
 			sne.property = XCB_ATOM_NONE;
 	} else if (a == a_TIMESTAMP) {
-		LOG("Sending timestamp");
+		// LOG("Sending timestamp");
 		/* If there is a new selection, this will reclaim and update
 		 * timestamp.
 		 */
@@ -526,7 +525,7 @@ static void handle_selection_request(struct xcbc_info *xci safe,
 				    sre->property, XCB_ATOM_INTEGER, 32,
 				    1, &when);
 	} else if (a == a_TARGETS) {
-		LOG("Sending targets to %d", sre->requestor);
+		// LOG("Sending targets to %d", sre->requestor);
 		xcb_change_property(xci->conn,
 				    XCB_PROP_MODE_REPLACE, sre->requestor,
 				    sre->property, XCB_ATOM_ATOM, 32,
@@ -631,7 +630,7 @@ static xcb_generic_event_t *wait_for(struct xcbc_info *xci safe,
 	while ((ev = xcb_wait_for_event_timeo(xci->conn, 500)) != NULL) {
 		if ((ev->response_type & 0x7f) == type)
 			return ev;
-		LOG("Got %x wanted %x", ev->response_type & 0x7f, type);
+		// LOG("Got %x wanted %x", ev->response_type & 0x7f, type);
 		if (!xci->head)
 			xci->tail = &xci->head;
 		alloc(evl, pane);
@@ -990,7 +989,7 @@ static struct command *xcb_register(struct pane *p safe, char *display safe)
 	xci->p = p2;
 	call_comm("event:read", p2, &xcbc_input, xcb_get_file_descriptor(conn));
 	call_comm("event:poll", p2, &xcbc_input);
-	LOG("registered xcb %d %d", xcb_get_file_descriptor(conn), xci->win);
+	// LOG("registered xcb %d %d", xcb_get_file_descriptor(conn), xci->win);
 	return &xci->c;
 abort:
 	xcb_disconnect(conn);
