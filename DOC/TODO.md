@@ -168,7 +168,7 @@ Module features
 - [X] Need to append large selection a bit at a time(?)
 - [ ] if too big, or alloc error, switch to INCR more for sending
 - [ ] support INCR mode for receiving
-- [ ] detect error state and avoid doing anything silly.  Maybe try
+- [X] detect error state and avoid doing anything silly.  Maybe try
       to reconnect occasionally.
       Actually, reconnect is probably pointless.  Instead, delete the
       command and reject all requests until things get freed.  Most

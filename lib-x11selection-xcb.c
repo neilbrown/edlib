@@ -639,7 +639,6 @@ static xcb_generic_event_t *wait_for(struct xcbc_info *xci safe,
 		evl->next = NULL;
 		*xci->tail = evl;
 		xci->tail = &evl->next;
-		/* FIXME make sure xcbc_input gets called when idle */
 	}
 	return NULL;
 }
@@ -663,6 +662,11 @@ DEF_CMD(xcbc_input)
 {
 	struct xcbc_info *xci = ci->home->data;
 	xcb_generic_event_t *ev;
+	int ret = 1;
+
+	if (ci->num < 0)
+		/* This is a poll - only return 1 on something happening */
+		ret = Efalse;
 
 	while((ev = next_event(xci)) != NULL) {
 		switch (ev->response_type & 0x7f) {
@@ -692,7 +696,7 @@ DEF_CMD(xcbc_input)
 	xcb_flush(xci->conn);
 	if (xcb_connection_has_error(xci->conn))
 		pane_close(ci->home);
-	return 1;
+	return ret;
 }
 
 static void get_timestamp(struct xcbc_info *xci safe)
@@ -985,6 +989,7 @@ static struct command *xcb_register(struct pane *p safe, char *display safe)
 		goto abort;
 	xci->p = p2;
 	call_comm("event:read", p2, &xcbc_input, xcb_get_file_descriptor(conn));
+	call_comm("event:poll", p2, &xcbc_input);
 	LOG("registered xcb %d %d", xcb_get_file_descriptor(conn), xci->win);
 	return &xci->c;
 abort:
