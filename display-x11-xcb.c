@@ -816,10 +816,10 @@ static struct panes *sort_split(struct panes *p)
 		 * 'end', and make 'end' point to &p->next.
 		 */
 		next = p->next;
-		if (p->p->abs_z >= next->p->abs_z)
-			continue;
-		*end = next;
-		end = &p->next;
+		if (p->p->abs_z < next->p->abs_z) {
+			*end = next;
+			end = &p->next;
+		}
 	}
 	*end = NULL;
 	return ret;
@@ -829,28 +829,29 @@ static struct panes *sort_merge(struct panes *p1, struct panes *p2)
 {
 	/* merge p1 and p2 and return result */
 	struct panes *ret, **end = &ret;
-	int lastz = -100;
+	struct panes *prev = NULL;
 
 	while (p1 && p2) {
-		/* if both arg large or smaller than lastz, choose
-		 * least, else choose largest
+		/* Make p1 the largest (or be added first.
+		 * Then in prev is between them add p2, else p1
 		 */
-		struct panes *lo, *hi, *choice;
-		if (p1->p->abs_z >= p2->p->abs_z) {
-			lo = p1; hi = p2;
-		} else {
-			lo = p2; hi = p1;
+		if (p1->p->abs_z < p2->p->abs_z) {
+			struct panes *t = p1;
+			p1 = p2;
+			p2 = t;
 		}
-		if (lo->p->abs_z >= lastz || hi->p->abs_z >= lastz)
-			choice = lo;
-		else
-			choice = hi;
-		*end = choice;
-		end = &choice->next;
-		if (choice == p1)
-			p1 = p1->next;
-		else
+		if (prev &&
+		    p1->p->abs_z > prev->p->abs_z &&
+		    prev->p->abs_z >= p2->p->abs_z) {
+			/* p2 is the better choice */
+			prev = p2;
 			p2 = p2->next;
+		} else {
+			prev = p1;
+			p1 = p1->next;
+		}
+		*end = prev;
+		end = &prev->next;
 	}
 	if (p1)
 		*end = p1;
