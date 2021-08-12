@@ -1697,7 +1697,7 @@ static struct pane *xcb_display_init(const char *d safe, struct pane *focus safe
 	set_str_prop(xd, a_WM_CLIENT_MACHINE, hostname);
 	set_atom_prop(xd, a_WM_PROTOCOLS, a_WM_DELETE_WINDOW, a_NET_WM_PING, 0);
 
-	/* Configure passive grabs */
+	/* Configure passive grabs - shift, lock, and control only */
 	xcb_grab_button(xd->conn, 0, xd->win,
 			XCB_EVENT_MASK_BUTTON_PRESS |
 			XCB_EVENT_MASK_BUTTON_RELEASE |
@@ -1705,7 +1705,9 @@ static struct pane *xcb_display_init(const char *d safe, struct pane *focus safe
 			XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,
 			XCB_WINDOW_NONE, XCB_CURSOR_NONE,
 			XCB_BUTTON_INDEX_ANY,
-			XCB_MOD_MASK_ANY);
+			XCB_MOD_MASK_SHIFT |
+			XCB_MOD_MASK_LOCK |
+			XCB_MOD_MASK_CONTROL);
 
 	xcb_map_window(conn, xd->win);
 	xcb_flush(conn);
