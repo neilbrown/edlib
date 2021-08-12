@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <fcntl.h>
 #include <string.h>
 #include <xcb/xcb.h>
 #include <stdarg.h>
@@ -447,8 +448,31 @@ DEF_CMD(xcb_set_noclose)
 
 DEF_CMD(xcb_external_viewer)
 {
-	//struct xcb_data *xd = ci->home->data;
-	//FIXME
+	struct xcb_data *xd = ci->home->data;
+	const char *path = ci->str;
+	int pid;
+	int fd;
+
+	if (!path)
+		return Enoarg;
+	switch (pid = fork()) {
+	case -1:
+		return Efail;
+	case 0: /* Child */
+		setenv("DISPLAY", xd->display, 1);
+		fd = open("/dev/null", O_RDWR);
+		if (fd) {
+			dup2(fd, 0);
+			dup2(fd, 1);
+			dup2(fd, 2);
+			if (fd > 2)
+				close(fd);
+		}
+		execlp("xdg-open", "xdg-open", path, NULL);
+		exit(1);
+	default: /* parent */
+		break;
+	}
 	return 1;
 }
 
