@@ -1558,10 +1558,10 @@ DEF_CMD(render_lines_notify_replace)
 		rl->target_x = -1;
 
 		/* If the replacement happened at 'point', then stop
-		 * ignoring it.
+		 * ignoring it, and handle the fact that point moved.
 		 */
 		if (ci->mark2 == pt)
-			rl->ignore_point = 0;
+			pane_call(p, "point:moving", ci->focus, 0, pt);
 	}
 
 	if (strcmp(ci->key, "view:changed") == 0)

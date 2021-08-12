@@ -341,7 +341,7 @@ Module features
 - [X] is connection-close handled properly?- I don't free stuff!
 - [ ] share connections among multiple windows
 - [X] always poll for input before waiting on fd.  Need new "event:poll".
-- [ ] Check that cursor is always removed when focus changes.  Sometimes
+- [X] Check that cursor is always removed when focus changes.  Sometimes
       it gets left behind.
 
 ### render-lines
