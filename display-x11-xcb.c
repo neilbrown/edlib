@@ -1534,6 +1534,12 @@ DEF_CMD(xcb_input)
 		case XCB_UNMAP_NOTIFY:
 			/* FIXME what to do?? */
 			break;
+		case 0:
+			/* Don't know what this means, but I get a lot
+			 * of them so I don't want to log that it was
+			 * ignored.
+			 */
+			break;
 		default:
 			if ((ev->response_type & 0x7f) ==
 			    xd->first_xkb_event) {
