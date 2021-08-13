@@ -1288,6 +1288,8 @@ static void handle_key_press(struct pane *home safe,
 	char				mods[32];
 	bool				shift=False, ctrl=False, alt=False;
 
+	xd->last_event = time(NULL);
+
 	keysym = xkb_state_key_get_one_sym(xd->xkb_state,
 					   keycode);
 	if (xd->compose_state)
@@ -1750,6 +1752,7 @@ static struct pane *xcb_display_init(const char *d safe, struct pane *focus safe
 	attr_set_str(&p->attrs, "DISPLAY", d);
 	snprintf(scale, sizeof(scale), "%dx%d", xd->charwidth, xd->lineheight);
 	attr_set_str(&p->attrs, "scale:M", scale);
+	xd->last_event = time(NULL);
 	call("editor:request:all-displays", p);
 	return p;
 abort:
