@@ -521,11 +521,18 @@ static void kbd_free(struct xcb_data *xd safe);
 DEF_CMD(xcb_close)
 {
 	struct xcb_data *xd = ci->home->data;
-	xcb_destroy_window(xd->conn, xd->win);
 
+	xcb_destroy_window(xd->conn, xd->win);
 	kbd_free(xd);
-	pango_font_description_free(xd->fd);
 	panes_free(xd);
+	return 1;
+}
+
+DEF_CMD(xcb_free)
+{
+	struct xcb_data *xd = ci->home->data;
+
+	pango_font_description_free(xd->fd);
 	cairo_destroy(xd->cairo);
 	cairo_surface_destroy(xd->surface);
 	free(xd->display);
@@ -533,6 +540,7 @@ DEF_CMD(xcb_close)
 	xcb_disconnect(xd->conn);
 	if (xd->need_update)
 		cairo_region_destroy(xd->need_update);
+	unalloc(xd, pane);
 	return 1;
 }
 
@@ -1809,7 +1817,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(xcb_map, "Display:new", &xcb_new_display);
 
 	key_add(xcb_map, "Close", &xcb_close);
-	key_add(xcb_map, "Free", &edlib_do_free);
+	key_add(xcb_map, "Free", &xcb_free);
 	key_add(xcb_map, "Draw:clear", &xcb_clear);
 	key_add(xcb_map, "Draw:text-size", &xcb_text_size);
 	key_add(xcb_map, "Draw:text", &xcb_draw_text);
