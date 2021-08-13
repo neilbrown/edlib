@@ -23,6 +23,7 @@ try:
             self.disp = None
             self.doc = None
             self.want_close = False
+            self.lineno = None
             editor.call("event:read", sock.fileno(),
                         self.read)
 
@@ -41,6 +42,13 @@ try:
                 self.close()
                 return edlib.Efalse
             else:
+                if msg[:10] == b"goto-line:":
+                    try:
+                        self.lineno = int(msg[10:])
+                    except ValueError:
+                        self.lineno = None
+                    self.sock.send(b'OK')
+                    return 1
                 if msg[:5] == b"open:":
                     path = msg[5:].decode("utf-8")
                     try:
@@ -52,10 +60,12 @@ try:
                         self.sock.send(b"FAIL")
                         return 1
                     if self.term:
-                        d.call("doc:attach-view", self.term, 1,
-                               ret='pane')
+                        p = d.call("doc:attach-view", self.term, 1, ret='pane')
                         self.term.take_focus()
                         self.sock.send(b"OK")
+                        if self.lineno != None:
+                            pt = p.call("doc:point", ret='mark')
+                            p.call("CountLines", self.lineno, pt, "goto:line")
                         return 1
                     self.display_time = 0
                     self.destpane = None
@@ -71,9 +81,12 @@ try:
                             if p2:
                                 p = p2
                         if p:
-                            d.call("doc:attach-view", p, 1, ret='pane')
+                            p3 = d.call("doc:attach-view", p, 1, ret='pane')
                             p.take_focus()
                             self.sock.send(b"OK")
+                            if self.lineno != None:
+                                pt = p3.call("doc:point", ret='mark')
+                                p3.call("CountLines", self.lineno, pt, "goto:line")
                         else:
                             self.sock.send(b"No Cannot create pane")
                     else:
@@ -189,9 +202,12 @@ except:
 if is_client:
     term = False
     file = None
+    lineno = None
     for a in sys.argv[1:]:
         if a == "-t":
             term = True
+        elif a[0] == '+':
+            lineno = a[1:]
         elif file is None:
             file = a
         else:
@@ -234,6 +250,9 @@ if is_client:
             signal.signal(signal.SIGWINCH, handle_winch)
 
     if file:
+        if lineno is not None:
+            s.send(b"goto-line:" + lineno.encode('utf-8'))
+            ret = s.recv(100)
         file = os.path.realpath(file)
         s.send(b"open:" + file.encode("utf-8"))
         ret = s.recv(100)

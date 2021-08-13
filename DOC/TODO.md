@@ -8,7 +8,7 @@ Current priorities
 - [ ] fix bugs
 - [ ] core features
 - [ ] markdown viewer and editor
-- [ ] display-xcb ??
+- [X] display-xcb ??
 - [ ] git log view with rebase and reword options
 - [ ] git-commit command which presents the patch and allows it to be
       editted (with consistency checks and number updates). On :Commit
@@ -38,7 +38,7 @@ Bugs to be fixed
 - [ ] Num-C-l doesn't work if it would require part of a wrapped line
       off top of screen
 - [ ] initial draw of a pane sometime stops halfway down the pane - particularly email.
-- [ ] x11selection doesn't work properly on second ncurses display
+- [X] x11selection doesn't work properly on second ncurses display
       except when it does...
 - [ ] teach input to allow a repeat command to be registered so that e.g.
       search/replace and do a bit of work, then ask to be called again.
@@ -46,10 +46,10 @@ Bugs to be fixed
 - [ ] Searching for \U0001f5d1 crashes, [\U0001f5d1] fails.
 - [ ] ctrl-z in elc doesn't ask edlib to release the terminal
 - [ ] use iconv(3) for char-set conversion
-- [ ] When visiting a file which is found to be a link to a different name,
+- [X] When visiting a file which is found to be a link to a different name,
       the file isn't reloaded if it has changed.
       CANNOT REPRODUCE
-- [ ] save-all dialogue sometimes puts cursor at bottom and cannot move up.
+- [X] save-all dialogue sometimes puts cursor at bottom and cannot move up.
       MY GUESS IS doc:EOL in linefilter is calling doc:render-line-prev
       and getting an error - maybe from doc:render-line-prev on parent.
       I need to try when next it happens.
@@ -71,7 +71,7 @@ Requirements for a v1.0 release
 
 - [ ] logo!!! to use as icon in X11 for example.  Building blocks? Window pane?
 - [ ] efficient refresh using separate lib-renderline for each line
-- [ ] efficient X11 drawing using server-side surfaces
+- [X] efficient X11 drawing using server-side surfaces
 - [ ] configuration
 - [ ] vi mode
 - [ ] office mode
@@ -115,7 +115,7 @@ Core features
       pointer separate to 'focus'?  Maybe panes could have optional
       'child' method which returns main child - pane_leaf() calls that.
       Maybe pane_leaf() find a pane with z=0 and matching w,h ??
-- [ ] maybe generalise search and select somehow, so a line-based filter can
+- [X] no.. maybe generalise search and select somehow, so a line-based filter can
       detect and highlight the selection, rather than major-mode being fully
       in control  Similarly search might be handled by a render pane.
 - [ ] support text-replace as easy as text-insert (doc:char...)
@@ -194,7 +194,7 @@ Module features
 - [X] fix start-line-ref problem
 - [ ] improve caching of attributes
 - [ ] profile performance to find opporunities for optimisation.
-- [ ] ensure doc_refs can be stable.  '0' must always be valid.
+- [X] ensure doc_refs can be stable.  '0' must always be valid.
       Allow mark to be a start of any val or var field, even var
       field that might be empty.  Maybe normalize marks if var size
       appears to change - probably won't matter in practice.
@@ -353,9 +353,9 @@ Module features
 - [X] Give lib-renderline a Refresh:view which calls something in the render-line
       pane which does call_render_line().  Use pane_damaged() to mark panes as invalid
       and pane_refresh() to update them.
-- [ ] If a renderline pane moves the background might not be correct:
-- [ ] ... it might have been partly off-screen, so background wasn't copied
-- [ ] ... the background that was copied might be non-uniform
+- [X] If a renderline pane moves the background might not be correct:
+- [X] ... it might have been partly off-screen, so background wasn't copied
+- [X] ... the background that was copied might be non-uniform
 - [ ] the background "call:" option should report if background was changed.
       An attribute could store chosen information for comparison.
       Would need a 'force' flag.
