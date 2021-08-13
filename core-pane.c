@@ -216,8 +216,6 @@ static void pane_do_resize(struct pane *p safe, int damage)
 	int loops = 0;
 	if (!(p->damaged & DAMAGED_SIZE_CHILD))
 		return;
-	if (p->damaged & DAMAGED_CLOSED)
-		return;
 
 	while (p->damaged & DAMAGED_SIZE_CHILD) {
 		struct pane *parent, *c, *t;
@@ -366,6 +364,8 @@ void pane_refresh(struct pane *p safe)
 {
 	int cnt = 5;
 
+	if (p->damaged & DAMAGED_CLOSED)
+		return;
 	while (cnt-- &&
 	       (p->damaged &
 		~(DAMAGED_CLOSED|DAMAGED_POSTORDER|DAMAGED_POSTORDER_CHILD))) {
