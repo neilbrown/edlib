@@ -1669,7 +1669,7 @@ DEF_CMD(render_lines_resize)
 		pane_damaged(m->mdata, DAMAGED_REFRESH);
 	}
 	rl->background_drawn = False;
-	pane_damaged(p, DAMAGED_VIEW);
+	pane_damaged(p, DAMAGED_VIEW | DAMAGED_REFRESH);
 
 	/* Allow propagation to children */
 	return 0;
