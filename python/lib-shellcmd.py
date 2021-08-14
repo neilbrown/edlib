@@ -59,17 +59,29 @@ class ShellPane(edlib.Pane):
         self.call("doc:notify:doc:status-changed")
         fd = self.pipe.stdout.fileno()
         if 'EDLIB_TESTING' not in os.environ:
-            # when testing, use blocking IO for predictable results
             fl = fcntl.fcntl(fd, fcntl.F_GETFL)
             fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
-        self.call("event:read", fd, self.read)
+            self.call("event:read", fd, self.read)
+        else:
+            # when testing, use blocking IO for predictable results,
+            # and schedule them 'soon' so they cannot happen 'immediately'
+            # and happen with gaps
+            self.call("event:timer", 50, self.read)
         return True
 
     def read(self, key, **a):
         if not self.pipe:
             return edlib.Efalse
         try:
-            r = os.read(self.pipe.stdout.fileno(), 4096)
+            if 'EDLIB_TESTING' not in os.environ:
+                r = os.read(self.pipe.stdout.fileno(), 4096)
+            else:
+                r = b''
+                b = os.read(self.pipe.stdout.fileno(), 4096)
+                while b:
+                    r += b
+                    b = os.read(self.pipe.stdout.fileno(), 4096)
+                edlib.LOG("read", len(r))
         except IOError:
             return 1
         if r is None or len(r) == 0:

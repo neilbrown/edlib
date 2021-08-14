@@ -70,6 +70,7 @@ struct display_data {
 	#ifdef RECORD_REPLAY
 	FILE			*log;
 	FILE			*input;
+	int			input_sleeping;
 	char			last_screen[MD5_DIGEST_SIZE*2+1];
 	char			next_screen[MD5_DIGEST_SIZE*2+1];
 	/* The next event to generate when idle */
@@ -179,6 +180,7 @@ static void record_key(struct pane *p safe, char *key safe)
 	else
 		return;
 	fprintf(dd->log, "Key %c%s%c\n", q,key,q);
+	fflush(dd->log);
 }
 
 static void record_mouse(struct pane *p safe, char *key safe, int x, int y)
@@ -196,6 +198,7 @@ static void record_mouse(struct pane *p safe, char *key safe, int x, int y)
 	else
 		return;
 	fprintf(dd->log, "Mouse %c%s%c %d,%d\n", q,key,q, x, y);
+	fflush(dd->log);
 }
 
 static void record_screen(struct pane *p safe)
@@ -237,12 +240,15 @@ static void record_screen(struct pane *p safe)
 		if (p->cx >= 0)
 			fprintf(dd->log, " %d,%d", p->cx, p->cy);
 		fprintf(dd->log, "\n");
+		fflush(dd->log);
 	}
-	if (dd->input && dd->next_event == DoCheck) {
+	if (dd->input && dd->input_sleeping) {
+		char *delay = getenv("EDLIB_REPLAY_DELAY");
 		call_comm("event:free", p, &next_evt);
-//		if (strcmp(dd->last_screen, dd->next_screen) != 0)
-//			dd->next_event = DoClose;
-		call_comm("editor-on-idle", p, &next_evt);
+		if (delay)
+			call_comm("event:timer", p, &next_evt, atoi(delay));
+		else
+			call_comm("editor-on-idle", p, &next_evt);
 	}
 }
 
@@ -331,9 +337,14 @@ static bool parse_event(struct pane *p safe)
 	}
 	LOG("parse %s", line);
 
-	if (dd->next_event != DoCheck)
-		call_comm("editor-on-idle", p, &next_evt);
-	else
+	dd->input_sleeping = 1;
+	if (dd->next_event != DoCheck) {
+		char *delay = getenv("EDLIB_REPLAY_DELAY");
+		if (delay)
+			call_comm("event:timer", p, &next_evt, atoi(delay));
+		else
+			call_comm("editor-on-idle", p, &next_evt);
+	} else
 		call_comm("event:timer", p, &next_evt, 10*1000);
 	return True;
 }
@@ -343,12 +354,8 @@ REDEF_CMD(next_evt)
 	struct pane *p = ci->home;
 	struct display_data *dd = p->data;
 	int button = 0, type = 0;
-	char *delay;
 
-	delay = getenv("EDLIB_REPLAY_DELAY");
-	if (delay && dd->next_event != DoCheck)
-		usleep(atoi(delay)*1000);
-
+	dd->input_sleeping = 0;
 	switch(dd->next_event) {
 	case DoKey:
 		record_key(p, dd->event_info);
