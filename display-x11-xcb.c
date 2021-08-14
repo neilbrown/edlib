@@ -214,6 +214,9 @@ struct xcb_data {
 	} *panes;
 };
 
+/* panes->r.x is NEVER_DRAWN if the pane has not been drawn */
+#define NEVER_DRAWN (-60000)
+
 static struct map *xcb_map;
 DEF_LOOKUP_CMD(xcb_handle, xcb_map);
 
@@ -229,6 +232,11 @@ static struct panes *get_pixmap(struct pane *home safe,
 		if (ps->r.width == p->w && ps->r.height == p->h)
 			return ps;
 		*pp = ps->next;
+		if (ps->r.x != NEVER_DRAWN) {
+			if (!xd->need_update)
+				xd->need_update = cairo_region_create();
+			cairo_region_union_rectangle(xd->need_update, &ps->r);
+		}
 		if (ps->ctx)
 			cairo_destroy(ps->ctx);
 		if (ps->surface)
@@ -240,6 +248,7 @@ static struct panes *get_pixmap(struct pane *home safe,
 	}
 	alloc(ps, pane);
 	ps->p = p;
+	ps->r.x = ps->r.y = NEVER_DRAWN;
 	ps->r.width = p->w;
 	ps->r.height = p->h;
 	ps->bg.r = ps->bg.g = ps->bg.b = 0;
@@ -952,7 +961,11 @@ DEF_CMD(xcb_refresh_post)
 		struct xy rel;
 
 		rel = pane_mapxy(ps->p, ci->home, 0, 0, False);
-		if (rel.x != ps->r.x || rel.y != ps->r.y) {
+		if (ps->r.x == NEVER_DRAWN) {
+			ps->r.x = rel.x;
+			ps->r.y = rel.y;
+			cairo_region_union_rectangle(xd->need_update, &ps->r);
+		} else if (rel.x != ps->r.x || rel.y != ps->r.y) {
 			/* Moved, so refresh all.
 			 * This rectangle might be too big if it is clipped,
 			 * but that doesn't really matter.
