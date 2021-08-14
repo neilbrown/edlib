@@ -163,6 +163,10 @@ DEF_CMD(messageline_notify)
 {
 	/* Keystroke notification clears the message line */
 	struct mlinfo *mli = ci->home->data;
+	int wait_time = 7;
+
+	if (getenv("EDLIB_TESTING"))
+		wait_time = 0;
 
 	if (mli->modal) {
 		free(mli->modal);
@@ -172,7 +176,7 @@ DEF_CMD(messageline_notify)
 		pane_damaged(mli->line, DAMAGED_REFRESH);
 	}
 	if (mli->message &&
-	    time(NULL) >= mli->last_message + 7) {
+	    time(NULL) >= mli->last_message + wait_time) {
 		free(mli->message);
 		mli->message = NULL;
 		pane_damaged(mli->line, DAMAGED_REFRESH);
