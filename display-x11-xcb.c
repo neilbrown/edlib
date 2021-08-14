@@ -1002,7 +1002,7 @@ DEF_CMD(xcb_refresh_post)
 						 rel.x, rel.y);
 
 		lo = pane_mapxy(ps->p, ci->home, 0, 0, True);
-		hi = pane_mapxy(ps->p, ci->home, ps->p->w, ps->p->h, True);
+		hi = pane_mapxy(ps->p, ci->home, ps->r.width, ps->r.height, True);
 		r.x = lo.x; r.y = lo.y;
 		r.width = hi.x - lo.x; r.height = hi.y - lo.y;
 		cairo_region_intersect_rectangle(cr, &r);
@@ -1021,6 +1021,26 @@ DEF_CMD(xcb_refresh_post)
 	time_stop(TIME_WINDOW);
 	xcb_flush(xd->conn);
 	return 1;
+}
+
+DEF_CMD(xcb_refresh_size)
+{
+	/* FIXME: should I consider resizing the window?
+	 * For now, just ensure we redraw everything.
+	 */
+	struct xcb_data *xd = ci->home->data;
+	cairo_rectangle_int_t r = {
+		.x = 0,
+		.y = 0,
+		.width = ci->home->w,
+		.height = ci->home->h,
+	};
+
+	if (!xd->need_update)
+		xd->need_update = cairo_region_create();
+	cairo_region_union_rectangle(xd->need_update, &r);
+	/* Ask common code to notify children */
+	return Efallthrough;
 }
 
 DEF_CMD(xcb_pane_close)
@@ -1837,6 +1857,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(xcb_map, "Draw:text-size", &xcb_text_size);
 	key_add(xcb_map, "Draw:text", &xcb_draw_text);
 	key_add(xcb_map, "Draw:image", &xcb_draw_image);
+	key_add(xcb_map, "Refresh:size", &xcb_refresh_size);
 	key_add(xcb_map, "Refresh:postorder", &xcb_refresh_post);
 	key_add(xcb_map, "all-displays", &xcb_notify_display);
 	key_add(xcb_map, "Notify:Close", &xcb_pane_close);

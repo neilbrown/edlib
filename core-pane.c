@@ -242,7 +242,7 @@ static void pane_do_resize(struct pane *p safe, int damage)
 					break;
 
 				if (pane_call(parent, "Refresh:size",
-					      parent) == 0) {
+					      parent) == Efallthrough) {
 					/* Need to resize children ourselves */
 					list_for_each_entry(c, &parent->children,
 							    siblings)
