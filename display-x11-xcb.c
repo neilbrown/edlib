@@ -586,9 +586,7 @@ DEF_CMD(xcb_clear)
 	if (bg.g >= 0) {
 		if (dest->ctx) {
 			cairo_set_source_rgb(dest->ctx, bg.r, bg.g, bg.b);
-			cairo_rectangle(dest->ctx, 0.0, 0.0,
-					(double)ci->focus->w, (double)ci->focus->h);
-			cairo_fill(dest->ctx);
+			cairo_paint(dest->ctx);
 		}
 		dest->bg = bg;
 	} else if (src) {
@@ -696,6 +694,7 @@ DEF_CMD(xcb_draw_text)
 	pango_layout_set_font_description(layout, fd);
 	pango_layout_get_pixel_extents(layout, NULL, &log);
 	baseline = pango_layout_get_baseline(layout) / PANGO_SCALE;
+	cairo_save(ctx);
 	if (bg.g >= 0) {
 		cairo_set_source_rgb(ctx, bg.r, bg.g, bg.b);
 		cairo_rectangle(ctx, x+log.x, y - baseline + log.y,
@@ -765,6 +764,7 @@ DEF_CMD(xcb_draw_text)
 			}
 		}
 	}
+	cairo_restore(ctx);
 	pango_font_description_free(fd);
 	g_object_unref(layout);
 	return 1;
@@ -1015,6 +1015,7 @@ DEF_CMD(xcb_refresh_post)
 		}
 		cairo_restore(xd->cairo);
 	}
+
 	cairo_region_destroy(xd->need_update);
 	xd->need_update = NULL;
 	time_stop(TIME_WINDOW);
@@ -1033,7 +1034,8 @@ DEF_CMD(xcb_pane_close)
 
 		if (!xd->need_update)
 			xd->need_update = cairo_region_create();
-		cairo_region_union_rectangle(xd->need_update, &ps->r);
+		if (ps->r.x != NEVER_DRAWN)
+			cairo_region_union_rectangle(xd->need_update, &ps->r);
 
 		*pp = ps->next;
 		ps->next = NULL;
