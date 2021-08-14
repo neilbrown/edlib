@@ -128,9 +128,6 @@ class MergePane(edlib.Pane):
 
     def handle_update(self, key, focus, mark, mark2, num, num2, **a):
         "handle:doc:replaced"
-        if num2:
-            # only attrs updated
-            return 0
         if not self.marks:
             return 0
         # only update if an endpoint is in the range.

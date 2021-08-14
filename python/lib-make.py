@@ -610,7 +610,7 @@ class MakeViewerPane(edlib.Pane):
 
     def handle_replace(self, key, focus, mark, mark2, num2, **a):
         "handle:doc:replaced"
-        if not mark or not mark2 or num2:
+        if not mark or not mark2:
             return 1
         if not self.may_follow:
             # only suppress one update

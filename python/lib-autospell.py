@@ -154,9 +154,6 @@ class autospell_monitor(edlib.Pane):
 
     def doc_replace(self, key, focus, mark, mark2, num2, **a):
         "handle:doc:replaced"
-        if num2:
-            # only attrs changed
-            return 1
         if not mark or not mark2:
             # Should I clean up completely?
             return 1

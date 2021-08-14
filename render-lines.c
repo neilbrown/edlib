@@ -884,7 +884,7 @@ DEF_CMD(render_lines_point_moving)
 		/* Someone else moved the point, so reset target column */
 		rl->target_x = -1;
 	m = vmark_at_or_before(ci->focus, pt, rl->typenum, p);
-	if (m && vmark_is_valid(m)) {
+	if (m && m->mdata) {
 		pane_damaged(m->mdata, DAMAGED_REFRESH);
 		pane_damaged(m->mdata->parent, DAMAGED_REFRESH);
 	}
@@ -1716,6 +1716,7 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "point:moving", &render_lines_point_moving);
 
 	key_add(rl_map, "doc:replaced", &render_lines_notify_replace);
+	key_add(rl_map, "doc:replaced-attr", &render_lines_notify_replace);
 	/* view:changed is sent to a tile when the display might need
 	 * to change, even though the doc may not have*/
 	key_add(rl_map, "view:changed", &render_lines_notify_replace);
@@ -1744,6 +1745,7 @@ REDEF_CMD(render_lines_attach)
 	}
 	rl->typenum = home_call(ci->focus, "doc:add-view", p) - 1;
 	call("doc:request:doc:replaced", p);
+	call("doc:request:doc:replaced-attr", p);
 	call("doc:request:point:moving", p);
 
 	return comm_call(ci->comm2, "callback:attach", p);

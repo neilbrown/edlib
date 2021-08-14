@@ -403,7 +403,7 @@ void pane_add_notify(struct pane *target safe, struct pane *source safe,
 
 	n->notifiee = target;
 	n->notification = strdup(msg);
-	n->noted = 1;
+	n->noted = 0;
 	list_add(&n->notifier_link, &source->notifiees);
 	list_add(&n->notifiee_link, &target->notifiers);
 }
@@ -455,10 +455,16 @@ int do_pane_notify(struct pane *home, const char *notification safe,
 	if (!home)
 		home = p;
 	list_for_each_entry_reverse(n, &home->notifiees, notifier_link)
-		if (strcmp(n->notification, notification) == 0) {
-			/* nested notification are silently suppressed */
-			if (n->noted != 2)
-				n->noted = 0;
+		if (strcmp(n->notification, notification) == 0 &&
+		    n->noted) {
+			/* Nested notifications are not allowed. We cannot
+			 * be sure the outer notification is sent, and it might
+			 * contain different information.
+			 */
+			LOG("Nested notification from %s to %s for %s not permitted.",
+			    home->name, n->notifiee->name, notification);
+			LOG_BT();
+			return Efail;
 		}
 restart:
 	list_for_each_entry(n, &home->notifiees, notifier_link) {
@@ -487,6 +493,9 @@ restart:
 			goto restart;
 		}
 	}
+	list_for_each_entry(n, &home->notifiees, notifier_link)
+		if (strcmp(n->notification, notification) == 0)
+			n->noted = 0;
 	return ret;
 }
 

@@ -131,6 +131,8 @@ Core features
       the same doc, so pointless.  Can I optimise that somehow?
 - [ ] document the use of doc:replaced.  What are the two
       marks exactly? start and end of range.  Verify all clients and providers
+      The 'num' is for when mark2 is absent and it suggests a number of bytes
+      that might have changed.
 - [ ] revise and document behaviour of doc:open etc, particularly for
        reloading and filenames etc.
 - [ ] review all aspects of mark lifetime.  ->owner must be set for

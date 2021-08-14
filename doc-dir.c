@@ -743,7 +743,7 @@ DEF_CMD(dir_doc_set_attr)
 	if (!m->ref.d)
 		return Einval;
 	attr_set_str(&m->ref.d->attrs, attr, val);
-	pane_notify("doc:replaced", ci->home, 1, ci->mark, NULL, 1);
+	pane_notify("doc:replaced-attr", ci->home, 1, ci->mark);
 	return 1;
 }
 
