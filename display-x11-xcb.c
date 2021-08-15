@@ -543,6 +543,7 @@ DEF_CMD(xcb_free)
 
 	pango_font_description_free(xd->fd);
 	cairo_destroy(xd->cairo);
+	cairo_device_finish(cairo_surface_get_device(xd->surface));
 	cairo_surface_destroy(xd->surface);
 	free(xd->display);
 	free(xd->noclose);
