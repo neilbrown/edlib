@@ -1087,6 +1087,8 @@ static void handle_button(struct pane *home safe,
 	char mod[2+2+2+1];
 	char key[2+2+2+9+1+1];
 
+	xcb_set_input_focus(xd->conn, XCB_INPUT_FOCUS_POINTER_ROOT,
+			    xd->win, XCB_CURRENT_TIME);
 	mod[0] = 0;
 	if (press) {
 		xd->motion_blocked = False;

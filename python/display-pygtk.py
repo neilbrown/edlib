@@ -544,6 +544,7 @@ class EdDisplay(edlib.Pane):
             #maybe GDK_2BUTTON_PRESS - don't want that.
             return
         edlib.time_start(edlib.TIME_KEY)
+        c.grab_focus()
         self.unblock_motion()
         x = int(event.x)
         y = int(event.y)
@@ -562,6 +563,7 @@ class EdDisplay(edlib.Pane):
 
     def release(self, c, event):
         edlib.time_start(edlib.TIME_KEY)
+        c.grab_focus()
         x = int(event.x)
         y = int(event.y)
         s = ":Release-" + ("%d"%event.button)
