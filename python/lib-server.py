@@ -60,7 +60,8 @@ try:
                         self.sock.send(b"FAIL")
                         return 1
                     if self.term:
-                        p = d.call("doc:attach-view", self.term, 1, ret='pane')
+                        p = self.term.leaf.call("ThisPane", ret='pane')
+                        p = d.call("doc:attach-view", p, 1, ret='pane')
                         self.term.take_focus()
                         self.sock.send(b"OK")
                         if self.lineno != None:
@@ -113,7 +114,15 @@ try:
                     self.want_close = True
                     self.sock.send(b"OK")
                     return 1
-                if msg.startswith(b"term "):
+                if msg.startswith(b'x11window ') and not self.term:
+                    d = msg[10:].decode()
+                    p = editor.call("interactive-cmd-x11window", d, ret='pane')
+                    if p:
+                        p.call("Window:bury")
+                    self.term = p
+                    self.sock.send(b'OK')
+                    return 1
+                if msg.startswith(b"term ") and not self.term:
                     w = msg.split(b' ')
                     path = w[1].decode("utf-8")
                     p = editor
@@ -167,6 +176,7 @@ try:
                 self.doc = None
                 if self.term:
                     self.term.call("Display:set-noclose")
+                    self.term.call("Display:close")
                 self.sock.send(b"Done")
             return 1
 
@@ -175,6 +185,7 @@ try:
             if str != "test":
                 if self.term:
                     self.term.call("Display:set-noclose")
+                    self.term.call("Display:close")
                 self.sock.send(b"Done")
             return 1
 
@@ -203,9 +214,12 @@ if is_client:
     term = False
     file = None
     lineno = None
+    x11 = False
     for a in sys.argv[1:]:
         if a == "-t":
             term = True
+        elif a == "-x":
+            x11 = True
         elif a[0] == '+':
             lineno = a[1:]
         elif file is None:
@@ -213,8 +227,8 @@ if is_client:
         else:
             print("Usage: edlibclient [-t] filename")
             sys.exit(1)
-    if not term and not file:
-        print("edlibclient: must provide -t or filename (or both)")
+    if not term and not x11 and not file:
+        print("edlibclient: must provide -t, -x, or filename")
         sys.exit(1)
 
     s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -225,6 +239,17 @@ if is_client:
         sys.exit(1)
 
     winch_ok = False
+
+    if x11:
+        if 'DISPLAY' in os.environ:
+            d = os.environ['DISPLAY']
+        else:
+            print("edlibclient: -x not supported unless $DISPLAY is set")
+            sys.exit(1)
+        s.send(b"x11window %s" % d.encode())
+        ret = s.recv(100)
+        if ret != b'OK':
+            print("Cannot start x11 display:" + ret.decode())
 
     if term:
         t = os.ttyname(0)
@@ -262,8 +287,10 @@ if is_client:
             print("Cannot open: ", ret.decode("utf-8"))
             sys.exit(1)
         s.send(b"doc:request:doc:done:"+file.encode("utf-8"))
-    else:
+    elif term:
         s.send(b"Request:Notify:Close")
+    else:
+        sys.exit(0)
     ret = s.recv(100)
     if ret != b"OK":
         print("Cannot request notification: ", ret.decode('utf-8'))
@@ -277,12 +304,12 @@ if is_client:
             break
         # probably a reply to Sig:Winch
     winch_ok = False
-    if ret != b"Done" and ret != b"Close":
+    if ret and ret != b"Done" and ret != b"Close":
         print("Received unexpected notification: ", ret.decode('utf-8'))
         s.send(b"Close")
         s.recv(100)
         sys.exit(1)
-    if ret != b"Close":
+    if ret and ret != b"Close":
         s.send(b"Close")
         s.recv(100)
     s.close()

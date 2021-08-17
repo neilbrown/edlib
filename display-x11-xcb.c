@@ -1827,7 +1827,10 @@ DEF_CMD(display_xcb)
 DEF_CMD(xcb_new_display)
 {
 	struct pane *p;
-	char *d = pane_attr_get(ci->focus, "DISPLAY");
+	const char *d = ci->str;
+
+	if (!d)
+		d = pane_attr_get(ci->focus, "DISPLAY");
 
 	if (!d)
 		return Enoarg;
@@ -1835,7 +1838,9 @@ DEF_CMD(xcb_new_display)
 	if (p)
 		p = call_ret(pane, "editor:activate-display", p);
 	if (p)
-		home_call(ci->focus, "doc:attach-view", p, 1);
+		home_call_ret(pane, ci->focus, "doc:attach-view", p, 1);
+	if (p)
+		comm_call(ci->comm2, "cb", p);
 	return 1;
 }
 
