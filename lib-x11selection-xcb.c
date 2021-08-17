@@ -246,6 +246,19 @@ DEF_CMD(xcbc_register_display)
 {
 	pane_add_notify(ci->focus, ci->home, "Notify:xcb-claim");
 	pane_add_notify(ci->focus, ci->home, "Notify:xcb-commit");
+
+	pane_add_notify(ci->focus, ci->home, "Notify:xcb-check");
+	pane_add_notify(ci->home, ci->focus, "Notify:Close");
+	return 1;
+}
+
+DEF_CMD(xcbc_handle_close)
+{
+	/* A display window has closed.  If it was the last one we must
+	 * close too, else we keep the x11 connection open unnecessarily
+	 */
+	if (pane_notify("Notify:xcb-check", ci->home) <= 0)
+		pane_close(ci->home);
 	return 1;
 }
 
@@ -335,6 +348,14 @@ DEF_CMD(xcbd_do_commit)
 	call("selection:commit", ci->home);
 	xdi->committing = False;
 	return 1;
+}
+
+DEF_CMD(xcbc_do_check)
+{
+	if (!(ci->home->damaged & DAMAGED_CLOSED))
+		/* Yes, I'm still here */
+		return 1;
+	return Efallthrough;
 }
 
 DEF_CMD(xcb_common)
@@ -1009,6 +1030,7 @@ void edlib_init(struct pane *ed safe)
 		key_add(xcb_common_map, "clip-get", &xcbc_get);
 
 		key_add(xcb_common_map, "register", &xcbc_register_display);
+		key_add(xcb_common_map, "Notify:Close", &xcbc_handle_close);
 
 		key_add(xcb_common_map, "Close", &xcbc_close);
 		key_add(xcb_common_map, "Free", &edlib_do_free);
@@ -1024,6 +1046,8 @@ void edlib_init(struct pane *ed safe)
 			&xcbd_do_claim);
 		key_add(xcb_display_map, "Notify:xcb-commit",
 			&xcbd_do_commit);
+		key_add(xcb_display_map, "Notify:xcb-check",
+			&xcbc_do_check);
 
 		key_add(xcb_display_map, "Free", &edlib_do_free);
 	}
