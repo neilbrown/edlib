@@ -166,7 +166,7 @@ try:
                 # same as doc:done
                 self.doc = None
                 if self.term:
-                    self.term.call("Window:set-noclose")
+                    self.term.call("Display:set-noclose")
                 self.sock.send(b"Done")
             return 1
 
@@ -174,7 +174,7 @@ try:
             "handle:doc:done"
             if str != "test":
                 if self.term:
-                    self.term.call("Window:set-noclose")
+                    self.term.call("Display:set-noclose")
                 self.sock.send(b"Done")
             return 1
 
