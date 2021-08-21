@@ -293,6 +293,11 @@ static void call_render_line(struct pane *home safe, struct pane *p safe,
 			*end = m2;
 		vmark_free(m);
 	}
+	/* Any mark at same location as start must go too. */
+	while ((m = vmark_prev(start)) != NULL &&
+	       mark_same(m, start)) {
+		vmark_free(m);
+	}
 }
 
 DEF_CMD(no_save)
