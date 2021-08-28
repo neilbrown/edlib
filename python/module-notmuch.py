@@ -623,11 +623,13 @@ class notmuch_main(edlib.Doc):
             try:
                 m = db.find_message(str)
                 fn = m.get_filename() + ""
+                th = m.get_thread_id()
             except:
                 return edlib.Efalse
         doc = focus.call("doc:open", "email:"+fn, -2, ret='pane')
         if doc:
             doc['notmuch:id'] = str
+            doc['notmuch:tid'] = th
             comm2("callback", doc)
         return 1
 
@@ -2856,7 +2858,7 @@ class notmuch_message_view(edlib.Pane):
         self['notmuch:pane'] = 'message'
         p = 0
         focus.call("doc:notmuch:request:Notify:Tag", self)
-        self.handle_notify_tag("Notify:Tag")
+        self.do_handle_notify_tag()
         m = edlib.Mark(focus)
         while True:
             self.call("doc:step-part", m, 1)
@@ -2934,8 +2936,7 @@ class notmuch_message_view(edlib.Pane):
             self.call("doc:set-attr", 1, m1, "render:url", "%d" % len)
             self.call("doc:set-attr", 1, m1, "url", url)
 
-    def handle_notify_tag(self, key, **a):
-        "handle:Notify:Tag"
+    def do_handle_notify_tag(self):
         # tags might have changed.
         tg = self.call("doc:notmuch:byid:tags", self['notmuch:id'], ret='str')
         if tg:
@@ -2943,6 +2944,15 @@ class notmuch_message_view(edlib.Pane):
         else:
             self['doc-status'] = "No Tags"
         return 1
+    def handle_notify_tag(self, key, str1, str2, **a):
+        "handle:Notify:Tag"
+        if str1 != self['notmuch:tid']:
+            # not my thread
+            return
+        if str2 and str2 != self['notmuch:id']:
+            # not my message
+            return
+        return self.do_handle_notify_tag()
 
     def handle_close(self, key, **a):
         "handle:Close"
