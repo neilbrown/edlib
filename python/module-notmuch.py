@@ -68,6 +68,7 @@ class notmuch_db():
             return
         self.db.close()
         self.db = None
+        self.want_write = False
 
 class counter:
     # manage a queue of queries that need to be counted.
