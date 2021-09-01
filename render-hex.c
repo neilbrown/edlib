@@ -64,6 +64,7 @@ DEF_CMD(render_hex_eol)
 {
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
+	bool one_more = ci->num2 > 0;
 	int pos;
 
 	if (!ci->mark)
@@ -76,7 +77,7 @@ DEF_CMD(render_hex_eol)
 		       (ch = doc_next(ci->focus, ci->mark)) != WEOF)
 			pos += 1;
 		rpt -= 1;
-		if (rpt) {
+		if (rpt || one_more) {
 			ch = doc_next(ci->focus, ci->mark);
 			pos += 1;
 		}
@@ -86,7 +87,7 @@ DEF_CMD(render_hex_eol)
 		       (ch = doc_prev(ci->focus, ci->mark)) != WEOF)
 			pos -= 1;
 		rpt += 1;
-		if (rpt) {
+		if (rpt || one_more) {
 			ch = doc_prev(ci->focus, ci->mark);
 			pos -= 1;
 		}
