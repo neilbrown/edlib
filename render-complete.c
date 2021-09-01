@@ -46,7 +46,7 @@ struct rlcb {
 };
 
 static char *add_highlight_prefix(const char *orig, int start, int plen,
-				  const char *attr safe)
+				  const char *attr safe, int *offset)
 {
 	struct buf ret;
 	const char *c safe;
@@ -55,21 +55,34 @@ static char *add_highlight_prefix(const char *orig, int start, int plen,
 		return NULL;
 	buf_init(&ret);
 	c = orig;
-	while (start > 0 && *c) {
+	while (start > 0 && *c && (!offset || ret.len < *offset)) {
 		if (*c == '<')
 			buf_append_byte(&ret, *c++);
 		buf_append_byte(&ret, *c++);
 		start -= 1;
 	}
+	if (!*c || (offset && ret.len >= *offset)) {
+		/* Nothing here to highlight */
+		if (offset)
+			*offset = c - orig;
+		return buf_final(&ret);
+	}
+
 	buf_concat(&ret, attr);
-	while (plen > 0 && *c) {
+	while (plen > 0 && *c && (!offset || ret.len < *offset)) {
 		if (*c == '<')
 			buf_append_byte(&ret, *c++);
 		buf_append_byte(&ret, *c++);
 		plen -= 1;
 	}
 	buf_concat(&ret, "</>");
-	buf_concat(&ret, c);
+	while (*c && (!offset || ret.len < *offset)) {
+		if (*c == '<')
+			buf_append_byte(&ret, *c++);
+		buf_append_byte(&ret, *c++);
+	}
+	if (offset)
+		*offset = c - orig;
 	return buf_final(&ret);
 }
 
@@ -78,21 +91,54 @@ DEF_CMD(render_complete_line)
 	struct complete_data *cd = ci->home->data;
 	char *line, *start, *hl;
 	const char *match;
-	int ret;
+	int ret, startlen;
+	struct mark *m;
 
 	if (!ci->mark)
 		return Enoarg;
 
-	line = call_ret(str, ci->key, ci->home->parent, ci->num, ci->mark, NULL,
-			0, ci->mark2);
-	if (!line)
+	m = mark_dup(ci->mark);
+	line = call_ret(str, ci->key, ci->home->parent, -1, m);
+	if (!line) {
+		mark_free(m);
 		return Efail;
+	}
 	match = cd->stk->substr;
 	start = strcasestr(line, match);
 	if (!start)
-		start = line;
-	hl = add_highlight_prefix(line, start - line, strlen(match),
-				  "<fg:red>");
+		startlen = 0;
+	else
+		startlen = start - line;
+	if (ci->num >= 0 && ci->num != NO_NUMERIC) {
+		/* Only want 'num' bytes from start, with ->mark positioned.
+		 * So need to find how many bytes of 'line' produce num bytes
+		 * of highlighted line.
+		 */
+		int num = ci->num;
+		hl = add_highlight_prefix(line, startlen, strlen(match),
+					  "<fg:red>", &num);
+		free(hl);
+		free(line);
+		mark_free(m);
+		line = call_ret(str, ci->key, ci->home->parent,
+				num, ci->mark);
+	} else if (ci->mark2) {
+		/* Only want up-to the cursor, which might be in the middle of
+		 * the highlighted region.  Now we know where that is, we can
+		 * highlight whatever part is still visible.
+		 */
+		free(line);
+		mark_free(m);
+		line = call_ret(str, ci->key, ci->home->parent,
+				ci->num, ci->mark, NULL,
+				0, ci->mark2);
+	} else {
+		mark_to_mark(ci->mark, m);
+		mark_free(m);
+	}
+	if (!line)
+		return Efail;
+	hl = add_highlight_prefix(line, startlen, strlen(match), "<fg:red>", NULL);
 
 	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, hl);
 	free(hl);
