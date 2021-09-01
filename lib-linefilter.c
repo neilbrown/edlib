@@ -223,6 +223,9 @@ static int do_filter_line_prev(struct filter_data *fd safe,
 	if (ret < 0)
 		/* Probably hit start-of-file */
 		return ret;
+	if (doc_following(home, m) == WEOF)
+		/* End of file, no match possible */
+		return 0;
 
 	/* we must be looking at a possible option for the previous line */
 	cb.keep = !!savestr;
