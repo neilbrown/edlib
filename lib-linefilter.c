@@ -400,21 +400,6 @@ DEF_CMD(filter_changed)
 	return 1;
 }
 
-DEF_CMD(filter_nomove)
-{
-	if (strcmp(ci->key, "doc:file") == 0)
-		return Efallthrough;
-	if (strcmp(ci->key, "Move-to") == 0)
-		return Efallthrough;
-	if (strcmp(ci->key, "Move-Line") == 0)
-		return Efallthrough;
-	if (strncmp(ci->key, "Move-View-", 10) == 0)
-		return Efallthrough;
-	if (strcmp(ci->key, "Move-CursorXY") == 0)
-		return Efallthrough;
-	return 1;
-}
-
 DEF_CMD(eol_cb)
 {
 	/* don't save anything */
@@ -502,7 +487,6 @@ static void filter_register_map(void)
 	key_add(filter_map, "doc:render-line-prev", &render_filter_prev);
 	key_add(filter_map, "Free", &edlib_do_free);
 	key_add(filter_map, "Clone", &filter_clone);
-	key_add_prefix(filter_map, "Move-", &filter_nomove);
 	key_add(filter_map, "doc:EOL", &filter_eol);
 	key_add(filter_map, "Filter:set", &filter_changed);
 	key_add(filter_map, "view:changed", &filter_damaged);
