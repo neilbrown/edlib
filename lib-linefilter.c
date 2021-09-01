@@ -446,6 +446,8 @@ DEF_CMD(filter_eol)
 			call("doc:EOL", ci->home->parent, 1, ci->mark);
 		return 1;
 	}
+	/* Must be at start of line for filtering to work */
+	call("doc:EOL", ci->home->parent, -1, ci->mark);
 	while (line < 0) {
 		int ret;
 		ret = do_filter_line_prev(fd, ci->mark,
