@@ -6,7 +6,13 @@
  *
  * This can be layered over render-format or similar and will restrict
  * which lines are shown, based on some attribute visible at the start
- * of the line.
+ * of the line, or the content of the line.  How this content is assessed
+ * can be set by a call to Filter:set, or by setting various attributes.
+ * - filter:match - a string that must appear in the content
+ * - filter:attr  - the text attribute which contains the content
+ * - filter:at_start - whether match must be at start of content
+ * - filter:ignore_case - whether to ignore case when comparing match
+ *			  against content.
  *
  * This module doesn't hold any marks on any document.  The marks
  * held by the renderer should be sufficient.

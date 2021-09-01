@@ -5,10 +5,15 @@
  * render-complete - support string completion.
  *
  * This should be attached between render-lines and the pane which
- * provides the lines.  It is given a prefix and it suppresses all
- * lines which don't start with the prefix.
- * All events are redirected to the controlling window (where the text
- * to be completed is being entered)
+ * provides the lines.  It is given a string and it suppresses all
+ * lines which don't match the string.  Matching can be case-insensitive,
+ * and may require the string to be at the start of the line.
+ *
+ * The linefilter module is used manage the selective display of lines.
+ * This module examine the results provided by linefilter and extends the
+ * string to the maximum that still matches the same set of lines.
+ * Keystrokes can extend or contract the match, which will cause display
+ * to be updated.
  *
  * This module doesn't hold any marks on any document.  The marks
  * held by the rendered should be sufficient.
@@ -40,14 +45,14 @@ struct rlcb {
 	const char *prefix safe, *str;
 };
 
-static const char *add_highlight_prefix(const char *orig, int start, int plen,
-					const char *attr safe)
+static char *add_highlight_prefix(const char *orig, int start, int plen,
+				  const char *attr safe)
 {
 	struct buf ret;
 	const char *c safe;
 
 	if (orig == NULL)
-		return orig;
+		return NULL;
 	buf_init(&ret);
 	c = orig;
 	while (start > 0 && *c) {
@@ -68,41 +73,30 @@ static const char *add_highlight_prefix(const char *orig, int start, int plen,
 	return buf_final(&ret);
 }
 
-DEF_CB(save_highlighted)
-{
-	struct rlcb *cb = container_of(ci->comm, struct rlcb, c);
-	const char *start;
-
-	if (!ci->str)
-		return 1;
-
-	start = strcasestr(ci->str, cb->prefix);
-	if (!start)
-		start = ci->str;
-	cb->str = add_highlight_prefix(ci->str, start - ci->str, cb->plen, "<fg:red>");
-	return 1;
-}
-
 DEF_CMD(render_complete_line)
 {
 	struct complete_data *cd = ci->home->data;
-	struct rlcb cb;
+	char *line, *start, *hl;
+	const char *match;
 	int ret;
 
 	if (!ci->mark)
 		return Enoarg;
 
-	cb.prefix = cd->stk->substr;
-	cb.plen = strlen(cd->stk->substr);
-	cb.str = NULL;
-	cb.c = save_highlighted;
-	ret = call_comm(ci->key, ci->home->parent, &cb.c, ci->num, ci->mark,
-			NULL, 0, ci->mark2);
-	if (ret < 0 || !cb.str)
-		return ret;
+	line = call_ret(str, ci->key, ci->home->parent, ci->num, ci->mark, NULL,
+			0, ci->mark2);
+	if (!line)
+		return Efail;
+	match = cd->stk->substr;
+	start = strcasestr(line, match);
+	if (!start)
+		start = line;
+	hl = add_highlight_prefix(line, start - line, strlen(match),
+				  "<fg:red>");
 
-	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, cb.str);
-	free((void*)cb.str);
+	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, hl);
+	free(hl);
+	free(line);
 	return ret;
 }
 
