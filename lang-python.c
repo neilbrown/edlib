@@ -2390,6 +2390,15 @@ static PyMappingMethods mark_mapping = {
 	.mp_ass_subscript = (objobjargproc)mark_set_item,
 };
 
+static int mark_bool(Mark *self safe)
+{
+	return mark_valid(self->mark);
+}
+
+static PyNumberMethods mark_as_num = {
+	.nb_bool	= (inquiry) mark_bool,
+};
+
 static PyTypeObject MarkType = {
 	PyVarObject_HEAD_INIT(NULL, 0)
 	.tp_name	= "edlib.Mark",
@@ -2403,7 +2412,8 @@ static PyTypeObject MarkType = {
 	.tp_getset	= mark_getseters,
 	.tp_init	= (initproc)Mark_init,
 	.tp_new		= (newfunc)mark_new,
-	.tp_repr	= (reprfunc)mark_repr
+	.tp_repr	= (reprfunc)mark_repr,
+	.tp_as_number	= &mark_as_num,
 };
 
 static void comm_dealloc(Comm *self safe)
