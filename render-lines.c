@@ -160,7 +160,7 @@ static void vmark_invalidate(struct mark *m safe)
 
 static bool vmark_is_valid(struct mark *m safe)
 {
-	return m->mdata && !(m->mdata->damaged & DAMAGED_VIEW);
+	return mark_valid(m) && m->mdata && !(m->mdata->damaged & DAMAGED_VIEW);
 }
 
 /* Returns 'true' at end-of-page */
