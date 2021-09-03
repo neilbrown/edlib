@@ -10,6 +10,8 @@ import html2text
 
 def html_to_text(key, home, focus, comm2, **a):
     html = focus.call("doc:get-str", ret='str')
+    if not html:
+        return edlib.Efail
 
     h = html2text.HTML2Text()
     h.inline_links = False
