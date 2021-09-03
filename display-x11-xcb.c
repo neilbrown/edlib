@@ -1580,6 +1580,7 @@ DEF_CMD(xcb_input)
 			break;
 		case XCB_MAP_NOTIFY:
 		case XCB_UNMAP_NOTIFY:
+		case XCB_MAPPING_NOTIFY:
 			/* FIXME what to do?? */
 			break;
 		case 0:
@@ -1594,7 +1595,7 @@ DEF_CMD(xcb_input)
 				handle_xkb_event(ci->home, ev);
 				break;
 			}
-			LOG("ignored %x", ev->response_type);
+			LOG("Ignored X11 event %d", ev->response_type);
 		}
 		xcb_flush(xd->conn);
 	}
