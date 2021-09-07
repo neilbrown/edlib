@@ -29,6 +29,9 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] catching doc:replace in a pane doesn't catch doc:insert-file.
+      I need a simple way to intercept any change.
+- [ ] mark can be used after the go invalid too easily.  How to fix??
 - [1] optimize all doc:content handlers to use the 'string' if possible
      + libsearch
      + fix charset
