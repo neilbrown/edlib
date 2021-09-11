@@ -854,7 +854,7 @@ class notmuch_query(edlib.Doc):
         self.messageids = {}
         self.threadinfo = {}
         self["render-default"] = "notmuch:threads"
-        self["line-format"] = "<%BG><%TM-hilite>%TM-date_relative</><tab:130> <fg:blue>%TM-authors</><tab:350>%TM-threadinfo<tab:450><%TM-hilite><fg:red,bold>%TM-flag</> %TM-subject</></>"
+        self["line-format"] = "<%BG><%TM-hilite>%TM-date_relative</><tab:130> <fg:blue>%TM-authors</><tab:350>%TM-threadinfo<%TM-hilite><fg:red,bold>%TM-flag</> %TM-subject</></>"
         self.add_notify(self.maindoc, "Notify:Tag")
         self.add_notify(self.maindoc, "Notify:Close")
         self['doc-status'] = ""
@@ -1517,6 +1517,8 @@ class notmuch_query(edlib.Doc):
             val = self.rel_date(t['timestamp'])
         elif attr == "T-threadinfo":
             val = "[%d/%d]" % (t['matched'],t['total'])
+            while len(val) < 7:
+                val += ' '
         elif attr[:2] == "T-" and attr[2:] in t:
             val = t[attr[2:]]
             if type(val) == int:

@@ -51,7 +51,7 @@ Bugs to be fixed
 - [ ] URL highlighting of email is sometimes bizzare - possibly when
       orig content is b64
 - [ ] Resent- headers need to be handled somehow.
-- [ ] structure prefix in email summary gets truncated
+- [X] structure prefix in email summary gets truncated
 - [X] when content-type is TEXT/html (not multipart), html isn't decoded
       except when it is??  charset=ISO-8859-1 might cause problems
       Content-Transfer-Encoding: amazonses.com might too
