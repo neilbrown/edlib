@@ -752,7 +752,8 @@ DEF_CMD(open_email)
 	mime = attr_find(h2->attrs, "rfc822-mime-version");
 	if (mime)
 		mime = get_822_word(mime);
-	if (mime && strcmp(mime, "1.0") == 0) {
+	/* Some email doesn't contain MIME-Type, but is still mime... */
+	if (!mime || strcmp(mime, "1.0") == 0) {
 		type = attr_find(h2->attrs, "rfc822-content-type");
 		xfer = attr_find(h2->attrs, "rfc822-content-transfer-encoding");
 	}

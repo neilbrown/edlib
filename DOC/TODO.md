@@ -52,7 +52,7 @@ Bugs to be fixed
       orig content is b64
 - [ ] Resent- headers need to be handled somehow.
 - [ ] structure prefix in email summary gets truncated
-- [ ] when content-type is TEXT/html (not multipart), html isn't decoded
+- [X] when content-type is TEXT/html (not multipart), html isn't decoded
       except when it is??  charset=ISO-8859-1 might cause problems
       Content-Transfer-Encoding: amazonses.com might too
       Maybe CHARSET=UTF-8 // transfer-encodeing=QUOTED/PRINTABLE
