@@ -29,6 +29,35 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] autospell sometimes ignores new text, or highlights partial words
+- [ ] 'other' notmuch search doesn't show older messages sometimes
+- [ ] need to refresh notmuch search when closed if any tags were changed.
+- [ ] future-dated email messages get data displayed badly in summary
+- [ ] email with cc line > 2048 display badly
+- [ ] email parts that don't end EOL are displaye badly - 012 at end
+- [ ] when composing email, header lines mustn't wrap
+- [ ] when sending email, wrapped header lines must be unwrapped
+- [ ] ordering of marks in notmuch search summary can go wrong
+- [ ] sometimes the tid in a notmuch query mark.pos is not in threadids!!
+- [ ] message/rfc822 content cannot be displayed
+- [ ] invalid quoted-printable/utf8 content like We=E2&#128;&#153;d
+      causes the rest of content not to be displayed.
+- [ ] html2text should set decode-errors to ignore
+- [ ] base64 saved-file of content ending 
+      IHdpZHRoPScxJyBoZWlnaHQ9JzEnID48L3NwYW4+IDwvYm9keT48L2h0bWw+DQo= 
+      adds 0x40 0xff to the end.
+- [ ] this highlighted added by xterm-keyboard-paste is disabled when chars
+      are typed, but not on 'enter'
+- [ ] URL highlighting of email is sometimes bizzare - possibly when
+      orig content is b64
+- [ ] Resent- headers need to be handled somehow.
+- [ ] structure prefix in email summary gets truncated
+- [ ] when content-type is TEXT/html (not multipart), html isn't decoded
+      except when it is??  charset=ISO-8859-1 might cause problems
+      Content-Transfer-Encoding: amazonses.com might too
+      Maybe CHARSET=UTF-8 // transfer-encodeing=QUOTED/PRINTABLE
+- [ ] auto-detect urls stop a ':' - and other bad places.  But not at ) ??
+- [ ] multipart/related base64 text/html doesn't seem to get decoded either
 - [ ] catching doc:replace in a pane doesn't catch doc:insert-file.
       I need a simple way to intercept any change.
 - [ ] mark can be used after the go invalid too easily.  How to fix??

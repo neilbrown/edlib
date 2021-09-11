@@ -480,15 +480,14 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer,
 		asprintf(&ctype, "%1.*s/%1.*s", majlen, major, minlen, minor);
 	else
 		asprintf(&ctype, "%1.*s", majlen, major);
-	if (ctype && strcmp(ctype, "text/html") == 0)
+	if (ctype && strcasecmp(ctype, "text/html") == 0)
 		transformed = call_ret(pane, "html-to-text", h);
-	if (ctype && strcmp(ctype, "application/pdf") == 0)
+	if (ctype && strcasecmp(ctype, "application/pdf") == 0)
 		transformed = call_ret(pane, "pdf-to-text", h);
-	if (ctype && strcmp(ctype, "application/octet-stream") == 0 &&
-	    fname && (strstr(fname, ".pdf") == NULL ||
-		      strstr(fname, ".PDF") == NULL))
+	if (ctype && strcasecmp(ctype, "application/octet-stream") == 0 &&
+	    fname && strcasestr(fname, ".pdf") != NULL)
 		transformed = call_ret(pane, "pdf-to-text", h);
-	if (ctype && strncmp(ctype, "image/", 6) == 0) {
+	if (ctype && strncasecmp(ctype, "image/", 6) == 0) {
 		struct mark *m;
 		transformed = call_ret(pane, "doc:from-text", h,
 				       0, NULL, NULL, 0, NULL, "\n");
