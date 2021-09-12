@@ -33,7 +33,8 @@ from datetime import date
 def read_status(p, key, focus, **a):
     out, err = p.communicate()
     focus.call("Message", "Email submission complete")
-    edlib.LOG("Email submission reported: " + out.decode() + err.decode())
+    edlib.LOG("Email submission reported: " +
+              out.decode('utf-8','ignore') + err.decode('utf-8','ignore'))
     return edlib.Efalse
 
 class compose_email(edlib.Pane):
@@ -544,12 +545,13 @@ class compose_email(edlib.Pane):
         out,err = p.communicate()
         if not out:
             if err:
-                self.call("Message", "Address expansion gave error: %s" % err.decode())
+                self.call("Message", "Address expansion gave error: %s" %
+                          err.decode('utf-8','ignore'))
                 return True
             self.call("Message", "No completions found for address %s" % word)
             return True
         self.complete_start = None
-        self.complete_list = out.decode().strip().split("\n")
+        self.complete_list = out.decode('utf-8','ignore').strip().split("\n")
         if len(self.complete_list) > 1:
             self.call("Message", "%d completions found for address %s"
                       % (len(self.complete_list), word))
@@ -751,9 +753,10 @@ class compose_email(edlib.Pane):
         # Cannot find pane to report status on, so do it sync
         out, err = p.communicate()
         if out:
-            edlib.LOG("Email submission says:", out.decode())
+            edlib.LOG("Email submission says:", out.decode('utf-8','ignore'))
         if err:
-            focus.call("Message", "Email submission gives err: " + err.decode())
+            focus.call("Message", "Email submission gives err: " +
+                       err.decode('utf-8','ignore'))
         focus.call("Message", "Email message to %s queued." % whoto)
         focus.call("Window:bury")
 

@@ -42,7 +42,7 @@ Bugs to be fixed
 - [ ] message/rfc822 content cannot be displayed
 - [ ] invalid quoted-printable/utf8 content like We=E2&#128;&#153;d
       causes the rest of content not to be displayed.
-- [ ] html2text should set decode-errors to ignore
+- [X] html2text should set decode-errors to ignore
 - [ ] base64 saved-file of content ending 
       IHdpZHRoPScxJyBoZWlnaHQ9JzEnID48L3NwYW4+IDwvYm9keT48L2h0bWw+DQo= 
       adds 0x40 0xff to the end.

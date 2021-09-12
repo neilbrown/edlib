@@ -22,6 +22,7 @@ def html_to_text(key, home, focus, comm2, **a):
     h.ul_style_dash = True
     h.body_width = 80
     h.mark_code = True
+    h.decode_errors = 'ignore'
     try:
         h.pad_tables = True
         content = h.handle(html)

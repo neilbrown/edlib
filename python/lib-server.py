@@ -50,7 +50,7 @@ try:
                     self.sock.send(b'OK')
                     return 1
                 if msg[:5] == b"open:":
-                    path = msg[5:].decode("utf-8")
+                    path = msg[5:].decode("utf-8",'ignore')
                     try:
                         # 8==reload
                         d = editor.call("doc:open", -1, 8, path, ret='pane')
@@ -94,7 +94,7 @@ try:
                         self.sock.send(b"No Display!")
                     return 1
                 if msg[:21] == b"doc:request:doc:done:":
-                    path = msg[21:].decode("utf-8")
+                    path = msg[21:].decode("utf-8", 'ignore')
                     d = editor.call("doc:open", -1, path, ret='pane')
                     if not d:
                         self.sock.send(b"FAIL")
@@ -115,7 +115,7 @@ try:
                     self.sock.send(b"OK")
                     return 1
                 if msg.startswith(b'x11window ') and not self.term:
-                    d = msg[10:].decode()
+                    d = msg[10:].decode('utf-8','ignore')
                     p = editor.call("interactive-cmd-x11window", d, ret='pane')
                     if p:
                         p.call("Window:bury")
@@ -124,7 +124,7 @@ try:
                     return 1
                 if msg.startswith(b"term ") and not self.term:
                     w = msg.split(b' ')
-                    path = w[1].decode("utf-8")
+                    path = w[1].decode("utf-8", 'ignore')
                     p = editor
 
                     env={}
@@ -133,7 +133,7 @@ try:
                         if len(vw) == 2 and vw[0] in [b'TERM',
                                                       b'DISPLAY',
                                                       b'REMOTE_SESSION']:
-                            env[vw[0].decode("utf-8")] = vw[1].decode("utf-8")
+                            env[vw[0].decode("utf-8")] = vw[1].decode("utf-8",'ignore')
 
                     p = p.call("attach-display-ncurses", path, env['TERM'],
                                ret='pane')
@@ -249,7 +249,7 @@ if is_client:
         s.send(b"x11window %s" % d.encode())
         ret = s.recv(100)
         if ret != b'OK':
-            print("Cannot start x11 display:" + ret.decode())
+            print("Cannot start x11 display:" + ret.decode('utf-8','ignore'))
 
     if term:
         t = os.ttyname(0)
@@ -284,7 +284,7 @@ if is_client:
         if ret != b"OK":
             s.send(b"Close")
             s.recv(100)
-            print("Cannot open: ", ret.decode("utf-8"))
+            print("Cannot open: ", ret.decode("utf-8", 'ignore'))
             sys.exit(1)
         s.send(b"doc:request:doc:done:"+file.encode("utf-8"))
     elif term:
@@ -293,7 +293,7 @@ if is_client:
         sys.exit(0)
     ret = s.recv(100)
     if ret != b"OK":
-        print("Cannot request notification: ", ret.decode('utf-8'))
+        print("Cannot request notification: ", ret.decode('utf-8', 'ignore'))
         s.send(b"Close")
         s.recv(100)
         sys.exit(1)
@@ -305,7 +305,7 @@ if is_client:
         # probably a reply to Sig:Winch
     winch_ok = False
     if ret and ret != b"Done" and ret != b"Close":
-        print("Received unexpected notification: ", ret.decode('utf-8'))
+        print("Received unexpected notification: ", ret.decode('utf-8', 'ignore'))
         s.send(b"Close")
         s.recv(100)
         sys.exit(1)

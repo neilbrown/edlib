@@ -185,7 +185,7 @@ class searches:
             return False
         self.slist = {}
         for line in p.stdout:
-            line = line.decode("utf-8")
+            line = line.decode("utf-8", 'ignore')
             if not line.startswith('saved.') and not line.startswith('query.'):
                 continue
             w = line[6:].strip().split("=", 1)
@@ -552,7 +552,8 @@ class notmuch_main(edlib.Doc):
             out,err = p.communicate()
             p.wait()
             if out:
-                comm2("callback", focus, out.decode().strip(), str)
+                comm2("callback", focus,
+                      out.decode('utf-8','ignore').strip(), str)
             return 1
         return edlib.Efallthrough
 

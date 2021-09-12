@@ -90,7 +90,7 @@ class ShellPane(edlib.Pane):
             self.pipe = None
             l = self.line + out
             self.line = b''
-            self.call("doc:replace", l.decode("utf-8"))
+            self.call("doc:replace", l.decode("utf-8", 'ignore'))
             if not ret:
                 self.call("doc:replace", "\nProcess Finished\n")
             elif ret > 0:
@@ -103,7 +103,7 @@ class ShellPane(edlib.Pane):
         l = self.line + r
         i = l.rfind(b'\n')
         if i >= 0:
-            self.call("doc:replace", l[:i+1].decode("utf-8"))
+            self.call("doc:replace", l[:i+1].decode("utf-8", 'ignore'))
             l = l[i+1:]
         self.line = l
         return 1
