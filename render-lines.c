@@ -170,7 +170,7 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe,
 	struct pane *hp = mk->mdata;
 	int ret = 0;
 
-	if (hp) {
+	if (mark_valid(mk) && hp) {
 		pane_resize(hp, hp->x, hp->y, p->w, p->h);
 		ret = pane_call(hp, "render-line:measure",
 				focus, cursor_offset);
@@ -267,6 +267,8 @@ static void call_render_line(struct pane *home safe, struct pane *p safe,
 	} else
 		s = call_ret(strsave, "doc:render-line", p, NO_NUMERIC, m);
 
+	if (!mark_valid(start))
+		return;
 	if (s)
 		vmark_set(home, start, s);
 
@@ -979,7 +981,7 @@ static int revalidate_start(struct rl_data *rl safe,
 		call_render_line(p, focus, m, NULL);
 		found_end = measure_line(p, focus, m, -1);
 		hp = m->mdata;
-		if (!hp)
+		if (!mark_valid(m) || !hp)
 			break;
 
 		if (y != hp->y) {
@@ -1053,9 +1055,9 @@ static int revalidate_start(struct rl_data *rl safe,
 		rl->tail_height = p->h - y;
 	else
 		rl->tail_height = 0;
-	if (m) {
+	if (mark_valid(m)) {
 		vmark_clear(m);
-		while ((m2 = vmark_next(m)) != NULL) {
+		while (mark_valid(m2 = vmark_next(m)) && m2) {
 			/* end of view has clearly changed */
 			rl->repositioned = 1;
 			vmark_free(m2);
