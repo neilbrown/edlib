@@ -2472,6 +2472,8 @@ class notmuch_query_view(edlib.Pane):
             focus.call("doc:notmuch:remember-seen-msg", i)
 
         focus.call("doc:notmuch:mark-seen")
+        # Reload the query so archived messages disappear
+        self.call("doc:notmuch:query:reload")
         self.call("doc:notmuch:update-one", self['qname'])
 
     def handle_matched_mids(self, key, focus, str, str2, comm2, **a):
