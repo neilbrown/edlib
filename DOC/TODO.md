@@ -34,7 +34,7 @@ Bugs to be fixed
 - [X] autospell sometimes ignores new text, or highlights partial words
 - [ ] 'other' notmuch search doesn't show older messages sometimes
 - [X] need to refresh notmuch search when closed if any tags were changed.
-- [ ] future-dated email messages get date displayed badly in summary
+- [X] future-dated email messages get date displayed badly in summary
 - [ ] email with cc line > 2048 display badly
 - [ ] email parts that don't end EOL are displaye badly - 012 at end
 - [ ] when composing email, header lines mustn't wrap

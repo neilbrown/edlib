@@ -1238,7 +1238,7 @@ class notmuch_query(edlib.Doc):
         elif then[:3] == now[:3]:
             val = time.strftime("Today %H:%M", then)
         elif sec > nows:
-            val = time.strftime("%D %T!", then)
+            val = time.strftime("%Y-%b-%d!", then)
         elif sec > nows - 7 * 24 * 3600:
             val = time.strftime("%a %H:%M", then)
         elif then[0] == now[0]:
