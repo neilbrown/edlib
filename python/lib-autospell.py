@@ -10,7 +10,8 @@
 # of a "checked" section of text.  The 'start' marks have an attribute
 # ('spell:start') set.  The 'end' marks do not.
 # We remove ranges from this list when the document is changed.  This
-# might require splitting a 'checked' section, or removing some completely.
+# might require splitting a 'checked' section, or removing some sections
+# completely.
 # We add ranges when a word is checked.  This might merge with existing
 # ranges.
 # We need to find an unchecked section in some range to start checking.
@@ -30,19 +31,19 @@ def show_range(action, focus, viewnum, attr):
 
 def remove_range(focus, viewnum, attr, start, end):
     m = focus.vmark_at_or_before(viewnum, start)
-    if m and not m[attr]:
-        # immediately after start is not active, so the earlist we might need
+    if not m or not m[attr]:
+        # Immediately after start is not active, so the earliest we might need
         # to remove is the next mark, or possibly the very first
         if m:
             m = m.next()
         else:
             m, l = focus.vmarks(viewnum)
-        if not m or m > end:
+        if not m or m >= end:
             # Nothing to remove
             return
-    else:
-        # from m to start are in a range and should stay there.
-        # split the range from 'm' at 'start'
+    elif start < m:
+        # From m to start are in a range and should stay there.
+        # Split the range from 'm' at 'start'
         m = edlib.Mark(focus, view = viewnum)
         m.to_mark(start)
         m = edlib.Mark(orig=m, owner = focus)
@@ -62,7 +63,7 @@ def remove_range(focus, viewnum, attr, start, end):
         m2[attr] = 'yes'
         m2 = edlib.Mark(orig=m2, owner=focus)
         m2.step(0)
-    # m2 is now the end of an active section tht needs to be
+    # m2 is now the end of an active section that needs to be
     # discarded
     while m < m2:
         old = m
@@ -75,9 +76,9 @@ def add_range(focus, viewnum, attr, start, end):
     m1 = focus.vmark_at_or_before(viewnum, start)
     if m1 and m1[attr]:
         m1 = m1.next()
-        # can move m1 down as needed
+        # Range ending at m1 can be extended to cover start->end
     elif m1 and m1 == start:
-        # can move m1 down
+        # can move m1 down to cover range
         pass
     else:
         m1 = None
@@ -88,7 +89,7 @@ def add_range(focus, viewnum, attr, start, end):
              m2 = m2.prev()
              # can move m2 earlier
         else:
-            # end not in range, must create mark or move earlier up
+            # end not in range, must create mark or move earlier down
             m2 = None
     # if m2, then can move it backwards.  No need to create
     if not m1 and not m2:
@@ -194,6 +195,7 @@ class autospell_view(edlib.Pane):
         self.vstart = None
         self.vend = None
         self.call("doc:request:spell:recheck")
+        self.call("doc:request:doc:replaced")
         # trigger render-lines refresh notification
         pt = focus.call("doc:point", ret='mark')
         focus.call("render:request:reposition", pt)
@@ -223,6 +225,19 @@ class autospell_view(edlib.Pane):
     def handle_recheck(self, key, **a):
         "handle:spell:recheck"
         self.sched()
+
+    def handle_replace(self, key, focus, mark, mark2, num2, **a):
+        "handle:doc:replaced"
+        if not mark or not mark2:
+            return 1
+        # if change at either end of view, extend view until reposition message
+        if mark < self.vstart and mark2 >= self.vstart:
+            self.vstart.to_mark(mark)
+            self.sched()
+        if mark2 > self.vend and mark <= self.vend:
+            self.vend.to_mark(mark2)
+            self.sched()
+        return 1
 
     def reposition(self, key, mark, mark2, **a):
         "handle:render:reposition"

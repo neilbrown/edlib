@@ -31,7 +31,7 @@ Bugs to be fixed
 
 - [ ] if last line of file does end \n, and cursor is there, then moving
      up leave the cursor displayed on x11 display.
-- [ ] autospell sometimes ignores new text, or highlights partial words
+- [X] autospell sometimes ignores new text, or highlights partial words
 - [ ] 'other' notmuch search doesn't show older messages sometimes
 - [ ] need to refresh notmuch search when closed if any tags were changed.
 - [ ] future-dated email messages get data displayed badly in summary
