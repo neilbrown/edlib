@@ -2370,7 +2370,8 @@ static PyObject *mark_repr(Mark *self safe)
 		asprintf(&s, "<edlib.Mark NULL %p>", self);
 	else if (!mark_valid(self->mark))
 		asprintf(&s, "<edlib.Mark FREED %p>", self);
-	else if ((dm = call_ret(str, "doc:debug:mark", self->mark->owner))
+	else if ((dm = call_ret(str, "doc:debug:mark", self->mark->owner,
+				0, self->mark))
 		 != NULL)
 		asprintf(&s, "<edlib.Mark seq=%d v=%d %s>",
 			 self->mark->seq, self->mark->viewnum, dm);
