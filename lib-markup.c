@@ -26,7 +26,7 @@ struct mu_info {
 
 static struct map *mu_map safe;
 
-#define LARGE_LINE 1000
+#define LARGE_LINE 5000
 
 DEF_CMD(render_prev)
 {
@@ -52,18 +52,24 @@ DEF_CMD(render_prev)
 	if (!m)
 		return Enoarg;
 
+	if (!rpt)
+		boundary = vmark_at_or_before(f, m, mu->view, ci->home);
 	while ((ch = doc_prev(f, m)) != WEOF &&
 	       (!is_eol(ch) || rpt > 0) &&
 	       count < LARGE_LINE &&
-	       (!boundary || boundary->seq< m->seq)) {
-		rpt = 0;
-		if (!count)
+	       (!boundary || mark_ordered_not_same(boundary, m))) {
+		if (rpt)
 			boundary = vmark_at_or_before(f, m, mu->view, ci->home);
+		rpt = 0;
 		count += 1;
 	}
 	if (ch != WEOF && !is_eol(ch)) {
-		/* need to ensure there is a stable boundary here */
-		if (!boundary || boundary->seq >= m->seq) {
+		/* Just cross the boundary, or the max count.
+		 * Need to step back, and ensure there is a stable boundary
+		 * here.
+		 */
+		doc_next(f, m);
+		if (!boundary || !mark_same(boundary, m)) {
 			boundary = vmark_new(f, mu->view, ci->home);
 			if (boundary)
 				mark_to_mark(boundary, m);
@@ -266,7 +272,7 @@ DEF_CMD(render_line)
 	struct mu_info *mu = ci->home->data;
 	struct mark *m = ci->mark;
 	struct mark *pm = ci->mark2; /* The location to render as cursor */
-	struct mark *boundary;
+	struct mark *boundary, *start_boundary = NULL;
 	int o = ci->num;
 	wint_t ch;
 	int chars = 0;
@@ -307,8 +313,11 @@ DEF_CMD(render_line)
 			return ret;
 	}
 	boundary = vmark_at_or_before(focus, m, mu->view, ci->home);
-	if (boundary)
+	if (boundary) {
+		if (mark_same(m, boundary))
+			start_boundary = boundary;
 		boundary = vmark_next(boundary);
+	}
 	buf_init(&b);
 	call_comm("map-attr", focus, &ar.rtn, 0, m, "start-of-line");
 	while (1) {
@@ -349,7 +358,7 @@ DEF_CMD(render_line)
 			add_newline = 1;
 			break;
 		}
-		if (boundary && boundary->seq <= m->seq)
+		if (boundary && mark_ordered_or_same(boundary, m))
 			break;
 		if (ch == '<') {
 			if (o >= 0 && b.len+1 >= o) {
@@ -388,6 +397,10 @@ DEF_CMD(render_line)
 		else
 			buf_append(&b, '\n');
 	}
+
+	if (start_boundary && chars < LARGE_LINE - 5)
+		/* This boundary is no longer well-placed. */
+		mark_free(start_boundary);
 
 	ret = comm_call(ci->comm2, "callback:render", focus, 0, NULL,
 			buf_final(&b));

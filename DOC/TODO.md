@@ -35,8 +35,9 @@ Bugs to be fixed
 - [ ] 'other' notmuch search doesn't show older messages sometimes
 - [X] need to refresh notmuch search when closed if any tags were changed.
 - [X] future-dated email messages get date displayed badly in summary
-- [ ] email with cc line > 2048 display badly
-- [ ] email parts that don't end EOL are displaye badly - 012 at end
+- [X] email with cc line > 2048 display badly
+- [ ] Don't wrap email header lines when cursor isn't on the line - too noisy
+- [ ] email parts that don't end EOL are displayed badly - 012 at end
 - [ ] when composing email, header lines mustn't wrap
 - [ ] when sending email, wrapped header lines must be unwrapped
 - [ ] ordering of marks in notmuch search summary can go wrong
