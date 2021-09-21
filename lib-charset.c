@@ -1341,43 +1341,47 @@ struct charsetcb {
 DEF_CB(charset_content_cb)
 {
 	struct charsetcb *c = container_of(ci->comm, struct charsetcb, c);
-	char *buf, *up;
+	struct buf b;
 	int rv, i, bsize;
 
-	/* Buffer for utf8 content could be as much as 4 times ->str,
-	 * but that is unlikely.  Allocate room for double.
-	 */
-	bsize = ci->num2 * 2;
-	if (!ci->str || ci->num2 <= 0 || c->noalloc ||
-	    (buf = malloc(bsize)) == NULL)
+	if (!ci->str || ci->num2 <= 0 || c->noalloc)
 		return comm_call(c->cb, ci->key, c->p,
 				 c->tbl[ci->num & 0xff], ci->mark, ci->str,
 				 ci->num2, NULL, NULL,
 				 ci->x, 0);
-	up = buf;
-	for (i = 0, up = buf; i < ci->num2 && up+4 < buf + bsize; i++) {
+	/* Buffer for utf8 content could be as much as 4 times ->str,
+	 * but that is unlikely.  Allocate room for double, up to 1M.
+	 */
+	bsize = ci->num2 * 2;
+	if (bsize > 1024*1024)
+		bsize = 1024*1024;
+	buf_init(&b);
+	buf_resize(&b, bsize);
+	for (i = 0; i < ci->num2 && b.len < 1024*1024-2; i++) {
 		unsigned char cc = ci->str[i];
-		up = put_utf8(up, c->tbl[cc]);
+		buf_append(&b, c->tbl[cc]);
 	}
 	rv = comm_call(c->cb, ci->key, c->p,
-		       c->tbl[ci->num & 0xff], ci->mark, buf,
-		       up - buf, NULL, NULL, ci->x, 0);
+		       c->tbl[ci->num & 0xff], ci->mark,
+		       buf_final(&b), b.len,
+		       NULL, NULL, ci->x, 0);
 	if (rv <= 0) {
 		/* None of the extra was consumed. Assume that will continue */
 		c->noalloc = True;
-		free(buf);
+		free(b.b);
 		return rv;
 	}
-	if (rv >= (up - buf) + 1) {
+	if (rv >= b.len + 1) {
 		/* All of the extra (that we decoded) was consumed */
-		free(buf);
+		free(b.b);
 		return i + 1;
 	}
 	/* Only some was consumed.  We needed to map back to number of bytes. */
-	for (i = 0, up = buf; i < ci->num2 && up < buf + (rv-1); i++)
-		up = put_utf8(up, c->tbl[(unsigned char)ci->str[i]]);
-	free(buf);
-	return (up - buf) + 1;
+	buf_reinit(&b);
+	for (i = 0; i < ci->num2 && b.len < (rv-1); i++)
+		buf_append(&b, c->tbl[(unsigned char)ci->str[i]]);
+	free(b.b);
+	return i + 1;
 }
 
 DEF_CMD(charset_content)
