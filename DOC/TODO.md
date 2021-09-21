@@ -37,7 +37,7 @@ Bugs to be fixed
 - [X] future-dated email messages get date displayed badly in summary
 - [X] email with cc line > 2048 display badly
 - [ ] Don't wrap email header lines when cursor isn't on the line - too noisy
-- [ ] email parts that don't end EOL are displayed badly - 012 at end
+- [X] email parts that don't end EOL are displayed badly - 012 at end
 - [ ] when composing email, header lines mustn't wrap
 - [ ] when sending email, wrapped header lines must be unwrapped
 - [ ] ordering of marks in notmuch search summary can go wrong
@@ -595,7 +595,7 @@ Module features
 - [1] separate measuring and drawing images
 - [1] allow images to be full width, and less than half height
 - [1] allow cursor movement in image: maybe 9x9 positions
-- [1] ensure multipart ends each part with an eol.
+- [X] ensure multipart ends each part with an eol.
 - [ ] next part/prev part button on spacer
 - [ ] handle calendar attachments.
 - [ ] closing a large section pushed cursor to top of display, which

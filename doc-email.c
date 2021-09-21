@@ -716,7 +716,7 @@ DEF_CMD(open_email)
 		goto out;
 	attr_set_str(&h2->attrs, "email:which", "orig");
 	p = call_ret(pane, "doc:from-text", p, 0, NULL, NULL, 0, NULL,
-		     "0123456789\n");
+		     "\n0123456789\n");
 	if (!p) {
 		pane_close(h2);
 		goto out;
@@ -725,6 +725,7 @@ DEF_CMD(open_email)
 	ei->spacer = p;
 	point = vmark_new(p, MARK_POINT, NULL);
 	call("doc:set-ref", p, 1, point);
+	doc_next(p, point);
 	call("doc:set-attr", p, 1, point, "markup:func", 0,
 	     NULL, "doc:email:render-spacer");
 	mark_free(point);
