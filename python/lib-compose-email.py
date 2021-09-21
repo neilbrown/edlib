@@ -702,7 +702,9 @@ class compose_email(edlib.Pane):
             if not nm:
                 break
             bdy = focus.call("doc:get-str", h, he, ret='str')
-            bdy = bdy.strip()
+            # any newline, together with surrounding blanks, becomes a space
+            # email.message doesn't like split headers.
+            bdy = ' '.join(re.split(r"[ \t]*\n[ \t]*",bdy)).strip()
             if bdy:
                 msg[nm] = bdy
             if nm.lower() == "to" and not whoto:

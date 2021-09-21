@@ -38,8 +38,8 @@ Bugs to be fixed
 - [X] email with cc line > 2048 display badly
 - [ ] Don't wrap email header lines when cursor isn't on the line - too noisy
 - [X] email parts that don't end EOL are displayed badly - 012 at end
-- [ ] when composing email, header lines mustn't wrap
-- [ ] when sending email, wrapped header lines must be unwrapped
+- [X] when composing email, header lines mustn't wrap
+- [X] when sending email, wrapped header lines must be unwrapped
 - [ ] ordering of marks in notmuch search summary can go wrong
 - [ ] sometimes the tid in a notmuch query mark.pos is not in threadids!!
 - [ ] message/rfc822 content cannot be displayed
