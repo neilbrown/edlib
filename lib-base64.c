@@ -278,12 +278,14 @@ static int b64_bulk(struct b64c *c, wchar_t first, const char *s safe, int len)
 		if (!is_b64(wc))
 			continue;
 		b[buf_pos++] = from_b64(wc);
+		if (b[buf_pos-1] == 64)
+			break;
 		if (buf_pos < 4)
 			continue;
 		out[out_pos++] = ((b[0] << 2) & 0xFC) | (b[1] >> 4);
 		out[out_pos++] = ((b[1] << 4) & 0xF0) | (b[2] >> 2);
 		out[out_pos++] = ((b[2] << 6) & 0xC0) | (b[3] >> 0);
-		ret = in_pos;
+		ret = in_pos+1;
 		buf_pos = 0;
 	}
 
@@ -291,7 +293,7 @@ static int b64_bulk(struct b64c *c, wchar_t first, const char *s safe, int len)
 	i = 0;
 	while (i < out_pos) {
 		int rv = comm_call(c->cb, "cb", c->p, out[i], c->m,
-				   out+i+1, out_pos - i, NULL, NULL,
+				   out+i+1, out_pos-i-1, NULL, NULL,
 				   c->size, 0);
 		c->size = 0;
 		if (rv <= 0 || rv > (out_pos - i) + 1) {
@@ -324,7 +326,8 @@ DEF_CMD(base64_content_cb)
 	if (ci->x)
 		c->size = ci->x * 3 / 4;
 
-	if (!c->nobulk && (c->pos % 4) == 0 && ci->str && ci->num2 >= 4) {
+	if (!c->nobulk && wc != '=' && (c->pos % 4) == 0 &&
+	    ci->str && ci->num2 >= 4) {
 		mark_to_mark(c->m, ci->mark);
 		ret = b64_bulk(c, wc, ci->str, ci->num2);
 		if (ret > 0)

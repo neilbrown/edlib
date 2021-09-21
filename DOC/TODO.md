@@ -46,7 +46,7 @@ Bugs to be fixed
 - [ ] invalid quoted-printable/utf8 content like We=E2&#128;&#153;d
       causes the rest of content not to be displayed.
 - [X] html2text should set decode-errors to ignore
-- [ ] base64 saved-file of content ending 
+- [X] base64 saved-file of content ending 
       IHdpZHRoPScxJyBoZWlnaHQ9JzEnID48L3NwYW4+IDwvYm9keT48L2h0bWw+DQo= 
       adds 0x40 0xff to the end.
 - [ ] this highlighted added by xterm-keyboard-paste is disabled when chars
