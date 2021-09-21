@@ -267,8 +267,10 @@ static void call_render_line(struct pane *home safe, struct pane *p safe,
 	} else
 		s = call_ret(strsave, "doc:render-line", p, NO_NUMERIC, m);
 
-	if (!mark_valid(start))
+	if (!mark_valid(start)) {
+		mark_free(m);
 		return;
+	}
 	if (s)
 		vmark_set(home, start, s);
 
@@ -814,6 +816,8 @@ static int render(struct mark *pm, struct pane *p safe,
 		}
 		m = m2;
 	}
+	if (m && !m->mdata && vmark_next(m))
+		LOG("render-lines: break in vmark sequence");
 	if (!cursor_drawn && !hide_cursor) {
 		/* Place cursor in bottom right */
 		struct pane *cp = rl->cursor_pane;

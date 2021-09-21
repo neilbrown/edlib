@@ -176,6 +176,7 @@ DEF_CMD(render_filter_line)
 	/* Need to continue over other non-matching lines */
 	m = mark_dup(ci->mark);
 	cb.keep = 0;
+	cb.str = NULL;
 	cb.fd = fd;
 	do {
 		/* have a non-match, so move the mark over it. */

@@ -98,7 +98,7 @@ DEF_CMD(render_complete_line)
 		return Enoarg;
 
 	m = mark_dup(ci->mark);
-	line = call_ret(str, ci->key, ci->home->parent, -1, m);
+	line = call_ret(str, ci->key, ci->home->parent, NO_NUMERIC, m);
 	if (!line) {
 		mark_free(m);
 		return Efail;
