@@ -49,7 +49,7 @@ Bugs to be fixed
 - [X] base64 saved-file of content ending 
       IHdpZHRoPScxJyBoZWlnaHQ9JzEnID48L3NwYW4+IDwvYm9keT48L2h0bWw+DQo= 
       adds 0x40 0xff to the end.
-- [ ] this highlighted added by xterm-keyboard-paste is disabled when chars
+- [X] this highlighted added by xterm-keyboard-paste is disabled when chars
       are typed, but not on 'enter'
 - [ ] URL highlighting of email is sometimes bizzare - possibly when
       orig content is b64

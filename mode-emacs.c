@@ -235,8 +235,11 @@ REDEF_CMD(emacs_delete)
 
 	mk = call_ret(mark2, "doc:point", ci->focus);
 	/* If selection is replacable, clear it and use mk */
-	if (!clear_selection(ci->focus, NULL, mk, 3))
+	if (!clear_selection(ci->focus, NULL, mk, 3)) {
+		/* else clear any transient selection */
+		clear_selection(ci->focus, NULL, mk, 2);
 		mk = NULL;
+	}
 
 	m = mark_dup(ci->mark);
 
@@ -683,9 +686,16 @@ DEF_CMD(emacs_quote_insert)
 	int ret;
 	char buf[2] = ".";
 	const char *str;
+	bool first = N2(ci) != N2_undo_insert;
 
 	if (!ci->mark)
 		return Enoarg;
+
+	if (clear_selection(ci->focus, NULL, ci->mark, 3)) {
+		call("Replace", ci->focus, 1, ci->mark, NULL, !first);
+		first = False;
+	} else
+		clear_selection(ci->focus, NULL, ci->mark, 2);
 
 	str = ksuffix(ci, "K:CQ-");
 	if (!str[0]) {
@@ -696,8 +706,7 @@ DEF_CMD(emacs_quote_insert)
 		} else
 			str = "??";
 	}
-	ret = call("Replace", ci->focus, 1, ci->mark, str,
-		   N2(ci) == N2_undo_insert);
+	ret = call("Replace", ci->focus, 1, ci->mark, str, !first);
 	call("Mode:set-num2", ci->focus, N2_undo_insert);
 
 	return ret;
@@ -720,6 +729,7 @@ DEF_CMD(emacs_insert_other)
 	int i;
 	struct mark *m = NULL;
 	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
+	bool first = N2(ci) != N2_undo_insert;
 	char *ins;
 
 	if (!ci->mark)
@@ -732,8 +742,11 @@ DEF_CMD(emacs_insert_other)
 	if (ins == NULL)
 		return Efallthrough;
 
-	if (clear_selection(ci->focus, NULL, mk, 3))
-		call("Replace", ci->focus, 1, mk);
+	if (clear_selection(ci->focus, NULL, mk, 3)) {
+		call("Replace", ci->focus, 1, mk, NULL, !first);
+		first = False;
+	} else
+		clear_selection(ci->focus, NULL, mk, 2);
 
 	if (!*ins) {
 		ins++;
@@ -742,8 +755,7 @@ DEF_CMD(emacs_insert_other)
 		mark_step(m, 0);
 	}
 
-	ret = call("Replace", ci->focus, 1, m, ins,
-		   N2(ci) == N2_undo_insert, ci->mark);
+	ret = call("Replace", ci->focus, 1, m, ins, !first, ci->mark);
 	if (m) {
 		mark_to_mark(ci->mark, m);
 		mark_free(m);
@@ -759,11 +771,18 @@ DEF_CMD(emacs_interactive_insert)
 	 * it calls this, and we set up for proper undo
 	 */
 	int ret;
+	bool first = N2(ci) != N2_undo_insert;
 
 	if (!ci->str)
 		return Enoarg;
+
+	if (clear_selection(ci->focus, NULL, ci->mark, 3)) {
+		call("Replace", ci->focus, 1, ci->mark, NULL, !first);
+		first = False;
+	} else
+		clear_selection(ci->focus, NULL, ci->mark, 2);
 	ret = call("Replace", ci->focus, 1, ci->mark, ci->str,
-		   N2(ci) == N2_undo_insert);
+		   !first);
 	call("Mode:set-num2", ci->focus,
 	     strchr(ci->str, '\n') ? 0 : N2_undo_insert);
 	return ret;
