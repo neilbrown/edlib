@@ -422,7 +422,7 @@ wint_t get_utf8(const char **cpp safe, const char *end)
 	} else
 		return WERR;
 	if (end && end < cp + tail)
-		return WEOF;
+		return WERR;
 	while (tail--) {
 		c = *cp++;
 		if ((c & 0xc0) != 0x80)

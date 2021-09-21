@@ -47,6 +47,8 @@ static int utf8_step(struct pane *home safe, struct mark *mark safe,
 		}
 		b = buf;
 		ret = get_utf8(&b, b+i);
+		if (ret == WERR)
+			ret = (unsigned char)buf[0];
 	} else {
 		i = 10;
 		buf[--i] = ch;
@@ -56,6 +58,8 @@ static int utf8_step(struct pane *home safe, struct mark *mark safe,
 		}
 		b = buf + i;
 		ret = get_utf8(&b, buf+10);
+		if (ret == WERR)
+			ret = (unsigned char)buf[i];
 	}
 	if (!move)
 		mark_free(m);
@@ -129,6 +133,8 @@ DEF_CMD(utf8_content_cb)
 		if (c->have >= c->expect) {
 			const char *b = c->b;
 			wc = get_utf8(&b, b+c->have);
+			if (wc == WERR)
+				wc = c->b[0];
 			c->expect = 0;
 			ret = comm_call(c->cb, ci->key, c->p,
 					wc, ci->mark, ci->str,

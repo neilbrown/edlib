@@ -43,7 +43,7 @@ Bugs to be fixed
 - [ ] ordering of marks in notmuch search summary can go wrong
 - [ ] sometimes the tid in a notmuch query mark.pos is not in threadids!!
 - [ ] message/rfc822 content cannot be displayed
-- [ ] invalid quoted-printable/utf8 content like We=E2&#128;&#153;d
+- [X] invalid quoted-printable/utf8 content like We=E2&#128;&#153;d
       causes the rest of content not to be displayed.
 - [X] html2text should set decode-errors to ignore
 - [X] base64 saved-file of content ending 
