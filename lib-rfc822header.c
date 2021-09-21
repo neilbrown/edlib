@@ -246,7 +246,8 @@ static char *safe charset_word(struct pane *doc safe, struct mark *m safe)
 }
 
 static void copy_header(struct pane *doc safe,
-			const char *hdr safe, const char *type,
+			const char *hdr safe, const char *hdr_found safe,
+			const char *type,
 			struct mark *start safe, struct mark *end safe,
 			struct pane *p safe, struct mark *point safe)
 {
@@ -343,9 +344,13 @@ static void copy_header(struct pane *doc safe,
 		}
 	}
 	call("doc:replace", p, 1, NULL, "\n", 0, point);
-	snprintf(buf, sizeof(buf), "%zd", strlen(hdr)+1);
+	snprintf(buf, sizeof(buf), "%zd", strlen(hdr_found)+1);
 	call("doc:set-attr", p, 1, hstart, "render:rfc822header", 0, NULL, buf);
-	snprintf(attr, sizeof(attr), "render:rfc822header-%s", hdr);
+	if (strlen(hdr) == strlen(hdr_found))
+		/* Refer canonical name, if no 'Resent-' */
+		snprintf(attr, sizeof(attr), "render:rfc822header-%s", hdr);
+	else
+		snprintf(attr, sizeof(attr), "render:rfc822header-%s", hdr_found);
 	call("doc:set-attr", p, 1, hstart, attr, 0, NULL, "10000");
 
 	mark_free(hstart);
@@ -354,16 +359,21 @@ static void copy_header(struct pane *doc safe,
 
 static void copy_headers(struct pane *p safe, const char *hdr safe,
 			 const char *type,
-			 struct pane *doc safe, struct mark *pt safe)
+			 struct pane *doc safe, struct mark *pt safe,
+			 bool resent)
 {
 	struct header_info *hi = p->data;
 	struct mark *m, *n;
 
 	for (m = vmark_first(p, hi->vnum, p); m ; m = n) {
 		char *h = attr_find(m->attrs, "header");
+		char *horig = h;
+		while (resent && h &&
+		       strncasecmp(h, "resent-", 7) == 0)
+			h += 7;
 		n = vmark_next(m);
-		if (n && h && strcasecmp(h, hdr) == 0)
-			copy_header(p, hdr, type, m, n, doc, pt);
+		if (n && horig && h && strcasecmp(h, hdr) == 0)
+			copy_header(p, hdr, horig, type, m, n, doc, pt);
 	}
 }
 
@@ -427,6 +437,7 @@ DEF_CMD(header_get)
 {
 	const char *hdr = ci->str;
 	const char *type = ci->str2;
+	bool resent = ci->num2 == 1;
 	char *attr = NULL;
 	char *c, *t;
 
@@ -434,7 +445,7 @@ DEF_CMD(header_get)
 		return Enoarg;
 
 	if (ci->mark) {
-		copy_headers(ci->home, hdr, type, ci->focus, ci->mark);
+		copy_headers(ci->home, hdr, type, ci->focus, ci->mark, resent);
 		return 1;
 	}
 	asprintf(&attr, "rfc822-%s", hdr);

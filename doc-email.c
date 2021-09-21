@@ -739,11 +739,11 @@ DEF_CMD(open_email)
 		goto out;
 
 	/* copy some headers to the header temp document */
-	home_call(h2, "get-header", hdrdoc, 0, point, "From");
-	home_call(h2, "get-header", hdrdoc, 0, point, "Date");
-	home_call(h2, "get-header", hdrdoc, 0, point, "Subject", 0, NULL, "text");
-	home_call(h2, "get-header", hdrdoc, 0, point, "To", 0, NULL, "list");
-	home_call(h2, "get-header", hdrdoc, 0, point, "Cc", 0, NULL, "list");
+	home_call(h2, "get-header", hdrdoc, 0, point, "From", 1);
+	home_call(h2, "get-header", hdrdoc, 0, point, "Date", 1);
+	home_call(h2, "get-header", hdrdoc, 0, point, "Subject", 1, NULL, "text");
+	home_call(h2, "get-header", hdrdoc, 0, point, "To", 1, NULL, "list");
+	home_call(h2, "get-header", hdrdoc, 0, point, "Cc", 1, NULL, "list");
 
 	/* copy some headers into attributes for later analysis */
 	call("get-header", h2, 0, NULL, "MIME-Version", 0, NULL, "cmd");
