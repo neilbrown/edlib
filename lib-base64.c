@@ -305,9 +305,9 @@ static int b64_bulk(struct b64c *c, wchar_t first, const char *s safe, int len)
 		if (i < out_pos)
 			/* Only some was consumed, so need to
 			 * advance c->m by the amount that
-			 * was consumed - in the parent.
+			 * was consumed - in 'home'.
 			 */
-			call("doc:char", c->home->parent, rv, c->m);
+			call("doc:char", c->home, rv, c->m);
 	}
 	free(out);
 	return ret;

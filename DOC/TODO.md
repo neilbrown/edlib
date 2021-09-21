@@ -51,7 +51,7 @@ Bugs to be fixed
       adds 0x40 0xff to the end.
 - [X] this highlighted added by xterm-keyboard-paste is disabled when chars
       are typed, but not on 'enter'
-- [ ] URL highlighting of email is sometimes bizzare - possibly when
+- [X] URL highlighting of email is sometimes bizzare - possibly when
       orig content is b64
 - [ ] Resent- headers need to be handled somehow.
 - [X] structure prefix in email summary gets truncated
