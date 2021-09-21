@@ -820,20 +820,20 @@ static int count_buttons(struct pane *p safe, struct mark *m safe)
 }
 
 static int email_step(struct pane *home safe, struct mark *mark safe,
-		      int num, int num2)
+		      int forward, int move)
 {
 	struct pane *p = home;
 	struct email_view *evi = p->data;
 	wint_t ret;
 	int n = -1;
 
-	if (num) {
+	if (forward) {
 		ret = home_call(p->parent, "doc:char", home,
-				num2 ? 1 : 0,
+				move ? 1 : 0,
 				mark, evi->invis,
-				num2 ? 0 : 1);
+				move ? 0 : 1);
 		n = get_part(p->parent, mark);
-		if (num2 && is_spacer(n)) {
+		if (move && is_spacer(n)) {
 			/* Moving in a spacer, If after valid buttons,
 			 * move to end
 			 */
@@ -846,11 +846,11 @@ static int email_step(struct pane *home safe, struct mark *mark safe,
 		}
 	} else {
 		ret = home_call(p->parent, "doc:char", home,
-				num2 ? -1 : 0,
+				move ? -1 : 0,
 				mark, evi->invis,
-				num2 ? 0 : -1);
+				move ? 0 : -1);
 		n = get_part(p->parent, mark);
-		if (is_spacer(n) && num2 &&
+		if (is_spacer(n) && move &&
 		    ret != CHAR_RET(WEOF) && iswdigit(ret & 0x1fffff)) {
 			/* Just stepped back over the 9 at the end of a spacer,
 			 * Maybe step further if there aren't 10 buttons.

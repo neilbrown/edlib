@@ -272,7 +272,7 @@ DEF_CMD(mp_set_ref)
 }
 
 static int mp_step(struct pane *home safe, struct mark *mark safe,
-		   int num, int num2, const char *str)
+		   int forward, int move, const char *str)
 {
 	struct mp_info *mpi = home->data;
 	struct mark *m1 = NULL;
@@ -290,8 +290,8 @@ static int mp_step(struct pane *home safe, struct mark *mark safe,
 
 	mp_check_consistent(mpi);
 
-	if (num2) {
-		mark_step(m, num);
+	if (move) {
+		mark_step(m, forward);
 		pre_move(m);
 	}
 
@@ -302,17 +302,17 @@ static int mp_step(struct pane *home safe, struct mark *mark safe,
 	else
 		ret = home_call(mpi->parts[m->ref.docnum].pane,
 				"doc:char", home,
-				num2 ? (num ? 1 : -1) : 0,
+				move ? (forward ? 1 : -1) : 0,
 				m1, str,
-				num2 ? 0 : (num ? 1 : -1),
+				move ? 0 : (forward ? 1 : -1),
 				NULL, NULL);
 	while (ret == CHAR_RET(WEOF) || ret == -1) {
-		if (!num2 && m == mark) {
+		if (!move && m == mark) {
 			/* don't change mark when not moving */
 			m = mark_dup(m);
 			pre_move(m);
 		}
-		if (num) {
+		if (forward) {
 			if (m->ref.docnum >= mpi->nparts)
 				break;
 			n = m->ref.docnum + 1;
@@ -333,11 +333,11 @@ static int mp_step(struct pane *home safe, struct mark *mark safe,
 		else
 			ret = home_call(mpi->parts[m->ref.docnum].pane,
 					"doc:char", home,
-					num2 ? (num ? 1 : -1) : 0,
+					move ? (forward ? 1 : -1) : 0,
 					m1, str,
-					num2 ? 0 : (num ? 1 : -1));
+					move ? 0 : (forward ? 1 : -1));
 	}
-	if (num2) {
+	if (move) {
 		mp_normalize(mpi, mark, vis);
 		post_move(mark);
 	}
