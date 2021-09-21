@@ -846,6 +846,26 @@ DEF_CMD(dir_shares_ref)
 	return 1;
 }
 
+DEF_CMD(dir_debug_mark)
+{
+	char *ret = NULL;
+	struct mark *m = ci->mark;
+	struct dir_ent *de;
+
+	if (!m || m->owner != ci->home || !ci->comm2)
+		return Enoarg;
+	de = m->ref.d;
+	if (!mark_valid(m))
+		ret = strdup("M:FREED");
+	else if (!de)
+		ret = strdup("M:EOF");
+	else
+		asprintf(&ret, "M:%s(#%x)", de->name, m->ref.ignore);
+	comm_call(ci->comm2, "cb", ci->focus, 0, NULL, ret);
+	free(ret);
+	return 1;
+}
+
 static struct map *dirview_map;
 DEF_LOOKUP_CMD(dirview_handle, dirview_map);
 
@@ -1243,6 +1263,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(dir_map, "doc:set-attr", &dir_doc_set_attr);
 	key_add(dir_map, "doc:char", &dir_char);
 	key_add(dir_map, "doc:notify:doc:revisit", &dir_revisited);
+	key_add(dir_map, "doc:debug:mark", &dir_debug_mark);
 
 	key_add(dir_map, "doc:shares-ref", &dir_shares_ref);
 
