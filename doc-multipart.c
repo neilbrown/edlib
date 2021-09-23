@@ -769,12 +769,16 @@ DEF_CMD(mp_val_marks)
 
 	m1 = ci->mark->ref.m;
 	m2 = ci->mark->ref.m;
-	if (m1 && (!m2 || marks_validate(m1, m2)))
-		return 1;
 	if (m1 == m2)
-		LOG("mp_val_marks: marks are the same!");
-	else if (!m1)
+		return 1;
+	if (m1 && m2 && m1->seq > m2->seq) {
+		LOG("mp_val_marks: subordinate marks out of order!");
+		return Efalse;
+	}
+	if (!m1)
 		LOG("mp_val_marks: m1 is NULL");
+	else if (!m2 || marks_validate(m1, m2))
+		return 1;
 	return Efalse;
 }
 

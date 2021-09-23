@@ -819,7 +819,7 @@ DEF_CMD(docs_val_marks)
 		return Efalse;
 	}
 	if (found == 0)
-		LOG("docsval_marks: Neither mark found in pane list");
+		LOG("docs_val_marks: Neither mark found in pane list");
 	if (found == 1)
 		LOG("docs_val_marks: mark2 not found in pane list");
 	return Efalse;

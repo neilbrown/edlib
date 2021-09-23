@@ -896,8 +896,6 @@ class notmuch_query(edlib.Doc):
             return 1
         t1,m1 = mark.pos
         t2,m2 = mark2.pos
-        if self.threadids.index(t1) < self.threadids.index(t2):
-            return 1
         if t1 == t2:
             if m1 is None:
                 edlib.LOG("notmuch_query val_mark: m1 mid is None",
@@ -910,6 +908,8 @@ class notmuch_query(edlib.Doc):
             edlib.LOG("notmuch_query val_mark: messages in wrong order",
                       mark.pos, mark2.pos)
             return edlib.Efalse
+        if self.threadids.index(t1) < self.threadids.index(t2):
+            return 1
         edlib.LOG("notmuch_query val_mark: pos in wrong order:",
                   mark.pos, mark2.pos)
         return edlib.Efalse

@@ -677,7 +677,7 @@ static void point_backward_to_mark(struct mark *p safe, struct mark *m safe)
 	assign_seq(p);
 }
 
-void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
+static void _mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 {
 	/* DEBUG: Make sure they are on same list */
 	struct mark *a = m, *b = target;
@@ -810,9 +810,36 @@ void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 	}
 }
 
+void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
+{
+	struct mark *m2;
+	int err = 0;
+	static bool warned = False;
+
+	_mark_to_mark_noref(m, target);
+	m2 = mark_prev(m);
+	if (m2 && !mark_same(m2, m) &&
+	    pane_call(m->owner, "debug:validate-marks", m->owner,
+		      0, m2, NULL, 0, m) < 0)
+		err = 1;
+	m2 = mark_next(m);
+	if (m2 && !mark_same(m, m2) &&
+	    pane_call(m->owner, "debug:validate-marks", m->owner,
+		      0, m, NULL, 0, m2) < 0)
+		err = 1;
+
+	if (err && !warned) {
+		LOG_BT();
+		call("editor:notify:Message:broadcast",
+		     m->owner, 0, NULL,
+		     "WARNING: marks inconsistent in mark_to_mark, check log");
+		warned = True;
+	}
+}
+
 void mark_to_mark(struct mark *m safe, struct mark *target safe)
 {
-	mark_to_mark_noref(m, target);
+	_mark_to_mark_noref(m, target);
 	mark_ref_copy(m, target);
 }
 

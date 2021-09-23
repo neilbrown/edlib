@@ -323,7 +323,7 @@ DEF_CMD(log_char)
 
 DEF_CMD(log_val_marks)
 {
-	/* mark1 and mark2 must be on the list, and must be correctly ordered */
+	/* mark1 and mark2 must be correctly ordered */
 	struct doc *d = ci->home->data;
 	struct log *log = container_of(d, struct log, doc);
 	struct logbuf *b;
