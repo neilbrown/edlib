@@ -70,28 +70,33 @@ static void post_move(struct mark *m)
 	 * Then ensure that if neighbouring marks are at same location,
 	 * they use same marks.
 	 */
-	struct mark *m2;
+	struct mark *m2, *mtarget;
 
 	if (!m || hlist_unhashed(&m->all))
 		return;
 	ASSERT(m->ref.m == NULL || GET_REFS(m->ref.m) == 1);
-	while ((m2 = mark_next(m)) != NULL &&
+	mtarget = m;
+	while ((m2 = mark_next(mtarget)) != NULL &&
 	       (m2->ref.docnum < m->ref.docnum ||
 		(m2->ref.docnum == m->ref.docnum &&
 		 m2->ref.m && m->ref.m &&
-		 m2->ref.m->seq < m->ref.m->seq))) {
-		/* m should be after m2 */
-		mark_to_mark_noref(m, m2);
-	}
+		 m2->ref.m->seq < m->ref.m->seq)))
+		mtarget = m2;
+	if (mtarget != m)
+		/* m should be after mtarget */
+		mark_to_mark_noref(m, mtarget);
 
-	while ((m2 = mark_prev(m)) != NULL &&
+	mtarget = m;
+	while ((m2 = mark_prev(mtarget)) != NULL &&
 	       (m2->ref.docnum > m->ref.docnum||
 		(m2->ref.docnum == m->ref.docnum &&
 		 m2->ref.m && m->ref.m &&
-		 m2->ref.m->seq > m->ref.m->seq))) {
-		/* m should be before m2 */
-		mark_to_mark_noref(m, m2);
-	}
+		 m2->ref.m->seq > m->ref.m->seq)))
+		mtarget = m2;
+	if (mtarget != m)
+		/* m should be before mtarget */
+		mark_to_mark_noref(m, mtarget);
+
 	if (!m->ref.m)
 		return;
 	ASSERT(GET_REFS(m->ref.m) == 1);
