@@ -487,8 +487,8 @@ static void update_offset(struct mark *m safe, struct rf_data *rd safe,
 			m2 = mark_prev(m2);
 		}
 	}
-	mark_to_mark_noref(m, target);
 	m->ref.i = o;
+	mark_to_mark_noref(m, target);
 }
 
 static void prev_line(struct pane *home safe, struct mark *m safe)

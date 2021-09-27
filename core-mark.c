@@ -866,8 +866,8 @@ void mark_step_sharesref(struct mark *m safe, int forward)
 		     m2 = mark_prev(m2))
 			target = m2;
 	}
-	mark_to_mark_noref(m, target);
 	m->ref.i = target->ref.i;
+	mark_to_mark_noref(m, target);
 }
 
 /* A 'vmark' is a mark in a particular view.  We can walk around those
