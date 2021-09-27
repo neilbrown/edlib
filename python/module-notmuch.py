@@ -396,14 +396,14 @@ class notmuch_main(edlib.Doc):
         return 1
 
     def handle_val_mark(self, key, mark, mark2, **a):
-        "handle:debug:validate-mark"
+        "handle:debug:validate-marks"
         if not mark or not mark2:
             return edlib.Enoarg
         if mark.pos == mark2.pos:
-            if mark.index < mark2.index:
+            if mark.offset < mark2.offset:
                 return 1
-            edlib.LOG("notmuch_main val_marks: same pos, bad index:",
-                      mark.index, mark2.index)
+            edlib.LOG("notmuch_main val_marks: same pos, bad offset:",
+                      mark.offset, mark2.offset)
             return edlib.Efalse
         if mark.pos is None:
             edlib.LOG("notmuch_main val_mark: mark.pos is None")
@@ -880,14 +880,14 @@ class notmuch_query(edlib.Doc):
         return 1
 
     def handle_val_mark(self, key, mark, mark2, **a):
-        "handle:debug:validate-mark"
+        "handle:debug:validate-marks"
         if not mark or not mark2:
             return edlib.Enoarg
         if mark.pos == mark2.pos:
-            if mark.index < mark2.index:
+            if mark.offset < mark2.offset:
                 return 1
-            edlib.LOG("notmuch_query val_marks: same pos, bad index:",
-                      mark.index, mark2.index)
+            edlib.LOG("notmuch_query val_marks: same pos, bad offset:",
+                      mark.offset, mark2.offset)
             return edlib.Efalse
         if mark.pos is None:
             edlib.LOG("notmuch_query val_mark: mark.pos is None")
