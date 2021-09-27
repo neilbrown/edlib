@@ -1026,10 +1026,11 @@ class notmuch_query(edlib.Doc):
                     m = None
                 while m and m.pos and m.pos[0] == tid:
                     m2 = m.next_any()
-                    m.to_mark_noref(self.pos)
+                    # m needs to be before pos
                     if m.seq > self.pos.seq:
-                        # want m before pos
                         m.to_mark_noref(self.pos)
+                    elif self.pos.prev_any().seq != m.seq:
+                        m.to_mark_noref(self.pos.prev_any())
                     m = m2
                 self.notify("notmuch:thread-changed", tid, 1)
             if need_update:
@@ -1089,12 +1090,12 @@ class notmuch_query(edlib.Doc):
             if self.threads[tid]['total'] == 0:
                 # notify viewers to close threads
                 self.notify("notmuch:thread-changed", tid)
-                del self.threads[tid]
-                self.threadids.remove(tid)
                 m.step_sharesref(0)
                 while m < m2:
                     m.pos = m2.pos
                     m = m.next_any()
+                del self.threads[tid]
+                self.threadids.remove(tid)
             m = m2
 
     def cvt_depth(self, depth):
