@@ -400,7 +400,7 @@ static char *mark_info(struct mark *m)
 	if (ret)
 		return ret;
 
-	asprintf(&ret, "M:%x<%p>", m->seq, m);
+	asprintf(&ret, "M:%d<%p>%d", m->seq, m, m->ref.i);
 	return ret;
 }
 
