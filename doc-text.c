@@ -163,6 +163,7 @@ struct text {
 	 */
 	enum { Redo, Undo, AltUndo } prev_edit;
 
+	bool			revising_marks;
 	char			file_changed; /* '2' means it has changed, but
 					       * we are editing anyway
 					       */
@@ -1412,6 +1413,7 @@ DEF_CMD(text_reundo)
 			first = 0;
 		}
 
+		t->revising_marks = True;
 		if (where == 1) {
 			mark_step(m, 1);
 			do {
@@ -1439,6 +1441,7 @@ DEF_CMD(text_reundo)
 				m->ref = tmp;
 			} while (i == 2);
 		}
+		t->revising_marks = False;
 
 		if (!_text_ref_same(t, &m->ref, &end))
 			/* eek! */
@@ -1999,6 +2002,9 @@ DEF_CMD(text_val_marks)
 
 	if (!ci->mark || !ci->mark2)
 		return Enoarg;
+
+	if (t->revising_marks)
+		return 1;
 
 	if (ci->mark->ref.c == ci->mark2->ref.c) {
 		if (ci->mark->ref.o < ci->mark2->ref.o)
