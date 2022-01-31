@@ -29,6 +29,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] fill-mode doesn't propogate 'cols' from one instance to next
+      so if doc is marked 'textfill', that does enable autofill
 - [ ] if last line of file does end \n, and cursor is there, then moving
      up leave the cursor displayed on x11 display.
 - [X] autospell sometimes ignores new text, or highlights partial words

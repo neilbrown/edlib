@@ -83,7 +83,7 @@ def do_replace(focus, start, end, new, strip):
 
 def reformat(lines, lln,  width, tostrip, prefix):
     # 'lines' is an array of lines
-    # 'lln' is the lenth of the first line which *isn't* included
+    # 'lln' is the length of the first line which *isn't* included
     #   in the lines array.  It is a prefix not to be touched.
     # 'tostrip' is characters that can be removed from start of lines
     #    including space and tab
@@ -107,7 +107,7 @@ def reformat(lines, lln,  width, tostrip, prefix):
     pfx = ''
     for w in words:
         spaces = 1
-        if ln and ln[-1] == '.':
+        if ln and ln[-1] in '.?!':
             # 2 spaces after a sentence
             spaces = 2
         if ln and lln + spaces + len(w) > width:
@@ -179,11 +179,19 @@ def get_prefixes(focus, mark, lines):
     if len(lines) == 1:
         # only one line, so prefix is all spaces but based on first line
         prefix = focus.call("doc:get-attr", "fill:default-prefix",
-                                 m, ret='str')
+                            m, ret='str')
         if not prefix:
             prefix = ""
+            # When a single line is being wrapped, all of these
+            # characters in the prefix are preserved for the prefix of
+            # other lines.
+            repeating_prefix = focus.call("doc:get-attr", "fill:repeating-prefix",
+                                          m, ret='str')
+            if not repeating_prefix:
+                repeating_prefix=' \t>'
+
             for c in p0:
-                if c == '\t':
+                if c in repeating_prefix:
                     prefix += c
                 else:
                     prefix += ' '
