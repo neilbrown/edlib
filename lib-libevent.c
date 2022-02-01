@@ -258,7 +258,7 @@ DEF_CB(libevent_run)
 
 	/* Disable any alarm set by python (or other interpreter) */
 	alarm(0);
-	event_base_loop(b, dont_block ? EVLOOP_NONBLOCK : EVLOOP_ONCE);
+	event_base_loop(b, EVLOOP_ONCE | (dont_block ? EVLOOP_NONBLOCK : 0));
 	if (ei->base == b)
 		return 1;
 	while (!list_empty(&ei->event_list)) {
