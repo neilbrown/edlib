@@ -164,15 +164,20 @@ class MakePane(edlib.Pane):
                         dir = d
                         break
             try:
-                d = self.call("doc:open", -1, 8, dir+fname, ret='pane')
+                # 8== reload.  64==only if it exists.
+                d = self.call("doc:open", -1, 8|64, dir+fname, ret='pane')
             except edlib.commandfailed:
                 d = None
+            newfile = True
             if not d:
-                return False
+                self.files[fname] = None
+                return newfile
             v = d.call("doc:add-view", self) - 1
             self.add_notify(d, "Notify:Close")
             self.files[fname] = (d, v)
-            newfile = True
+        if not self.files[fname]:
+            # not already open
+            return newfile
         (d,v) = self.files[fname]
         lm = edlib.Mark(d)
         ln = int(lineno)
@@ -200,8 +205,8 @@ class MakePane(edlib.Pane):
     def handle_notify_close(self, key, focus, **a):
         "handle:Notify:Close"
         for fn in self.files:
-            (d,v) = self.files[fn]
-            if d == focus:
+            dv = self.files[fn]
+            if dv and dv[0] == focus:
                 del self.files[fn]
                 break
 
@@ -418,7 +423,7 @@ class MakePane(edlib.Pane):
 
     def goto_mark(self, focus, n, where):
         (fname, lineno) = n
-        if fname in self.files:
+        if fname in self.files and self.files[fname]:
             (d,v) = self.files[fname]
             mk, l = d.vmarks(v, self)
             while mk and int(mk['line']) < int(lineno):

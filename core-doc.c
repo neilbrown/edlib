@@ -1356,6 +1356,7 @@ DEF_CMD(doc_open)
 	int reload = ci->num2 & 8;
 	int force_reload = ci->num2 & 16;
 	int quiet = ci->num2 & 32;
+	int only_existing = ci->num2 & 64;
 	char pathbuf[PATH_MAX];
 
 	if (!ci->str)
@@ -1424,6 +1425,11 @@ DEF_CMD(doc_open)
 	p = call_ret(pane, "docs:byfd", ed, 0, NULL, name, fd);
 
 	if (!p) {
+		if (only_existing) {
+			if (fd != ci->num)
+				close(fd);
+			return Efalse;
+		}
 		p = call_ret(pane, "global-multicall-open-doc-", ed,
 			     fd, NULL, name,
 			     stb.st_mode & S_IFMT);
