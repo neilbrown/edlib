@@ -975,6 +975,18 @@ class CModePane(edlib.Pane):
         if str == "render:paren-mismatch" and self.post_paren and (mark in self.post_paren):
             comm2("cb", focus, "bg:red+50,bold", 1, 201)
 
+    def handle_attr(self, key, focus, mark, str, comm2, **a):
+        "handle:doc:get-attr"
+        if not mark or not str or not comm2:
+            return edlib.Efallthrough
+        if str == "fill:repeating-prefix":
+            if self.indent_type == 'C':
+                comm2("cb", focus, mark, "*", str)
+            if self.indent_type == 'python':
+                comm2("cb", focus, mark, "#", str)
+            return 1
+        return edlib.Efallthrough
+
     def handle_para(self, key, focus, mark, num, **a):
         "handle:doc:paragraph"
         # A "Paragraph" is a function, which starts with a line that has no

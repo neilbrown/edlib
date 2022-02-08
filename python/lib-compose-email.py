@@ -508,6 +508,9 @@ class compose_email(edlib.Pane):
         "handle:doc:get-attr"
         if not mark or not str or not comm2 or not str.startswith("fill:"):
             return edlib.Efallthrough
+        if str == "fill:repeating-prefix":
+            comm2("cb", focus, mark, ">", str)
+            return 1
         m = self.vmark_at_or_before(self.view, mark)
         if m:
             return edlib.Efallthrough

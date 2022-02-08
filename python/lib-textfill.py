@@ -188,7 +188,8 @@ def get_prefixes(focus, mark, lines):
             repeating_prefix = focus.call("doc:get-attr", "fill:repeating-prefix",
                                           m, ret='str')
             if not repeating_prefix:
-                repeating_prefix=' \t>'
+                repeating_prefix=''
+            repeating_prefix += ' \t'
 
             for c in p0:
                 if c in repeating_prefix:
