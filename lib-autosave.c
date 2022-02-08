@@ -230,7 +230,7 @@ DEF_CMD(ask_autosave)
 		call("doc:replace", doc, 0, NULL, "\n\n");
 		call("doc:set:autoclose", doc, 1);
 		diffcmd = strconcat(p, "diff -Nu ",f," ",a);
-		call("attach-shellcmd", doc, 1, NULL, diffcmd);
+		call("attach-shellcmd", doc, 2, NULL, diffcmd);
 		attr_set_str(&doc->attrs, "view-default", "diff");
 		p2 = home_call_ret(pane, doc, "doc:attach-view", p2, 1);
 	} else
