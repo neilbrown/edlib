@@ -6,11 +6,12 @@
 import subprocess, os, fcntl, signal
 
 class ShellPane(edlib.Pane):
-    def __init__(self, focus, reusable):
+    def __init__(self, focus, reusable, add_footer=True):
         edlib.Pane.__init__(self, focus)
         self.line = b''
         self.pipe = None
         self.call("doc:request:Abort")
+        self.add_footer = add_footer
         if reusable:
             self.call("editor:request:shell-reuse")
 
@@ -91,7 +92,9 @@ class ShellPane(edlib.Pane):
             l = self.line + out
             self.line = b''
             self.call("doc:replace", l.decode("utf-8", 'ignore'))
-            if not ret:
+            if not self.add_footer:
+                pass
+            elif not ret:
                 self.call("doc:replace", "\nProcess Finished\n")
             elif ret > 0:
                 self.call("doc:replace", "\nProcess Finished (%d)\n" % ret)
@@ -157,10 +160,11 @@ def shell_attach(key, focus, comm2, num, str, str2, **a):
     # num: 1 - place Cmd/Cwd at top of doc
     #      2 - reuse doc, don't clear it first
     #      4 - register to be cleaned up by shell-reuse
+    #      8 - don't add a footer when command completes.
     # Clear document - discarding undo history.
     if (num & 2) == 0:
         focus.call("doc:clear")
-    p = ShellPane(focus, num & 4)
+    p = ShellPane(focus, num & 4, (num & 8) == 0)
     if not p:
         return edlib.Efail
     focus['view-default'] = 'shell-viewer'
