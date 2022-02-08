@@ -66,10 +66,10 @@ Bugs to be fixed
 - [ ] catching doc:replace in a pane doesn't catch doc:insert-file.
       I need a simple way to intercept any change.
 - [ ] mark can be used after the go invalid too easily.  How to fix??
-- [1] optimize all doc:content handlers to use the 'string' if possible
+- [X] optimize all doc:content handlers to use the 'string' if possible
      + libsearch
      + fix charset
-     - qprint
+     + qprint
      + utf8
 - [ ] don't allow starting macro inside a macro
 - [ ] Num-C-l doesn't work if it would require part of a wrapped line

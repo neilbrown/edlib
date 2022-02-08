@@ -226,26 +226,42 @@ struct qpcb {
 	struct mark *lws_start; /* after first lws char */
 };
 
-static int qpflush(struct qpcb *c safe, const struct cmd_info *ci, wint_t ch)
+static int qpflush(struct qpcb *c safe, const struct cmd_info *ci, wint_t ch,
+		   const char *remainder, int rlen)
 {
 	char *lws = buf_final(&c->lws);
+	int lws_len = c->lws.len;
 	int ret = 1;
+	int i;
 
-	while (ret > 0 && *lws && c->lws_start) {
-		ret = comm_call(c->cb, ci->key, c->p, *lws, c->lws_start, NULL,
-				0, NULL, NULL, c->size, 0);
+	while (ret > 0 && lws_len > 0 && c->lws_start) {
+		ret = comm_call(c->cb, ci->key, c->p, *lws, c->lws_start, lws+1,
+				lws_len - 1, NULL, NULL, c->size, 0);
 		doc_next(ci->home, c->lws_start);
 		c->size = 0;
-		lws += 1;
+		if (ret > 0) {
+			lws += ret;
+			lws_len -= ret;
+		}
 	}
 	buf_reinit(&c->lws);
 	mark_free(c->lws_start);
 	c->lws_start = NULL;
 	if (!ch)
 		return ret;
+	for (i = 0; remainder && i < rlen; i++)
+		if (strchr("=\r\n", remainder[i])) {
+			rlen = i;
+			if (remainder[i] == '=')
+				break;
+			/* ignore trailing white space */
+			while (i > 0 && remainder[i] <= ' ')
+				i -= 1;
+			rlen = i;
+		}
 	if (ret > 0)
-		ret = comm_call(c->cb, ci->key, c->p, ch, ci->mark, NULL,
-				0, NULL, NULL, c->size, 0);
+		ret = comm_call(c->cb, ci->key, c->p, ch, ci->mark, remainder,
+				rlen, NULL, NULL, c->size, 0);
 	c->size = 0;
 	return ret;
 }
@@ -265,14 +281,14 @@ DEF_CMD(qp_content_cb)
 		/* Must see a hexit */
 		int h = hex(wc);
 		if (h >= 0) {
-			ret = qpflush(c, ci,  (hex(c->state) << 4) | h);
+			ret = qpflush(c, ci,  (hex(c->state) << 4) | h, NULL, 0);
 			c->state = 0;
 			return ret;
 		}
 		/* Pass first 2 literally */
-		ret = qpflush(c, ci, '=');
+		ret = qpflush(c, ci, '=', NULL, 0);
 		if (ret > 0)
-			ret = qpflush(c, ci, c->state);
+			ret = qpflush(c, ci, c->state, NULL, 0);
 		c->state = 0;
 	}
 
@@ -283,7 +299,7 @@ DEF_CMD(qp_content_cb)
 		if (wc == '=') {
 			/* flush lws even if this turns out to be "=\n    \n" */
 			if (ret)
-				ret = qpflush(c, ci, 0);
+				ret = qpflush(c, ci, 0, NULL, 0);
 			c->state = wc;
 			return ret;
 		}
@@ -300,7 +316,7 @@ DEF_CMD(qp_content_cb)
 			c->lws_start = NULL;
 		}
 		if (ret > 0)
-			ret = qpflush(c, ci, wc);
+			ret = qpflush(c, ci, wc, ci->str, ci->num2);
 		return ret;
 	}
 	/* Previous was '='. */
@@ -316,9 +332,9 @@ DEF_CMD(qp_content_cb)
 		/* The '=' was hiding the \n */
 		return ret;
 	if (ret > 0)
-		ret = qpflush(c, ci, '=');
+		ret = qpflush(c, ci, '=', NULL, 0);
 	if (ret > 0)
-		ret = qpflush(c, ci, wc);
+		ret = qpflush(c, ci, wc, NULL, 0);
 	return ret;
 }
 
