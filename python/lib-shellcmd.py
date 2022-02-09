@@ -8,7 +8,11 @@ import subprocess, os, fcntl, signal
 class ShellPane(edlib.Pane):
     def __init__(self, focus, reusable, add_footer=True):
         edlib.Pane.__init__(self, focus)
+        self.callback = None
+        self.cb_pane = None
+        self.cb_lines = 0
         self.line = b''
+        self.lines = 0
         self.pipe = None
         self.call("doc:request:Abort")
         self.add_footer = add_footer
@@ -92,6 +96,10 @@ class ShellPane(edlib.Pane):
             l = self.line + out
             self.line = b''
             self.call("doc:replace", l.decode("utf-8", 'ignore'))
+            if self.cb_pane:
+                p = self.cb_pane
+                self.cb_pane = None
+                self.callback("cb:eof", p, self)
             if not self.add_footer:
                 pass
             elif not ret:
@@ -106,6 +114,14 @@ class ShellPane(edlib.Pane):
         l = self.line + r
         i = l.rfind(b'\n')
         if i >= 0:
+            if self.cb_pane and self.cb_lines > 0:
+                # need to send callback after this many lines
+                self.lines += len(l.splitlines())
+                if self.lines >= self.cb_lines:
+                    p = self.cb_pane
+                    self.cb_pane = None
+                    self.cb_lines = 0
+                    self.callback("cb:lines", p, self)
             self.call("doc:replace", l[:i+1].decode("utf-8", 'ignore'))
             l = l[i+1:]
         self.line = l
@@ -131,6 +147,33 @@ class ShellPane(edlib.Pane):
             os.killpg(self.pipe.pid, signal.SIGTERM)
             self.call("doc:replace", "\nProcess signalled\n")
         return 1
+
+    def handle_callback(self, key, focus, num, num2, comm2, **a):
+        "handle:shellcmd:set-callback"
+        # comm2 is recorded as a callback to call on focus after
+        # num msecs or num2 lines of output.  Callback is called
+        # when command finishes if not before
+        if not focus or not comm2:
+            return edlib.Einval
+        self.callback = comm2
+        self.cb_pane = focus
+        self.add_notify(focus, "Notify:Close")
+        self.cb_lines = num2
+        if num > 0:
+            self.call("event:timer", num, self.time_cb)
+        return 1
+
+    def time_cb(self, key, **a):
+        if self.cb_pane:
+            p = self.cb_pane
+            self.cb_pane = None
+            self.callback("cb:timer", p, self)
+        return edlib.Efalse
+
+    def handle_nofify_close(self, key, focus, **a):
+        "handle:Notify:Close"
+        if focus == self.cb_pane:
+            self.cb_pane = None
 
 class ShellViewer(edlib.Pane):
     # This is a simple overlay to follow EOF

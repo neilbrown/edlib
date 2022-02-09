@@ -1718,10 +1718,26 @@ DEF_CMD(choose_pane)
 	return 1;
 }
 
+DEF_CB(shellcb)
+{
+	char *str;
+
+	if (strcmp(ci->key, "cb:eof") != 0) {
+		struct pane *par = call_ret(pane, "OtherPane", ci->home);
+		if (par)
+			home_call(ci->focus, "doc:attach-view", par, 1);
+		return 1;
+	}
+	str = call_ret(str, "doc:get-str", ci->focus);
+	call("Message", ci->home, 0, NULL, str);
+	free(str);
+	return 1;
+}
+
 DEF_CMD(emacs_shell)
 {
 	char *name = "*Shell Command Output*";
-	struct pane *p, *doc, *par;
+	struct pane *p, *doc, *par, *sc;
 	char *path;
 	struct pcb cb;
 
@@ -1760,7 +1776,8 @@ DEF_CMD(emacs_shell)
 	 * We don't need a doc attachment as no point is needed - we
 	 * always insert at the end.
 	 */
-	if (call("attach-shellcmd", doc, 4, NULL, ci->str, 0, NULL, path) < 0)
+	sc = call_ret(pane, "attach-shellcmd", doc, 4, NULL, ci->str, 0, NULL, path);
+	if (!sc)
 		call("doc:replace", doc, 0, NULL,
 		     "Failed to run command - sorry\n");
 	if (call("text-search", doc, 0, NULL, "diff|(stg|git).*show",
@@ -1775,11 +1792,24 @@ DEF_CMD(emacs_shell)
 	cb.p = NULL;
 	call_comm("editor:notify:shell-reuse", ci->focus, &cb.c);
 	if (!cb.p) {
-		/* choose_pane didn't attach, so we do it here */
-		par = call_ret(pane, "OtherPane", ci->focus);
-		if (!par)
-			return Efail;
-		home_call(doc, "doc:attach-view", par, 1);
+		/* choose_pane didn't attach, so set a callback to do
+		 * it when there is enough content.
+		 */
+		if (sc) {
+			/* If it take more than 500msec, or includes 2
+			 * or more lines, we'll show in a pane, else
+			 * just show as a message.
+			 */
+			home_call_comm(sc, "shellcmd:set-callback",
+				       ci->focus, &shellcb,
+				       500, NULL, NULL,
+				       2);
+		} else {
+			par = call_ret(pane, "OtherPane", ci->focus);
+			if (!par)
+				return Efail;
+			home_call(doc, "doc:attach-view", par, 1);
+		}
 	}
 	return 1;
 }
