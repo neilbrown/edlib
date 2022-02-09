@@ -160,20 +160,22 @@ static void popup_finished(struct pane *focus safe, struct pane *home safe,
 	struct popup_info *ppi = home->data;
 	struct pane *target = ppi->target;
 	const char *key;
+	const char *aux;
 	struct command *done = ppi->done;
 
 	pane_focus(target);
 	key = pane_attr_get(focus, "done-key");
 	if (!key)
 		key = "PopupDone";
+	aux = pane_attr_get(focus, "popup-aux");
 
 	ppi->done = NULL;
 	pane_close(home);
 	/* home is now closed, so ppi cannot be touched */
 	if (done)
-		comm_call(done, key, target, 1, NULL, result);
+		comm_call(done, key, target, 1, NULL, result, 0, NULL, aux);
 	else
-		call(key, target, 1, NULL, result);
+		call(key, target, 1, NULL, result, 0, NULL, aux);
 }
 
 DEF_CMD(popup_abort)

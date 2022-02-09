@@ -1734,12 +1734,22 @@ DEF_CB(shellcb)
 	return 1;
 }
 
+DEF_CB(shell_insert_cb)
+{
+	char *str = call_ret(str, "doc:get-str", ci->focus);
+
+	call("Replace", ci->home, 0, NULL, str);
+	free(str);
+	return 1;
+}
+
 DEF_CMD(emacs_shell)
 {
 	char *name = "*Shell Command Output*";
 	struct pane *p, *doc, *par, *sc;
 	char *path;
 	struct pcb cb;
+	int interpolate;
 
 	if (strcmp(ci->key, "Shell Command") != 0) {
 		char *dirname;
@@ -1751,6 +1761,8 @@ DEF_CMD(emacs_shell)
 		dirname = call_ret(strsave, "get-attr", ci->focus, 0, NULL, "dirname");
 		attr_set_str(&p->attrs, "dirname", dirname ?: ".");
 		attr_set_str(&p->attrs, "prompt", "Shell command");
+		if (ci->num != NO_NUMERIC)
+			attr_set_str(&p->attrs, "popup-aux", "i");
 		attr_set_str(&p->attrs, "done-key", "Shell Command");
 		call("doc:set-name", p, 0, NULL, "Shell Command", -1);
 		p = call_ret(pane, "attach-history", p, 0, NULL, "*Shell History*",
@@ -1767,6 +1779,8 @@ DEF_CMD(emacs_shell)
 	doc = call_ret(pane, "doc:from-text", ci->focus, 0, NULL, name, 0, NULL, "");
 	if (!doc)
 		return Efail;
+
+	interpolate = ci->str2 && strchr(ci->str2, 'i');
 
 	path = pane_attr_get(ci->focus, "dirname");
 	attr_set_str(&doc->attrs, "dirname", path);
@@ -1800,10 +1814,11 @@ DEF_CMD(emacs_shell)
 			 * or more lines, we'll show in a pane, else
 			 * just show as a message.
 			 */
-			home_call_comm(sc, "shellcmd:set-callback",
-				       ci->focus, &shellcb,
-				       500, NULL, NULL,
-				       2);
+			if (!interpolate)
+				home_call_comm(sc, "shellcmd:set-callback",
+					       ci->focus, &shellcb,
+					       500, NULL, NULL,
+					       2);
 		} else {
 			par = call_ret(pane, "OtherPane", ci->focus);
 			if (!par)
@@ -1811,6 +1826,11 @@ DEF_CMD(emacs_shell)
 			home_call(doc, "doc:attach-view", par, 1);
 		}
 	}
+	if (sc && interpolate)
+		/* Need a callback when the pipe command finished */
+		home_call_comm(sc, "shellcmd:set-callback", ci->focus,
+			       &shell_insert_cb);
+
 	return 1;
 }
 
