@@ -551,7 +551,7 @@ DEF_CMD(replace_all)
 	pane_set_time(ci->home);
 	while (call("search:replace", sp, 0, NULL, new) > 0 &&
 	       call("search:again", sp) > 0 &&
-	       !pane_too_long(ci->home))
+	       !pane_too_long(ci->home, 2000))
 		replaced = 1;
 	if (replaced)
 		call("history:save", ci->focus, 0, NULL, new);

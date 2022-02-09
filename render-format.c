@@ -676,7 +676,7 @@ DEF_CMD(format_content2)
 
 	pane_set_time(home);
 	do {
-		if (pane_too_long(home))
+		if (pane_too_long(home, 2000))
 			break;
 		if (m->ref.p == NULL)
 			break;

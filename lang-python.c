@@ -1321,7 +1321,7 @@ static PyObject *Pane_too_long(Pane *self safe, PyObject *args)
 {
 	struct pane *p = self->pane;
 
-	if (!p || pane_too_long(p)) {
+	if (!p || pane_too_long(p, 0)) {
 		Py_INCREF(Py_True);
 		return Py_True;
 	} else {

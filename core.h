@@ -94,13 +94,15 @@ static inline unsigned int ts_to_ms(struct timespec *ts safe)
 	return ts->tv_nsec / 1000 / 1000 + ts->tv_sec * 1000;
 }
 
-static inline bool pane_too_long(struct pane *p safe)
+static inline bool pane_too_long(struct pane *p safe, unsigned int msec)
 {
 	struct timespec ts;
 	unsigned int duration;
 	clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
 	duration = ts_to_ms(&ts) - p->timestamp;
-	return (duration > 500);
+	if (msec < 500)
+		msec = 500;
+	return (duration > msec);
 }
 
 static inline void pane_set_time(struct pane *p safe)

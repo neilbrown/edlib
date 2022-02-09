@@ -259,7 +259,7 @@ static int search_backward(struct pane *p safe,
 		if (maxlen >= 0)
 			/* found a match */
 			break;
-		if (pane_too_long(p)) {
+		if (pane_too_long(p, 0)) {
 			/* FIXME returning success is wrong if we timed out
 			 * But I want to move the point, and this is easiest.
 			 * What do I really want here?
