@@ -317,8 +317,8 @@ Module features
 
 - [ ] search/replace should support undo somehow
       I can already step out, undo, step back.  What more?  Maybe Alt-U (uppercase)?
-- [1] search/replace should make it easy to revisit previous changes.
-       Backspace cannot work.  Alt-P might
+- [X] search/replace should make it easy to revisit previous changes.
+       Backspace cannot work.  Alt-P might. No, that is history.  Try up/down
 - [ ] What should be passed to M-x commands?  prefix arg?  selection string?  point?
        Surely everything.  Prefix if present, string if active, point always.
 

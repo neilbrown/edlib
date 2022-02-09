@@ -589,6 +589,24 @@ DEF_CMD(replace_escape)
 	return call("search:done", sp);
 }
 
+DEF_CMD(replace_prev)
+{
+	struct pane *home = ci->home->data;
+	struct es_info *esi = home->data;
+
+	call("search:step-replace", esi->target, -1);
+	return 1;
+}
+
+DEF_CMD(replace_next)
+{
+	struct pane *home = ci->home->data;
+	struct es_info *esi = home->data;
+
+	call("search:step-replace", esi->target, 1);
+	return 1;
+}
+
 static void emacs_search_init_map(void)
 {
 	/* Keys for the 'search' pane */
@@ -626,6 +644,8 @@ static void emacs_search_init_map(void)
 	key_add(er_map, "K:C-R", &replace_forward);
 	key_add(er_map, "K:C-L", &replace_forward);
 	key_add(er_map, "K:ESC", &replace_escape);
+	key_add(er_map, "K:Up", &replace_prev);
+	key_add(er_map, "K:Down", &replace_next);
 	key_add(er_map, "doc:reundo", &replace_undo);
 }
 
@@ -671,7 +691,7 @@ struct highlight_info {
 	int view, replace_view;
 	char *patn;
 	int ci;
-	struct mark *start, *end, *match;
+	struct mark *start, *end, *match, *rpos, *oldpoint;
 	struct pane *popup, *replace_popup;
 };
 
@@ -749,6 +769,14 @@ DEF_CMD(emacs_search_highlight)
 	hi->ci = ci->num2;
 	mark_free(hi->match);
 	hi->match = NULL;
+
+	if (hi->oldpoint) {
+		call("Move-to", ci->focus, 0, hi->oldpoint);
+		mark_free(hi->rpos);
+		mark_free(hi->oldpoint);
+		hi->rpos = NULL;
+		hi->oldpoint = NULL;
+	}
 
 	if (ci->mark && ci->num >= 0 && ci->str) {
 		m = vmark_new(ci->focus, hi->view, ci->home);
@@ -987,9 +1015,13 @@ DEF_CMD(emacs_highlight_close)
 	mark_free(hi->start);
 	mark_free(hi->end);
 	mark_free(hi->match);
+	mark_free(hi->rpos);
+	mark_free(hi->oldpoint);
 	hi->start = NULL;
 	hi->end = NULL;
 	hi->match = NULL;
+	hi->rpos = NULL;
+	hi->oldpoint = NULL;
 	return 1;
 }
 
@@ -1010,6 +1042,14 @@ DEF_CMD(emacs_search_done)
 
 	if (ci->str && ci->str[0])
 		call("history:save", ci->focus, 0, NULL, ci->str);
+
+	if (hi->oldpoint) {
+		call("Move-to", ci->focus, 0, hi->oldpoint);
+		mark_free(hi->rpos);
+		mark_free(hi->oldpoint);
+		hi->rpos = NULL;
+		hi->oldpoint = NULL;
+	}
 
 	hi->popup = NULL;
 	hi->replace_popup = NULL;
@@ -1063,6 +1103,44 @@ DEF_CMD(emacs_highlight_reattach)
 	return 1;
 }
 
+DEF_CMD(emacs_step_replace)
+{
+	struct highlight_info *hi = ci->home->data;
+	struct mark *m;
+
+	if (!hi->replace_view || !hi->match)
+		return Einval;
+	if (ci->num > 0 && !hi->rpos)
+		return 1;
+	if (!hi->rpos) {
+		if (!hi->oldpoint) {
+			m = call_ret(mark, "doc:point", ci->home);
+			if (m)
+				hi->oldpoint = mark_dup(m);
+		}
+		hi->rpos = mark_dup(hi->match);
+	}
+
+	if (ci->num > 0) {
+		m = vmark_at_or_before(ci->home, hi->rpos, hi->replace_view, ci->home);
+		if (m)
+			m = vmark_next(m);
+		while (m && attr_find_int(m->attrs, "render:replacement") < 0)
+			m = vmark_next(m);
+	} else {
+		doc_prev(ci->home, hi->rpos);
+		m = vmark_at_or_before(ci->home, hi->rpos, hi->replace_view, ci->home);
+		while (m && attr_find_int(m->attrs, "render:replacement") < 0)
+			m = vmark_prev(m);
+	}
+	if (m) {
+		mark_to_mark(hi->rpos, m);
+		call("Move-View-Pos", ci->home, 0, m);
+		call("Move-to", ci->home, 0, m);
+	}
+	return 1;
+}
+
 static struct map *hl_map;
 DEF_LOOKUP_CMD(highlight_handle, hl_map);
 
@@ -1075,6 +1153,7 @@ static void emacs_highlight_init_map(void)
 	key_add(m, "render:reposition", &emacs_search_reposition);
 	key_add(m, "search:highlight", &emacs_search_highlight);
 	key_add(m, "search:highlight-replace", &emacs_replace_highlight);
+	key_add(m, "search:step-replace", &emacs_step_replace);
 	key_add(m, "map-attr", &emacs_hl_attrs);
 	key_add(m, "Draw:text", &highlight_draw);
 	key_add(m, "Close", &emacs_highlight_close);
