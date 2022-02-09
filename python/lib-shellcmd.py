@@ -28,11 +28,12 @@ class ShellPane(edlib.Pane):
         self.call("doc:destroy")
         return 1
 
-    def run(self, key, focus, num, str, str2, **a):
+    def run(self, key, focus, num, num2, str, str2, **a):
         "handle:shell-run"
         cmd = str
         cwd = str2
         header = num != 0
+        send_stdin = num2 != 0
         if not cwd:
             cwd=self['dirname']
         if not cwd:
@@ -40,6 +41,13 @@ class ShellPane(edlib.Pane):
         while cwd and cwd != '/' and cwd[-1] == '/':
             # don't want a trailing slash
             cwd = cwd[:-1]
+
+        if send_stdin:
+            input = focus.call("doc:get-str", ret='str')
+            focus.call("doc:clear")
+            stdin = subprocess.PIPE
+        else:
+            stdin = subprocess.DEVNULL
         if not os.path.isdir(cwd):
             self.call("doc:replace",
                        "Directory \"%s\" doesn't exist: cannot run shell command\n"
@@ -55,11 +63,17 @@ class ShellPane(edlib.Pane):
                                          start_new_session=True,
                                          stdout=subprocess.PIPE,
                                          stderr=subprocess.STDOUT,
-                                         stdin =subprocess.DEVNULL)
+                                         stdin =stdin)
         except:
             self.pipe = None
         if not self.pipe:
             return edlib.Efail
+        if send_stdin:
+            fd = self.pipe.stdin.fileno()
+            fl = fcntl.fcntl(fd, fcntl.F_GETFL);
+            fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+            self.call("event:write", fd, self.write)
+            self.input = input
         self.call("doc:set:doc-status", "Running")
         self.call("doc:notify:doc:status-changed")
         fd = self.pipe.stdout.fileno()
@@ -125,6 +139,18 @@ class ShellPane(edlib.Pane):
             self.call("doc:replace", l[:i+1].decode("utf-8", 'ignore'))
             l = l[i+1:]
         self.line = l
+        return 1
+
+    def write(self, key, **a):
+        if not self.pipe or not self.pipe.stdin:
+            return edlib.Efalse
+        if not self.input:
+            self.pipe.stdin.close()
+            self.pipe.stdin = None
+            return edlib.Efalse
+        b = self.input[:1024]
+        self.input = self.input[1024:]
+        os.write(self.pipe.stdin.fileno(), b.encode())
         return 1
 
     def handle_close(self, key, **a):
@@ -204,6 +230,7 @@ def shell_attach(key, focus, comm2, num, str, str2, **a):
     #      2 - reuse doc, don't clear it first
     #      4 - register to be cleaned up by shell-reuse
     #      8 - don't add a footer when command completes.
+    #     16 - use content of doc as stdin
     # Clear document - discarding undo history.
     if (num & 2) == 0:
         focus.call("doc:clear")
@@ -212,7 +239,7 @@ def shell_attach(key, focus, comm2, num, str, str2, **a):
         return edlib.Efail
     focus['view-default'] = 'shell-viewer'
     try:
-        p.call("shell-run", num&1, str, str2)
+        p.call("shell-run", num&1, num & 16, str, str2)
     except edlib.commandfailed:
         p.close()
         return edlib.Efail

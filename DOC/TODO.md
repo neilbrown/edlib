@@ -311,7 +311,7 @@ Module features
 - [X] Support include-file (C-x i) to load contents of a file at point.
 - [ ] C-uC-xC-v prompts for file name, like C-xC-v in emacs
 - [ ] compare two panes somehow - new lib-compare function??
-- [1] pipe doc or selection to a command, optionally capture to replace with output.
+- [X] pipe doc or selection to a command, optionally capture to replace with output.
 
 ##### needs design work
 

@@ -1737,7 +1737,10 @@ DEF_CB(shellcb)
 DEF_CB(shell_insert_cb)
 {
 	char *str = call_ret(str, "doc:get-str", ci->focus);
+	struct mark *mk = call_ret(mark2, "doc:point", ci->home);
 
+	if (clear_selection(ci->home, NULL, mk, 3))
+		call("Replace", ci->home, 1, mk);
 	call("Replace", ci->home, 0, NULL, str);
 	free(str);
 	return 1;
@@ -1747,12 +1750,13 @@ DEF_CMD(emacs_shell)
 {
 	char *name = "*Shell Command Output*";
 	struct pane *p, *doc, *par, *sc;
-	char *path;
+	char *path, *input = NULL;
 	struct pcb cb;
-	int interpolate;
+	int interpolate, pipe;
 
 	if (strcmp(ci->key, "Shell Command") != 0) {
 		char *dirname;
+		char aux[4] = "";
 
 		p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "D2", 0, NULL,
 			     ci->str ?: "");
@@ -1762,7 +1766,10 @@ DEF_CMD(emacs_shell)
 		attr_set_str(&p->attrs, "dirname", dirname ?: ".");
 		attr_set_str(&p->attrs, "prompt", "Shell command");
 		if (ci->num != NO_NUMERIC)
-			attr_set_str(&p->attrs, "popup-aux", "i");
+			strcat(aux, "i");
+		if (strcmp(ci->key, "K:A-|") == 0)
+			strcat(aux, "p");
+		attr_set_str(&p->attrs, "popup-aux", aux);
 		attr_set_str(&p->attrs, "done-key", "Shell Command");
 		call("doc:set-name", p, 0, NULL, "Shell Command", -1);
 		p = call_ret(pane, "attach-history", p, 0, NULL, "*Shell History*",
@@ -1776,11 +1783,24 @@ DEF_CMD(emacs_shell)
 		call("Message", ci->focus, 0, NULL, "Shell command aborted");
 		return 1;
 	}
-	doc = call_ret(pane, "doc:from-text", ci->focus, 0, NULL, name, 0, NULL, "");
-	if (!doc)
-		return Efail;
 
 	interpolate = ci->str2 && strchr(ci->str2, 'i');
+	pipe = ci->str2 && strchr(ci->str2, 'p');
+
+	if (pipe) {
+		struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
+		if (mk) {
+			input = call_ret(str, "doc:get-str", ci->focus,
+					 0, NULL, NULL, 0, mk);
+			/* make the selection replacable */
+			attr_set_int(&mk->attrs, "emacs:active", 3);
+		}
+	}
+	doc = call_ret(pane, "doc:from-text", ci->focus, 0, NULL, name, 0, NULL,
+		       input ?: "");
+	free(input);
+	if (!doc)
+		return Efail;
 
 	path = pane_attr_get(ci->focus, "dirname");
 	attr_set_str(&doc->attrs, "dirname", path);
@@ -1790,7 +1810,8 @@ DEF_CMD(emacs_shell)
 	 * We don't need a doc attachment as no point is needed - we
 	 * always insert at the end.
 	 */
-	sc = call_ret(pane, "attach-shellcmd", doc, 4, NULL, ci->str, 0, NULL, path);
+	sc = call_ret(pane, "attach-shellcmd", doc, pipe ? 22 : 4,
+		      NULL, ci->str, 0, NULL, path);
 	if (!sc)
 		call("doc:replace", doc, 0, NULL,
 		     "Failed to run command - sorry\n");
@@ -3086,6 +3107,7 @@ static void emacs_init(void)
 	key_add(m, "K:C-U", &emacs_prefix);
 
 	key_add(m, "K:A-!", &emacs_shell);
+	key_add(m, "K:A-|", &emacs_shell);
 	key_add(m, "Shell Command", &emacs_shell);
 
 	key_add(m, "K:CX-`", &emacs_next_match);
