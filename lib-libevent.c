@@ -7,6 +7,7 @@
  * Register command "attach-libevent".
  * When that is called, register:
  *   "event:read"
+ *   "event:write"
  *   "event:signal"
  *   "event:run"
  *   "event:deactivate"
@@ -30,7 +31,7 @@ struct event_info {
 	struct pane *home safe;
 	int dont_block;
 	int deactivated;
-	struct command read, signal, timer, poll, run, deactivate,
+	struct command read, write, signal, timer, poll, run, deactivate,
 		free, refresh, noblock;
 };
 
@@ -129,6 +130,44 @@ DEF_CB(libevent_read)
 	ev->num = ci->num;
 	ev->active = 0;
 	ev->event = "event:read";
+	pane_add_notify(ei->home, ev->home, "Notify:Close");
+	list_add(&ev->lst, &ei->event_list);
+	event_add(ev->l, NULL);
+	return 1;
+}
+
+DEF_CB(libevent_write)
+{
+	struct event_info *ei = container_of(ci->comm, struct event_info, write);
+	struct evt *ev;
+
+	if (!ci->comm2)
+		return Enoarg;
+
+	/* If there is already an event with this 'fd', we need
+	 * to remove it now, else libevent gets confused.
+	 * Presumably call_event() is now running and will clean up
+	 * soon.
+	 */
+	list_for_each_entry(ev, &ei->event_list, lst)
+		if (ci->num >= 0 && ev->fd == ci->num) {
+			event_del(ev->l);
+			ev->fd = -1;
+		}
+
+	ev = malloc(sizeof(*ev));
+
+	if (!ei->base)
+		ei->base = event_base_new();
+
+	ev->l = safe_cast event_new(ei->base, ci->num, EV_WRITE|EV_PERSIST,
+				    call_event, ev);
+	ev->home = ci->focus;
+	ev->comm = command_get(ci->comm2);
+	ev->fd = ci->num;
+	ev->num = ci->num;
+	ev->active = 0;
+	ev->event = "event:write";
 	pane_add_notify(ei->home, ev->home, "Notify:Close");
 	list_add(&ev->lst, &ei->event_list);
 	event_add(ev->l, NULL);
@@ -353,6 +392,7 @@ DEF_CMD(libevent_activate)
 	alloc(ei, pane);
 	INIT_LIST_HEAD(&ei->event_list);
 	ei->read = libevent_read;
+	ei->write = libevent_write;
 	ei->signal = libevent_signal;
 	ei->timer = libevent_timer;
 	ei->poll = libevent_poll;
@@ -369,6 +409,8 @@ DEF_CMD(libevent_activate)
 	/* These are defaults, so make them sort late */
 	call_comm("global-set-command", ci->focus, &ei->read,
 		  0, NULL, "event:read-zz");
+	call_comm("global-set-command", ci->focus, &ei->write,
+		  0, NULL, "event:write-zz");
 	call_comm("global-set-command", ci->focus, &ei->signal,
 		  0, NULL, "event:signal-zz");
 	call_comm("global-set-command", ci->focus, &ei->timer,

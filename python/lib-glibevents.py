@@ -39,11 +39,11 @@ class events(edlib.Pane):
     def read(self, key, focus, comm2, num, **a):
         ev = self.add_ev(focus, comm2, 'event:read', num)
         gev = GLib.io_add_watch(num, GLib.IO_IN | GLib.IO_HUP,
-                                self.doread, comm2, focus, num, ev)
+                                self.doreadwrite, comm2, focus, num, ev)
         self.events[ev].append(gev)
         return 1
 
-    def doread(self, evfd, condition, comm2, focus, fd, ev):
+    def doreadwrite(self, evfd, condition, comm2, focus, fd, ev):
         if ev not in self.events:
             return False
         edlib.time_start(edlib.TIME_READ)
@@ -56,6 +56,13 @@ class events(edlib.Pane):
         if not ret and ev in self.events:
             del self.events[ev]
         return ret
+
+    def write(self, key, focus, comm2, num, **a):
+        ev = self.add_ev(focus, comm2, 'event:write', num)
+        gev = GLib.io_add_watch(num, GLib.IO_OUT,
+                                self.doreadwrite, comm2, focus, num, ev)
+        self.events[ev].append(gev)
+        return 1
 
     def signal(self, key, focus, comm2, num, **a):
         ev = self.add_ev(focus, comm2, 'event:signal', num)
@@ -189,6 +196,7 @@ def events_activate(focus):
         return 1
     ev = events(focus)
     focus.call("global-set-command", "event:read-python", ev.read)
+    focus.call("global-set-command", "event:write-python", ev.write)
     focus.call("global-set-command", "event:signal-python", ev.signal)
     focus.call("global-set-command", "event:timer-python", ev.timer)
     focus.call("global-set-command", "event:poll-python", ev.poll)
