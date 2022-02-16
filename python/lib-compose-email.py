@@ -745,7 +745,10 @@ class compose_email(edlib.Pane):
         focus.call("doc:modified", -1)
         fn = self['filename']
         if fn and fn.startswith('/'):
-            os.unlink(fn)
+            try:
+                os.unlink(fn)
+            except FileNotFoundError:
+                pass
 
         root = self.call("RootPane", ret='pane')
         if root:
