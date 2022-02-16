@@ -637,6 +637,8 @@ static bool handle_multipart(struct pane *p safe, char *type safe,
 			 len, tok, partnum);
 		partnum++;
 
+		if (part_end->seq < start->seq)
+			mark_to_mark(part_end, start);
 		handle_content(p, ptype, pxfer, start, part_end, mp, spacer,
 			       newpath ?:"");
 		free(newpath);
