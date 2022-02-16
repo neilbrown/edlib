@@ -196,6 +196,8 @@ DEF_CMD(crop_attach)
 
 	if (!ci->mark || !ci->mark2)
 		return Enoarg;
+	if (ci->mark->seq >= ci->mark2->seq)
+		return Einval;
 	alloc(cd, pane);
 	p = pane_register(ci->focus, 0, &crop_handle.c, cd);
 	if (!p) {
