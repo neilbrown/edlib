@@ -912,6 +912,7 @@ class notmuch_query(edlib.Doc):
             return 1
         edlib.LOG("notmuch_query val_mark: pos in wrong order:",
                   mark.pos, mark2.pos)
+        edlib.LOG_BT()
         return edlib.Efalse
 
     def setpos(self, mark, thread, msgnum = 0):
@@ -2669,7 +2670,7 @@ class notmuch_query_view(edlib.Pane):
         "handle:doc:get-attr"
         if mark is None:
             mark = focus.call("doc:point", ret='mark')
-        if not mark.pos:
+        if not mark or not mark.pos:
             return edlib.Efallthrough
         if self.whole_thread and mark >= self.thread_end:
             # no attributes after end

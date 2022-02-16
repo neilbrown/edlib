@@ -4,6 +4,8 @@ To-do list for edlib
 Current priorities
 ------------------
 
+- [ ] catch infinite loops more, particularly in b64/utf8/multipart movement
+      e.g. cause all key_handle to fail if it has been 30 seconds since waiting for input.
 - [ ] anything marked [1]
 - [ ] fix bugs
 - [ ] core features
