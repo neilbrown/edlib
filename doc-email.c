@@ -444,6 +444,10 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer,
 				need_charset = 1;
 			}
 		}
+		if (xfer && xlen == 4 &&
+		    strncasecmp(xfer, "8bit", 6) == 0) {
+			need_charset = 1;
+		}
 	}
 	if (type && need_charset &&
 	    (charset = get_822_attr(type, "charset")) != NULL) {
