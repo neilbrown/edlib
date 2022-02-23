@@ -1321,7 +1321,7 @@ DEF_CMD(charset_char)
 	wint_t ret;
 	wchar_t *tbl = ci->home->data;
 
-	ret = home_call(ci->home->parent, "doc:char", ci->focus,
+	ret = home_call(ci->home->parent, "doc:byte", ci->focus,
 			ci->num, ci->mark, NULL,
 			ci->num2, ci->mark2);
 
