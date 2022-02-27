@@ -665,7 +665,7 @@ Module features
       - message has already been sent
 - [ ] catch exceptions from email.message creation.
        particularly adding headers can complain
-- [ ] attach files - with type and disposition
+- [X] attach files - with type and disposition
 - [ ] be smart about quoting displayname before <addr>
 - [ ] capture editing of to/cc and mark ',' as a wrap point.
 - [ ] If attachments are requested, set mime-version etc

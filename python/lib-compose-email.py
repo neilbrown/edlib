@@ -22,12 +22,20 @@
 # Text is encoded as quoted-printable if needed, and attachments are
 # combined in a multipart/mixed.
 #
+# Markers:
+# - End of headers is marked with "@#!compose:headers\n"
+# - An attachedment is marked with
+#     @#!compose:attach type= filename= disposition= description=
+#   The content of filename is url encoded
+#
 
 import email.utils
 import email.message
 import email.policy
 import email.headerregistry
 import tempfile
+import mimetypes
+import urllib
 from datetime import date
 
 def read_status(p, key, focus, **a):
@@ -328,6 +336,9 @@ class compose_email(edlib.Pane):
             markup =  "<fg:red>Headers above, content below"
         else:
             markup = "<fg:cyan-40>[section: %s]" % type
+            info = m['compose-info']
+            if info:
+                markup += ' - ' + info
         if (num == edlib.NO_NUMERIC or num < 0) and (not mark2 or mark2 > mark):
             # normal render - go past eol
             self.parent.next(mark)
@@ -671,11 +682,53 @@ class compose_email(edlib.Pane):
             mark.to_mark(m)
         return 1
 
+    def handle_attach(self, key, focus, **a):
+        "handle:K:CC:C-A"
+        p = focus.call("PopupTile", "2", "", ret='pane')
+        edlib.LOG(p)
+        if not p:
+            return edlib.Efail
+        p['prompt'] = "Attachment"
+        p['done-key'] = "compose:attach"
+        p.call('doc:set-name', "Attachment File")
+        p['pane-title'] = "Attachment File"
+        p = p.call("attach-history", "*Attachment History*", "popup:close",
+                   ret='pane')
+        edlib.LOG("now", p)
+        p.call("attach-file-entry", "file")
+        return 1
+
+    def handle_do_attach(self, key, focus, str1, **a):
+        "handle:compose:attach"
+        edlib.LOG("attaching", str1)
+        if not str1:
+            return 1
+        (type, encoding) = mimetypes.guess_type(str1, False)
+        if not type:
+            type = "application/octet-stream"
+        edlib.LOG("type=", type)
+        f, l = self.vmarks(self.view)
+        m = edlib.Mark(orig=l)
+        self.call("doc:set-ref", 0, m)
+        m2 = edlib.Mark(orig=m)
+        # Make sure there 2 are the very last marks.
+        m2.step(1)
+        m.step(1)
+        self.parent.call("doc:replace", m2, m,
+                         "@#!compose:attach filename=%s type=%s\n" %
+                         (urllib.parse.quote(str1), type),
+                         "/markup:func=compose:markup-header/")
+        # m2 might have been reordered by doc:replace.
+        m2.step(1)
+        m2['compose-type'] = 'attach'
+        m2['compose-info'] = str1
+        return 1
     def handle_commit(self, key, focus, **a):
         "handle:Commit"
         msg = email.message.EmailMessage()
         m, l = self.vmarks(self.view)
         if m:
+            # m is start of header marker, move to end.
             m = m.next()
         else:
             return edlib.Efail
@@ -690,6 +743,7 @@ class compose_email(edlib.Pane):
         self.check_header("Message-id",
                           email.utils.make_msgid(
                               domain=focus['email:host-address']))
+        # discard empty headers
         h = edlib.Mark(focus)
         while self.find_empty_header(h):
             focus.call("doc:EOL", -1, h)
@@ -697,6 +751,7 @@ class compose_email(edlib.Pane):
             focus.call("doc:EOL", 1, 1, h)
             focus.call("doc:replace", h, h2)
 
+        # Now add all (non-empty) headers.
         h = edlib.Mark(focus)
         whoto = None
         while self.find_any_header(h):
@@ -719,6 +774,34 @@ class compose_email(edlib.Pane):
                         whoto = a
                 except:
                     pass
+
+        # Look for attachments
+        while m.next():
+            s = m.next()
+            m = s.next()
+            marker = focus.call("doc:get-str", s, m, ret='str')
+            if marker and marker.startswith("@#!compose:attach "):
+                w = marker.strip().split(" ")
+                maintype = "application"
+                subtype = "octet-stream"
+                desc = ""
+                fn = None
+                for attr in w[1:]:
+                    a = attr.split('=',1)
+                    if a and len(a) == 2 and a[0] == "filename":
+                        fn = urllib.parse.unquote(a[1])
+                        bn=os.path.basename(fn)
+                    if a[0] == "type":
+                        (maintype, subtype) = a[1].split("/", 1)
+                if fn:
+                    try:
+                        with open(fn, 'rb') as fp:
+                            msg.add_attachment(fp.read(), filename=bn,
+                                               maintype = maintype,
+                                               subtype = subtype)
+                    except:
+                        self.call("Message", "Cannot read attachment %s" % fn)
+                        return edlib.Efail
 
         s = msg.as_string()
         tf = tempfile.TemporaryFile()
