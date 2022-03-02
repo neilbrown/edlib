@@ -59,6 +59,7 @@ DEF_CMD(aspell_attach_helper)
 	if (p) {
 		call("doc:request:aspell:check", p);
 		call("doc:request:aspell:suggest", p);
+		call("doc:request:aspell:set-dict", p);
 	}
 	return 1;
 }
@@ -131,6 +132,39 @@ DEF_CMD(spell_suggest)
 	call_comm("doc:attach-helper", ci->focus, &aspell_attach_helper);
 	return call_comm("doc:notify:aspell:suggest", ci->focus, ci->comm2,
 			 0, NULL, ci->str);
+}
+
+DEF_CMD(aspell_set_dict)
+{
+	struct aspell_data *as = ci->home->data;
+	const char *lang = ci->str;
+	AspellConfig *conf2;
+	AspellCanHaveError *ret;
+
+	if (!lang)
+		return Enoarg;
+	LOG("lang = %s", lang);
+	conf2 = aspell_config_clone(spell_config);
+	aspell_config_replace(conf2, "lang", lang);
+	ret = new_aspell_speller(conf2);
+	if (!aspell_error_number(ret)) {
+		delete_aspell_speller(as->speller);
+		as->speller = safe_cast to_aspell_speller(ret);
+	}
+	delete_aspell_config(conf2);
+	return 1;
+}
+
+DEF_CMD(spell_dict)
+{
+	int ret;
+	ret = call("doc:notify:aspell:set-dict", ci->focus, 0, NULL,
+		   ksuffix(ci, "interactive-cmd-dict-"));
+	if (ret != Efallthrough)
+		return ret;
+	call_comm("doc:attach-helper", ci->focus, &aspell_attach_helper);
+	return call("doc:notify:aspell:set-dict", ci->focus, 0, NULL,
+		    ksuffix(ci, "interactive-cmd-dict-"));
 }
 
 static inline bool is_word_body(wint_t ch)
@@ -232,9 +266,14 @@ void edlib_init(struct pane *ed safe)
 	call_comm("global-set-command", ed, &spell_next,
 		  0, NULL, "Spell:NextWord");
 
+	call_comm("global-set-command", ed, &spell_dict,
+		  0, NULL, "interactive-cmd-dict-",
+		  0, NULL, "interactive-cmd-dict-~");
+
 	aspell_map = key_alloc();
 	key_add(aspell_map, "Close", &aspell_close);
 	key_add(aspell_map, "Free", &edlib_do_free);
 	key_add(aspell_map, "aspell:check", &aspell_check);
 	key_add(aspell_map, "aspell:suggest", &aspell_suggest);
+	key_add(aspell_map, "aspell:set-dict", &aspell_set_dict);
 }
