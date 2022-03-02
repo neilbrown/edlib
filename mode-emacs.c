@@ -2941,11 +2941,39 @@ DEF_CMD(emacs_spell_skip)
 
 DEF_CMD(emacs_spell_insert)
 {
+	char *last = attr_find(ci->focus->attrs,
+			       "spell:last-error");
+	if (last) {
+		attr_set_str(&ci->focus->attrs, "spell:suggestions", NULL);
+		attr_set_str(&ci->focus->attrs, "spell:last-error", NULL);
+		call("Spell:AddWord", ci->focus, 1, NULL, last);
+	}
+
+	if (ci->num) {
+		doc_next(ci->focus, ci->mark);
+		home_call(ci->home, "emacs:respell", ci->focus,
+			  ci->num, ci->mark, NULL,
+			  ci->num2, ci->mark2);
+	}
 	return 1;
 }
 
 DEF_CMD(emacs_spell_accept)
 {
+	char *last = attr_find(ci->focus->attrs,
+			       "spell:last-error");
+	if (last) {
+		attr_set_str(&ci->focus->attrs, "spell:suggestions", NULL);
+		attr_set_str(&ci->focus->attrs, "spell:last-error", NULL);
+		call("Spell:AddWord", ci->focus, 0, NULL, last);
+	}
+
+	if (ci->num) {
+		doc_next(ci->focus, ci->mark);
+		home_call(ci->home, "emacs:respell", ci->focus,
+			  ci->num, ci->mark, NULL,
+			  ci->num2, ci->mark2);
+	}
 	return 1;
 }
 

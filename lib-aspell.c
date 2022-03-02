@@ -60,6 +60,7 @@ DEF_CMD(aspell_attach_helper)
 		call("doc:request:aspell:check", p);
 		call("doc:request:aspell:suggest", p);
 		call("doc:request:aspell:set-dict", p);
+		call("doc:request:aspell:add-word", p);
 	}
 	return 1;
 }
@@ -131,6 +132,38 @@ DEF_CMD(spell_suggest)
 		return rv;
 	call_comm("doc:attach-helper", ci->focus, &aspell_attach_helper);
 	return call_comm("doc:notify:aspell:suggest", ci->focus, ci->comm2,
+			 0, NULL, ci->str);
+}
+
+DEF_CMD(aspell_add)
+{
+	struct aspell_data *as = ci->home->data;
+	const char *word = ci->str;
+	int len;
+
+	if (!word)
+		return Enoarg;
+	len = trim(&word);
+	if (!len)
+		return Efail;
+
+	if (ci->num == 1)
+		aspell_speller_add_to_personal(as->speller, word, len);
+	else
+		aspell_speller_add_to_session(as->speller, word, len);
+	call("doc:notify:spell:dict-changed", ci->home);
+	return 1;
+}
+
+DEF_CMD(spell_add)
+{
+	int rv = call_comm("doc:notify:aspell:add-word", ci->focus, ci->comm2,
+			   0, NULL, ci->str);
+
+	if (rv != Efallthrough)
+		return rv;
+	call_comm("doc:attach-helper", ci->focus, &aspell_attach_helper);
+	return call_comm("doc:notify:aspell:add-word", ci->focus, ci->comm2,
 			 0, NULL, ci->str);
 }
 
@@ -266,6 +299,8 @@ void edlib_init(struct pane *ed safe)
 		  0, NULL, "Spell:ThisWord");
 	call_comm("global-set-command", ed, &spell_next,
 		  0, NULL, "Spell:NextWord");
+	call_comm("global-set-command", ed, &spell_add,
+		  0, NULL, "Spell:AddWord");
 
 	call_comm("global-set-command", ed, &spell_dict,
 		  0, NULL, "interactive-cmd-dict-",
@@ -277,4 +312,5 @@ void edlib_init(struct pane *ed safe)
 	key_add(aspell_map, "aspell:check", &aspell_check);
 	key_add(aspell_map, "aspell:suggest", &aspell_suggest);
 	key_add(aspell_map, "aspell:set-dict", &aspell_set_dict);
+	key_add(aspell_map, "aspell:add-word", &aspell_add);
 }
