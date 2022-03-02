@@ -12,17 +12,9 @@
 
 static AspellConfig *spell_config;
 
-/* There should be one speller per doc... */
-static AspellSpeller *speller;
-
-static void make_speller(struct pane *p safe)
-{
-	AspellCanHaveError *ret = new_aspell_speller(spell_config);
-	if (aspell_error_number(ret) != 0)
-		call("Message", p, 0, NULL, aspell_error_message(ret));
-	else
-		speller = to_aspell_speller(ret);
-}
+struct aspell_data {
+	AspellSpeller *speller safe;
+};
 
 static int trim(const char *safe *wordp safe)
 {
@@ -47,26 +39,68 @@ static int trim(const char *safe *wordp safe)
 	return len;
 }
 
-DEF_CMD(spell_check)
+static struct map *aspell_map safe;
+DEF_LOOKUP_CMD(aspell_handle, aspell_map);
+
+DEF_CMD(aspell_attach_helper)
 {
+	struct aspell_data *as;
+	AspellCanHaveError *ret;
+	struct pane *p;
+
+	ret = new_aspell_speller(spell_config);
+	if (aspell_error_number(ret)) {
+		LOG("Cannot create speller: %s", aspell_error_message(ret));
+		return Efail;
+	}
+	alloc(as, pane);
+	as->speller = safe_cast to_aspell_speller(ret);
+	p = pane_register(ci->focus, 0, &aspell_handle.c, as);
+	if (p) {
+		call("doc:request:aspell:check", p);
+		call("doc:request:aspell:suggest", p);
+	}
+	return 1;
+}
+
+DEF_CMD(aspell_close)
+{
+	struct aspell_data *as = ci->home->data;
+
+	delete_aspell_speller(as->speller);
+	return 1;
+}
+
+DEF_CMD(aspell_check)
+{
+	struct aspell_data *as = ci->home->data;
 	int correct;
 	const char *word = ci->str;
 	int len;
 
 	if (!word)
 		return Enoarg;
-	if (!speller)
-		return Einval;
 	len = trim(&word);
 	if (!len)
 		return Efail;
 
-	correct = aspell_speller_check(speller, word, len);
+	correct = aspell_speller_check(as->speller, word, len);
 	return correct ? 1 : Efalse;
 }
 
-DEF_CMD(spell_suggest)
+DEF_CMD(spell_check)
 {
+	int rv = call("doc:notify:aspell:check", ci->focus, 0, NULL, ci->str);
+
+	if (rv != Efallthrough)
+		return rv;
+	call_comm("doc:attach-helper", ci->focus, &aspell_attach_helper);
+	return call("doc:notify:aspell:check", ci->focus, 0, NULL, ci->str);
+}
+
+DEF_CMD(aspell_suggest)
+{
+	struct aspell_data *as = ci->home->data;
 	const AspellWordList *l;
 	AspellStringEnumeration *el;
 	const char *w;
@@ -75,18 +109,28 @@ DEF_CMD(spell_suggest)
 
 	if (!word)
 		return Enoarg;
-	if (!speller)
-		return Einval;
 	len = trim(&word);
 	if (!len)
 		return Efail;
 
-	l = aspell_speller_suggest(speller, word, len);
+	l = aspell_speller_suggest(as->speller, word, len);
 	el = aspell_word_list_elements(l);
 	while ((w = aspell_string_enumeration_next(el)) != NULL)
 		comm_call(ci->comm2, "suggest", ci->focus, 0, NULL, w);
 	delete_aspell_string_enumeration(el);
 	return 1;
+}
+
+DEF_CMD(spell_suggest)
+{
+	int rv = call_comm("doc:notify:aspell:suggest", ci->focus, ci->comm2,
+			   0, NULL, ci->str);
+
+	if (rv != Efallthrough)
+		return rv;
+	call_comm("doc:attach-helper", ci->focus, &aspell_attach_helper);
+	return call_comm("doc:notify:aspell:suggest", ci->focus, ci->comm2,
+			 0, NULL, ci->str);
 }
 
 static inline bool is_word_body(wint_t ch)
@@ -179,8 +223,6 @@ void edlib_init(struct pane *ed safe)
 
 	aspell_config_replace(spell_config, "lang", "en_AU");
 
-	make_speller(ed);
-
 	call_comm("global-set-command", ed, &spell_check,
 		  0, NULL, "Spell:Check");
 	call_comm("global-set-command", ed, &spell_suggest,
@@ -189,4 +231,10 @@ void edlib_init(struct pane *ed safe)
 		  0, NULL, "Spell:ThisWord");
 	call_comm("global-set-command", ed, &spell_next,
 		  0, NULL, "Spell:NextWord");
+
+	aspell_map = key_alloc();
+	key_add(aspell_map, "Close", &aspell_close);
+	key_add(aspell_map, "Free", &edlib_do_free);
+	key_add(aspell_map, "aspell:check", &aspell_check);
+	key_add(aspell_map, "aspell:suggest", &aspell_suggest);
 }
