@@ -152,12 +152,17 @@ class autospell_monitor(edlib.Pane):
         self.call("doc:request:doc:replaced")
         self.call("doc:request:spell:mark-checked")
         self.call("doc:request:spell:choose-range")
+        self.call("doc:request:spell:dict-changed")
 
     def doc_replace(self, key, focus, mark, mark2, num2, **a):
-        "handle:doc:replaced"
-        if not mark or not mark2:
-            # Should I clean up completely?
-            return 1
+        "handle-list/doc:replaced/spell:dict-changed"
+        if not mark:
+            mark = edlib.Mark(focus)
+            focus.call("doc:set-ref", mark, 1);
+        if not mark2:
+            mark2 = edlib.Mark(focus)
+            focus.call("doc:set-ref", mark2, 0);
+
         # mark2 might have been the start-of-word, but not any longer
         # So any spell-incorrect must be cleared as normal checking
         # only affects first char of a word.

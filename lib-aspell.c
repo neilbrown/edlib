@@ -150,6 +150,7 @@ DEF_CMD(aspell_set_dict)
 	if (!aspell_error_number(ret)) {
 		delete_aspell_speller(as->speller);
 		as->speller = safe_cast to_aspell_speller(ret);
+		call("doc:notify:spell:dict-changed", ci->focus);
 	}
 	delete_aspell_config(conf2);
 	return 1;
