@@ -899,6 +899,17 @@ abort:
 	return NULL;
 }
 
+static void strip_cr(char *from safe)
+{
+	char *to = from;
+
+	while ((*to = *from)) {
+		from++;
+		if (*to != '\r')
+			to++;
+	}
+}
+
 static void collect_sel(struct xcbc_info *xci safe, enum my_atoms sel)
 {
 	/* If 'sel' can be fetched, copy:save it. */
@@ -943,6 +954,7 @@ static void collect_sel(struct xcbc_info *xci safe, enum my_atoms sel)
 					       targets[i]);
 	}
 	if (ret) {
+		strip_cr(ret);
 		call("copy:save", xci->p, 0, NULL, ret);
 		free(ret);
 	}
