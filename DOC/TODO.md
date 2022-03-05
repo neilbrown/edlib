@@ -758,8 +758,8 @@ Module features
 - [ ] mode-specific so latex can ignore \foo
 - [ ] Some way for 'c-mode' to report where comments are so they can be spell-checked
 - [ ] drop-down with options
-- [ ] command to add word to per-document list, or personal list
-- [ ] Allow language to be configurable, not always "en_AU".
+- [X] command to add word to per-document list, or personal list
+- [X] Allow language to be configurable, not always "en_AU".
 
 ### calculator
 - [ ] regression test

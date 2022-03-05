@@ -2828,6 +2828,7 @@ again:
 		/* No word found */
 		call("Message", ci->focus, 0, NULL,
 		     "Spell check reached end-of-file");
+		call("Spell:Save", ci->focus);
 		free(word);
 		mark_free(st);
 		return 1;

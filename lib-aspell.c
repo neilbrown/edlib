@@ -14,6 +14,7 @@ static AspellConfig *spell_config;
 
 struct aspell_data {
 	AspellSpeller *speller safe;
+	bool need_save;
 };
 
 static int trim(const char *safe *wordp safe)
@@ -61,6 +62,7 @@ DEF_CMD(aspell_attach_helper)
 		call("doc:request:aspell:suggest", p);
 		call("doc:request:aspell:set-dict", p);
 		call("doc:request:aspell:add-word", p);
+		call("doc:request:aspell:save", p);
 	}
 	return 1;
 }
@@ -69,6 +71,8 @@ DEF_CMD(aspell_close)
 {
 	struct aspell_data *as = ci->home->data;
 
+	if (as->need_save)
+		aspell_speller_save_all_word_lists(as->speller);
 	delete_aspell_speller(as->speller);
 	return 1;
 }
@@ -135,6 +139,28 @@ DEF_CMD(spell_suggest)
 			 0, NULL, ci->str);
 }
 
+DEF_CMD(aspell_save)
+{
+	struct aspell_data *as = ci->home->data;
+	if (as->need_save) {
+		as->need_save = False;
+		aspell_speller_save_all_word_lists(as->speller);
+	}
+	return Efalse;
+}
+
+DEF_CMD(aspell_do_save)
+{
+	aspell_save_func(ci);
+	return 1;
+}
+
+DEF_CMD(spell_save)
+{
+	return call_comm("doc:notify:aspell:save", ci->focus, ci->comm2,
+			 ci->num, NULL, ci->str);
+}
+
 DEF_CMD(aspell_add)
 {
 	struct aspell_data *as = ci->home->data;
@@ -147,9 +173,13 @@ DEF_CMD(aspell_add)
 	if (!len)
 		return Efail;
 
-	if (ci->num == 1)
+	if (ci->num == 1) {
 		aspell_speller_add_to_personal(as->speller, word, len);
-	else
+		if (as->need_save)
+			call_comm("event:free", ci->home, &aspell_save);
+		as->need_save = True;
+		call_comm("event:timer", ci->home, &aspell_save, 30*1000);
+	} else
 		aspell_speller_add_to_session(as->speller, word, len);
 	call("doc:notify:spell:dict-changed", ci->home);
 	return 1;
@@ -158,13 +188,13 @@ DEF_CMD(aspell_add)
 DEF_CMD(spell_add)
 {
 	int rv = call_comm("doc:notify:aspell:add-word", ci->focus, ci->comm2,
-			   0, NULL, ci->str);
+			   ci->num, NULL, ci->str);
 
 	if (rv != Efallthrough)
 		return rv;
 	call_comm("doc:attach-helper", ci->focus, &aspell_attach_helper);
 	return call_comm("doc:notify:aspell:add-word", ci->focus, ci->comm2,
-			 0, NULL, ci->str);
+			 ci->num, NULL, ci->str);
 }
 
 DEF_CMD(aspell_set_dict)
@@ -301,6 +331,8 @@ void edlib_init(struct pane *ed safe)
 		  0, NULL, "Spell:NextWord");
 	call_comm("global-set-command", ed, &spell_add,
 		  0, NULL, "Spell:AddWord");
+	call_comm("global-set-command", ed, &spell_save,
+		  0, NULL, "Spell:Save");
 
 	call_comm("global-set-command", ed, &spell_dict,
 		  0, NULL, "interactive-cmd-dict-",
@@ -313,4 +345,5 @@ void edlib_init(struct pane *ed safe)
 	key_add(aspell_map, "aspell:suggest", &aspell_suggest);
 	key_add(aspell_map, "aspell:set-dict", &aspell_set_dict);
 	key_add(aspell_map, "aspell:add-word", &aspell_add);
+	key_add(aspell_map, "aspell:save", &aspell_do_save);
 }
