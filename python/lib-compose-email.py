@@ -272,7 +272,7 @@ class compose_email(edlib.Pane):
             when = 'a recent day'
         q = "On %s, %s wrote:\n" % (when, who)
         for l in str.split("\n"):
-            q += '> ' + l + '\n'
+            q += '> ' + l.strip('\r') + '\n'
         self.call("doc:replace", m, m, q)
         # mark the document as unmodified
         self.call("doc:modified", -1)
