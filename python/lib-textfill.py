@@ -213,6 +213,8 @@ class FillMode(edlib.Pane):
         else:
             # don't auto-fill
             cols = None
+        if cols:
+            self.call("doc:set:fill-width", "%d" % cols)
         self.cols = cols
 
     def handle_clone(self, key, focus, **a):
@@ -242,6 +244,7 @@ class FillMode(edlib.Pane):
             if self.cols:
                 # if auto-filling, save new col width
                 self.cols = num
+                self.call("doc:set:fill-width", "%d" % num)
         else:
             width = 72
             if self.cols:
@@ -274,6 +277,7 @@ class FillMode(edlib.Pane):
         v = focus['view-default']
         if not self.cols:
             self.cols = 72
+            self.call("doc:set:fill-width", "72")
         if v and 'textfill'in v:
             return 1
         elif v:
