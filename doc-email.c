@@ -70,7 +70,8 @@ struct email_info {
 	struct pane	*spacer safe;
 };
 
-static bool handle_content(struct pane *p safe, char *type, char *xfer,
+static bool handle_content(struct pane *p safe,
+			   char *type, char *xfer, char *disp,
 			   struct mark *start safe, struct mark *end safe,
 			   struct pane *mp safe, struct pane *spacer safe,
 			   char *path safe);
@@ -406,7 +407,7 @@ static bool tok_matches(char *tok, int len, char *match safe)
 	return strncasecmp(tok, match, len) == 0;
 }
 
-static bool handle_text(struct pane *p safe, char *type, char *xfer,
+static bool handle_text(struct pane *p safe, char *type, char *xfer, char *disp,
 			struct mark *start safe, struct mark *end safe,
 			struct pane *mp safe, struct pane *spacer safe,
 			char *path)
@@ -471,6 +472,9 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer,
 			h = hx;
 	}
 	if (type && (fname = get_822_attr(type, "name")))
+		fname = strsave(h, fname);
+	if (disp && !fname &&
+	    (fname = get_822_attr(disp, "filename")))
 		fname = strsave(h, fname);
 	major = get_822_token(&type, &majlen);
 	if (major) {
@@ -622,7 +626,7 @@ static bool handle_multipart(struct pane *p safe, char *type safe,
 		struct pane *hdr = call_ret(pane, "attach-rfc822header", p,
 					    0, start, NULL,
 					    0, part_end);
-		char *ptype, *pxfer;
+		char *ptype, *pxfer, *pdisp;
 
 		if (!hdr)
 			break;
@@ -630,9 +634,13 @@ static bool handle_multipart(struct pane *p safe, char *type safe,
 		     0, NULL, "cmd");
 		call("get-header", hdr, 0, NULL, "content-transfer-encoding",
 		     0, NULL, "cmd");
+		call("get-header", hdr, 0, NULL, "content-disposition",
+		     0, NULL, "cmd");
 		ptype = attr_find(hdr->attrs, "rfc822-content-type");
 		pxfer = attr_find(hdr->attrs,
 				  "rfc822-content-transfer-encoding");
+		pdisp = attr_find(hdr->attrs,
+				  "rfc822-content-disposition");
 
 		pane_close(hdr);
 
@@ -643,8 +651,8 @@ static bool handle_multipart(struct pane *p safe, char *type safe,
 
 		if (part_end->seq < start->seq)
 			mark_to_mark(part_end, start);
-		handle_content(p, ptype, pxfer, start, part_end, mp, spacer,
-			       newpath ?:"");
+		handle_content(p, ptype, pxfer, pdisp, start, part_end, mp,
+			       spacer, newpath ?:"");
 		free(newpath);
 		mark_to_mark(start, pos);
 	}
@@ -655,7 +663,8 @@ static bool handle_multipart(struct pane *p safe, char *type safe,
 	return True;
 }
 
-static bool handle_content(struct pane *p safe, char *type, char *xfer,
+static bool handle_content(struct pane *p safe,
+			   char *type, char *xfer, char *disp,
 			   struct mark *start safe, struct mark *end safe,
 			   struct pane *mp safe, struct pane *spacer safe,
 			   char *path safe)
@@ -676,14 +685,14 @@ static bool handle_content(struct pane *p safe, char *type, char *xfer,
 	}
 	if (major == NULL ||
 	    tok_matches(major, mjlen, "text"))
-		return handle_text(p, type, xfer, start, end,
+		return handle_text(p, type, xfer, disp, start, end,
 				   mp, spacer, path);
 
 	if (tok_matches(major, mjlen, "multipart"))
 		return handle_multipart(p, type, start, end, mp, spacer, path);
 
 	/* default to plain text until we get a better default */
-	return handle_text(p, type, xfer, start, end, mp, spacer, path);
+	return handle_text(p, type, xfer, disp, start, end, mp, spacer, path);
 }
 
 DEF_CMD(open_email)
@@ -693,7 +702,7 @@ DEF_CMD(open_email)
 	struct mark *start, *end;
 	struct pane *p, *h2;
 	char *mime;
-	char *xfer = NULL, *type = NULL;
+	char *xfer = NULL, *type = NULL, *disp = NULL;
 	struct pane *hdrdoc;
 	struct mark *point;
 
@@ -756,6 +765,8 @@ DEF_CMD(open_email)
 	call("get-header", h2, 0, NULL, "content-type", 0, NULL, "cmd");
 	call("get-header", h2, 0, NULL, "content-transfer-encoding",
 	     0, NULL, "cmd");
+	call("get-header", h2, 0, NULL, "content-disposition",
+	     0, NULL, "cmd");
 	mime = attr_find(h2->attrs, "rfc822-mime-version");
 	if (mime)
 		mime = get_822_word(mime);
@@ -763,6 +774,7 @@ DEF_CMD(open_email)
 	if (!mime || strcmp(mime, "1.0") == 0) {
 		type = attr_find(h2->attrs, "rfc822-content-type");
 		xfer = attr_find(h2->attrs, "rfc822-content-transfer-encoding");
+		disp = attr_find(h2->attrs, "rfc822-content-disposition");
 	}
 
 	p = call_ret(pane, "attach-doc-multipart", ci->home);
@@ -778,7 +790,7 @@ DEF_CMD(open_email)
 	home_call(p, "multipart-add", hdrdoc);
 	home_call(p, "multipart-add", ei->spacer);
 
-	if (!handle_content(ei->email, type, xfer, start, end,
+	if (!handle_content(ei->email, type, xfer, disp, start, end,
 			    p, ei->spacer, "body"))
 		goto out;
 
