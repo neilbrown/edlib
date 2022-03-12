@@ -760,45 +760,30 @@ class notmuch_main(edlib.Doc):
             self.seen_threads[str] = focus
             return 1
 
-    def handle_notmuch_remember_seen_msg(self, key, focus, str, **a):
+    def handle_notmuch_remember_seen_msg(self, key, focus, str1, str2, **a):
         "handle:doc:notmuch:remember-seen-msg"
-        if str:
-            self.seen_msgs[str] = focus
+        if str1:
+            self.seen_msgs[str1] = (focus, str2)
             return 1
 
     def handle_notmuch_mark_seen(self, key, focus, **a):
         "handle:doc:notmuch:mark-seen"
-        with self.db.get_write() as db:
-            todel = []
-            for id in self.seen_msgs:
-                if self.seen_msgs[id] == focus:
-                    try:
-                        m = db.find_message(id)
-                    except:
-                        m = None
-                    if m and "new" in m.get_tags():
-                        m.remove_tag("new")
-                        self.notify("Notify:Tag", m.get_thread_id(), id)
-                    todel.append(id)
-            for id in todel:
-                del self.seen_msgs[id]
-            todel = []
-            for id in self.seen_threads:
-                if self.seen_threads[id] == focus:
-                    try:
-                        q = db.create_query("thread:%s" % id)
-                    except:
-                        return edlib.Efalse
-                    for t in q.search_threads():
-                        ml = t.get_messages()
-                        for m in ml:
-                            if "new" in m.get_tags():
-                                m.remove_tag("new")
-                        break
-                    todel.append(id)
+        todel = []
+        for id in self.seen_msgs:
+            if self.seen_msgs[id][0] == focus:
+                notmuch_set_tags(msg=id, remove=['new'])
+                self.notify("Notify:Tag", self.seen_msgs[id][1], id)
+                todel.append(id)
+        for id in todel:
+            del self.seen_msgs[id]
+        todel = []
+        for id in self.seen_threads:
+            if self.seen_threads[id] == focus:
+                notmuch_set_tags(thread=id, remove=['new'])
+                todel.append(id)
                 self.notify("Notify:Tag", id)
-            for id in todel:
-                del self.seen_threads[id]
+        for id in todel:
+            del self.seen_threads[id]
         return 1
 
     def handle_set_adhoc(self, key, focus, str, **a):
@@ -1503,7 +1488,7 @@ class notmuch_query(edlib.Doc):
         if mid:
             m = self.threadinfo[tid][mid]
         else:
-            m = ("", 0, False, [0,0], "" ,"", [])
+            m = ("", 0, False, [0,0], "" ,"", t["tags"])
         (fn, dt, matched, depth, author, subj, tags) = m
         if attr == "message-id":
             val = mid
@@ -2485,7 +2470,7 @@ class notmuch_query_view(edlib.Pane):
         for i in self.seen_threads:
             focus.call("doc:notmuch:remember-seen-thread", i)
         for i in self.seen_msgs:
-            focus.call("doc:notmuch:remember-seen-msg", i)
+            focus.call("doc:notmuch:remember-seen-msg", i, self.seen_msgs[i])
 
         focus.call("doc:notmuch:mark-seen")
         # Reload the query so archived messages disappear
@@ -2861,7 +2846,7 @@ class notmuch_query_view(edlib.Pane):
                     if i1 in self.seen_threads:
                         del self.seen_threads[i1]
                     if i2 not in self.seen_msgs:
-                        self.seen_msgs[i2] = True
+                        self.seen_msgs[i2] = i1
             if self.next(m) is None:
                 break
 
