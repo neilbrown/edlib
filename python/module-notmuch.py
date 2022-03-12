@@ -727,44 +727,23 @@ class notmuch_main(edlib.Doc):
             tag = key[23:]
         else:
             return Enoarg
-        with self.db.get_write() as db:
-            if str2:
-                # adjust a list of messages
-                for id in str2.split("\n"):
-                    try:
-                        m = db.find_message(id)
-                    except:
-                        m = None
-                    if m:
-                        t = list(m.get_tags())
-                        if add:
-                            if tag not in t:
-                                m.add_tag(tag)
-                                self.notify("Notify:Tag", str, id)
-                        else:
-                            if tag in t:
-                                m.remove_tag(tag)
-                                self.notify("Notify:Tag", str, id)
+
+        if str2:
+            # adjust a list of messages
+            for id in str2.split("\n"):
+                if add:
+                    notmuch_set_tags(msg=id, add=[tag])
+                else:
+                    notmuch_set_tags(msg=id, remove=[tag])
+                self.notify("Notify:Tag", str, id)
+        else:
+            # adjust whole thread
+            if add:
+                notmuch_set_tags(thread=str, add=[tag])
             else:
-                # adjust whole thread
-                try:
-                    q = db.create_query("thread:%s" % str)
-                except:
-                    return edlib.Efalse
-                changed = False
-                for t in q.search_threads():
-                    ml = t.get_messages()
-                    for m in ml:
-                        if add:
-                            if tag not in m.get_tags():
-                                m.add_tag(tag)
-                                changed = True
-                        else:
-                            if tag in m.get_tags():
-                                m.remove_tag(tag)
-                                changed = True
-                if changed:
-                    self.notify("Notify:Tag", str)
+                notmuch_set_tags(thread=str, remove=[tag])
+            self.notify("Notify:Tag", str)
+        # FIXME can I ever optimize out the Notify ??
         return 1
 
     def handle_notmuch_remember_seen_thread(self, key, focus, str, **a):
