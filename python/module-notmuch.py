@@ -634,21 +634,20 @@ class notmuch_main(edlib.Doc):
             comm2("callback", focus, nm)
         return 1
 
-    def handle_notmuch_byid(self, key, focus, str, comm2, **a):
+    def handle_notmuch_byid(self, key, focus, str1, str2, comm2, **a):
         "handle:doc:notmuch:byid"
         # Return a document for the email message.
         # This is a global document.
         with self.db as db:
             try:
-                m = db.find_message(str)
+                m = db.find_message(str1)
                 fn = m.get_filename() + ""
-                th = m.get_thread_id()
             except:
                 return edlib.Efalse
         doc = focus.call("doc:open", "email:"+fn, -2, ret='pane')
         if doc:
-            doc['notmuch:id'] = str
-            doc['notmuch:tid'] = th
+            doc['notmuch:id'] = str1
+            doc['notmuch:tid'] = str2
             comm2("callback", doc)
         return 1
 
@@ -2311,7 +2310,7 @@ class notmuch_master_view(edlib.Pane):
         # Find the file and display it in a 'message' pane
         self.mark_read()
 
-        p0 = self.list_pane.call("doc:notmuch:byid", str1, ret='pane')
+        p0 = self.list_pane.call("doc:notmuch:byid", str1, str2, ret='pane')
         if not p0:
             focus.call("Message", "Failed to find message")
             return edlib.Efail
