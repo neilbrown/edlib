@@ -37,8 +37,15 @@ import json
 import time
 import mimetypes
 
-def notmuch_all_tags():
-    p = Popen(["/usr/bin/notmuch","search","--output=tags","*"],
+def notmuch_get_tags(msg=None,thread=None):
+    if msg:
+        query = "id:" + msg
+    elif thread:
+        query = "thread:" + thread
+    else:
+        query = '*'
+
+    p = Popen(["/usr/bin/notmuch","search","--output=tags",query],
               stdout = PIPE, stderr = DEVNULL)
     if not p:
         return
@@ -580,7 +587,7 @@ class notmuch_main(edlib.Doc):
         if not self.timer_set:
             self.timer_set = True
             self.call("event:timer", 5*60*1000, self.tick)
-        tags = notmuch_all_tags()
+        tags = notmuch_get_tags()
         if tags:
             self.searches.set_tags(tags)
         self.tick('tick')
@@ -648,30 +655,21 @@ class notmuch_main(edlib.Doc):
     def handle_notmuch_byid_tags(self, key, focus, num2, str, comm2, **a):
         "handle:doc:notmuch:byid:tags"
         # return a string with tags of message
-        try:
-            with self.db as db:
-                m = db.find_message(str)
-                tags = ",".join(m.get_tags())
-            comm2("callback", focus, tags)
-        except:
+        t = notmuch_get_tags(msg = str)
+        if t is None:
             return edlib.Efalse
+        tags = ",".join(t)
+        comm2("callback", focus, tags)
         return 1
 
     def handle_notmuch_bythread_tags(self, key, focus, str, comm2, **a):
         "handle:doc:notmuch:bythread:tags"
         # return a string with tags of all messages in thread
-        try:
-            with self.db as db:
-                q = db.create_query("thread:%s" % str)
-                tg = []
-                for t in q.search_threads():
-                    ml = t.get_messages()
-                    for m in ml:
-                        tg.extend(m.get_tags())
-            tags = ",".join(set(tg))
-            comm2("callback", focus, tags)
-        except:
+        t = notmuch_get_tags(thread = str)
+        if t is None:
             return edlib.Efalse
+        tags = ",".join(t)
+        comm2("callback", focus, tags)
         return 1
 
     def handle_notmuch_query_updated(self, key, **a):
