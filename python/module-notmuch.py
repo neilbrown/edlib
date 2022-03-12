@@ -57,6 +57,27 @@ def notmuch_get_tags(msg=None,thread=None):
         return
     return out.decode().strip('\n').split('\n')
 
+def notmuch_set_tags(msg=None, thread=None, add=None, remove=None):
+    if not add and not remove:
+        return
+    if msg:
+        query = "id:" + msg
+    elif thread:
+        query = "thread:" + thread
+    else:
+        return
+    argv = ["/usr/bin/notmuch","tag"]
+    if add:
+        for i in add:
+            argv.append("+" + i)
+    if remove:
+        for i in remove:
+            argv.append("-" + i)
+    argv.append(query)
+    p = Popen(argv, stdin = DEVNULL, stdout = DEVNULL, stderr = DEVNULL)
+    # FIXME I have to wait so that a subsequent 'get' works.
+    p.communicate()
+
 class notmuch_db():
     # This class is designed to be used with "with ... as"
 
@@ -679,22 +700,8 @@ class notmuch_main(edlib.Doc):
 
     def handle_notmuch_mark_read(self, key, str, str2, **a):
         "handle:doc:notmuch:mark-read"
-        with self.db.get_write() as db:
-            try:
-                m = db.find_message(str2)
-            except:
-                m = None
-            if m:
-                changed=False
-                t = list(m.get_tags())
-                if "unread" in t:
-                    m.remove_tag("unread")
-                    changed=True
-                if "new" in t:
-                    m.remove_tag("new")
-                    changed=True
-                if changed:
-                    self.notify("Notify:Tag", str, str2)
+        notmuch_set_tags(msg=str2, remove = ["unread", "new"])
+        self.notify("Notify:Tag", str, str2)
         return 1
 
     def handle_notmuch_remove_tag(self, key, str, str2, **a):
