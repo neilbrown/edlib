@@ -3178,7 +3178,7 @@ def notmuch_pane(focus):
 def notmuch_mode(key, focus, **a):
     if notmuch_pane(focus):
         return 1
-    return edlib.Edfail
+    return edlib.Efail
 
 def notmuch_compose(key, focus, **a):
     choice = []
