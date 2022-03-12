@@ -2844,15 +2844,17 @@ class notmuch_query_view(edlib.Pane):
         m = mark.dup()
 
         while m < mark2:
-            i1 = focus.call("doc:get-attr", "thread-id", m, ret='str')
-            i2 = focus.call("doc:get-attr", "message-id", m, ret='str')
-            if i1 and not i2 and i1 not in self.seen_threads:
-                self.seen_threads[i1] = True
-            if i1 and i2:
-                if i1 in self.seen_threads:
-                    del self.seen_threads[i1]
-                if i2 not in self.seen_msgs:
-                    self.seen_msgs[i2] = True
+            tg = focus.call("doc:get-attr", "tags", m, ret='str')
+            if tg and 'new' in tg.split(','):
+                i1 = focus.call("doc:get-attr", "thread-id", m, ret='str')
+                i2 = focus.call("doc:get-attr", "message-id", m, ret='str')
+                if i1 and not i2 and i1 not in self.seen_threads:
+                    self.seen_threads[i1] = True
+                if i1 and i2:
+                    if i1 in self.seen_threads:
+                        del self.seen_threads[i1]
+                    if i2 not in self.seen_msgs:
+                        self.seen_msgs[i2] = True
             if self.next(m) is None:
                 break
 
