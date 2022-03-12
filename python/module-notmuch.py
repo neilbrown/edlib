@@ -37,6 +37,19 @@ import json
 import time
 import mimetypes
 
+def notmuch_all_tags():
+    p = Popen(["/usr/bin/notmuch","search","--output=tags","*"],
+              stdout = PIPE, stderr = DEVNULL)
+    if not p:
+        return
+    try:
+        out,err = p.communicate(timeout=5)
+    except IOError:
+        return
+    except TimeoutExpired:
+        return
+    return out.decode().strip('\n').split('\n')
+
 class notmuch_db():
     # This class is designed to be used with "with ... as"
 
@@ -567,12 +580,9 @@ class notmuch_main(edlib.Doc):
         if not self.timer_set:
             self.timer_set = True
             self.call("event:timer", 5*60*1000, self.tick)
-        with self.db as db:
-            try:
-                tags = db.get_all_tags()
-                self.searches.set_tags(tags)
-            except notmuch.NotmuchError:
-                pass
+        tags = notmuch_all_tags()
+        if tags:
+            self.searches.set_tags(tags)
         self.tick('tick')
         return 1
 
