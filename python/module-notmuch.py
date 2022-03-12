@@ -1776,16 +1776,18 @@ class notmuch_master_view(edlib.Pane):
         frm.clone_children(p)
         return 1
 
-    recursed = False
+    recursed = None
     def handle_maindoc(self, key, **a):
         "handle-prefix:doc:notmuch:"
         # any doc:notmuch calls that haven't been handled
         # are handled to the list_pane
-        if self.recursed:
+        if self.recursed == key:
+            edlib.LOG("doc:notmuch: recursed!", key)
             return edlib.Efail
-        self.recursed = True
+        prev = self.recursed
+        self.recursed = key
         ret = self.list_pane.call(key, **a)
-        self.recursed = False
+        self.recursed = prev
         return ret
 
     def handle_size(self, key, **a):
