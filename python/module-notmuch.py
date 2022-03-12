@@ -57,6 +57,22 @@ def notmuch_get_tags(msg=None,thread=None):
         return
     return out.decode().strip('\n').split('\n')
 
+def notmuch_get_file(msg):
+    query = "id:" + msg
+
+    p = Popen(["/usr/bin/notmuch","search","--output=files","--duplicate=1",
+               query],
+              stdout = PIPE, stderr = DEVNULL)
+    if not p:
+        return
+    try:
+        out,err = p.communicate(timeout=5)
+    except IOError:
+        return
+    except TimeoutExpired:
+        return
+    return out.decode().strip('\n')
+
 def notmuch_set_tags(msg=None, thread=None, add=None, remove=None):
     if not add and not remove:
         return
@@ -659,12 +675,9 @@ class notmuch_main(edlib.Doc):
         "handle:doc:notmuch:byid"
         # Return a document for the email message.
         # This is a global document.
-        with self.db as db:
-            try:
-                m = db.find_message(str1)
-                fn = m.get_filename() + ""
-            except:
-                return edlib.Efalse
+        fn = notmuch_get_file(str1)
+        if not fn:
+            return Efail
         doc = focus.call("doc:open", "email:"+fn, -2, ret='pane')
         if doc:
             doc['notmuch:id'] = str1
