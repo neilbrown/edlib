@@ -94,6 +94,22 @@ def notmuch_set_tags(msg=None, thread=None, add=None, remove=None):
     # FIXME I have to wait so that a subsequent 'get' works.
     p.communicate()
 
+def notmuch_load_thread(tid, query=None):
+    if query:
+        q = "thread:%s and (%s)" % (tid, query)
+    else:
+        q = "thread:%s" % (tid)
+    argv = ["/usr/bin/notmuch", "show", "--format=json", q]
+    p = Popen(argv, stdin = DEVNULL, stdout = PIPE, stderr = DEVNULL)
+    out,err = p.communicate()
+    if not out:
+        return None
+    r = json.loads(out.decode())
+    if not r:
+        return None
+    # r is a list of threads, we want just one thread.
+    return r[0]
+
 class notmuch_db():
     # This class is designed to be used with "with ... as"
 
@@ -1105,42 +1121,41 @@ class notmuch_query(edlib.Doc):
 
         return ret + "> "
 
-    def add_message(self, m, lst, info, depth):
-        mid = m.get_message_id()
+    def add_message(self, msg, lst, info, depth):
+        # msg is an array of message and list of replies
+        m = msg[0]
+        mid = m['id']
         lst.append(mid)
-        l = list(m.get_replies())
-        info[mid] = (m.get_filename(), m.get_date(),
-                     m.get_flag(notmuch.Message.FLAG.MATCH),
+        l = msg[1]
+        info[mid] = (m['filename'], m['timestamp'],
+                     m['match'],
                      depth + [1 if l else 0],
-                     m.get_header("From"), m.get_header("Subject"), list(m.get_tags()))
+                     m['headers']["From"],
+                     m['headers']["Subject"],
+                     m['tags'])
         if l:
-            l.sort(key=lambda m:(m.get_date(), m.get_header("subject")))
+            l.sort(key=lambda m:(m[0]['timestamp'],m[0]['headers']['Subject']))
             for m in l[:-1]:
                 self.add_message(m, lst, info, depth + [1])
             self.add_message(l[-1], lst, info, depth + [0])
 
     def load_thread(self, mark):
         (tid, mid) = mark.pos
-        with self.db as db:
-            try:
-                q = notmuch.Query(db, "thread:%s and (%s)" % (tid, self.query))
-                tl = list(q.search_threads())
-                if not tl:
-                    q = notmuch.Query(db, "thread:%s" % (tid))
-                    tl = list(q.search_threads())
-            except:
-                tl = None
-            if not tl:
-                return
-            thread = tl[0]
-            midlist = []
-            minfo = {}
-            ml = list(thread.get_toplevel_messages())
-            ml.sort(key=lambda m:(m.get_date(), m.get_header("subject")))
-            for m in list(ml):
-                self.add_message(m, midlist, minfo, [2])
-            self.messageids[tid] = midlist
-            self.threadinfo[tid] = minfo
+        thread = notmuch_load_thread(tid, self.query)
+        if not thread:
+            thread = notmuch_load_thread(tid)
+        if not thread:
+            return
+        # thread is a list of top-level messages
+        # in each m[0] is the message as a dict
+        thread.sort(key=lambda m:(m[0]['timestamp'],m[0]['headers']['Subject']))
+        midlist = []
+        minfo = {}
+        for m in thread:
+            self.add_message(m, midlist, minfo, [2])
+        self.messageids[tid] = midlist
+        self.threadinfo[tid] = minfo
+
         if mid is None:
             # need to update all marks at this location to hold mid
             m = mark
