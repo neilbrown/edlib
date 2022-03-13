@@ -32,7 +32,6 @@ from subprocess import Popen, PIPE, DEVNULL
 import re
 import os
 import os.path
-import notmuch
 import json
 import time
 import mimetypes
@@ -109,39 +108,6 @@ def notmuch_load_thread(tid, query=None):
         return None
     # r is a list of threads, we want just one thread.
     return r[0]
-
-class notmuch_db():
-    # This class is designed to be used with "with ... as"
-
-    def __init__(self):
-        self.want_write = False
-        self.nest = 0
-
-    def get_write(self):
-        if self.want_write:
-            return self
-        if self.nest:
-            return None
-        self.want_write = True
-        return self
-    def __enter__(self):
-        if self.nest:
-            self.nest += 1
-            return self.db
-        self.nest = 1
-        if self.want_write:
-            self.db = notmuch.Database(mode = notmuch.Database.MODE.READ_WRITE)
-        else:
-            self.db = notmuch.Database()
-        return self.db
-
-    def __exit__(self, a,b,c):
-        self.nest -= 1
-        if self.nest:
-            return
-        self.db.close()
-        self.db = None
-        self.want_write = False
 
 class counter:
     # manage a queue of queries that need to be counted.
@@ -457,7 +423,6 @@ class notmuch_main(edlib.Doc):
         self.seen_msgs = {}
         self.container = edlib.Pane(self.root)
         self.changed_queries = []
-        self.db = notmuch_db()
 
     def handle_shares_ref(self, key, **a):
         "handle:doc:shares-ref"
@@ -848,7 +813,6 @@ class notmuch_main(edlib.Doc):
 class notmuch_query(edlib.Doc):
     def __init__(self, focus, qname, query):
         edlib.Doc.__init__(self, focus)
-        self.db = notmuch_db()
         self.maindoc = focus
         self.query = query
         self.filter = ""
