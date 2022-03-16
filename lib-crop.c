@@ -76,7 +76,7 @@ DEF_CMD(crop_write)
 }
 
 static int crop_step(struct pane *home safe, struct mark *mark safe,
-		     int num, int num2)
+		     int num, int num2, const char *key safe)
 {
 	struct pane *p = home->parent;
 	struct crop_data *cd = home->data;
@@ -85,7 +85,7 @@ static int crop_step(struct pane *home safe, struct mark *mark safe,
 	/* Always force marks to be in range */
 	crop(mark, cd);
 
-	ret = home_call(p, "doc:char", home,
+	ret = home_call(p, key, home,
 			num2 ? (num ? 1 : -1) : 0,
 			mark, NULL,
 			num2 ? 0 : (num ? 1 : -1));
@@ -120,7 +120,7 @@ DEF_CMD(crop_char)
 		/* Can never cross 'end' */
 		return Einval;
 	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
-		ret = crop_step(ci->home, m, forward, 1);
+		ret = crop_step(ci->home, m, forward, 1, ci->key);
 		steps -= forward*2 - 1;
 	}
 	if (end)
@@ -130,7 +130,7 @@ DEF_CMD(crop_char)
 	if (ci->num && (ci->num2 < 0) == forward)
 		return ret;
 	/* Want the 'next' char */
-	return crop_step(ci->home, m, ci->num2 > 0, 0);
+	return crop_step(ci->home, m, ci->num2 > 0, 0, ci->key);
 }
 
 DEF_CMD(crop_clip)
@@ -221,6 +221,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(crop_map, "Free", &edlib_do_free);
 	key_add(crop_map, "doc:write_file", &crop_write);
 	key_add(crop_map, "doc:char", &crop_char);
+	key_add(crop_map, "doc:byte", &crop_char);
 	key_add(crop_map, "doc:content", &crop_content);
 	key_add(crop_map, "doc:content-bytes", &crop_content);
 	key_add(crop_map, "Notify:clip", &crop_clip);
