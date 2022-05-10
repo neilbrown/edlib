@@ -314,7 +314,7 @@ class compose_email(edlib.Pane):
         m2['compose-type'] = 'headers'
 
     def check_header(self, header, content = ""):
-        # if header doesn't already exist, at it at end
+        # if header doesn't already exist, add it at end
         m1 = edlib.Mark(self)
         m2, l = self.vmarks(self.view)
         try:
@@ -866,6 +866,62 @@ class compose_email(edlib.Pane):
             found_end = not self.find_any_header(mark)
         mark.to_mark(m2.next())
         return edlib.Efallthrough
+
+    def handle_template(self, key, focus, **a):
+        "handle:K:CC-t"
+        # If document hasn't been modified, ask for a template name
+        # and us it.
+        # The external command "template" will list known templates, which
+        # can be given as an arg to produce the template.
+        mod = focus['doc-modified']
+        if mod and mod == 'yes':
+            focus.call("Message", "Compose template requires unchanged document.")
+            return 1
+        p = subprocess.Popen("template", shell=True,
+                             stdout = subprocess.PIPE, stderr = subprocess.DEVNULL)
+        out, err = p.communicate()
+        if not out:
+            focus.call("Message", "No known compose templates.")
+            return 1
+
+        doc = focus.call("doc:from-text", "*Choose Template*", out.decode(),
+                         ret='pane')
+        doc.call("doc:set:autoclose", 1)
+        pop = focus.call("PopupTile", "M1", ret='pane')
+        p = doc.call("doc:attach-view", pop, -1, ret='pane')
+        p['done-key'] = "Compose:Template"
+        p.call("attach-render-complete")
+
+        return 1
+
+    def handle_got_template(self, key, focus, str1, **a):
+        "handle:Compose:Template"
+        if not str1:
+            return
+        p = subprocess.Popen(["template", str1], stdout=subprocess.PIPE,
+                             stderr = subprocess.DEVNULL)
+        out, err = p.communicate()
+        if not out:
+            focus.call("Message", "No template provided.")
+            return
+        out = out.decode()
+        sep = out.find('\n\n')
+        if sep > 0:
+            hdr = out[:sep+1]
+            body = out[sep+2:]
+        else:
+            body = out
+        if hdr:
+            m = edlib.Mark(self)
+            f, l = self.vmarks(self.view)
+            focus.call("doc:replace", hdr, m, f)
+        if body:
+            m = edlib.Mark(self)
+            self.to_body(m)
+            focus.call("doc:replace", m, body)
+        focus.call("compose-email:empty-headers")
+
+        return 1
 
 def compose_mode_attach(key, focus, comm2, **a):
     focus['fill-width'] = '72'
