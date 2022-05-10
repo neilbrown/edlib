@@ -481,6 +481,7 @@ enum {
 					    * children, and this one
 					    * hasn't been handled yet.
 					    */
+	DAMAGED_DEBUG		= BIT(12),
 };
 #define DAMAGED_NEED_CALL (DAMAGED_SIZE | DAMAGED_REFRESH)
 

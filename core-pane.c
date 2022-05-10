@@ -84,6 +84,8 @@ static void pane_check(struct pane *p safe)
 void pane_damaged(struct pane *p, int type)
 {
 	int z;
+	struct pane *orig = p;
+	int orig_type = type;
 	if (!p || (p->damaged | type) == p->damaged)
 		return;
 	if (type & (type-1)) {
@@ -118,6 +120,10 @@ void pane_damaged(struct pane *p, int type)
 	p->damaged |= type;
 	p = p->parent;
 	while ((p->damaged | type) != p->damaged) {
+		if (p->damaged & DAMAGED_DEBUG) {
+			LOG("damage %s %d (%d)", orig->name, orig_type, type);
+			LOG_BT();
+		}
 		if (z > 0 && (type & DAMAGED_SIZE_CHILD))
 			/* overlay changed size, so we must refresh */
 			/* FIXME should this be a notification? */
@@ -369,9 +375,12 @@ void pane_refresh(struct pane *p safe)
 	while (cnt-- &&
 	       (p->damaged &
 		~(DAMAGED_CLOSED|DAMAGED_POSTORDER|DAMAGED_POSTORDER_CHILD))) {
+		if (cnt == 0)
+			p->damaged |= DAMAGED_DEBUG;
 		pane_do_resize(p, 0);
 		pane_do_review(p);
 		pane_do_refresh(p);
+		p->damaged &= ~DAMAGED_DEBUG;
 	}
 	pane_do_postorder(p);
 	if (p->damaged) {
