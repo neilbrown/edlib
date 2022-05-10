@@ -96,7 +96,8 @@ static bool check_settings(struct pane *focus safe,
 		changed = True;
 	}
 	s = pane_attr_get(focus, "filter:attr");
-	if (!s || !fd->attr || strcmp(s, fd->attr) != 0) {
+	if ((!!s != !!fd->attr) ||
+	    (s && fd->attr && strcmp(s, fd->attr) != 0)) {
 		free(fd->attr);
 		fd->attr = s ? strdup(s) : NULL;
 		changed = True;
