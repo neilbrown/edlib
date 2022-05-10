@@ -331,6 +331,8 @@ class compose_email(edlib.Pane):
         # at least go to end of line
         self.parent.call("doc:EOL", 1, mark)
         m = self.vmark_at_or_before(self.view, mark)
+        if not m:
+            return None
         type = m['compose-type']
         if type == "headers":
             markup =  "<fg:red>Headers above, content below"
@@ -473,6 +475,18 @@ class compose_email(edlib.Pane):
         if not mark:
             return edlib.Enoarg
         m = self.vmark_at_or_before(self.view, mark)
+        if m:
+            if m['compose-type'] and m.next() == m:
+                # undo must have destroyed the region
+                m2 = m.next()
+                m.release()
+                m2.release()
+                return edlib.WEOF
+            if not m['compose-type'] and m.prev() == m:
+                m2 = m.prev()
+                m.release()
+                m2.release()
+                return edlib.WEOF
         if mark == m:
             if m['compose-type']:
                 # at start of marker
