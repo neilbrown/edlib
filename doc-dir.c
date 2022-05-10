@@ -391,6 +391,11 @@ static int dir_step(struct pane *home safe, struct mark *mark safe,
 	struct dir_ent *d;
 	wint_t ret = '\n';
 
+	if (!mark_valid(mark))
+		/* FIXME this might be needed after deleting lots
+		 * of dir entries, and refreshing.
+		 */
+		return WEOF;
 	d = m->ref.d;
 	if (forward) {
 		if (d == NULL)
