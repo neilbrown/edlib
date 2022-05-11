@@ -835,6 +835,7 @@ class notmuch_query(edlib.Doc):
         self.add_notify(self.maindoc, "Notify:Close")
         self['doc-status'] = ""
         self.p = None
+        self.marks_unstable = False
 
         self.this_load = None
         self.load_thread_active = False
@@ -907,6 +908,8 @@ class notmuch_query(edlib.Doc):
             edlib.LOG("notmuch_query val_mark: messages in wrong order",
                       mark.pos, mark2.pos)
             return edlib.Efalse
+        if self.marks_unstable:
+            return 1
         if self.threadids.index(t1) < self.threadids.index(t2):
             return 1
         edlib.LOG("notmuch_query val_mark: pos in wrong order:",
@@ -1005,6 +1008,10 @@ class notmuch_query(edlib.Doc):
                     old = self.threadids.index(tid)
                 except ValueError:
                     pass
+                if old >= 0:
+                    # debug:validate-marks looks in self.threadids
+                    # which is about to become inconsistent
+                    self.marks_unstable = True
                 self.threadids.insert(self.tindex, tid)
                 self.tindex += 1
             if old >= 0:
@@ -1033,6 +1040,7 @@ class notmuch_query(edlib.Doc):
                     elif self.pos.prev_any().seq != m.seq:
                         m.to_mark_noref(self.pos.prev_any())
                     m = m2
+                self.marks_unstable = False
                 self.notify("notmuch:thread-changed", tid, 1)
             if need_update:
                 if self.pos.pos and self.pos.pos[0] == tid:
