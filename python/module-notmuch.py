@@ -962,12 +962,13 @@ class notmuch_query(edlib.Doc):
                 while self.pos.pos and self.pos.pos[0] == tid2:
                     self.call("doc:step-thread", self.pos, 1, 1)
             need_update = False
-            if tid in self.threads:
+            if tid in self.threads and tid in self.messageids:
                 oj = self.threads[tid]
                 if  (oj['timestamp'] != j['timestamp'] or
-                     oj['total'] != j['total'] or
+                     (oj['total'] != 0 and oj['total'] != j['total']) or
                      oj['matched'] != j['matched']):
                     need_update = True
+
             self.threads[tid] = j
             old = -1
             if self.tindex >= len(self.threadids) or self.threadids[self.tindex] != tid:
