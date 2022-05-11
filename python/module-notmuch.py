@@ -841,6 +841,26 @@ class notmuch_query(edlib.Doc):
         self.thread_queue = []
         self.load_full()
 
+    def open_email(self, key, focus, str1, str2, comm2, **a):
+        "handle:doc:notmuch:open"
+        if not str1 or not str2:
+            return edlib.Enoarg
+        if str2 not in self.threadinfo:
+            return edlib.Efalse
+        minfo = self.threadinfo[str2]
+        if str1 not in minfo:
+            return edlib.Efalse
+        try:
+            fn = minfo[str1][0][0]
+        except:
+            return edlib.Efalse
+        doc = focus.call("doc:open", "email:"+fn, -2, ret='pane')
+        if doc:
+            doc['notmuch:id'] = str1
+            doc['notmuch:tid'] = str2
+            comm2("callback", doc)
+        return 1
+
     def set_filter(self, key, focus, str, **a):
         "handle:doc:notmuch:set-filter"
         if not str:
@@ -2330,7 +2350,11 @@ class notmuch_master_view(edlib.Pane):
         # Find the file and display it in a 'message' pane
         self.mark_read()
 
-        p0 = self.list_pane.call("doc:notmuch:byid", str1, str2, ret='pane')
+        p0 = None
+        if self.query_pane:
+            p0 = self.query_pane.call("doc:notmuch:open", str1, str2, ret='pane')
+        if not p0:
+            p0 = self.list_pane.call("doc:notmuch:byid", str1, str2, ret='pane')
         if not p0:
             focus.call("Message", "Failed to find message")
             return edlib.Efail
