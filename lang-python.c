@@ -2851,10 +2851,12 @@ static PyObject *py_LOG(PyObject *self, PyObject *args)
 			continue;
 		str = python_as_string(s, &tofree);
 		slen = str ? strlen(str) : 0;
-		if (str && slen < sizeof(buf) - l - 2) {
+		if (slen > sizeof(buf) - l - 2)
+			slen = sizeof(buf) - l - 2;
+		if (str) {
 			if (l)
 				buf[l++] = ' ';
-			strcpy(buf+l, str);
+			strncpy(buf+l, str, slen);
 			l += slen;
 		}
 		Py_XDECREF(tofree);
