@@ -75,6 +75,10 @@ static bool handle_content(struct pane *p safe,
 			   struct mark *start safe, struct mark *end safe,
 			   struct pane *mp safe, struct pane *spacer safe,
 			   char *path safe);
+static bool handle_rfc822(struct pane *email safe,
+			  struct mark *start safe, struct mark *end safe,
+			  struct pane *mp safe, struct pane *spacer safe,
+			  char *path safe);
 
 static bool cond_append(struct buf *b safe, char *txt safe, char *tag safe,
 			int offset, int *cp safe)
@@ -691,61 +695,31 @@ static bool handle_content(struct pane *p safe,
 	if (tok_matches(major, mjlen, "multipart"))
 		return handle_multipart(p, type, start, end, mp, spacer, path);
 
+	if (tok_matches(major, mjlen, "message") && tok_matches(minor, mnlen, "rfc822"))
+		return handle_rfc822(p, start, end, mp, spacer, path);
+
 	/* default to plain text until we get a better default */
 	return handle_text(p, type, xfer, disp, start, end, mp, spacer, path);
 }
 
-DEF_CMD(open_email)
+static bool handle_rfc822(struct pane *email safe,
+			  struct mark *start safe, struct mark *end safe,
+			  struct pane *mp safe, struct pane *spacer safe,
+			  char *path safe)
 {
-	int fd;
-	struct email_info *ei;
-	struct mark *start, *end;
-	struct pane *p, *h2;
-	char *mime;
+	struct pane *h2;
+	struct pane *hdrdoc = NULL;
+	struct mark *point = NULL;
 	char *xfer = NULL, *type = NULL, *disp = NULL;
-	struct pane *hdrdoc;
-	struct mark *point;
+	char *mime;
+	char *newpath = NULL;
 
-	if (ci->str == NULL ||
-	    strncmp(ci->str, "email:", 6) != 0)
-		return Efallthrough;
-	fd = open(ci->str+6, O_RDONLY);
-	if (fd < 0)
-		return Efallthrough;
-	p = call_ret(pane, "doc:open", ci->focus, fd, NULL, ci->str + 6, 1);
-	close(fd);
-	if (!p)
-		return Efallthrough;
-	start = vmark_new(p, MARK_UNGROUPED, NULL);
-	if (!start) {
-		pane_close(p);
-		return Efallthrough;
-	}
-	end = mark_dup(start);
-	call("doc:set-ref", p, 0, end);
-
-	alloc(ei, pane);
-	ei->email = p;
-	h2 = call_ret(pane, "attach-rfc822header", p, 0, start, NULL, 0, end);
+	h2 = call_ret(pane, "attach-rfc822header", email, 0, start, NULL, 0, end);
 	if (!h2)
 		goto out;
 	attr_set_str(&h2->attrs, "email:which", "orig");
-	p = call_ret(pane, "doc:from-text", p, 0, NULL, NULL, 0, NULL,
-		     "\n0123456789\n");
-	if (!p) {
-		pane_close(h2);
-		goto out;
-	}
-	attr_set_str(&p->attrs, "email:which", "spacer");
-	ei->spacer = p;
-	point = vmark_new(p, MARK_POINT, NULL);
-	call("doc:set-ref", p, 1, point);
-	doc_next(p, point);
-	call("doc:set-attr", p, 1, point, "markup:func", 0,
-	     NULL, "doc:email:render-spacer");
-	mark_free(point);
 
-	hdrdoc = call_ret(pane, "attach-doc-text", ci->focus);
+	hdrdoc = call_ret(pane, "doc:from-text", email, 0, NULL, NULL, 0, NULL, "");
 	if (!hdrdoc)
 		goto out;
 	call("doc:set:autoclose", hdrdoc, 1);
@@ -777,35 +751,102 @@ DEF_CMD(open_email)
 		disp = attr_find(h2->attrs, "rfc822-content-disposition");
 	}
 
+	newpath = NULL;
+	asprintf(&newpath, "%s%sheaders", path, path[0] ? ",":"");
+	attr_set_str(&hdrdoc->attrs, "email:actions", "hide");
+	attr_set_str(&hdrdoc->attrs, "email:which", "transformed");
+	attr_set_str(&hdrdoc->attrs, "email:content-type", "text/rfc822-headers");
+	attr_set_str(&hdrdoc->attrs, "email:path", newpath);
+	attr_set_str(&hdrdoc->attrs, "email:is_transformed", "yes");
+	home_call(mp, "multipart-add", h2);
+	home_call(mp, "multipart-add", hdrdoc);
+	home_call(mp, "multipart-add", spacer);
+	free(newpath);
+
+	newpath = NULL;
+	asprintf(&newpath, "%s%sbody", path, path[0] ? ",":"");
+	if (!handle_content(email, type, xfer, disp, start, end,
+			    mp, spacer, newpath?:""))
+		goto out;
+	free(newpath);
+	return True;
+out:
+	free(newpath);
+	if (h2)
+		pane_close(h2);
+	if (point)
+		mark_free(point);
+	if (hdrdoc)
+		pane_close(hdrdoc);
+	return False;
+}
+
+DEF_CMD(open_email)
+{
+	int fd;
+	struct email_info *ei;
+	struct mark *start, *end;
+	struct pane *p;
+	struct mark *point;
+
+	if (ci->str == NULL ||
+	    strncmp(ci->str, "email:", 6) != 0)
+		return Efallthrough;
+	fd = open(ci->str+6, O_RDONLY);
+	if (fd < 0)
+		return Efallthrough;
+	p = call_ret(pane, "doc:open", ci->focus, fd, NULL, ci->str + 6, 1);
+	close(fd);
+	if (!p)
+		return Efallthrough;
+	start = vmark_new(p, MARK_UNGROUPED, NULL);
+	if (!start) {
+		pane_close(p);
+		return Efallthrough;
+	}
+	end = mark_dup(start);
+	call("doc:set-ref", p, 0, end);
+
+	alloc(ei, pane);
+	ei->email = p;
+
+	/* create spacer doc to be attached between each part */
+	p = call_ret(pane, "doc:from-text", p, 0, NULL, NULL, 0, NULL,
+		     "\n0123456789\n");
+	if (!p)
+		goto out;
+
+	attr_set_str(&p->attrs, "email:which", "spacer");
+	ei->spacer = p;
+	point = vmark_new(p, MARK_POINT, NULL);
+	call("doc:set-ref", p, 1, point);
+	doc_next(p, point);
+	call("doc:set-attr", p, 1, point, "markup:func", 0,
+	     NULL, "doc:email:render-spacer");
+	mark_free(point);
+
+	/* Create the multipart in which all the parts are assembled. */
 	p = call_ret(pane, "attach-doc-multipart", ci->home);
 	if (!p)
 		goto out;
 	call("doc:set:autoclose", p, 1);
-	attr_set_str(&hdrdoc->attrs, "email:actions", "hide");
-	attr_set_str(&hdrdoc->attrs, "email:which", "transformed");
-	attr_set_str(&hdrdoc->attrs, "email:content-type", "text/rfc822-headers");
-	attr_set_str(&hdrdoc->attrs, "email:path", "headers");
-	attr_set_str(&hdrdoc->attrs, "email:is_transformed", "yes");
-	home_call(p, "multipart-add", h2);
-	home_call(p, "multipart-add", hdrdoc);
-	home_call(p, "multipart-add", ei->spacer);
-
-	if (!handle_content(ei->email, type, xfer, disp, start, end,
-			    p, ei->spacer, "body"))
-		goto out;
-
-	mark_free(start);
-	mark_free(end);
 	attr_set_str(&p->attrs, "render-default", "text");
 	attr_set_str(&p->attrs, "filename", ci->str+6);
 	attr_set_str(&p->attrs, "doc-type", "email");
+
+	if (!handle_rfc822(ei->email, start, end, p, ei->spacer, ""))
+		goto out;
+	mark_free(start);
+	mark_free(end);
+
 	return comm_call(ci->comm2, "callback:attach", p);
 
 out:
 	mark_free(start);
 	mark_free(end);
+	if ((void*)ei->spacer)
+		pane_close(ei->spacer);
 	free(ei);
-	// FIXME free stuff
 	return Efail;
 }
 
