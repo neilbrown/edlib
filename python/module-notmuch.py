@@ -93,13 +93,17 @@ def notmuch_set_tags(msg=None, thread=None, add=None, remove=None):
     # FIXME I have to wait so that a subsequent 'get' works.
     p.communicate()
 
-def notmuch_load_thread(tid, query=None):
+def notmuch_start_load_thread(tid, query=None):
     if query:
         q = "thread:%s and (%s)" % (tid, query)
     else:
         q = "thread:%s" % (tid)
     argv = ["/usr/bin/notmuch", "show", "--format=json", q]
     p = Popen(argv, stdin = DEVNULL, stdout = PIPE, stderr = DEVNULL)
+    return p
+
+def notmuch_load_thread(tid, query=None):
+    p = notmuch_start_load_thread(tid, query)
     out,err = p.communicate()
     if not out:
         return None
@@ -831,6 +835,10 @@ class notmuch_query(edlib.Doc):
         self.add_notify(self.maindoc, "Notify:Close")
         self['doc-status'] = ""
         self.p = None
+
+        self.this_load = None
+        self.load_thread_active = False
+        self.thread_queue = []
         self.load_full()
 
     def set_filter(self, key, focus, str, **a):
@@ -1008,14 +1016,14 @@ class notmuch_query(edlib.Doc):
                 self.notify("notmuch:thread-changed", tid, 1)
             if need_update:
                 if self.pos.pos and self.pos.pos[0] == tid:
-                    self.load_thread(self.pos)
+                    self.load_thread(self.pos, sync=False)
                 else:
                     # might be previous thread
                     m = self.pos.dup()
                     self.prev(m)
                     self.call("doc:step-thread", m, 0, 1)
                     if m.pos and m.pos[0] == tid:
-                        self.load_thread(m)
+                        self.load_thread(m, sync=False)
 
         tl = None
         if self.p:
@@ -1104,13 +1112,59 @@ class notmuch_query(edlib.Doc):
                 self.add_message(m, lst, info, depth + [1])
             self.add_message(l[-1], lst, info, depth + [0])
 
-    def load_thread(self, mark):
+    def step_load_thread(self):
+        # start thread loading, either current with query, or next
+        if not self.this_load:
+            if not self.thread_queue:
+                self.load_thread_active = False
+                return
+            self.this_load = self.thread_queue.pop(0)
+        tid, mid, m, query = self.this_load
+        self.thread_text = b""
+        self.load_thread_active = True
+        self.thread_p = notmuch_start_load_thread(tid, query)
+        fd = self.thread_p.stdout.fileno()
+        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+        self.call("event:read", fd, self.load_thread_read)
+
+    def load_thread_read(self, key, **a):
+        try:
+            b = os.read(self.thread_p.stdout.fileno(), 4096)
+            while b:
+                self.thread_text += b
+                b = os.read(self.thread_p.stdout.fileno(), 4096)
+        except IOError:
+            return 1
+        # Must have read EOF to get here.
+        th = json.loads(self.thread_text.decode())
+        self.thread_text = None
+        tid, mid, m, query = self.this_load
+        if query and not th:
+            # query must exclude everything
+            self.this_load = (tid, mid, m, None)
+        else:
+            self.merge_thread(tid, mid, m, th[0])
+            self.this_load = None
+        self.step_load_thread()
+        return edlib.Efalse
+
+    def load_thread(self, mark, sync):
         (tid, mid) = mark.pos
+        if not sync:
+            self.thread_queue.append((tid, mid, mark.dup(), self.query))
+            if not self.load_thread_active:
+                self.step_load_thread()
+            return
+
         thread = notmuch_load_thread(tid, self.query)
         if not thread:
             thread = notmuch_load_thread(tid)
         if not thread:
             return
+        self.merge_thread(tid, mid, mark, thread)
+
+    def merge_thread(self, tid, mid, mark, thread):
         # thread is a list of top-level messages
         # in each m[0] is the message as a dict
         thread.sort(key=lambda m:(m[0]['timestamp'],m[0]['headers']['Subject']))
@@ -1444,7 +1498,7 @@ class notmuch_query(edlib.Doc):
     def handle_doc_get_attr(self, key, mark, focus, str, comm2, **a):
         "handle:doc:get-attr"
         attr = str
-        if mark.pos == None:
+        if not mark or mark.pos == None:
             # No attributes for EOF
             return 1
         (tid,mid) = mark.pos
@@ -1567,7 +1621,7 @@ class notmuch_query(edlib.Doc):
         if mark.pos == None:
             return edlib.Efail
         (tid,mid) = mark.pos
-        self.load_thread(mark)
+        self.load_thread(mark, sync=True)
         if tid in self.threadinfo:
             return 1
         return 2
