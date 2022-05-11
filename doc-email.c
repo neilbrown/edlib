@@ -687,16 +687,20 @@ static bool handle_content(struct pane *p safe,
 		if (minor && minor[0] == '/')
 			minor = get_822_token(&hdr, &mnlen);
 	}
-	if (major == NULL ||
-	    tok_matches(major, mjlen, "text"))
-		return handle_text(p, type, xfer, disp, start, end,
-				   mp, spacer, path);
 
 	if (tok_matches(major, mjlen, "multipart"))
 		return handle_multipart(p, type, start, end, mp, spacer, path);
 
 	if (tok_matches(major, mjlen, "message") && tok_matches(minor, mnlen, "rfc822"))
 		return handle_rfc822(p, start, end, mp, spacer, path);
+
+	if (tok_matches(major, mjlen, "text") && tok_matches(minor, mnlen, "rfc822-headers"))
+		return handle_rfc822(p, start, end, mp, spacer, path);
+
+	if (major == NULL ||
+	    tok_matches(major, mjlen, "text"))
+		return handle_text(p, type, xfer, disp, start, end,
+				   mp, spacer, path);
 
 	/* default to plain text until we get a better default */
 	return handle_text(p, type, xfer, disp, start, end, mp, spacer, path);
