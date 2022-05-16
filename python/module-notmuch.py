@@ -107,8 +107,11 @@ def notmuch_load_thread(tid, query=None):
     out,err = p.communicate()
     if not out:
         return None
+    # we sometimes sees "[[[[]]]]" as the list of threads,
+    # which isn't properly formatted. So add an extr check on
+    # r[0][0][0]
     r = json.loads(out.decode("utf-8","ignore"))
-    if not r:
+    if not r or type(r[0][0][0]) != dict:
         return None
     # r is a list of threads, we want just one thread.
     return r[0]
@@ -1636,7 +1639,7 @@ class notmuch_query(edlib.Doc):
     def handle_maindoc(self, key, **a):
         "handle-prefix:doc:notmuch:"
         # any doc:notmuch calls that we don't handle directly
-        # are handled to the maindoc
+        # are handed to the maindoc
         return self.maindoc.call(key, **a)
 
     def handle_reload(self, key, **a):
