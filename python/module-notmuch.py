@@ -54,7 +54,7 @@ def notmuch_get_tags(msg=None,thread=None):
         return
     except TimeoutExpired:
         return
-    return out.decode().strip('\n').split('\n')
+    return out.decode("utf-8","ignore").strip('\n').split('\n')
 
 def notmuch_get_file(msg):
     query = "id:" + msg
@@ -70,7 +70,7 @@ def notmuch_get_file(msg):
         return
     except TimeoutExpired:
         return
-    return out.decode().strip('\n')
+    return out.decode("utf-8","ignore").strip('\n')
 
 def notmuch_set_tags(msg=None, thread=None, add=None, remove=None):
     if not add and not remove:
@@ -107,7 +107,7 @@ def notmuch_load_thread(tid, query=None):
     out,err = p.communicate()
     if not out:
         return None
-    r = json.loads(out.decode())
+    r = json.loads(out.decode("utf-8","ignore"))
     if not r:
         return None
     # r is a list of threads, we want just one thread.
@@ -228,7 +228,7 @@ class searches:
             return False
         self.slist = {}
         for line in p.stdout:
-            line = line.decode("utf-8", 'ignore')
+            line = line.decode("utf-8", "ignore")
             if not line.startswith('saved.') and not line.startswith('query.'):
                 continue
             w = line[6:].strip().split("=", 1)
@@ -595,7 +595,7 @@ class notmuch_main(edlib.Doc):
             p.wait()
             if out:
                 comm2("callback", focus,
-                      out.decode('utf-8','ignore').strip(), str)
+                      out.decode("utf-8","ignore").strip(), str)
             return 1
         return edlib.Efallthrough
 
@@ -1165,7 +1165,7 @@ class notmuch_query(edlib.Doc):
         except IOError:
             return 1
         # Must have read EOF to get here.
-        th = json.loads(self.thread_text.decode())
+        th = json.loads(self.thread_text.decode("utf-8","ignore"))
         self.thread_text = None
         tid, mid, m, query = self.this_load
         if query and not th:
