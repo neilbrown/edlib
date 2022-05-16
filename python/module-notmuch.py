@@ -2340,7 +2340,13 @@ class notmuch_master_view(edlib.Pane):
             p = self.message_pane
             self("notmuch-close-message", 1)
             p.call("Window:close", "notmuch")
+            self.message_pane = None
 
+        # doc:notmuch:query might auto-select a message, which will
+        # call doc:notmuch:open, which tests self.query_pane,
+        # which might be in the process of being closed.  Don't want
+        # that, so just clear query_pane early.
+        self.query_pane = None
         p0 = self.list_pane.call("doc:notmuch:query", str, ret='pane')
         p1 = self.list_pane.call("OtherPane", "notmuch", "threads", 15,
                                  ret='pane')
