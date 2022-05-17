@@ -655,6 +655,7 @@ class notmuch_main(edlib.Doc):
             nm.call("doc:notmuch:query:reload")
         elif nm['need-update'] or int(nm['last-refresh']) + 60 < int(time.time()):
             nm.call("doc:notmuch:query-refresh")
+        nm['background-update'] = "0"
         if comm2:
             comm2("callback", focus, nm)
         return 1
@@ -805,14 +806,29 @@ class notmuch_main(edlib.Doc):
             q = self.changed_queries.pop(0)
             for c in self.container.children():
                 if c['qname'] == q:
-                    if c.notify("doc:notify-viewers") == 0:
-                        # Just mark for refresh-on-visit
-                        c.call("doc:set:need-update", "true")
-                    else:
+                    if c.notify("doc:notify-viewers") > 0:
+                        # there are viewers, so just do a refresh.
                         self.querying = True
                         c("doc:notmuch:query-refresh")
                         # will get callback when time to continue
                         return
+                    elif int(c['background-update']) == 0:
+                        # First update with no viewers - full refresh
+                        c.call("doc:set:background-update",
+                               "%d" % int(time.time()))
+                        self.querying = True
+                        c("doc:notmuch:query:reload")
+                        # will get callback when time to continue
+                        return
+                    elif int(time.time()) - int(c['background-update']) < 5*60:
+                        # less than 5 minutes, keep updating
+                        self.querying = True
+                        c("doc:notmuch:query-refresh")
+                        # will get callback when time to continue
+                        return
+                    else:
+                        # Just mark for refresh-on-visit
+                        c.call("doc:set:need-update", "true")
 
 # notmuch_query document
 # a mark.pos is a list of thread-id and message-id.

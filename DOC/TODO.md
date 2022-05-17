@@ -32,7 +32,7 @@ Bugs to be fixed
 ----------------
 
 - [ ] accessing document list can be slow.  Same for large directories
-- [ ] queries don't update in the background - they used to
+- [X] queries don't update in the background - they used to
 - [ ] images in email message should never be scaled up
 - [ ] marks sometimes get out of order in email query list
 - [ ] C-y sometimes yanks something strange, A-y then needed.
