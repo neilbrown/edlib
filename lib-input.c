@@ -33,6 +33,11 @@
  * When the selection is claimed, the old owner gets called (not notified)
  * "Notify:selection:claimed", and when a commit request is made,
  * "Notify:selection:commit" is sent.
+ *
+ * A client can declare itself to be a fall-back handler by calling
+ * select:claim with num==1.  Then if any other client discards its selection,
+ * the ownership reverse to the fallback.  The fallback typically provides
+ * access to some selection external to edlib, such as the x11 selections.
  */
 
 #define _GNU_SOURCE /*  for asprintf */

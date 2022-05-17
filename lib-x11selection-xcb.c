@@ -316,7 +316,7 @@ DEF_CMD(xcbd_sel_commit)
 	struct xcbd_info *xdi = ci->home->data;
 
 	if (ci->focus != ci->home)
-		/* Wasn't explicitly addressed to me, some must be for
+		/* Wasn't explicitly addressed to me, so must be for
 		 * some other pane (probably mode-emacs will handle it)
 		 * so just fall through
 		 */
@@ -758,16 +758,22 @@ static void claim_sel(struct xcbc_info *xci safe, enum my_atoms sel)
 	rep = xcb_get_selection_owner_reply_timeo(xci->conn, pck, NULL);
 	if (rep && rep->owner == xci->win)
 		xci->have_primary = xci->timestamp;
-	else
+	else {
+		LOG("failed to claim primary - have = %u",
+		    (unsigned int)xci->have_primary);
 		xci->have_primary = XCB_CURRENT_TIME;
+	}
 	free(rep);
 	if (sel != a_PRIMARY) {
 		rep = xcb_get_selection_owner_reply_timeo(xci->conn, cck,
 							  NULL);
 		if (rep && rep->owner == xci->win)
 			xci->have_clipboard = xci->timestamp;
-		else
+		else {
+			LOG("failed to claim clipboard - have = %u",
+			    (unsigned int)xci->have_clipboard);
 			xci->have_clipboard = XCB_CURRENT_TIME;
+		}
 		free(rep);
 	}
 }

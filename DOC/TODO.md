@@ -31,6 +31,11 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] accessing document list can be slow.  Same for large directories
+- [ ] queries don't update in the background - they used to
+- [ ] images in email message should never be scaled up
+- [ ] marks sometimes get out of order in email query list
+- [ ] C-y sometimes yanks something strange, A-y then needed.
 - [X] fill-mode doesn't propogate 'cols' from one instance to next
       so if doc is marked 'textfill', that does enable autofill
 - [ ] if last line of file does end \n, and cursor is there, then moving
@@ -46,7 +51,7 @@ Bugs to be fixed
 - [X] when sending email, wrapped header lines must be unwrapped
 - [ ] ordering of marks in notmuch search summary can go wrong
 - [ ] sometimes the tid in a notmuch query mark.pos is not in threadids!!
-- [ ] message/rfc822 content cannot be displayed
+- [X] message/rfc822 content cannot be displayed
 - [X] invalid quoted-printable/utf8 content like We=E2&#128;&#153;d
       causes the rest of content not to be displayed.
 - [X] html2text should set decode-errors to ignore
@@ -67,7 +72,7 @@ Bugs to be fixed
 - [ ] multipart/related base64 text/html doesn't seem to get decoded either
 - [ ] catching doc:replace in a pane doesn't catch doc:insert-file.
       I need a simple way to intercept any change.
-- [ ] mark can be used after the go invalid too easily.  How to fix??
+- [ ] marks can be used after they go invalid too easily.  How to fix??
 - [X] optimize all doc:content handlers to use the 'string' if possible
      + libsearch
      + fix charset
