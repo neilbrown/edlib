@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <sys/time.h>
 
 #define PRIVATE_DOC_REF
 struct doc_ref {
@@ -65,6 +66,7 @@ void LOG(char *fmt, ...)
 	va_list ap;
 	unsigned int n;
 	struct logbuf *b;
+	struct timeval now;
 
 	if (!(void*)log_doc)
 		/* too early */
@@ -72,16 +74,24 @@ void LOG(char *fmt, ...)
 	if (!fmt)
 		return;
 
+	gettimeofday(&now, NULL);
 	b = get_buf(log_doc);
 	va_start(ap, fmt);
-	n = vsnprintf(b->text + b->end, LBSIZE - b->end - 1, fmt, ap);
+	n = snprintf(b->text + b->end, LBSIZE - b->end - 1, "%ld.%03ld:",
+		     now.tv_sec % 10000, now.tv_usec / 1000);
+	if (n < LBSIZE - b->end - 1)
+		n += vsnprintf(b->text + b->end + n, LBSIZE - b->end - 1 - n,
+			       fmt, ap);
 	va_end(ap);
 
 	if (b->end != 0 && n >= LBSIZE - b->end - 1) {
 		/* Didn't fit, allocate new buf */
 		b = get_new_buf(log_doc);
 		va_start(ap, fmt);
-		n = vsnprintf(b->text, LBSIZE - 1, fmt, ap);
+		n = snprintf(b->text, LBSIZE - 1, "%ld.%03ld:",
+			     now.tv_sec % 10000, now.tv_usec / 1000);
+		if (n < LBSIZE - 1)
+			n += vsnprintf(b->text + n, LBSIZE - 1 - n, fmt, ap);
 		va_end(ap);
 	}
 	if (n >= LBSIZE - 1) {
