@@ -295,7 +295,8 @@ DEF_CMD(xcbd_copy_get)
 	struct xcbd_info *xdi = ci->home->data;
 
 	if (ci->num == 0)
-		comm_call_ret(strsave, xdi->c, "clip-get", ci->home);
+		/* If there is a selection, copy it now */
+		comm_call(xdi->c, "clip-get", ci->home);
 	return Efallthrough;
 }
 
@@ -529,7 +530,9 @@ static void handle_selection_request(struct xcbc_info *xci safe,
 			pane_notify("Notify:xcb-commit", xci->p);
 			content = call_ret(str, "copy:get", xci->p);
 		}
-		// LOG("...returning content: %s", content);
+		LOG("Returning content for %s: %.20s",
+		    sre->selection == xci->atoms[a_PRIMARY] ? "PRIMARY" : "CLIPBOARD",
+		    content);
 		if (content)
 			store_content(xci, sre->requestor, sre->property,
 				      sre->target, content);
@@ -961,6 +964,9 @@ static void collect_sel(struct xcbc_info *xci safe, enum my_atoms sel)
 	}
 	if (ret) {
 		strip_cr(ret);
+		LOG("copy:save from %s selection: %.20s",
+		    sel == a_CLIPBOARD ? "CLIPBOARD" : "PRIMARY",
+		    ret);
 		call("copy:save", xci->p, 0, NULL, ret);
 		free(ret);
 	}

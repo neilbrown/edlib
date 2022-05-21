@@ -108,6 +108,8 @@ DEF_CB(copy_do)
 			idx -= 1;
 		}
 		if (t)
+			LOG("copy:get %d returns %.20s", ci->num, t->txt);
+		if (t)
 			comm_call(ci->comm2, "callback", ci->focus, 0, NULL, t->txt);
 		return 1;
 	}
