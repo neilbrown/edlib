@@ -456,7 +456,7 @@ void log_setup(struct pane *ed safe)
 	key_add(log_map, "doc:char", &log_char);
 	key_add(log_map, "doc:destroy", &log_destroy);
 	key_add(log_map, "doc:log:append", &log_append);
-	key_add(log_map, "debug:validate-marks", &log_val_marks);
+	if(0)key_add(log_map, "debug:validate-marks", &log_val_marks);
 
 	log_init(ed);
 	call_comm("global-set-command", ed, &log_view, 0, NULL,

@@ -1275,7 +1275,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(dir_map, "get-attr", &dir_get_attr);
 	key_add(dir_map, "Close", &dir_destroy);
 	key_add(dir_map, "Free", &edlib_do_free);
-	key_add(dir_map, "debug:validate-marks", &dir_val_marks);
+	if(0)key_add(dir_map, "debug:validate-marks", &dir_val_marks);
 
 	call_comm("global-set-command", ed, &dirview_attach, 0, NULL,
 		  "attach-dirview");

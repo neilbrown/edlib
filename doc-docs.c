@@ -863,7 +863,7 @@ static void docs_init_map(void)
 	key_add(docs_map, "doc:cmd-k", &docs_do_kill);
 	key_add_range(docs_map, "doc:cmd-A", "doc:cmd-Z", &docs_do_open_alt);
 	key_add(docs_map, "doc:shares-ref", &docs_shares_ref);
-	key_add(docs_map, "debug:validate-marks", &docs_val_marks);
+	if(0)key_add(docs_map, "debug:validate-marks", &docs_val_marks);
 
 	key_add(docs_map, "get-attr", &docs_get_attr);
 	key_add(docs_map, "Close", &docs_close);
