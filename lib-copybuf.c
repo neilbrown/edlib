@@ -73,8 +73,11 @@ DEF_CB(copy_do)
 				tp = &((*tp)->next);
 				cnt += 1;
 			}
+			if (*tp)
+				LOG("copy:save free %.20s", (*tp)->txt);
 			free_txt(tp);
 		}
+		LOG("copy:save add %.20s", ci->str);
 		t = calloc(1, sizeof(*t));
 		t->next = cyi->store;
 		t->txt = strdup(ci->str);
@@ -86,6 +89,7 @@ DEF_CB(copy_do)
 		struct txt *t;
 		char *txt;
 
+		LOG("copy:save append %.20s", ci->str);
 		t = cyi->store;
 		if (t) {
 			txt = t->txt;
