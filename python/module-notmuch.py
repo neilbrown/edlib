@@ -3013,7 +3013,7 @@ class notmuch_message_view(edlib.Pane):
         while ms < me:
             try:
                 len = self.call("text-search",
-                                "(http|https|ftp|mail):[^][\\s\":;<>]+", ms, me)
+                                "(http|https|ftp|mail):[^][\\s\";<>]+", ms, me)
                 len -= 1
             except:
                 return
