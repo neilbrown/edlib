@@ -31,7 +31,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] when completing email address in compose, no feedback while waiting
+- [X] when completing email address in compose, no feedback while waiting
 - [ ] hide quoted material in emails
 - [ ] long lines wrap badly in xcb display - in emails at least
 - [ ] accessing document list can be slow.  Same for large directories

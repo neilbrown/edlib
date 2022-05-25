@@ -570,6 +570,8 @@ class compose_email(edlib.Pane):
             return False
         p = subprocess.Popen(["notmuch-addr", word],
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.call("Message", "Trying to complete %s ..." % word)
+        self.root.refresh()
         out,err = p.communicate()
         if not out:
             if err:
@@ -670,7 +672,7 @@ class compose_email(edlib.Pane):
         if mark > m2:
             return edlib.Efallthrough
         # in headers, TAB does various things:
-        # In 'to' or 'cc' this preceeding word looks like an
+        # In 'to' or 'cc' if the preceeding word looks like an
         # incomplete address, then address completion is tried.
         # Otherwise goes to next header if there is one, else to
         # the body
