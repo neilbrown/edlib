@@ -2186,6 +2186,10 @@ DEF_CMD(emacs_wipe)
 
 	if (!mk)
 		return 1;
+	/* Remove any selection so it cannot be claimed and so replace this copy */
+	call("selection:claim", ci->focus);
+	call("selection:discard", ci->focus);
+
 	str = call_ret(strsave, "doc:get-str", ci->focus, 0, NULL, NULL, 0, mk);
 	if (str && *str)
 		call("copy:save", ci->focus, 0, NULL, str);
@@ -2204,6 +2208,10 @@ DEF_CMD(emacs_copy)
 
 	if (!mk)
 		return 1;
+	/* Remove any selection so it cannot be claimed and so replace this copy */
+	call("selection:claim", ci->focus);
+	call("selection:discard", ci->focus);
+
 	str = call_ret(strsave, "doc:get-str", ci->focus, 0, NULL, NULL, 0, mk);
 	if (str && *str)
 		call("copy:save", ci->focus, 0, NULL, str);

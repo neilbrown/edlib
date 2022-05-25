@@ -31,11 +31,14 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] when completing email address in compose, no feedback while waiting
+- [ ] hide quoted material in emails
+- [ ] long lines wrap badly in xcb display - in emails at least
 - [ ] accessing document list can be slow.  Same for large directories
 - [X] queries don't update in the background - they used to
 - [ ] images in email message should never be scaled up
 - [ ] marks sometimes get out of order in email query list
-- [ ] C-y sometimes yanks something strange, A-y then needed.
+- [X] C-y sometimes yanks something strange, A-y then needed.
 - [X] fill-mode doesn't propogate 'cols' from one instance to next
       so if doc is marked 'textfill', that does enable autofill
 - [ ] if last line of file does end \n, and cursor is there, then moving
