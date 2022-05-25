@@ -2953,6 +2953,10 @@ class notmuch_message_view(edlib.Pane):
         p = 0
         focus.call("doc:notmuch:request:Notify:Tag", self)
         self.do_handle_notify_tag()
+
+        # a 'view' for recording where quoted sections are
+        self.qview = focus.call("doc:add-view", self) - 1
+
         m = edlib.Mark(focus)
         while True:
             self.call("doc:step-part", m, 1)
@@ -2993,10 +2997,11 @@ class notmuch_message_view(edlib.Pane):
             if type.startswith("text/"):
                 self.set_vis(focus, m, True)
                 start = m.dup()
-                # go to start of previous visible part, and mark urls.
+                # go to start of previous visible part, and mark urls etc
                 self.prev(start)
                 self.call("doc:step-part", start, 0)
-                self.mark_urls(start, m)
+                self.mark_urls(start.dup(), m)
+                self.mark_quotes(start.dup(), m)
             self.set_vis(focus, m, vis)
 
     def set_vis(self, focus, m, vis):
@@ -3029,6 +3034,45 @@ class notmuch_message_view(edlib.Pane):
             url = self.call("doc:get-str", m1, ms, ret='str')
             self.call("doc:set-attr", 1, m1, "render:url", "%d" % len)
             self.call("doc:set-attr", 1, m1, "url", url)
+
+    def mark_quotes(self, ms, me):
+        # if we find more than 7 quoted lines in a row, we add the
+        # 4th and 4th-last to the qview with the first of these
+        # having a 'quote-length' attr with number of lines
+        while ms < me:
+            try:
+                self.call("text-search", "^>", ms, me)
+            except:
+                return
+            self.prev(ms)
+            start = ms.dup()
+            cnt = 1
+            while (cnt <= 7 and self.call("doc:EOL", 1, 1, ms) > 0 and
+                   self.following(ms) == '>'):
+                cnt += 1
+            if cnt > 7:
+                try:
+                    self.call("text-search", "^[^>]", ms, me)
+                    self.prev(ms)
+                except:
+                    ms.to_mark(me)
+                self.mark_one_quote(start, ms.dup())
+
+    def mark_one_quote(self, ms, me):
+        self.call("doc:EOL", 3, 1, ms)
+        self.call("doc:EOL", -4, 0, me)
+        if me <= ms:
+            return
+        st = edlib.Mark(self, self.qview)
+        st.to_mark(ms)
+        lines = 0
+        while ms < me:
+            self.call("doc:EOL", 1, 1, ms)
+            lines += 1
+        st['quote-length'] = "%d" % lines
+        st['quote-hidden'] = "yes"
+        ed = edlib.Mark(orig=st)
+        ed.to_mark(me)
 
     def do_handle_notify_tag(self):
         # tags might have changed.
@@ -3085,6 +3129,15 @@ class notmuch_message_view(edlib.Pane):
 
     def handle_return(self, key, focus, mark, **a):
         "handle:K:Enter"
+        m = self.vmark_at_or_before(self.qview, mark)
+        if m and m['quote-length']:
+            if m['quote-hidden'] == 'yes':
+                m['quote-hidden'] = "no"
+            else:
+                m['quote-hidden'] = "yes"
+            self.leaf.call("view:changed", m, m.next())
+            return 1
+
         focus.call("doc:email:select", mark)
         return 1
 
@@ -3156,6 +3209,10 @@ class notmuch_message_view(edlib.Pane):
             comm2("attr:callback", focus, int(str2), mark,
                   "fg:cyan-60,underline,active-tag:url,url-len="+str2, 120)
         if str == 'start-of-line':
+            m = self.vmark_at_or_before(self.qview, mark)
+            bg = None
+            if m and m['quote-length']:
+                bg = "white-70"
             # if line starts '>', give it some colour
             if focus.following(mark) == '>':
                 colours = ['red', 'red-60', 'green-60', 'magenta-60']
@@ -3170,7 +3227,34 @@ class notmuch_message_view(edlib.Pane):
                 if cnt >= len(colours):
                     cnt = len(colours)
                 comm2("cb", focus, mark, 0, "fg:"+colours[cnt-1], 102)
+                if bg:
+                    comm2("cb", focus, mark, 0, "bg:"+bg, 102)
             return edlib.Efallthrough
+
+    def handle_render_line(self, key, focus, num, num2, mark, mark2, comm2, **a):
+        "handle:doc:render-line"
+        # If between active quote marks, render a simple marker
+        p = self.vmark_at_or_before(self.qview, mark)
+        if not(p and p['quote-length'] and p['quote-hidden'] == 'yes'):
+            return edlib.Efallthrough
+        mark.to_mark(p.next())
+        eol="\n"
+        if mark2 or num > 0 and num < 2000:
+            # don't show eol
+            self.prev(mark)
+            eol = ""
+        if comm2:
+            comm2("cb", focus, "<fg:yellow,bg:blue+30>%d quoted lines</>%s" % (int(p['quote-length']), eol))
+        return 1
+
+    def handle_render_line_prev(self, key, focus, num, num2, mark, comm2, **a):
+        "handle:doc:render-line-prev"
+        # If between active quote marks, move to start first
+        p = self.vmark_at_or_before(self.qview, mark)
+        if not(p and p['quote-length'] and p['quote-active'] == 'yes'):
+            return edlib.Efallthrough
+        mark.to_mark(p)
+        return edlib.Efallthrough
 
     def handle_click(self, key, focus, mark, str2, **a):
         "handle:Mouse-Activate:url"
