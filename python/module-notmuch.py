@@ -36,6 +36,19 @@ import json
 import time
 import mimetypes
 
+def cvt_size(n):
+    if n < 1000:
+        return "%3db" % n
+    if n < 10000:
+        return "%3.1fK" % (float(n)/1000.0)
+    if n < 1000000:
+        return "%3dK" % (n/1000)
+    if n < 10000000:
+        return "%3.1fM" % (float(n)/1000000.0)
+    if n < 1000000000:
+        return "%3dM" % (n/1000000)
+    return "BIG!"
+
 def notmuch_get_tags(msg=None,thread=None):
     if msg:
         query = "id:" + msg
@@ -849,7 +862,10 @@ class notmuch_query(edlib.Doc):
         self.messageids = {}
         self.threadinfo = {}
         self["render-default"] = "notmuch:threads"
-        self["line-format"] = "<%BG><%TM-hilite>%TM-date_relative</><tab:130> <fg:blue>%TM-authors</><tab:350>%TM-threadinfo<%TM-hilite><fg:red,bold>%TM-flag</> %TM-subject</></>"
+        self["line-format"] = ("<%BG><%TM-hilite>%TM-date_relative</>" +
+                               "<tab:130> <fg:blue>%TM-authors</>" +
+                               "<tab:350>%TM-size%TM-threadinfo<%TM-hilite>" +
+                               "<fg:red,bold>%TM-flag</> %TM-subject</></>")
         self.add_notify(self.maindoc, "Notify:Tag")
         self.add_notify(self.maindoc, "Notify:Close")
         self['doc-status'] = ""
@@ -1152,7 +1168,7 @@ class notmuch_query(edlib.Doc):
                      depth + [1 if l else 0],
                      m['headers']["From"],
                      m['headers']["Subject"],
-                     m['tags'])
+                     m['tags'], -1)
         if l:
             l.sort(key=lambda m:(m[0]['timestamp'],m[0]['headers']['Subject']))
             for m in l[:-1]:
@@ -1561,8 +1577,8 @@ class notmuch_query(edlib.Doc):
         if mid:
             m = self.threadinfo[tid][mid]
         else:
-            m = ("", 0, False, [0,0], "" ,"", t["tags"])
-        (fn, dt, matched, depth, author, subj, tags) = m
+            m = ("", 0, False, [0,0], "" ,"", t["tags"], 0)
+        (fn, dt, matched, depth, author, subj, tags, size) = m
         if attr == "message-id":
             val = mid
         elif attr == "thread-id":
@@ -1594,6 +1610,8 @@ class notmuch_query(edlib.Doc):
             val = "[%d/%d]" % (t['matched'],t['total'])
             while len(val) < 7:
                 val += ' '
+        elif attr == "T-size":
+            val = ""
         elif attr[:2] == "T-" and attr[2:] in t:
             val = t[attr[2:]]
             if type(val) == int:
@@ -1640,6 +1658,19 @@ class notmuch_query(edlib.Doc):
             val = subj.replace('\n',' ')
         elif attr == "M-threadinfo":
             val = self.cvt_depth(depth)
+        elif attr == "M-size":
+            if size < 0 and fn and fn[0]:
+                try:
+                    st = os.lstat(fn[0])
+                    size = st.st_size
+                except FileNotFoundError:
+                    size = 0
+                self.threadinfo[tid][mid] = (fn, dt, matched, depth,
+                                             author, subj, tags, size)
+            if size > 0:
+                val = cvt_size(size)
+            else:
+                val = "????"
 
         if not val is None:
             comm2("callback", focus, val, mark, attr)
