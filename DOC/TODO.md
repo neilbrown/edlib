@@ -32,8 +32,10 @@ Bugs to be fixed
 ----------------
 
 - [X] when completing email address in compose, no feedback while waiting
-- [ ] hide quoted material in emails
-- [ ] long lines wrap badly in xcb display - in emails at least
+- [X] hide quoted material in emails
+- [X] email summary line should indicate size of message.
+- [ ] Email summary line for single-message threads should show size??
+- [X] long lines wrap badly in xcb display - in emails at least
 - [ ] accessing document list can be slow.  Same for large directories
 - [X] queries don't update in the background - they used to
 - [ ] images in email message should never be scaled up

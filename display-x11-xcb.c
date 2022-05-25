@@ -639,7 +639,7 @@ DEF_CMD(xcb_text_size)
 	else if (log.width <= ci->num)
 		max_bytes = strlen(str);
 	else
-		pango_layout_xy_to_index(layout, 1000*ci->num,
+		pango_layout_xy_to_index(layout, PANGO_SCALE*ci->num,
 					 baseline, &max_bytes, NULL);
 
 	comm_call(ci->comm2, "cb", ci->focus, max_bytes, NULL, NULL,
