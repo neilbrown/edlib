@@ -450,12 +450,12 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer, char *disp,
 			}
 		}
 		if (xfer && xlen == 4 &&
-		    strncasecmp(xfer, "8bit", 6) == 0) {
-			need_charset = 1;
-		}
+		    strncasecmp(xfer, "8bit", 6) == 0)
+			need_charset = 2; // ony if not utf-8
 	}
 	if (type && need_charset &&
-	    (charset = get_822_attr(type, "charset")) != NULL) {
+	    (charset = get_822_attr(type, "charset")) != NULL &&
+	    !(need_charset == 2 && strcasecmp(charset, "utf-8") == 0)) {
 		char *c = NULL, *cp;
 		struct pane *hx = NULL;
 		charset = strsave(h, charset);

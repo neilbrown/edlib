@@ -52,6 +52,8 @@ Bugs to be fixed
 - [X] email parts that don't end EOL are displayed badly - 012 at end
 - [X] when composing email, header lines mustn't wrap
 - [X] when sending email, wrapped header lines must be unwrapped
+- [ ] lib-utf8 takes chars, not bytes, so it doesn't work over
+      a utf8 document
 - [ ] ordering of marks in notmuch search summary can go wrong
 - [ ] sometimes the tid in a notmuch query mark.pos is not in threadids!!
 - [X] message/rfc822 content cannot be displayed
