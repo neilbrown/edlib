@@ -283,6 +283,10 @@ REDEF_CMD(emacs_kill)
 		mark_free(m);
 		return ret;
 	}
+	/* Remove any selection so it cannot be claimed and so replace this copy */
+	call("selection:claim", ci->focus);
+	call("selection:discard", ci->focus);
+
 	str = call_ret(strsave, "doc:get-str", ci->focus, 0, NULL, NULL, 0, m);
 	if (str && *str)
 		call("copy:save", ci->focus, N2(ci) == N2_undo_delete, NULL, str);
