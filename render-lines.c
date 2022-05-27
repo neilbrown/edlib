@@ -895,6 +895,9 @@ DEF_CMD(render_lines_point_moving)
 		/* Someone else moved the point, so reset target column */
 		rl->target_x = -1;
 	m = vmark_at_or_before(ci->focus, pt, rl->typenum, p);
+	if (m && !m->mdata)
+		/* End marker is no use, want to refresh last line */
+		m = vmark_prev(m);
 	if (m && m->mdata) {
 		pane_damaged(m->mdata, DAMAGED_REFRESH);
 		pane_damaged(m->mdata->parent, DAMAGED_REFRESH);

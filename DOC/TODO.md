@@ -32,9 +32,9 @@ Bugs to be fixed
 ----------------
 
 - [X] if email file cannot be found, report the problem.
-- [ ] Make doesn't follow llog_reader.c:723:6: when it have seen                   
-     make[4]: Entering directory '/home2/git/lustre-release/lustre/utils'          
-- [X] allow a default compile command to be stored in any directory                
+- [?] Make doesn't follow llog_reader.c:723:6: when it have seen
+     make[4]: Entering directory '/home2/git/lustre-release/lustre/utils'
+- [X] allow a default compile command to be stored in any directory
 - [ ] a server-client window sometimes doesn't get tty attrs restored.
 - [X] when completing email address in compose, no feedback while waiting
 - [X] hide quoted material in emails
@@ -48,7 +48,7 @@ Bugs to be fixed
 - [X] C-y sometimes yanks something strange, A-y then needed.
 - [X] fill-mode doesn't propogate 'cols' from one instance to next
       so if doc is marked 'textfill', that does enable autofill
-- [ ] if last line of file does end \n, and cursor is there, then moving
+- [X] if last line of file does end \n, and cursor is there, then moving
      up leave the cursor displayed on x11 display.
 - [X] autospell sometimes ignores new text, or highlights partial words
 - [ ] 'other' notmuch search doesn't show older messages sometimes
