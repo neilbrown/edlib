@@ -31,7 +31,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] if email file cannot be found, report the problem.
+- [X] if email file cannot be found, report the problem.
 - [ ] Make doesn't follow llog_reader.c:723:6: when it have seen                   
      make[4]: Entering directory '/home2/git/lustre-release/lustre/utils'          
 - [X] allow a default compile command to be stored in any directory                

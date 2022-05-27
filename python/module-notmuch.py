@@ -123,6 +123,7 @@ def notmuch_load_thread(tid, query=None):
     # we sometimes sees "[[[[]]]]" as the list of threads,
     # which isn't properly formatted. So add an extr check on
     # r[0][0][0]
+    # This can happen when the file containing message cannot be found.
     r = json.loads(out.decode("utf-8","ignore"))
     if not r or type(r[0][0][0]) != dict:
         return None
@@ -2420,7 +2421,7 @@ class notmuch_master_view(edlib.Pane):
         if not p0:
             p0 = self.list_pane.call("doc:notmuch:byid", str1, str2, ret='pane')
         if not p0:
-            focus.call("Message", "Failed to find message")
+            focus.call("Message", "Failed to find message %s" % str2)
             return edlib.Efail
         p0['notmuch:tid'] = str2
 
@@ -2885,7 +2886,10 @@ class notmuch_query_view(edlib.Pane):
         if s and s != self.selected:
             self.close_thread()
 
-            if focus.call("doc:notmuch:load-thread", mark) == 1:
+            ret = focus.call("doc:notmuch:load-thread", mark)
+            if ret == 2:
+                focus.call("Message", "Cannot load thread %s" % s)
+            if ret == 1:
                 self.selected = s
                 if mark:
                     self.thread_start = mark.dup()
