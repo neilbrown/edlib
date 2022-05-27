@@ -607,7 +607,7 @@ static bool handle_multipart(struct pane *p safe, char *type safe,
 		/* FIXME need a way to say "just display the text" */
 		return True;
 
-	found_end = find_boundary (p, start, end, NULL, boundary);
+	found_end = find_boundary(p, start, end, NULL, boundary);
 	if (found_end != 0)
 		return True;
 	tok = get_822_token(&type, &len);
@@ -671,6 +671,9 @@ static bool handle_content(struct pane *p safe,
 	char *hdr;
 	char *major, *minor = NULL;
 	int mjlen, mnlen;
+
+	if (mark_ordered_or_same(end, start))
+		return True;
 
 	if (!type)
 		type = "text/plain";
