@@ -3243,7 +3243,7 @@ class notmuch_message_view(edlib.Pane):
             m = self.vmark_at_or_before(self.qview, mark)
             bg = None
             if m and m['quote-length']:
-                bg = "white-70"
+                bg = "white-95"
             # if line starts '>', give it some colour
             if focus.following(mark) == '>':
                 colours = ['red', 'red-60', 'green-60', 'magenta-60']
