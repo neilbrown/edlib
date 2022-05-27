@@ -3053,8 +3053,8 @@ class notmuch_message_view(edlib.Pane):
                 len -= 1
             except:
                 return
-            # People sometimes put a period at the end of a URL.
-            while self.prior(ms) in '.':
+            # People sometimes put a period or ')' at the end of a URL.
+            while self.prior(ms) in '.)':
                 self.prev(ms)
                 len -= 1
             m1 = ms.dup()

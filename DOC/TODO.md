@@ -79,7 +79,7 @@ Bugs to be fixed
       except when it is??  charset=ISO-8859-1 might cause problems
       Content-Transfer-Encoding: amazonses.com might too
       Maybe CHARSET=UTF-8 // transfer-encodeing=QUOTED/PRINTABLE
-- [ ] auto-detect urls stop a ':' - and other bad places.  But not at ) ??
+- [X] auto-detect urls stop a ':' - and other bad places.  But not at ) ??
 - [ ] multipart/related base64 text/html doesn't seem to get decoded either
 - [ ] catching doc:replace in a pane doesn't catch doc:insert-file.
       I need a simple way to intercept any change.
