@@ -65,11 +65,6 @@ static inline int to_orig(int p)
 	return p - p % 3;
 }
 
-struct email_info {
-	struct pane	*email safe;
-	struct pane	*spacer safe;
-};
-
 static bool handle_content(struct pane *p safe,
 			   char *type, char *xfer, char *disp,
 			   struct mark *start safe, struct mark *end safe,
@@ -788,7 +783,8 @@ out:
 DEF_CMD(open_email)
 {
 	int fd;
-	struct email_info *ei;
+	struct pane *email = NULL;
+	struct pane *spacer = NULL;
 	struct mark *start, *end;
 	struct pane *p;
 	struct mark *point;
@@ -811,8 +807,8 @@ DEF_CMD(open_email)
 	end = mark_dup(start);
 	call("doc:set-ref", p, 0, end);
 
-	alloc(ei, pane);
-	ei->email = p;
+	call("doc:set:autoclose", p, 1);
+	email = p;
 
 	/* create spacer doc to be attached between each part */
 	p = call_ret(pane, "doc:from-text", p, 0, NULL, NULL, 0, NULL,
@@ -821,7 +817,8 @@ DEF_CMD(open_email)
 		goto out;
 
 	attr_set_str(&p->attrs, "email:which", "spacer");
-	ei->spacer = p;
+	call("doc:set:autoclose", p, 1);
+	spacer = p;
 	point = vmark_new(p, MARK_POINT, NULL);
 	call("doc:set-ref", p, 1, point);
 	doc_next(p, point);
@@ -838,7 +835,7 @@ DEF_CMD(open_email)
 	attr_set_str(&p->attrs, "filename", ci->str+6);
 	attr_set_str(&p->attrs, "doc-type", "email");
 
-	if (!handle_rfc822(ei->email, start, end, p, ei->spacer, ""))
+	if (!handle_rfc822(email, start, end, p, spacer, ""))
 		goto out;
 	mark_free(start);
 	mark_free(end);
@@ -848,9 +845,9 @@ DEF_CMD(open_email)
 out:
 	mark_free(start);
 	mark_free(end);
-	if ((void*)ei->spacer)
-		pane_close(ei->spacer);
-	free(ei);
+	if (spacer)
+		pane_close(spacer);
+	pane_close(email);
 	return Efail;
 }
 
