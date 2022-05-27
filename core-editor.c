@@ -73,6 +73,39 @@ DEF_CMD(global_get_command)
 			 0, NULL, NULL, 0,0, cm);
 }
 
+DEF_CMD(global_config_dir)
+{
+	const char *var = ci->str;
+	char *dir; // ci->str2;
+	char *key, *val = NULL;
+	struct pane *p = ci->home;
+	char *end;
+
+	/* var might be different in different directories.
+	 * Config setting are attributes stored on root that
+	 * look like "config:var:dir".
+	 * We find the best and return that with the dir
+	 */
+	if (!var || !ci->str2 || !ci->comm2)
+		return Enoarg;
+	key = strconcat(p, "config:", var, ":", ci->str2);
+	dir = key + 7 + strlen(var) + 1;
+	end = dir + strlen(dir);
+	while (!val && end > dir) {
+		while (end[-1] == '/')
+			end -= 1;
+		end[0] = 0;
+		val = attr_find(p->attrs, key);
+		while (end > dir && end[-1] != '/')
+			end -= 1;
+	}
+	if (!val)
+		return Efalse;
+	comm_call(ci->comm2, "cb", ci->focus, 0, NULL, val,
+			  0, NULL, dir);
+	return 1;
+}
+
 #ifdef edlib_init
 #include "O/mod-list-decl.h"
 typedef void init_func(struct pane *ed);
@@ -482,6 +515,7 @@ struct pane *editor_new(void)
 		key_add(ed_map, "global-set-command", &global_set_command);
 		key_add(ed_map, "global-get-command", &global_get_command);
 		key_add(ed_map, "global-load-module", &editor_load_module);
+		key_add(ed_map, "global-config-dir", &global_config_dir);
 		key_add(ed_map, "editor-on-idle", &editor_on_idle);
 		key_add_prefix(ed_map, "attach-", &editor_auto_load);
 		key_add_prefix(ed_map, "event:", &editor_auto_event);

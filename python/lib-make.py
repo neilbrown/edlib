@@ -822,6 +822,16 @@ def make_request(key, focus, num, num2, str1, mark, **a):
                 d = d + '/'
             dir = d
 
+    ret = []
+    dflt_config = focus.call("global-config-dir", "make-"+mode, dir,
+                             lambda key, str1, str2, **a: ret.append((str1, str2)))
+    if ret:
+        d = dir
+        dflt, dir = ret[0]
+        if "%%" in dflt and d.startswith(dir):
+            i = dflt.find("%%")
+            dflt = dflt[:i] + d[len(dir)+1:]+dflt[i+2:]
+
     if cmd != "make" and focus['doc-type'] == "text":
         if not mark:
             mark = focus.call("doc:point", ret='mark')

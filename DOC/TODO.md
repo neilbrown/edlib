@@ -34,7 +34,7 @@ Bugs to be fixed
 - [ ] if email file cannot be found, report the problem.
 - [ ] Make doesn't follow llog_reader.c:723:6: when it have seen                   
      make[4]: Entering directory '/home2/git/lustre-release/lustre/utils'          
-- [ ] allow a default compile command to be stored in any directory                
+- [X] allow a default compile command to be stored in any directory                
 - [ ] a server-client window sometimes doesn't get tty attrs restored.
 - [X] when completing email address in compose, no feedback while waiting
 - [X] hide quoted material in emails
