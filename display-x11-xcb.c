@@ -884,6 +884,49 @@ DEF_CMD(xcb_draw_image)
 	return 1;
 }
 
+DEF_CMD(xcb_image_size)
+{
+	MagickBooleanType status;
+	MagickWand *wd;
+	int ih, iw;
+
+	if (!ci->str)
+		return Enoarg;
+	if (strncmp(ci->str, "file:", 5) == 0) {
+		wd = NewMagickWand();
+		status = MagickReadImage(wd, ci->str + 5);
+		if (status == MagickFalse) {
+			DestroyMagickWand(wd);
+			return Efail;
+		}
+	} else if (strncmp(ci->str, "comm:", 5) == 0) {
+		struct call_return cr;
+		wd = NewMagickWand();
+		cr = call_ret(bytes, ci->str+5, ci->focus, 0, NULL, ci->str2);
+		if (!cr.s) {
+			DestroyMagickWand(wd);
+			return Efail;
+		}
+		status = MagickReadImageBlob(wd, cr.s, cr.i);
+		free(cr.s);
+		if (status == MagickFalse) {
+			DestroyMagickWand(wd);
+			return Efail;
+		}
+	} else
+		return Einval;
+
+	MagickAutoOrientImage(wd);
+	ih = MagickGetImageHeight(wd);
+	iw = MagickGetImageWidth(wd);
+
+	DestroyMagickWand(wd);
+	comm_call(ci->comm2, "callback:size", ci->focus,
+		  0, NULL, NULL, 0, NULL, NULL,
+		  iw, ih);
+	return 1;
+}
+
 static struct panes *sort_split(struct panes *p)
 {
 	/* consider 'p' to be a list of panes with
@@ -1866,6 +1909,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(xcb_map, "Draw:text-size", &xcb_text_size);
 	key_add(xcb_map, "Draw:text", &xcb_draw_text);
 	key_add(xcb_map, "Draw:image", &xcb_draw_image);
+	key_add(xcb_map, "Draw:image-size", &xcb_image_size);
 	key_add(xcb_map, "Refresh:size", &xcb_refresh_size);
 	key_add(xcb_map, "Refresh:postorder", &xcb_refresh_post);
 	key_add(xcb_map, "all-displays", &xcb_notify_display);

@@ -310,6 +310,24 @@ class EdDisplay(edlib.Pane):
         cr.paint()
         return True
 
+    def handle_image_size(self, key, focus, str1, str2, comm2, **a):
+        "handle:Draw:image-size"
+        if not str1 or not comm2:
+            return edlib.Enoarg
+        try:
+            if str1.startswith("file:"):
+                pb = GdkPixbuf.Pixbuf.new_from_file(str1[5:])
+            elif str1.startswith("comm:"):
+                img = focus.call(str1[5:], str2, ret='bytes')
+                io = Gio.MemoryInputStream.new_from_data(img)
+                pb = GdkPixbuf.Pixbuf.new_from_stream(io)
+            else:
+                return edlib.Einval
+        except:
+            return edlib.Einval
+        comm2("cb:size", focus, (pb.get_width(), pb.get_height()))
+        return True
+
     def handle_notify_close(self, key, focus, **a):
         "handle:Notify:Close"
         if focus and focus in self.panes:

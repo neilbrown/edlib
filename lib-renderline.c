@@ -21,6 +21,7 @@
  *
  */
 
+#define _GNU_SOURCE /*  for asprintf */
 #include <stdio.h>
 #include "core.h"
 #include "misc.h"
@@ -410,8 +411,14 @@ static void render_image(struct pane *p safe, struct pane *focus safe,
 			int dodraw, int scale)
 {
 	char *fname = NULL;
-	short width = p->parent->w/2, height = p->parent->h/2;
+	short width, height;
+	char *size = attr_find(p->attrs, "cached-size");
 
+	if (!size || sscanf(size, "%hdx%hd", &width, &height) != 2) {
+		size = NULL;
+		width = p->parent->w/2;
+		height = p->parent->h/2;
+	}
 	while (*line == '<')
 		line += 1;
 
@@ -426,6 +433,16 @@ static void render_image(struct pane *p safe, struct pane *focus safe,
 		} else if (strncmp(line, "height:", 7) == 0) {
 			height = atoi(line + 7);
 			height = height * scale / 1000;
+		} else if (!size && fname && strncmp(line, "noupscale", 9) == 0) {
+			struct call_return cr =
+				home_call_ret(all, focus, "Draw:image-size",
+					      p, 0, NULL, fname);
+			if (cr.x > 0 && cr.x < p->parent->w)
+				width = cr.x;
+			if (cr.y > 0 && cr.y < p->parent->h)
+				height = cr.y;
+			asprintf(&size, "%hdx%hd", width, height);
+			attr_set_str(&p->attrs, "cached-size", size);
 		}
 		line += len;
 		line += strspn(line, ",");

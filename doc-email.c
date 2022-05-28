@@ -224,7 +224,8 @@ DEF_CMD(email_image)
 		return Enoarg;
 	p = get_part(ci->home, ci->mark);
 	doc_next(ci->focus, ci->mark);
-	asprintf(&c, "<image:comm:doc:multipart-%d-doc:get-bytes>\n", to_orig(p));
+	asprintf(&c, "<image:comm:doc:multipart-%d-doc:get-bytes,noupscale>\n",
+		 to_orig(p));
 	ret = comm_call(ci->comm2, "callback:render", ci->focus,
 			0, NULL, c);
 	free(c);

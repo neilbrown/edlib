@@ -43,7 +43,7 @@ Bugs to be fixed
 - [X] long lines wrap badly in xcb display - in emails at least
 - [ ] accessing document list can be slow.  Same for large directories
 - [X] queries don't update in the background - they used to
-- [ ] images in email message should never be scaled up
+- [X] images in email message should never be scaled up
 - [ ] marks sometimes get out of order in email query list
 - [X] C-y sometimes yanks something strange, A-y then needed.
 - [X] fill-mode doesn't propogate 'cols' from one instance to next
@@ -67,8 +67,8 @@ Bugs to be fixed
 - [X] invalid quoted-printable/utf8 content like We=E2&#128;&#153;d
       causes the rest of content not to be displayed.
 - [X] html2text should set decode-errors to ignore
-- [X] base64 saved-file of content ending 
-      IHdpZHRoPScxJyBoZWlnaHQ9JzEnID48L3NwYW4+IDwvYm9keT48L2h0bWw+DQo= 
+- [X] base64 saved-file of content ending
+      IHdpZHRoPScxJyBoZWlnaHQ9JzEnID48L3NwYW4+IDwvYm9keT48L2h0bWw+DQo=
       adds 0x40 0xff to the end.
 - [X] this highlighted added by xterm-keyboard-paste is disabled when chars
       are typed, but not on 'enter'
@@ -273,7 +273,7 @@ Module features
 ### rexel
 
 - [X] add "get-prefix" function to extract the longest constant
-      prefix from the pattern, so that a 'strstr' can be used to expedite 
+      prefix from the pattern, so that a 'strstr' can be used to expedite
       search
 - [ ] move to separate git repo and document well.
 - [ ] review return code of rxl_advance().  What should be
