@@ -60,6 +60,8 @@ struct display_data {
 	int			report_position;
 	long			last_event;
 
+	bool			did_close;
+
 	struct buf		paste_buf;
 	time_t			paste_start;
 	char			*paste_latest;
@@ -411,6 +413,8 @@ DEF_CB(cnt_disp)
 	return 1;
 }
 
+static void ncurses_end(struct pane *p safe);
+
 DEF_CMD(nc_close_display)
 {
 	/* If this is only display, then refuse to close this one */
@@ -425,9 +429,13 @@ DEF_CMD(nc_close_display)
 	cr.c = cnt_disp;
 	cr.i = 0;
 	call_comm("editor:notify:all-displays", ci->focus, &cr.c);
-	if (cr.i > 1)
+	if (cr.i > 1) {
+		/* Need to call ncurses_end() before we send a Notify:Close
+		 * notification, else server exists too early
+		 */
+		ncurses_end(ci->home);
 		pane_close(ci->home);
-	else
+	} else
 		call("Message", ci->focus, 0, NULL,
 		     "Cannot close only window.");
 	return 1;
@@ -560,6 +568,9 @@ static void ncurses_end(struct pane *p safe)
 {
 	struct display_data *dd = p->data;
 
+	if (dd->did_close)
+		return;
+	dd->did_close = True;
 	set_screen(p);
 	close_recrep(p);
 
