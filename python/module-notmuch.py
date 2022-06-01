@@ -2569,14 +2569,19 @@ class notmuch_query_view(edlib.Pane):
         self.call("doc:request:notmuch:thread-changed")
 
     def handle_getattr(self, key, focus, str, comm2, **a):
-        if comm2 and str == "doc:status":
+        "handle:get-attr"
+        if comm2 and str == "doc-status":
+            val = self.parent['doc:status']
+            if not val:
+                val = ""
             if self['filter']:
-                val = "query: %s filter: %s %s" % (
-                    self['qname'], self['filter'],
-                    self.parent['doc:status'])
-            else:
-                self['doc-status'] = "query: %s %s" % (
-                    self['qname'], self.parent['doc:status'])
+                val = "filter: %s %s" % (
+                    self['filter'], val)
+            elif self['qname'] == '-ad hoc-':
+                val = "query: %s %s" % (
+                    self['query'], val)
+            comm2("callback", focus, val)
+            return 1
 
     def handle_clone(self, key, focus, **a):
         "handle:Clone"
