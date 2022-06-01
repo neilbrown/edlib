@@ -564,15 +564,9 @@ DEF_CMD(nc_external_viewer)
 	return 1;
 }
 
-static void ncurses_end(struct pane *p safe)
+static void ncurses_stop(struct pane *p safe)
 {
 	struct display_data *dd = p->data;
-
-	if (dd->did_close)
-		return;
-	dd->did_close = True;
-	set_screen(p);
-	close_recrep(p);
 
 	if (dd->is_xterm) {
 		/* disable bracketed-paste */
@@ -591,6 +585,19 @@ static void ncurses_end(struct pane *p safe)
 	if (dd->rs3)
 		tputs(dd->rs3, 1, nc_putc);
 	fflush(dd->scr_file);
+}
+
+static void ncurses_end(struct pane *p safe)
+{
+	struct display_data *dd = p->data;
+
+	if (dd->did_close)
+		return;
+	dd->did_close = True;
+	set_screen(p);
+	close_recrep(p);
+
+	ncurses_stop(p);
 }
 
 /*
@@ -1026,38 +1033,10 @@ DEF_CMD(nc_refresh_post)
 	return 1;
 }
 
-static struct pane *ncurses_init(struct pane *ed,
-				 const char *tty, const char *term)
+static void ncurses_start(struct pane *p safe)
 {
-	SCREEN *scr;
-	struct pane *p;
-	struct display_data *dd;
+	struct display_data *dd = p->data;
 	int rows, cols;
-	char *area;
-	FILE *f;
-
-	set_screen(NULL);
-	if (tty && strcmp(tty, "-") != 0)
-		f = fopen(tty, "r+");
-	else
-		f = fdopen(1, "r+");
-	if (!f)
-		return NULL;
-	scr = newterm(term, f, f);
-	if (!scr)
-		return NULL;
-
-	alloc(dd, pane);
-	dd->scr = scr;
-	dd->scr_file = f;
-	dd->is_xterm = (term && strncmp(term, "xterm", 5) == 0);
-
-	p = pane_register(ed, 1, &ncurses_handle.c, dd);
-	if (!p) {
-		unalloc(dd, pane);
-		return NULL;
-	}
-	set_screen(p);
 
 	start_color();
 	use_default_colors();
@@ -1084,6 +1063,41 @@ static struct pane *ncurses_init(struct pane *ed,
 
 	getmaxyx(stdscr, rows, cols);
 	pane_resize(p, 0, 0, cols, rows);
+}
+
+static struct pane *ncurses_init(struct pane *ed,
+				 const char *tty, const char *term)
+{
+	SCREEN *scr;
+	struct pane *p;
+	struct display_data *dd;
+	char *area;
+	FILE *f;
+
+	set_screen(NULL);
+	if (tty && strcmp(tty, "-") != 0)
+		f = fopen(tty, "r+");
+	else
+		f = fdopen(1, "r+");
+	if (!f)
+		return NULL;
+	scr = newterm(term, f, f);
+	if (!scr)
+		return NULL;
+
+	alloc(dd, pane);
+	dd->scr = scr;
+	dd->scr_file = f;
+	dd->is_xterm = (term && strncmp(term, "xterm", 5) == 0);
+
+	p = pane_register(ed, 1, &ncurses_handle.c, dd);
+	if (!p) {
+		unalloc(dd, pane);
+		return NULL;
+	}
+	set_screen(p);
+
+	ncurses_start(p);
 
 	area = dd->attr_buf;
 	dd->rs1 = tgetstr("rs1", &area);
@@ -1124,6 +1138,11 @@ DEF_CMD(force_redraw)
 	struct pane *p = ci->home;
 
 	set_screen(p);
+
+	/* full reset, as mosh sometimes gets confused */
+	ncurses_stop(p);
+	ncurses_start(p);
+
 	clearok(curscr, 1);
 	return 1;
 }

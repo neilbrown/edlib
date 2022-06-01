@@ -31,6 +31,10 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] things slow down after lots of edits.  Maybe track
+      number of chunk, marks, undos etc and display them somewhere
+- [ ] shell output open a window after a timeout, but it the shell
+      opened and edit window, that can be a bit confusing
 - [X] if email file cannot be found, report the problem.
 - [?] Make doesn't follow llog_reader.c:723:6: when it have seen
      make[4]: Entering directory '/home2/git/lustre-release/lustre/utils'
