@@ -757,9 +757,10 @@ class notmuch_main(edlib.Doc):
 
     def handle_notmuch_remember_seen_msg(self, key, focus, str1, str2, **a):
         "handle:doc:notmuch:remember-seen-msg"
-        if str1:
-            self.seen_msgs[str1] = (focus, str2)
-            return 1
+        if not str1:
+            return edlib.Enoarg
+        self.seen_msgs[str1] = (focus, str2)
+        return 1
 
     def handle_notmuch_mark_seen(self, key, focus, **a):
         "handle:doc:notmuch:mark-seen"
@@ -1284,6 +1285,7 @@ class notmuch_query(edlib.Doc):
                 # this message matches, or viewing all messages
                 ret.append(mid)
         comm2("cb", focus, '\n'.join(ret))
+        return 1
 
     def get_replies(self, key, focus, num, str, str2, comm2, **a):
         "handle:doc:notmuch-query:matched-replies"
@@ -2379,6 +2381,7 @@ class notmuch_master_view(edlib.Pane):
         "handle-list/doc:char-Z/doc:char-=/"
         if self.query_pane:
             return self.query_pane.call(key)
+        return edlib.Efallthrough
 
     def handle_select_query(self, key, num, str, **a):
         "handle:notmuch:select-query"
@@ -2593,6 +2596,7 @@ class notmuch_query_view(edlib.Pane):
         # Reload the query so archived messages disappear
         self.call("doc:notmuch:query:reload")
         self.call("doc:notmuch:update-one", self['qname'])
+        return 1
 
     def handle_matched_mids(self, key, focus, str, str2, comm2, **a):
         "handle-prefix:doc:notmuch-query:matched-"
@@ -2969,6 +2973,7 @@ class notmuch_query_view(edlib.Pane):
                         self.seen_msgs[i2] = i1
             if self.next(m) is None:
                 break
+        return edlib.Efallthrough
 
     def handle_clear_seen(self, key, focus, **a):
         "handle:notmuch:clear-seen"
