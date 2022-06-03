@@ -31,6 +31,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] pango_layout_set_text() is sometimes given invalid UTF-8
+- [ ] be sure to wait for xdg-open etc.
 - [ ] things slow down after lots of edits.  Maybe track
       number of chunk, marks, undos etc and display them somewhere
 - [ ] shell output open a window after a timeout, but it the shell

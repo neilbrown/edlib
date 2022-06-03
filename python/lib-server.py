@@ -156,6 +156,7 @@ try:
                         self.disp.call("Display:set-noclose")
                         self.disp.call("Display:close")
                         self.disp = None
+                    self.call("event:free", self.read)
                     self.sock.close()
                     self.sock = None
                     self.close()
@@ -324,6 +325,7 @@ else:
             ServerPane(new)
         except:
             pass
+        return 1
 
     def server_done(key, focus, **a):
         ret = focus.call("doc:notify:doc:done", "test")
@@ -377,7 +379,7 @@ else:
         fl = fcntl.fcntl(s.fileno(), fcntl.F_GETFL)
         fcntl.fcntl(s.fileno(), fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
-        focus.call("event:read", s.fileno(), server_accept)
+        focus.root.call("event:read", s.fileno(), server_accept)
         server_sock = s
         if key != "key":
             focus.call("Message", "Server restarted")
