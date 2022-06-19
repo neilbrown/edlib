@@ -743,9 +743,14 @@ def markdown_appeared(key, focus, **a):
     n = focus["filename"]
     if n and n[-3:] == ".md":
         focus["view-cmd-P"] = "present"
-        focus["view-default"] = "markdown"
+        vd = focus["view-default"]
+        if vd:
+            vd = vd + ",markdown-present"
+        else:
+            vd = "markdown-present"
+        focus["view-default"] = vd
     return edlib.Efallthrough
 
-editor.call("global-set-command", "attach-markdown", markdown_attach)
+editor.call("global-set-command", "attach-markdown-present", markdown_attach)
 editor.call("global-set-command", "attach-present", present_attach)
-editor.call("global-set-command", "doc:appeared-markdown", markdown_appeared)
+editor.call("global-set-command", "doc:appeared-present", markdown_appeared)

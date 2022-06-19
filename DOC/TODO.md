@@ -31,6 +31,10 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] stop consistency checking a text doc when it gets "big" ??
+- [ ] auto-sign emails..
+- [ ] message must be tagged "replied" when a reply is sent.
+- [ ] if a shell command produces no output, message should be shown
 - [ ] pango_layout_set_text() is sometimes given invalid UTF-8
 - [ ] be sure to wait for xdg-open etc.
 - [ ] things slow down after lots of edits.  Maybe track
