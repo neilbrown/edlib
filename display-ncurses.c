@@ -575,7 +575,9 @@ static void ncurses_stop(struct pane *p safe)
 	}
 	if (dd->paste_start)
 		free(buf_final(&dd->paste_buf));
+	dd->paste_start = 0;
 	free(dd->paste_latest);
+	dd->paste_latest = NULL;
 	nl();
 	endwin();
 	if (dd->rs1)
