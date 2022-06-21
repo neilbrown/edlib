@@ -142,7 +142,7 @@ def choose_range(focus, viewnum, attr, start, end):
         end.to_mark(m2)
 
 class autospell_monitor(edlib.Pane):
-    # autospell_monitor attaches to a document and track ranges
+    # autospell_monitor attaches to a document and tracks ranges
     # that have been spell-checked.  Sends notifications when there
     # is a change, so viewers can do the checking.  Only views know
     # mode-specific details
@@ -168,7 +168,7 @@ class autospell_monitor(edlib.Pane):
         # only affects first char of a word.
         focus.call("doc:set-attr", mark2, "render:spell-incorrect",
                    None);
-        # Need to caputure adjacent words, and avoid zero-size gap
+        # Need to capture adjacent words, and avoid zero-size gap
         mark = mark.dup()
         focus.prev(mark)
         mark2 = mark2.dup()
@@ -307,7 +307,7 @@ def autospell_attach(key, focus, comm2, **a):
 
 def autospell_attach_helper(key, focus, **a):
     p = autospell_monitor(focus)
-    return 1;
+    return 1
 
 def autospell_activate(key, focus, comm2, **a):
     autospell_view(focus)

@@ -508,7 +508,7 @@ class CModePane(edlib.Pane):
         p.call("doc:EOL", -1, m1)
         sol = m1.dup()
         c = p.next(m1)
-        while c in ' \t':
+        while c and c in ' \t':
             c = p.next(m1)
         if c == '#':
             # comment found, use same indent
