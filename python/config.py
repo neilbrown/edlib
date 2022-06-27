@@ -7,6 +7,8 @@
 # config module with a more abstract language one day.
 # But I want some simple configuration NOW
 
+import os
+
 def config_appeared(key, focus, **a):
 
     p = focus['filename']
@@ -18,6 +20,13 @@ def config_appeared(key, focus, **a):
             # looks like a lustre commit, need to limit line width
             focus.call("doc:set:fill-width", "70")
             focus.call("doc:set:whitespace-width", "60")
+
+    if p and p[-3:] == ".md":
+        if os.getenv("EDLIB_TESTING"):
+            focus.call("doc:set:view-default", "textfill,whitespace")
+        else:
+            focus.call("doc:set:view-default", "textfill,whitespace,autospell")
+        focus.call("doc:set:fill-width", "72")
     return edlib.Efallthrough
 
 editor.call("global-set-command", "doc:appeared-config", config_appeared)
