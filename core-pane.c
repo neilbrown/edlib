@@ -33,6 +33,7 @@
 #include <stdio.h>
 
 #include "core.h"
+#include "internal.h"
 
 MEMPOOL(pane);
 

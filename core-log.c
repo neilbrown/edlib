@@ -23,6 +23,7 @@ struct doc_ref {
 };
 
 #include "core.h"
+#include "internal.h"
 
 struct logbuf {
 	struct list_head h;

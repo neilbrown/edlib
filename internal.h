@@ -16,3 +16,8 @@ struct mark *do_vmark_at_or_before(struct doc *d safe, struct mark *m safe, int 
 struct mark *do_mark_at_point(struct mark *pt safe, int view);
 void __mark_free(struct mark *m);
 void notify_point_moving(struct mark *m safe);
+
+void editor_delayed_free(struct pane *ed safe, struct pane *p safe);
+void editor_delayed_mark_free(struct mark *m safe);
+void doc_setup(struct pane *ed safe);
+void log_setup(struct pane *ed safe);

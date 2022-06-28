@@ -161,8 +161,6 @@ int do_pane_notify(struct pane *home, const char *notification safe,
 		   struct command *comm2);
 void pane_drop_notifiers(struct pane *p safe, char *notification);
 
-void editor_delayed_free(struct pane *ed safe, struct pane *p safe);
-void editor_delayed_mark_free(struct mark *m safe);
 struct pane *editor_new(void);
 void * safe memsave(struct pane *p safe, const char *buf, int len);
 char *strsave(struct pane *p safe, const char *buf);
@@ -190,8 +188,6 @@ struct doc {
 
 void doc_free(struct doc *d safe, struct pane *root safe);
 extern struct map *doc_default_cmd safe;
-void doc_setup(struct pane *ed safe);
-void log_setup(struct pane *ed safe);
 
 #define CHAR_RET(_c) ((_c & 0x1FFFFF) | 0x200000)
 
