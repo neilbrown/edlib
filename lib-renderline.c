@@ -84,7 +84,7 @@ static int draw_some(struct pane *p safe, struct pane *focus safe,
 	if ((*rlp == NULL ||
 	     ((*rlp)->next == NULL && (*rlp)->text_orig == NULL)) &&
 	    strstr(attr, "wrap,") && cursorpos < 0)
-		/* The text is a <wrap> marker that causes a wrap is
+		/* The text in a <wrap> marker that causes a wrap is
 		 * suppressed unless the cursor is in it.
 		 * This will only ever be at start of line.  <wrap> text
 		 * elsewhere is not active.

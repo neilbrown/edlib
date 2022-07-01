@@ -248,9 +248,7 @@ DEF_CB(libevent_poll)
 	ev->l = safe_cast NULL;
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
-	ev->mseconds = ci->num;
 	ev->fd = POLL_FD;
-	ev->num = ci->num;
 	ev->active = 0;
 	ev->event = "event:poll";
 	pane_add_notify(ei->home, ev->home, "Notify:Close");

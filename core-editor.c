@@ -300,7 +300,7 @@ DEF_CMD(editor_clean_up)
 	struct ed_info *ei = ci->home->data;
 	struct idle_call *pending = ei->idle_calls;
 
-	/* Note that if an idle-call registers and idle call,
+	/* Note that if an idle-call registers an idle call,
 	 * the new one won't be handled until the next time around
 	 */
 	ei->idle_calls = NULL;

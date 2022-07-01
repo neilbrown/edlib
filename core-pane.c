@@ -228,7 +228,7 @@ static void pane_do_resize(struct pane *p safe, int damage)
 		struct pane *parent, *c, *t;
 
 		/* Find a child with DAMGED_SIZE_CHILD.
-		 * If it is DAMAGE_SIZE, handle that, else check
+		 * If it is DAMAGED_SIZE, handle that, else check
 		 * its children.  If no DAMAGED_SIZE_CHILD
 		 * children are found, clear DAMAGED_SIZE_CHILD.
 		 */
