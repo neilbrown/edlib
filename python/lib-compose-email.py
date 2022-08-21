@@ -827,7 +827,7 @@ class compose_email(edlib.Pane):
         if not sendmail:
             sendmail = "/sbin/sendmail -i"
         try:
-            p = subprocess.Popen(sendmail.split(),
+            p = subprocess.Popen(sendmail, shell=True,
                                  stdin = tf.fileno(),
                                  stdout = subprocess.PIPE,
                                  stderr = subprocess.PIPE)

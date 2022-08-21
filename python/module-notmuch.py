@@ -363,7 +363,7 @@ class searches:
                     ret.append(s[6:])
         return ret
 
-def make_composition(db, focus, which = "PopupTile", how = "MD3tsa"):
+def make_composition(db, focus, which = "PopupTile", how = "MD3tsa", tag = None):
     dir = db['config:database.path']
     if not dir:
         dir = "/tmp"
@@ -394,7 +394,11 @@ def make_composition(db, focus, which = "PopupTile", how = "MD3tsa"):
         m['email:deprecated_from'] = altfrom2
     if host_address:
         m['email:host-address'] = host_address
-    m['email:sendmail'] = "/usr/bin/notmuch insert --folder=sent --create-folder -new -unread +outbox"
+    set_tag = ""
+    if tag:
+        set_tag = "/usr/bin/notmuch %s;" % tag
+    edlib.LOG(set_tag)
+    m['email:sendmail'] = set_tag + "/usr/bin/notmuch insert --folder=sent --create-folder -new -unread +outbox"
     # NOTE this cannot be in ThisPane, else the pane we want to copy
     # content from will disappear.
     # I think Popuptile is best, with maybe an option to expand it
@@ -1605,6 +1609,10 @@ class notmuch_query(edlib.Doc):
                 val = "✘"  # HEAVY BALLOT X   #2718
             elif 'notspam' in t["tags"]:
                 val = "✔"  # HEAVY CHECK MARK #2714
+            elif 'replied' in t["tags"]:
+                val = "↵"  # DOWNWARDS ARROW WITH CORNER LEFTWARDS #21B5
+            elif 'forwarded' in t["tags"]:
+                val = "→"  # RIGHTWARDS ARROW #2192
             else:
                 val = " "
         elif attr == "T-date_relative":
@@ -1651,6 +1659,10 @@ class notmuch_query(edlib.Doc):
                 val = "✘"  # HEAVY BALLOT X   #2718
             elif 'notspam' in tags:
                 val = "✔"  # HEAVY CHECK MARK #2714
+            elif 'replied' in tags:
+                val = "↵"  # DOWNWARDS ARROW WITH CORNER LEFTWARDS #21B5
+            elif 'forwarded' in tags:
+                val = "→"  # RIGHTWARDS ARROW #2192
             else:
                 val = " "
         elif attr == "M-date_relative":
@@ -2145,13 +2157,17 @@ class notmuch_master_view(edlib.Pane):
         if not self.message_pane:
             focus.call("Message", "Can only reply when a message is open")
             return edlib.Efail
-        v = make_composition(self.list_pane, focus)
         if key[-1] == 'F':
             mode = "forward"
+            tag = "forwarded"
         elif key[-1] == 'R':
             mode = "reply-all"
+            tag = "replied"
         else:
             mode = "reply"
+            tag = "replied"
+        v = make_composition(self.list_pane, focus,
+                             tag="tag +%s id:%s" % (tag, self.message_pane['message-id']))
         if v:
             v.call("compose-email:copy-headers", self.message_pane, mode)
             if num == edlib.NO_NUMERIC:
