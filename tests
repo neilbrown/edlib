@@ -21,6 +21,9 @@
 # ./tests refresh
 #     Run all tests and replace the test with the new log - expecting it to be different.
 
+# Ensure configuration (e.g. of aspell) in $HOME doesn't affect result
+export HOME=/tmp
+
 # ensure timestamps don't change
 export EDLIB_TESTING=1
 # Don't check for autosaves
@@ -51,11 +54,12 @@ cmd=$0
 
 setup_test_dir() {
     if [ -d $TEST_DIR -a -d $TEST_DIR/.git ]; then
-	(cd $TEST_DIR ; git reset > /dev/null --hard $TEST_COMMIT ; git clean -fxd)
+	(cd $TEST_DIR ; git reset > /dev/null --hard $TEST_COMMIT ;
+	 git clean -fxd; git config core.abbrev 12 )
     else
 	rm -rf $TEST_DIR
 	git clone . $TEST_DIR
-	(cd $TEST_DIR ; git reset --hard $TEST_COMMIT)
+	(cd $TEST_DIR ; git reset --hard $TEST_COMMIT; git config core.abbrev 12 )
     fi
 }
 
@@ -235,4 +239,3 @@ case $cmd in
 		exit 1;
 esac
 exit 0
-
