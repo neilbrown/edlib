@@ -345,7 +345,7 @@ class CModePane(edlib.Pane):
         self.pre_paren = None
         self.post_paren = None
 
-        self.call("doc:request:point:moving")
+        self.call("doc:request:mark:moving")
         self.call("doc:request:doc:replaced")
         # for indent
         self.spaces = None   # is set to a number, use spaces, else TABs
@@ -899,7 +899,7 @@ class CModePane(edlib.Pane):
         return 1
 
     def handle_moving(self, key, focus, mark, **a):
-        "handle:point:moving"
+        "handle:mark:moving"
         point = self.call("doc:point", ret = 'mark')
         if mark == point:
             self.damaged(edlib.DAMAGED_VIEW)

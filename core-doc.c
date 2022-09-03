@@ -1026,7 +1026,7 @@ DEF_CMD(doc_move_to)
 	if (ci->num == 0) {
 		if (ci->mark) {
 			if (ci->num2 && mark_same(dd->point, ci->mark))
-				notify_point_moving(dd->point);
+				notify_mark_moving(dd->point);
 			mark_to_mark(dd->point, ci->mark);
 		}
 	} else if (ci->num > 0 && ci->num <= 4) {
@@ -1225,7 +1225,7 @@ static void init_doc_cmds(void)
 
 	key_add(doc_handle_cmd, "doc:notify-viewers", &doc_notify_viewers);
 	key_add(doc_handle_cmd,	"Notify:Close", &doc_notify_close);
-	key_add(doc_handle_cmd,	"point:moving", &doc_notify_moving);
+	key_add(doc_handle_cmd,	"mark:moving", &doc_notify_moving);
 	key_add(doc_handle_cmd,	"Refresh:view", &doc_refresh_view);
 	key_add(doc_handle_cmd,	"Clone", &doc_clone);
 	key_add(doc_handle_cmd,	"Close", &doc_close);
@@ -1288,7 +1288,7 @@ static void do_doc_assign(struct pane *p safe, struct pane *doc safe)
 
 	pane_add_notify(p, doc, "Notify:Close");
 	pane_add_notify(p, doc, "doc:notify-viewers");
-	pane_add_notify(p, doc, "point:moving");
+	pane_add_notify(p, doc, "mark:moving");
 	call("doc:notify:doc:revisit", doc, 0);
 	mark_ack(m);
 }

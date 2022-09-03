@@ -1576,7 +1576,7 @@ DEF_CMD(render_lines_notify_replace)
 		 * ignoring it, and handle the fact that point moved.
 		 */
 		if (ci->mark2 == pt)
-			pane_call(p, "point:moving", ci->focus, 0, pt);
+			pane_call(p, "mark:moving", ci->focus, 0, pt);
 	}
 
 	if (strcmp(ci->key, "view:changed") == 0)
@@ -1728,7 +1728,7 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "Refresh:size", &render_lines_resize);
 	key_add(rl_map, "Notify:clip", &render_lines_clip);
 	key_add(rl_map, "get-attr", &render_lines_get_attr);
-	key_add(rl_map, "point:moving", &render_lines_point_moving);
+	key_add(rl_map, "mark:moving", &render_lines_point_moving);
 
 	key_add(rl_map, "doc:replaced", &render_lines_notify_replace);
 	key_add(rl_map, "doc:replaced-attr", &render_lines_notify_replace);
@@ -1761,7 +1761,7 @@ REDEF_CMD(render_lines_attach)
 	rl->typenum = home_call(ci->focus, "doc:add-view", p) - 1;
 	call("doc:request:doc:replaced", p);
 	call("doc:request:doc:replaced-attr", p);
-	call("doc:request:point:moving", p);
+	call("doc:request:mark:moving", p);
 
 	return comm_call(ci->comm2, "callback:attach", p);
 }

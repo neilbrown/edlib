@@ -160,7 +160,7 @@ static void assign_seq(struct mark *m safe)
 
 static void point_free(struct mark *p safe)
 {
-	int i;
+	unsigned int i;
 	struct point_links *lnk = safe_cast p->mdata;
 	for (i = 0; i < lnk->size; i++)
 		tlist_del_init(&lnk->lists[i]);
@@ -234,7 +234,8 @@ static void dup_mark(struct mark *orig safe, struct mark *new safe)
 {
 	hlist_add_after(&orig->all, &new->all);
 	INIT_TLIST_HEAD(&new->view, GRP_MARK);
-	new->attrs= NULL;
+	new->attrs = NULL;
+	new->flags = 0;
 	assign_seq(new);
 	mark_ref_copy(new, orig);
 }
@@ -266,7 +267,7 @@ struct mark *mark_at_point(struct pane *p safe, struct mark *pm, int view)
 
 struct mark *safe point_dup(struct mark *p safe)
 {
-	int i;
+	unsigned int i;
 	struct point_links *old = safe_cast p->mdata;
 	struct mark *ret;
 	struct point_links *lnk;
@@ -280,7 +281,6 @@ struct mark *safe point_dup(struct mark *p safe)
 	ret->mdata = lnk;
 	lnk->size = old->size;
 	lnk->pt = ret;
-	lnk->moved = 0;
 	tlist_add(&ret->view, GRP_MARK, &p->view);
 	for (i = 0; lnk && i < lnk->size; i++)
 		if (tlist_empty(&old->lists[i]))
@@ -294,7 +294,7 @@ void points_resize(struct doc *d safe)
 {
 	struct mark *p;
 	tlist_for_each_entry(p, &d->points, view) {
-		int i;
+		unsigned int i;
 		struct point_links *old = safe_cast p->mdata;
 		struct point_links *new = alloc_buf(sizeof(*new) +
 						    d->nviews *
@@ -302,7 +302,6 @@ void points_resize(struct doc *d safe)
 						    mark);
 		new->pt = p;
 		new->size = d->nviews;
-		new->moved = old->moved;
 		p->mdata = new;
 		for (i = 0; i < old->size; i++) {
 			tlist_add(&new->lists[i], GRP_LIST, &old->lists[i]);
@@ -359,40 +358,34 @@ struct mark *safe mark_dup_view(struct mark *m safe)
 	return ret;
 }
 
-void notify_point_moving(struct mark *m safe)
+void notify_mark_moving(struct mark *m safe)
 {
-	struct point_links *plnk;
-
 	if (m->viewnum != MARK_POINT)
 		return;
-
-	plnk = safe_cast m->mdata;
-
-	if (plnk->moved)
+	if (m->flags & MARK_FLAG_MOVED)
 		return;
-	plnk->moved = 1;
-	pane_notify("point:moving", m->owner, 0, m);
+	m->flags |= MARK_FLAG_MOVED;
+
+	pane_notify("mark:moving", m->owner, 0, m);
 }
 
 void mark_ack(struct mark *m)
 {
-	if (m && m->viewnum == MARK_POINT) {
-		struct point_links *plnk = safe_cast m->mdata;
-		plnk->moved = 0;
-	}
+	if (m && m->viewnum == MARK_POINT)
+		m->flags &= ~MARK_FLAG_MOVED;
 }
 
 void mark_to_end(struct pane *p safe, struct mark *m safe, int end)
 {
 	struct doc *d = p->data;
-	int i;
+	unsigned int i;
 	struct point_links *lnk;
 
 	if (!mark_valid(m))
 		return;
 
 	ASSERT(m->owner == p);
-	notify_point_moving(m);
+	notify_mark_moving(m);
 
 	hlist_del(&m->all);
 	if (end) {
@@ -494,6 +487,7 @@ struct mark *doc_new_mark(struct pane *p safe, int view, struct pane *owner)
 	INIT_TLIST_HEAD(&ret->view, GRP_MARK);
 	ret->viewnum = view;
 	hlist_add_head(&ret->all, &d->marks);
+	ret->flags = MARK_FLAG_MOVED;
 
 	if (view == MARK_POINT) {
 		struct point_links *lnk = alloc_buf(sizeof(*lnk) +
@@ -503,7 +497,6 @@ struct mark *doc_new_mark(struct pane *p safe, int view, struct pane *owner)
 		int i;
 
 		lnk->size = d->nviews;
-		lnk->moved = 1;
 		lnk->pt = ret;
 		for (i = 0; i < d->nviews; i++)
 			INIT_TLIST_HEAD(&lnk->lists[i], GRP_LIST);
@@ -571,7 +564,7 @@ wint_t __doc_step(struct pane *p safe, struct mark *m,
 static void point_forward_to_mark(struct mark *p safe, struct mark *m safe)
 {
 	struct mark *ptmp, *pnear;
-	int i;
+	unsigned int i;
 	struct point_links *plnk = safe_cast p->mdata;
 
 	pnear = p;
@@ -625,7 +618,7 @@ static void point_forward_to_mark(struct mark *p safe, struct mark *m safe)
 static void point_backward_to_mark(struct mark *p safe, struct mark *m safe)
 {
 	struct mark *ptmp, *pnear;
-	int i;
+	unsigned int i;
 	struct point_links *plnk = safe_cast p->mdata;
 
 	pnear = p;
@@ -706,7 +699,7 @@ static void _mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 	if (m == target)
 		return;
 	if (!mark_same(m, target))
-		notify_point_moving(m);
+		notify_mark_moving(m);
 	if (m->viewnum == MARK_POINT) {
 		/* Lots of linkage to fix up */
 		if (m->seq < target->seq)
@@ -853,7 +846,7 @@ void mark_step(struct mark *m safe, int forward)
 	/* This is called after .ref has been updated, so we can
 	 * assume the point really is moving.
 	 */
-	notify_point_moving(m);
+	notify_mark_moving(m);
 
 	if (forward) {
 		for (m2 = mark_next(m);
@@ -880,7 +873,7 @@ void mark_step_sharesref(struct mark *m safe, int forward)
 	/* This is called after .ref has been updated, so we can
 	 * assume the point really is moving.
 	 */
-	notify_point_moving(m);
+	notify_mark_moving(m);
 
 	if (forward) {
 		for (m2 = mark_next(m);

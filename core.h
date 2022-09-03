@@ -216,6 +216,7 @@ struct mark {
 	struct attrset		*attrs;
 	int			seq;
 	short			viewnum;
+	short			flags;
 	MARK_DATA_PTR		*mdata;
 	void			*mtype;	/* can be used to validate
 					 * type of mdata */
@@ -223,6 +224,7 @@ struct mark {
 					      * understands .ref
 					      */
 };
+#define MARK_FLAG_MOVED		1
 
 static inline bool mark_valid(struct mark *m)
 {
@@ -235,8 +237,7 @@ static inline bool mark_valid(struct mark *m)
 
 /* A point uses this for the mdata */
 struct point_links {
-	unsigned int		size:31;
-	unsigned int		moved:1;
+	unsigned int		size;
 	struct mark		*pt safe;
 	struct tlist_head	lists[];
 };

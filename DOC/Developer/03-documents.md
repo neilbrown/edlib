@@ -72,12 +72,13 @@ group, then some searching may be required to find a specific nearby
 mark.  When you start with a pointer you can immediately find a nearby
 mark of any group.  Pointers cannot store extra arbitrary data.
 
-The first time a point is moved to a different location in the document
-a "point:moving" message is sent to the pane which owns the point.
-Subsequent movement will not cause any notification until
-"mark_ack(mark)" is called.  This clears a flag on the point so that he
+The first time a mark is moved to a different location in the document a
+"mark:moving" message is sent to the pane which owns the mark (usually a
+document).  Subsequent movement will not cause any notification until
+"mark_ack(mark)" is called.  This clears a flag on the mark so that the
 next movement will again cause a message to be sent.  This is useful for
-ensure that any drawing of the cursor is updated properly.
+various tasks including ensuring that any drawing of the cursor is
+updated properly.
 
 ### working with marks
 
@@ -241,7 +242,7 @@ anything else it needs.
 
 ### special handling for point:
 
-The doc-view pane registers a "point:moving" handler so that it gets
+The doc-view pane registers a "mark:moving" handler so that it gets
 callback whenever the point moves.  It uses this to arrange that
 whenever the display is refreshed after the point has moved, its
 "Refresh:view" handler is called.
