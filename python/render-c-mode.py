@@ -901,7 +901,7 @@ class CModePane(edlib.Pane):
     def handle_moving(self, key, focus, mark, **a):
         "handle:mark:moving"
         point = self.call("doc:point", ret = 'mark')
-        if mark == point:
+        if mark.seq == point.seq:
             self.damaged(edlib.DAMAGED_VIEW)
         return 1
 

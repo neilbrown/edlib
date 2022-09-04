@@ -358,10 +358,8 @@ struct mark *safe mark_dup_view(struct mark *m safe)
 	return ret;
 }
 
-void notify_mark_moving(struct mark *m safe)
+static void notify_mark_moving(struct mark *m safe)
 {
-	if (m->viewnum != MARK_POINT)
-		return;
 	if (m->flags & MARK_FLAG_MOVED)
 		return;
 	m->flags |= MARK_FLAG_MOVED;
@@ -371,7 +369,7 @@ void notify_mark_moving(struct mark *m safe)
 
 void mark_ack(struct mark *m)
 {
-	if (m && m->viewnum == MARK_POINT)
+	if (m)
 		m->flags &= ~MARK_FLAG_MOVED;
 }
 

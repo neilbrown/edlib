@@ -222,8 +222,13 @@ class AbbrevPane(edlib.Pane):
         self.call("Message", "")
         return 1
 
-    def handle_activity(self, key, focus, **a):
+    def handle_activity(self, key, focus, mark, **a):
         "handle-list/doc:replaced/mark:moving/pane:defocus"
+        if key == "mark:moving":
+            point = self.call("doc:point", ret = 'mark')
+            if mark.seq != point.seq:
+                return edlib.Efallthrough
+
         if not self.active and self.prefix_start:
             self.call("view:changed", self.prefix_start, self.prefix_end)
             self.prefix_start = None
