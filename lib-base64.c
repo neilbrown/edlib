@@ -6,14 +6,16 @@
  * decoded bytes.  A UTF-8 filter would be needed if the base64
  * is actually utf-8.
  *
- * We create our own set of marks and place them at the start of
- * quartets of base64 chars (which means start of triplets of visible chars)
- * We intercept doc:char.
- * To find how to interpret a given position, we find the previous mark,
- * and move forward, counting chars, until we reach the position.
- * Every MAX_QUAD we create a new mark.
- * A position should only ever be on the 1st, 2nd, or 3rd char of a quad,
- * never on the last.
+ * Each mark needs not just a location in the b64, but also
+ * which byte of a QUAD (4 b64 characters) it is at.
+ * We store this in the mark as attribute "b64-pos", which makes
+ * stacking b64 impossible - but who would want to?
+ * This can have a value "0", "1", "2".  A mark is never on the
+ * 4th char of a QUAD.
+ * doc:set-ref initialises this as does a mark:moving notification
+ * which references another mark.  doc:char and doc:byte will use
+ * the pos to know how to interpret, and will update it after any
+ * movement as will doc:content.
  */
 
 #include <unistd.h>
@@ -21,11 +23,6 @@
 #include <wctype.h>
 
 #include "core.h"
-
-struct b64info {
-	int view;
-};
-#define MAX_QUAD	10
 
 static struct map *b64_map safe;
 DEF_LOOKUP_CMD(b64_handle, b64_map);
@@ -38,7 +35,7 @@ static int is_b64(wint_t c)
 		c == '+' || c == '/' || c == '=';
 }
 
-static int from_b64(char c)
+static wint_t from_b64(char c)
 {
 	/* This assumes that 'c' is_b64() */
 	if (c <= '+')
@@ -55,37 +52,23 @@ static int from_b64(char c)
 		return (c - 'a') + 26;
 }
 
-static int get_b64_x(struct pane *p safe, struct mark *m safe)
+static wint_t get_b64(struct pane *p safe, struct mark *m safe)
 {
 	wint_t c;
-
-	while ((c = doc_following(p, m)) != WEOF &&
-	       !is_b64(c))
-		doc_next(p, m);
-
-	if (c == WEOF)
-		return WEOF;
-	return from_b64(c);
-}
-
-static int get_b64(struct pane *p safe, struct mark *m safe)
-{
-	wint_t c;
-	int ret;
+	wint_t ret;
 
 	do {
 		c = doc_next(p, m);
 	} while (c != WEOF && !is_b64(c));
 	if (c == WEOF)
 		return WEOF;
-	/* Need to leave mark immediately before a b64 char */
 	ret = from_b64(c);
 	while ((c = doc_following(p, m)) != WEOF && !is_b64(c))
 		doc_next(p, m);
 	return ret;
 }
 
-static int get_b64_rev(struct pane *p safe, struct mark *m safe)
+static wint_t get_b64_rev(struct pane *p safe, struct mark *m safe)
 {
 	wint_t c;
 
@@ -97,45 +80,26 @@ static int get_b64_rev(struct pane *p safe, struct mark *m safe)
 	return from_b64(c);
 }
 
-static int locate_mark(struct pane *p safe, struct pane *owner,
-		       int view, struct mark *m safe)
+static void set_pos(struct mark *m safe, int pos)
 {
-	struct mark *st, *tmp, *prev;
-	int pos = 0;
-	wint_t ch;
+	char ps[2] = "0";
 
-	st = vmark_at_or_before(p, m, view, owner);
-	if (st) {
-		tmp = mark_dup(st);
-		prev = st;
-	} else {
-		tmp = vmark_new(p, MARK_UNGROUPED, NULL);
-		pos = (MAX_QUAD + 1) * 4;
-		prev = NULL;
-	}
-	if (!tmp)
-		return 0;
-	while ((ch = get_b64_x(p, tmp)) != WEOF) {
-		if (mark_ordered_or_same(m, tmp))
-			break;
-		if ((pos %4) == 0 && pos/4 >= MAX_QUAD) {
-			struct mark *m2 = vmark_new(p, view, owner);
-			if (m2) {
-				if (prev)
-					/* Moving to a vmark (prev)
-					 * first is faster than
-					 * directly to tmp.
-					 */
-					mark_to_mark(m2, prev);
-				mark_to_mark(m2, tmp);
-				prev = m2;
-			}
-			pos = 0;
-		}
-		doc_next(p, tmp); pos++;
-	}
-	mark_free(tmp);
-	return pos%4;
+	while (pos < 0)
+		pos += 3;
+	while (pos >= 3)
+		pos -= 3;
+	ps[0] += pos;
+	attr_set_str(&m->attrs, "b64-pos", ps);
+	mark_ack(m);
+}
+
+static int get_pos(struct mark *m safe)
+{
+	char *ps = attr_find(m->attrs, "b64-pos");
+	if (ps && strlen(ps) == 1 &&
+	    ps[0] >= '0' && ps[1] <= '2')
+		return ps[0] - '0';
+	return -1;
 }
 
 static int base64_step(struct pane *home safe, struct mark *mark,
@@ -145,11 +109,13 @@ static int base64_step(struct pane *home safe, struct mark *mark,
 	struct mark *m;
 	struct pane *p = home->parent;
 	wint_t c1, c2, b;
-	struct b64info *bi = home->data;
 
 	if (!mark)
 		return Enoarg;
-	pos = locate_mark(p, home, bi->view, mark);
+	pos = get_pos(mark);
+	if (pos < 0)
+		/* bug? */
+		pos = 0;
 
 	m = mark_dup(mark);
 retry:
@@ -160,7 +126,7 @@ retry:
 		if (c1 == 64 || c2 == 64) {
 			while (pos < 2 && c2 != WEOF) {
 				c2 = get_b64(p, m);
-				pos -= 1;
+				pos += 1;
 			}
 			pos = 0;
 			if (c2 != WEOF)
@@ -169,7 +135,8 @@ retry:
 		}
 	} else {
 		if (pos)
-			get_b64(p, m);
+			if (get_b64(p, m) == WEOF)
+				pos = 0;
 		c2 = get_b64_rev(p, m);
 		c1 = get_b64_rev(p, m);
 		if (pos <= 0)
@@ -180,7 +147,7 @@ retry:
 			c2 = c1;
 			c1 = get_b64_rev(p, m);
 			if (pos <= 0)
-				pos = 1;
+				pos = 2;
 			else
 				pos -= 1;
 		}
@@ -207,8 +174,13 @@ retry:
 	if (forward && pos < 2 && move)
 		/* Step back to look at the last char read */
 		doc_prev(p, m);
-	if (move)
+	if (move) {
 		mark_to_mark(mark, m);
+		if (forward)
+			set_pos(mark, pos+1);
+		else
+			set_pos(mark, pos);
+	}
 
 	mark_free(m);
 	return CHAR_RET(b);
@@ -241,6 +213,34 @@ DEF_CMD(base64_char)
 		return ret;
 	/* Want the 'next' char */
 	return base64_step(ci->home, m, ci->num2 > 0, 0);
+}
+
+DEF_CMD(base64_setref)
+{
+	if (ci->mark)
+		/* Start and end are always pos 0 */
+		set_pos(ci->mark, 0);
+	return Efallthrough;
+}
+
+DEF_CMD(base64_moving)
+{
+	struct mark *m = ci->mark;
+	struct mark *ref = ci->mark2;
+	int pos;
+
+	if (!m)
+		return 1;
+
+	if (get_pos(m) >= 0)
+		/* Interesting mark, keep tracking it */
+		mark_ack(m);
+	if (!ref)
+		return 1;
+	pos = get_pos(ref);
+	if (pos >= 0)
+		set_pos(m, pos);
+	return 1;
 }
 
 struct b64c {
@@ -385,7 +385,6 @@ DEF_CMD(base64_content_cb)
 DEF_CMD(base64_content)
 {
 	struct b64c c;
-	struct b64info *bi = ci->home->data;
 	int ret;
 
 	if (!ci->comm2 || !ci->mark)
@@ -399,7 +398,7 @@ DEF_CMD(base64_content)
 	c.cb = ci->comm2;
 	c.p = ci->focus;
 	c.home = ci->home;
-	c.pos = locate_mark(ci->home->parent, ci->home, bi->view, ci->mark);
+	c.pos = get_pos(ci->mark);
 	c.size = 0;
 	c.m = mark_dup(ci->mark);
 	c.c1 = 64;
@@ -421,26 +420,14 @@ DEF_CMD(base64_content)
 	return ret;
 }
 
-DEF_CMD(b64_clip)
-{
-	struct b64info *bi = ci->home->data;
-
-	marks_clip(ci->home, ci->mark, ci->mark2, bi->view, ci->home, !!ci->num);
-	return Efallthrough;
-}
-
 DEF_CMD(b64_attach)
 {
 	struct pane *p;
-	struct b64info *bi;
 
-	alloc(bi, pane);
-	p = pane_register(ci->focus, 0, &b64_handle.c, bi);
-	if (!p) {
-		free(bi);
+	p = pane_register(ci->focus, 0, &b64_handle.c);
+	if (!p)
 		return Efail;
-	}
-	bi->view = home_call(ci->focus, "doc:add-view", p) - 1;
+	call("doc:request:mark:moving", p);
 
 	return comm_call(ci->comm2, "callback:attach", p);
 }
@@ -454,8 +441,9 @@ void edlib_init(struct pane *ed safe)
 	key_add(b64_map, "doc:byte", &base64_char);
 	key_add(b64_map, "doc:content", &base64_content);
 	key_add(b64_map, "doc:content-bytes", &base64_content);
+	key_add(b64_map, "doc:set-ref", &base64_setref);
+	key_add(b64_map, "mark:moving", &base64_moving);
 	key_add(b64_map, "Free", &edlib_do_free);
-	key_add(b64_map, "Notify:clip", &b64_clip);
 
 	call_comm("global-set-command", ed, &b64_attach, 0, NULL, "attach-base64");
 }

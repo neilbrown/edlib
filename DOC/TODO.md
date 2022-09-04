@@ -635,7 +635,7 @@ Module features
 - [ ] in notmuch I searched in a message (mimepart), then enter to choose,
    then 'q' and crash.
 - [ ] A multipart still had an active view.
-- [ ] make base64 much more efficient.  Stepping back from EOF can sync
+- [X] make base64 much more efficient.  Stepping back from EOF can sync
       by counting ='s.  There are always 4n chars. So last for are
       xxxx or xxx= or xx==. RFC2045 guarantees the == with be there.
       Also possibly increase MAX_QUAD a bit - 30?
