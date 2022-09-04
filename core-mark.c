@@ -208,6 +208,23 @@ void mark_free(struct mark *m)
 	editor_delayed_mark_free(m);
 }
 
+static void notify_mark_moving(struct mark *m safe, struct mark *m2)
+{
+	if (m2 && !(m2->flags & MARK_FLAG_MOVED))
+		/* Any mark moved here is notified */;
+	else if (m->flags & MARK_FLAG_MOVED)
+		return;
+	m->flags |= MARK_FLAG_MOVED;
+
+	pane_notify("mark:moving", m->owner, 0, m, NULL, 0, m2);
+}
+
+void mark_ack(struct mark *m)
+{
+	if (m)
+		m->flags &= ~MARK_FLAG_MOVED;
+}
+
 static void mark_ref_copy(struct mark *to safe, struct mark *from safe)
 {
 	if (!mark_valid(to) || !mark_valid(from))
@@ -257,6 +274,7 @@ struct mark *do_mark_at_point(struct mark *pt safe, int view)
 		tlist_add(&ret->view, GRP_MARK, &lnk->lists[view]);
 	else
 		INIT_TLIST_HEAD(&ret->view, GRP_MARK);
+	notify_mark_moving(ret, pt);
 	return ret;
 }
 
@@ -287,6 +305,7 @@ struct mark *safe point_dup(struct mark *p safe)
 			INIT_TLIST_HEAD(&lnk->lists[i], GRP_LIST);
 		else
 			tlist_add(&lnk->lists[i], GRP_LIST, &old->lists[i]);
+	notify_mark_moving(ret, p);
 	return ret;
 }
 
@@ -334,6 +353,7 @@ struct mark *safe mark_dup(struct mark *m safe)
 	dup_mark(m, ret);
 	ret->viewnum = MARK_UNGROUPED;
 	INIT_TLIST_HEAD(&ret->view, GRP_MARK);
+	notify_mark_moving(ret, m);
 	return ret;
 }
 
@@ -355,22 +375,8 @@ struct mark *safe mark_dup_view(struct mark *m safe)
 		INIT_TLIST_HEAD(&ret->view, GRP_MARK);
 	else
 		tlist_add(&ret->view, GRP_MARK, &m->view);
+	notify_mark_moving(ret, m);
 	return ret;
-}
-
-static void notify_mark_moving(struct mark *m safe)
-{
-	if (m->flags & MARK_FLAG_MOVED)
-		return;
-	m->flags |= MARK_FLAG_MOVED;
-
-	pane_notify("mark:moving", m->owner, 0, m);
-}
-
-void mark_ack(struct mark *m)
-{
-	if (m)
-		m->flags &= ~MARK_FLAG_MOVED;
 }
 
 void mark_to_end(struct pane *p safe, struct mark *m safe, int end)
@@ -383,7 +389,7 @@ void mark_to_end(struct pane *p safe, struct mark *m safe, int end)
 		return;
 
 	ASSERT(m->owner == p);
-	notify_mark_moving(m);
+	notify_mark_moving(m, NULL);
 
 	hlist_del(&m->all);
 	if (end) {
@@ -697,7 +703,7 @@ static void _mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 	if (m == target)
 		return;
 	if (!mark_same(m, target))
-		notify_mark_moving(m);
+		notify_mark_moving(m, target);
 	if (m->viewnum == MARK_POINT) {
 		/* Lots of linkage to fix up */
 		if (m->seq < target->seq)
@@ -844,7 +850,7 @@ void mark_step(struct mark *m safe, int forward)
 	/* This is called after .ref has been updated, so we can
 	 * assume the point really is moving.
 	 */
-	notify_mark_moving(m);
+	notify_mark_moving(m, NULL);
 
 	if (forward) {
 		for (m2 = mark_next(m);
@@ -871,7 +877,7 @@ void mark_step_sharesref(struct mark *m safe, int forward)
 	/* This is called after .ref has been updated, so we can
 	 * assume the point really is moving.
 	 */
-	notify_mark_moving(m);
+	notify_mark_moving(m, NULL);
 
 	if (forward) {
 		for (m2 = mark_next(m);
