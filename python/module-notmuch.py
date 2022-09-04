@@ -3061,8 +3061,12 @@ class notmuch_message_view(edlib.Pane):
                 # go to start of previous visible part, and mark urls etc
                 self.prev(start)
                 self.call("doc:step-part", start, 0)
-                self.mark_urls(start.dup(), m)
-                self.mark_quotes(start.dup(), m)
+                # at most 50000 chars
+                end = start.dup()
+                self.call("doc:char", end, 50000, m)
+
+                self.mark_urls(start.dup(), end)
+                self.mark_quotes(start.dup(), end)
             self.set_vis(focus, m, vis)
 
     def set_vis(self, focus, m, vis):
