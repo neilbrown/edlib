@@ -138,21 +138,20 @@ static int locate_mark(struct pane *p safe, struct pane *owner,
 	return pos%4;
 }
 
-DEF_CMD(base64_step)
+static int base64_step(struct pane *home safe, struct mark *mark,
+		       int forward, int move)
 {
 	int pos = 0;
-	int forward = ci->num;
-	int move = ci->num2;
 	struct mark *m;
-	struct pane *p = ci->home->parent;
+	struct pane *p = home->parent;
 	wint_t c1, c2, b;
-	struct b64info *bi = ci->home->data;
+	struct b64info *bi = home->data;
 
-	if (!ci->mark)
+	if (!mark)
 		return Enoarg;
-	pos = locate_mark(p, ci->home, bi->view, ci->mark);
+	pos = locate_mark(p, home, bi->view, mark);
 
-	m = mark_dup(ci->mark);
+	m = mark_dup(mark);
 retry:
 	if (forward) {
 		c1 = get_b64(p, m);
@@ -209,7 +208,7 @@ retry:
 		/* Step back to look at the last char read */
 		doc_prev(p, m);
 	if (move)
-		mark_to_mark(ci->mark, m);
+		mark_to_mark(mark, m);
 
 	mark_free(m);
 	return CHAR_RET(b);
@@ -231,7 +230,7 @@ DEF_CMD(base64_char)
 		/* Can never cross 'end' */
 		return Einval;
 	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
-		ret = comm_call(&base64_step, "", ci->home, forward, m, NULL, 1);
+		ret = base64_step(ci->home, m, forward, 1);
 		steps -= forward*2 - 1;
 	}
 	if (end)
@@ -241,7 +240,7 @@ DEF_CMD(base64_char)
 	if (ci->num && (ci->num2 < 0) == forward)
 		return ret;
 	/* Want the 'next' char */
-	return comm_call(&base64_step, "", ci->home, ci->num2 > 0, m, NULL, 0);
+	return base64_step(ci->home, m, ci->num2 > 0, 0);
 }
 
 struct b64c {
