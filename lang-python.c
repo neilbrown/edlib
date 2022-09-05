@@ -1136,6 +1136,7 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 	PyObject *s1, *s2;
 	struct pyret pr;
 	int remain;
+	sighandler_t oldhan;
 
 	if (!pane_valid(self))
 		return NULL;
@@ -1150,8 +1151,12 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 	}
 
 	remain = alarm(0);
+	oldhan = signal(SIGALRM, SIG_DFL);
 	rv = key_handle(&ci);
-	alarm(remain);
+	if (oldhan != SIG_DFL) {
+		signal(SIGALRM, oldhan);
+		alarm(remain);
+	}
 
 	/* Just in case ... */
 	PyErr_Clear();
