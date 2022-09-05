@@ -76,6 +76,10 @@ void time_stop(enum timetype);
 void time_start_key(const char *key safe);
 void time_stop_key(const char *key safe);
 
+int times_up(void);
+void time_starts(void);
+void time_ends(void);
+
 void stat_count(char *name safe);
 
 void stat_free(void);

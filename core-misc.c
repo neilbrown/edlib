@@ -518,3 +518,24 @@ int utf8_round_len(const char *text safe, int len)
 			return len-i;
 	return len;
 }
+
+static time_t timing = 0;
+
+int times_up(void)
+{
+	time_t now;
+	if (!timing)
+		return 0;
+	now = time(NULL);
+	return timing + 15 < now;
+}
+
+void time_starts(void)
+{
+	timing = time(NULL);
+}
+
+void time_ends(void)
+{
+	timing = 0;
+}
