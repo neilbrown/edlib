@@ -95,6 +95,12 @@ DEF_CMD(utf8_char)
 	return utf8_step(ci->home, m, ci->num2 > 0, 0);
 }
 
+DEF_CMD(utf8_byte)
+{
+	return call("doc:char", ci->home->parent, ci->num, ci->mark, ci->str,
+		    ci->num2, ci->mark2, ci->str2, ci->x, ci->y);
+}
+
 struct utf8cb {
 	struct command c;
 	struct command *cb safe;
@@ -191,6 +197,7 @@ void edlib_init(struct pane *ed safe)
 	utf8_map = key_alloc();
 
 	key_add(utf8_map, "doc:char", &utf8_char);
+	key_add(utf8_map, "doc:byte", &utf8_byte);
 	key_add(utf8_map, "doc:content", &utf8_content);
 	/* No doc:content-bytes, that wouldn't make sense */
 

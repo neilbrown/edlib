@@ -85,9 +85,9 @@ static void set_pos(struct mark *m safe, int pos)
 	char ps[2] = "0";
 
 	while (pos < 0)
-		pos += 3;
-	while (pos >= 3)
-		pos -= 3;
+		pos += 4;
+	while (pos >= 4)
+		pos -= 4;
 	ps[0] += pos;
 	attr_set_str(&m->attrs, "b64-pos", ps);
 	mark_ack(m);
@@ -171,10 +171,14 @@ retry:
 	default:
 		b = 0;
 	}
-	if (forward && pos < 2 && move)
-		/* Step back to look at the last char read */
-		doc_prev(p, m);
 	if (move) {
+		if (forward) {
+			if (pos < 2)
+				/* Step back to look at the last char read */
+				doc_prev(p, m);
+			else
+				pos += 1;
+		}
 		mark_to_mark(mark, m);
 		if (forward)
 			set_pos(mark, pos+1);
@@ -255,7 +259,7 @@ struct b64c {
 	bool nobulk;
 };
 
-static int b64_bulk(struct b64c *c, wchar_t first, const char *s safe, int len)
+static int b64_bulk(struct b64c *c safe, wchar_t first, const char *s safe, int len)
 {
 	/* Parse out 4char->3byte section of 's' and then
 	 * pass them to c->cb.
@@ -296,15 +300,16 @@ static int b64_bulk(struct b64c *c, wchar_t first, const char *s safe, int len)
 				   c->size, 0);
 		c->size = 0;
 		if (rv <= 0 || rv > (out_pos - i) + 1) {
-			ret = rv;
+			if (rv <= 0)
+				ret = rv;
 			c->nobulk = True;
 			break;
 		}
 		i += rv;
 		if (i < out_pos)
 			/* Only some was consumed, so need to
-			 * advance c->m by the amount that
-			 * was consumed - in 'home'.
+			 * advance c->m by the amount of chars that
+			 * were consumed - in 'home'.
 			 */
 			call("doc:char", c->home, rv, c->m);
 	}
@@ -325,6 +330,12 @@ DEF_CMD(base64_content_cb)
 	if (ci->x)
 		c->size = ci->x * 3 / 4;
 
+	if (!is_b64(wc))
+		return 1;
+	/* Mark as advances down in the doc so we didn't see it.
+	 * Need to explicitly set pos
+	 */
+	set_pos(ci->mark, (c->pos+1)%4);
 	if (!c->nobulk && wc != '=' && (c->pos % 4) == 0 &&
 	    ci->str && ci->num2 >= 4) {
 		mark_to_mark(c->m, ci->mark);
@@ -333,8 +344,6 @@ DEF_CMD(base64_content_cb)
 			return ret;
 	}
 
-	if (!is_b64(wc))
-		return 1;
 	c2 = from_b64(wc);
 	if (c2 == 64) {
 		/* We've found a padding '=', that's all folks. */
