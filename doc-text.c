@@ -1685,7 +1685,7 @@ DEF_CMD(text_char)
 	if (end && (end->seq < m->seq) != (steps < 0))
 		/* Can never cross 'end' */
 		return Einval;
-	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
+	while (steps && ret != CHAR_RET(WEOF) && (!end || !mark_same(m, end))) {
 		ret = text_step(ci->home, m, forward, 1);
 		steps -= forward*2 - 1;
 	}
@@ -1744,7 +1744,7 @@ DEF_CMD(text_byte)
 	if (end && (end->seq < m->seq) != (steps < 0))
 		/* Can never cross 'end' */
 		return Einval;
-	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
+	while (steps && ret != CHAR_RET(WEOF) && (!end || !mark_same(m, end))) {
 		ret = text_step_bytes(ci->home, m, forward, 1);
 		steps -= forward*2 - 1;
 	}

@@ -119,7 +119,7 @@ DEF_CMD(crop_char)
 	if (end && (end->seq < m->seq) != (steps < 0))
 		/* Can never cross 'end' */
 		return Einval;
-	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
+	while (steps && ret != CHAR_RET(WEOF) && (!end || !mark_same(m, end))) {
 		ret = crop_step(ci->home, m, forward, 1, ci->key);
 		steps -= forward*2 - 1;
 	}

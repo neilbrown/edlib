@@ -369,7 +369,7 @@ DEF_CMD(mp_char)
 	if (end && (end->seq < m->seq) != (steps < 0))
 		/* Can never cross 'end' */
 		return Einval;
-	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
+	while (steps && ret != CHAR_RET(WEOF) && (!end || !mark_same(m, end))) {
 		ret = mp_step(ci->home, m, forward, 1, ci->str);
 		steps -= forward*2 - 1;
 	}
