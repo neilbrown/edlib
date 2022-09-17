@@ -1637,7 +1637,7 @@ static PyObject *pane_repr(Pane *self safe)
 	if (!pane_valid(self))
 		asprintf(&s, "<edlib.Pane FREED!!! %p>", self);
 	else
-		asprintf(&s, "<edlib.Pane %p>", self->pane);
+		asprintf(&s, "<edlib.Pane %p-%s>", self->pane, self->pane->name);
 	ret = Py_BuildValue("s", s);
 	free(s);
 	return ret;
@@ -1650,7 +1650,7 @@ static PyObject *doc_repr(Doc *self safe)
 	if (!doc_valid(self))
 		asprintf(&s, "<edlib.Doc FREED!!! %p>", self);
 	else
-		asprintf(&s, "<edlib.Doc %p>", self->pane);
+		asprintf(&s, "<edlib.Doc %p-%s>", self->pane, self->pane->name);
 	ret = Py_BuildValue("s", s);
 	free(s);
 	return ret;
