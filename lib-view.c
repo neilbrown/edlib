@@ -45,7 +45,7 @@ static struct pane *do_view_attach(struct pane *par, int border);
 static int calc_border(struct pane *p safe);
 
 static char default_status[] =
-	"{!CountLines}M:{doc-modified?,*,-}{doc-readonly?,%%,  } D:{doc-file-changed?,CHANGED:,}{doc-name:-15} L{^line}/{lines} {display-context}{render-default}/{view-default} {doc-status}";
+	"{!CountLines}M:{doc-modified?,*,-}{doc-readonly?,%%,  } D:{doc-file-changed?,CHANGED:,}{doc-name%-15} L{^line}/{lines} {display-context}{render-default}/{view-default} {doc-status}";
 static char default_title[] =
 	"{doc-name}";
 
@@ -100,6 +100,11 @@ static char *format_status(char *status safe,
 		if (!attr)
 			attr = "";
 		switch (type) {
+		case '%': /* make spaces visible */
+			if (attr[0] <= ' ' ||
+			    (attr[0] && attr[strlen(attr)-1] <= ' '))
+				attr = strconcat(focus, "\"", attr, "\"");
+			/* fallthrough */
 		case ':':
 			/* Format in a field */
 			width = atoi(f+l+1);

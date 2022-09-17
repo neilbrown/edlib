@@ -479,10 +479,10 @@ Module features
 
 ### lib-view
 
-- [1] easy way for minor-modes to report existence in status bar
+- [X] easy way for minor-modes to report existence in status bar
 - [ ] review use of line-drawing chars for window boarders
 - [ ] improve scroll bars
-- [1] make (trailing) space/tab in doc name visible
+- [X] make (trailing) space/tab in doc name visible
 - [ ] review decision about that to do when high < 3*border-height.
       Current (disabled) code makes a mess when differing scales causes
       borders to be shorter than content.
