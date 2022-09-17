@@ -222,7 +222,7 @@ class autospell_view(edlib.Pane):
     def map_attr(self, key, focus, str1, str2, mark, comm2, **a):
         "handle:map-attr"
         if not str1 or not mark or not comm2:
-            return edlib.Enoarg
+            return edlib.Efallthrough
         if str1 == "render:spell-incorrect":
             comm2("cb", focus, int(str2), mark, "fg:red-80,underline", 120)
         return edlib.Efallthrough
