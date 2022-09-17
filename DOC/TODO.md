@@ -716,7 +716,7 @@ Module features
 ### Presenter
 
 - [1] split into lower pane which parse markdown and upper which handles presentation.
-- [1] command to immediately change current pane in to presenter view
+- [X] command to immediately change current pane in to presenter view
 - [ ] translucent bg colour for paragraphs
 - [ ] partial-view-points. Only render beyond here if mark here or beyond.
     page-down goes to next such point

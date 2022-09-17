@@ -79,6 +79,15 @@ class PresenterPane(edlib.Pane):
         self['background'] = 'color:yellow'
         self['hide-cursor'] = 'yes'
 
+    def handle_commit(self, key, focus, **a):
+        "handle:Commit"
+        self.close()
+        return 1
+    def map_attr(self, key, **a):
+        "handle:map-attr"
+        # we don't want want mapping happening, because we don't handle it.
+        return 1
+
     def first_page(self):
         return self.vmarks(self.pageview)[0]
 
@@ -94,14 +103,14 @@ class PresenterPane(edlib.Pane):
     def get_line_at(self, m):
         # call render-line at m
         try:
-            s = self.parent.call("doc:render-line", m, -1, ret = 'str')
+            s = self.parent.call("doc:render-line", self, m, -1, ret = 'str')
         except:
             s = ''
         return s if s else ''
 
     def get_line_before(self, m):
         m2 = m.dup()
-        ret = self.parent.call("doc:render-line-prev", m2, 1)
+        ret = self.parent.call("doc:render-line-prev", self, m2, 1)
         if ret <= 0:
             return None
         l = self.get_line_at(m2)
@@ -722,6 +731,20 @@ class MarkdownPane(edlib.Pane):
                           lambda key, **a: mark.to_mark(a['mark'])) > 0:
                 return 1
         return edlib.Efallthrough
+
+    def handle_commit(self, key, focus, **a):
+        "handle:Commit"
+        p = focus
+        while p != p.parent:
+            edlib.LOG(p == self, p)
+            p = p.parent
+        par = self
+        edlib.LOG("try", par, par.parent);
+        p = PresenterPane(par.parent)
+        if p:
+            p.call("attach-viewer")
+            par.close()
+        return 1
 
 def present_attach(key, focus, comm2, **a):
     p = PresenterPane(focus)
