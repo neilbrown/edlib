@@ -562,7 +562,8 @@ Module features
       '--' can do tag removal.
 - [1] messages shouldn't disappear from open thread when background refresh happens.
 - [X] archived threads SHOULD disappear when a query is closed.
-- [1] add command to go to first new message? 'N'?
+- [X] add command to go to first new message? 'N'?
+      'N' is next-thread.  'j' to jump to the next thread?
 - [ ] saved queries that are not mentioned in any other query should get
       presented in the search list. ... except maybe current/unread/new ???
 - [ ] if a thread matched query and so is still cached, but no

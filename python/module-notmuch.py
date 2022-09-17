@@ -2035,6 +2035,29 @@ class notmuch_master_view(edlib.Pane):
         p.call("notmuch:select", m, direction)
         return 1
 
+    def handle_j(self, key, focus, **a):
+        "handle:doc:char-j"
+        # jump to the next new/unread message/thread
+        p = self.query_pane
+        if not p:
+            return 1
+        m = p.call("doc:dup-point", 0, edlib.MARK_UNGROUPED, ret='mark')
+        p.call("Move-Line", m, 1)
+        tg = p.call("doc:get-attr", m, "tags", ret='str')
+        while tg is not None:
+            tl = tg.split(',')
+            if "unread" in tl:
+                break
+            p.call("Move-Line", m, 1)
+            tg = p.call("doc:get-attr", m, "tags", ret='str')
+        if tg is None:
+            focus.call("Message", "All messsages read!")
+            return 1
+        p.call("Move-to", m)
+        if self.message_pane:
+            p.call("notmuch:select", m, 1)
+        return 1
+
     def handle_move_thread(self, key, **a):
         "handle-list/doc:char-N/doc:char-P"
         p = self.query_pane
