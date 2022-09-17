@@ -51,6 +51,7 @@ class CapturePane(edlib.Pane):
         focus.call("window:request:Keystroke-notify", self)
         focus.call("window:request:macro:capture-active", self)
         focus.call("window:request:macro:capture-done", self)
+        focus.call("Mode:set-mode", str2 = "()")
         self.line = []
 
     def capture_active(self, key, focus, **a):
@@ -74,6 +75,7 @@ class CapturePane(edlib.Pane):
                 ret = self.call("history:add", docname, macro_join(self.line))
             if ret == 0:
                 ret = edlib.Efalse
+        focus.call("Mode:set-mode", str2 = "")
         self.close()
         return ret
 

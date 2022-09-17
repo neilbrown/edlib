@@ -445,7 +445,7 @@ Module features
 
 - [ ] detect errors including Abort and search failure etc. Abort capture or
       replay on error
-- [1] 'capturing' state should be visible in status line.
+- [X] 'capturing' state should be visible in status line.
 - [ ] Possibly wait for a shell-command etc to complete before continuing.
 
 ### doc-dir

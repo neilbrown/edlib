@@ -52,6 +52,7 @@
 #define LOGSIZE 128
 struct input_mode {
 	const char	*mode safe;
+	const char	*context safe; /* for status lines */
 	int		num, num2;
 	struct pane	*focus, *source, *grab;
 	struct mark	*point;
@@ -132,10 +133,16 @@ DEF_CMD(set_mode)
 {
 	struct input_mode *im = ci->home->data;
 
-	if (!ci->str)
-		return Enoarg;
-	free((void*)im->mode);
-	im->mode = strdup(ci->str);
+	if (ci->str) {
+		free((void*)im->mode);
+		im->mode = strdup(ci->str);
+	}
+	if (ci->str2) {
+		free((void*)im->context);
+		im->context = strdup(ci->str2);
+		attr_set_str(&ci->home->attrs, "display-context", im->context);
+		call("window:notify:display-context", ci->home);
+	}
 	report_status(ci->focus, im);
 	return 1;
 }
@@ -164,6 +171,12 @@ DEF_CMD(set_all)
 	if (ci->str) {
 		free((void*)im->mode);
 		im->mode = strdup(ci->str);
+	}
+	if (ci->str2) {
+		free((void*)im->context);
+		im->context = strdup(ci->str2);
+		attr_set_str(&ci->home->attrs, "display-context", im->context);
+		call("window:notify:display-context", ci->home);
 	}
 	im->num = ci->num;
 	im->num2 = ci->num;
@@ -535,6 +548,8 @@ DEF_CMD(input_free)
 
 	for (i = 0; i < 3; i++)
 		free(im->buttons[i].mod);
+	free((void*)im->mode);
+	free((void*)im->context);
 	unalloc(im, pane);
 	return 1;
 }
@@ -573,6 +588,7 @@ DEF_CMD(input_attach)
 
 	alloc(im, pane);
 	im->mode = strdup("");
+	im->context = strdup("");
 	im->num = NO_NUMERIC;
 	im->num2 = 0;
 

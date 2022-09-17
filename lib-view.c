@@ -45,7 +45,7 @@ static struct pane *do_view_attach(struct pane *par, int border);
 static int calc_border(struct pane *p safe);
 
 static char default_status[] =
-	"{!CountLines}M:{doc-modified?,*,-}{doc-readonly?,%%,  } D:{doc-file-changed?,CHANGED:,}{doc-name:-15} L{^line}/{lines} {render-default}/{view-default} {doc-status}";
+	"{!CountLines}M:{doc-modified?,*,-}{doc-readonly?,%%,  } D:{doc-file-changed?,CHANGED:,}{doc-name:-15} L{^line}/{lines} {display-context}{render-default}/{view-default} {doc-status}";
 static char default_title[] =
 	"{doc-name}";
 
@@ -405,6 +405,8 @@ static struct pane *do_view_attach(struct pane *par, int border)
 	call("doc:request:doc:status-changed", p);
 	call("doc:request:doc:replaced", p);
 	call("doc:request:mark:moving", p);
+	/* And update display-context */
+	call("window:request:display-context", p);
 	return p;
 }
 
@@ -535,6 +537,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(view_map, "doc:replaced", &view_status_changed);
 	key_add(view_map, "mark:moving", &view_status_changed);
 	key_add(view_map, "view:changed", &view_status_changed);
+	key_add(view_map, "display-context", &view_status_changed);
 	key_add(view_map, "render:reposition", &view_reposition);
 	key_add(view_map, "Notify:clip", &view_clip);
 
