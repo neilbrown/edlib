@@ -2773,9 +2773,15 @@ class notmuch_query_view(edlib.Pane):
                     mark.to_mark(self.thread_start)
                 if mark >= self.thread_end:
                     ret = edlib.WEOF
+                    if mark.pos:
+                        focus.call("doc:set-ret", mark, 0)
+                        mark.step(0)
                 else:
                     ret = self.parent.call("doc:char", focus, mark,
                                            1 if move else 0, 0 if move else 1)
+                    if mark.pos and mark.pos[0] != self.selected:
+                        focus.call("doc:set-ref", mark, 0)
+                        mark.step(0)
             else:
                 if mark <= self.thread_start:
                     # at start already
