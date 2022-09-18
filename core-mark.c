@@ -379,6 +379,7 @@ struct mark *safe mark_dup_view(struct mark *m safe)
 	return ret;
 }
 
+/* if 'end', move mark after all other marks, else move before all others */
 void mark_to_end(struct pane *p safe, struct mark *m safe, int end)
 {
 	struct doc *d = p->data;

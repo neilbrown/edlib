@@ -1812,7 +1812,7 @@ static PyObject *to_end(Doc *self safe, PyObject *args)
 	if (!doc_valid(self))
 		return NULL;
 
-	ret = PyArg_ParseTuple(args, "O!i", &MarkType, &mark, &end);
+	ret = PyArg_ParseTuple(args, "O!p", &MarkType, &mark, &end);
 	if (ret <= 0 || !mark || !mark_valid(mark->mark)) {
 		PyErr_SetString(PyExc_TypeError, "Mark undefined or uninitialized");
 		return NULL;
@@ -2127,12 +2127,12 @@ static PyObject *Mark_clip(Mark *self safe, PyObject *args)
 {
 	Mark *start = NULL, *end = NULL;
 	int tostart = 0;
-	int ret = PyArg_ParseTuple(args, "O!O!|i", &MarkType, &start,
+	int ret = PyArg_ParseTuple(args, "O!O!|p", &MarkType, &start,
 				   &MarkType, &end, &tostart);
 
 	if (ret > 0 && start && end && mark_valid(self->mark) &&
 	    mark_valid(start->mark) && mark_valid(end->mark))
-		mark_clip(self->mark, start->mark, end->mark, !!tostart);
+		mark_clip(self->mark, start->mark, end->mark, tostart);
 
 	Py_INCREF(Py_None);
 	return Py_None;
