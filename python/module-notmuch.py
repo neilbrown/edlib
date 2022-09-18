@@ -481,7 +481,7 @@ class notmuch_main(edlib.Doc):
 
     def handle_set_ref(self, key, mark, num, **a):
         "handle:doc:set-ref"
-        self.to_end(mark, num == 0)
+        self.to_end(mark, num != 1)
         if num == 1:
             mark.pos = 0
         else:
@@ -1422,7 +1422,7 @@ class notmuch_query(edlib.Doc):
 
     def handle_set_ref(self, key, mark, num, **a):
         "handle:doc:set-ref"
-        self.to_end(mark, num == 0)
+        self.to_end(mark, num != 1)
         mark.pos = None
         if num == 1 and len(self.threadids) > 0:
             self.setpos(mark, self.threadids[0], 0)
@@ -2658,7 +2658,8 @@ class notmuch_query_view(edlib.Pane):
     def close_thread(self, gone = False):
         if not self.selected:
             return None
-        # old thread is disappearing.
+        # old thread is disappearing.  If if is not gone, clip marks
+        # to start, else clip to next thread.
         self.leaf.call("Notify:clip", self.thread_start, self.thread_end,
                        0 if gone else 1)
         self.leaf.call("view:changed", self.thread_start, self.thread_end)
