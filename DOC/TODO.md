@@ -579,7 +579,7 @@ Module features
       exist, or not be readable
 - [ ] allow opening drafts in composer on restart.
 - [ ] allow deleting of drafts without posting.  Maybe just 'delete'..
-- [1] option to wrap subjects onto next line
+- [1] option to wrap subjects onto next line - in query view
 - [ ] When active query changes, highlight on list view doesn't immediately
       follow
 - [ ] TESTS
@@ -625,8 +625,8 @@ Module features
       non-existing file.  Allow a default dir which can be remembered.
       Use this for Emacs, and for saving attachments
 - [ ] when unhiding for a alternate part, hide any others.
-- [1] separate measuring and drawing images
-- [1] allow images to be full width, and less than half height
+- [X] separate measuring and drawing images
+- [X] allow images to be full width, and less than half height
 - [1] allow cursor movement in image: maybe 9x9 positions
 - [X] ensure multipart ends each part with an eol.
 - [ ] next part/prev part button on spacer

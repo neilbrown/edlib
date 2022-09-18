@@ -219,13 +219,19 @@ DEF_CMD(email_image)
 	char *c = NULL;
 	int p;
 	int ret;
+	struct xy scale;
 
 	if (!ci->mark)
 		return Enoarg;
 	p = get_part(ci->home, ci->mark);
 	doc_next(ci->focus, ci->mark);
-	asprintf(&c, "<image:comm:doc:multipart-%d-doc:get-bytes,noupscale>\n",
-		 to_orig(p));
+	scale = pane_scale(ci->focus);
+	if (scale.x < 1)
+		scale.x = 1;
+	asprintf(&c, "<image:comm:doc:multipart-%d-doc:get-bytes,width:%d,height:%d,noupscale>\n",
+		 to_orig(p),
+		 ci->focus->w * 1000 / scale.x,
+		 ci->focus->h * 750 / scale.x);
 	ret = comm_call(ci->comm2, "callback:render", ci->focus,
 			0, NULL, c);
 	free(c);
