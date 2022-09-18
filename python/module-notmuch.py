@@ -2658,10 +2658,18 @@ class notmuch_query_view(edlib.Pane):
     def close_thread(self, gone = False):
         if not self.selected:
             return None
-        # old thread is disappearing.  If if is not gone, clip marks
+        # old thread is disappearing.  If it is not gone, clip marks
         # to start, else clip to next thread.
         self.leaf.call("Notify:clip", self.thread_start, self.thread_end,
                        0 if gone else 1)
+        if self.whole_thread:
+            # And clip anything after (at eof) to thread_end
+            eof = edlib.Mark(self)
+            self.leaf.call("doc:set-ref", eof, 0)
+            eof.step(1)
+            eof.index = 1 # make sure all eof marks are different
+            self.leaf.call("Notify:clip", self.thread_end, eof, 1)
+            eof.index = 0
         self.leaf.call("view:changed", self.thread_start, self.thread_end)
         self.selected = None
         self.thread_start = None
@@ -2890,6 +2898,14 @@ class notmuch_query_view(edlib.Pane):
                     self.parent.next(mk)
             else:
                 focus.call("Notify:clip", self.thread_start, self.thread_end)
+            # everything after to EOF moves to thread_end.
+            eof = edlib.Mark(self)
+            self.leaf.call("doc:set-ref", eof, 0)
+            eof.step(1)
+            eof.offset = 1 # make sure all eof marks are different
+            self.leaf.call("Notify:clip", self.thread_end, eof, 1)
+            eof.offset = 0
+
             self['doc-status'] = "Query: %s" % self['qname']
         else:
             # everything before the thread, and after the thread disappears
