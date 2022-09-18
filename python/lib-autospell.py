@@ -214,9 +214,9 @@ class autospell_view(edlib.Pane):
     def handle_clip(self, key, mark, mark2, num, **a):
         "handle:Notify:clip"
         if self.vstart:
-            self.vstart.clip(mark, mark2)
+            self.vstart.clip(mark, mark2, num)
         if self.vend:
-            self.vend.clip(mark, mark2)
+            self.vend.clip(mark, mark2, num)
         return edlib.Efallthrough
 
     def map_attr(self, key, focus, str1, str2, mark, comm2, **a):
