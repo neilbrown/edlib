@@ -63,6 +63,7 @@ static void pane_init(struct pane *p safe, struct pane *par)
 	p->data = safe_cast NULL;
 	p->damaged = 0;
 	p->attrs = NULL;
+	p->refs = 1;
 }
 
 static void __pane_check(struct pane *p safe)
@@ -591,8 +592,14 @@ void pane_close(struct pane *p safe)
 		command_put(p->handle);
 		p->handle = NULL;
 		attr_free(&p->attrs);
-		free(p);
+		pane_put(p);
 	}
+}
+
+void pane_free(struct pane *p safe)
+{
+	if (p->refs == 0)
+		unalloc_safe(p, pane);
 }
 
 void pane_resize(struct pane *p safe, int x, int y, int w, int h)

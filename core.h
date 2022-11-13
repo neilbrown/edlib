@@ -76,7 +76,7 @@ struct pane {
 	short			data_size;	/* only needed by edlib_do_free */
 
 	int			marks;
-
+	int			refs;
 	/* timestamp is low bits of time in milliseconds when some
 	 * command started.  This makes it easy to check when we
 	 * have done too much work
@@ -545,6 +545,17 @@ static inline int pane_attr_get_int(struct pane *p safe, const char *key safe,
 	if (end == c || !end || *end)
 		return dflt;
 	return rv;
+}
+void pane_free(struct pane *p safe);
+static inline struct pane *pane_get(struct pane *p safe) safe
+{
+	p->refs += 1;
+	return p;
+}
+static inline void pane_put(struct pane *p safe)
+{
+	p->refs -= 1;
+	pane_free(p);
 }
 
 /* Inlines */

@@ -321,7 +321,7 @@ DEF_CMD(editor_clean_up)
 		command_put(p->handle);
 		p->handle = NULL;
 		attr_free(&p->attrs);
-		unalloc(p, pane);
+		pane_put(p);
 	}
 	while (ei->mark_free_list) {
 		struct mark *m = ei->mark_free_list;
@@ -480,7 +480,7 @@ void editor_delayed_free(struct pane *ed safe, struct pane *p safe)
 		command_put(p->handle);
 		p->handle = NULL;
 		attr_free(&p->attrs);
-		unalloc_safe(p, pane);
+		pane_free(p);
 		return;
 	}
 	ASSERT(ei->magic==ED_MAGIC);

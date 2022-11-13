@@ -193,7 +193,11 @@ static inline PyObject *safe Pane_Frompane(struct pane *p)
 		in_pane_frompane = 1;
 		pane = (Pane *)PyObject_CallObject((PyObject*)&PaneType, NULL);
 		in_pane_frompane = 0;
-		if (pane)
+		if (!pane)
+			;
+		else if (p)
+			pane->pane = pane_get(p);
+		else
 			pane->pane = p;
 	}
 	return (PyObject*)pane;
@@ -670,6 +674,7 @@ static void python_pane_free(struct command *c safe)
 		Doc *d = (Doc*)p;
 		doc_free(&d->doc, safe_cast pn);
 	}
+	pane_put(safe_cast pn);
 	Py_DECREF(p);
 }
 
@@ -746,6 +751,8 @@ static int Pane_init(Pane *self safe, PyObject *args, PyObject *kwds)
 	Py_INCREF(self);
 	self->pane = pane_register(parent ? parent->pane : NULL,
 				   z, &self->cmd, self);
+	if (self->pane)
+		pane_get(self->pane);
 	return 0;
 }
 
@@ -761,6 +768,8 @@ static int Doc_init(Doc *self, PyObject *args, PyObject *kwds)
 	self->cmd.func = python_doc_call_func;
 	self->pane = __doc_register(parent ? parent->pane : NULL,
 				    &self->cmd, &self->doc, self, 0);
+	if (self->pane)
+		pane_get(self->pane);
 	self->doc.refcnt = mark_refcnt;
 	return 0;
 }
@@ -780,6 +789,8 @@ static void python_pane_free_final(struct command *c safe)
 {
 	Pane *p = container_of(c, Pane, cmd);
 
+	if (p->pane)
+		pane_put(p->pane);
 	python_pane_free(c);
 	do_free((PyObject*safe)p);
 }
@@ -801,8 +812,11 @@ static void pane_dealloc(Pane *self safe)
 		p->handle = &python_null_call;
 		p->handle->free = python_pane_free_final;
 		pane_close(p);
-	} else
+	} else {
+		if (p)
+			pane_put(p);
 		do_free((PyObject*safe)self);
+	}
 }
 
 static PyObject *pane_children(Pane *self safe, PyObject *args)
