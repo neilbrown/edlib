@@ -34,6 +34,7 @@ struct logbuf {
 static struct log {
 	struct doc		doc;
 	struct list_head	log;
+	int blocked;
 } *log_doc safe;
 
 static struct pane *log_pane;
@@ -74,7 +75,9 @@ void LOG(char *fmt, ...)
 		return;
 	if (!fmt)
 		return;
-
+	if (log_doc->blocked)
+		return;
+	log_doc->blocked = 1;
 	gettimeofday(&now, NULL);
 	b = get_buf(log_doc);
 	va_start(ap, fmt);
@@ -109,6 +112,7 @@ void LOG(char *fmt, ...)
 	b->end += n;
 	if (log_pane)
 		pane_notify("doc:replaced", log_pane, 1);
+	log_doc->blocked = 0;
 }
 
 DEF_CMD(log_append)
