@@ -32,11 +32,12 @@
  * 1 - 1/4 width of parent
  * 2 - 1/2 width of parent (default)
  * 3 - 3/4 width of parent
- * 4 - full with
+ * 4 - full width
  * T - at top of parent (default is centred)
  * B - at bottom of parent
  * L - at left of parent (default is centred)
  * R - at right of parent
+ * x - x,y passed with PopupTile set location of top-left.
  * s - border at bottom to show document status
  * a - allow recursive popups
  * r - permit this popup even inside non-recursive popups
@@ -68,7 +69,8 @@ static int line_height(struct pane *p safe, int scale)
 	return cr.y;
 }
 
-static void popup_resize(struct pane *p safe, const char *style safe)
+static void popup_resize(struct pane *p safe, const char *style safe,
+			 short cix, short ciy)
 {
 	struct popup_info *ppi = p->data;
 	int x,y,w,h;
@@ -117,6 +119,13 @@ static void popup_resize(struct pane *p safe, const char *style safe)
 		if (strchr(style, 'B')) { h -= bh; y = p->parent->h - h; }
 		if (strchr(style, 'L')) x = 0;
 		if (strchr(style, 'R')) x = p->parent->w - w;
+		if (strchr(style, 'x')) {
+			x = cix; y = ciy;
+			if (p->w > 0)
+				w = p->w;
+			if (p->h > 0)
+				h = p->h;
+		}
 	}
 	pane_resize(p, x, y, w, h);
 }
@@ -247,7 +256,7 @@ DEF_CMD(popup_style)
 	ppi->style = strdup(ci->str);
 	if (popup_set_style(ci->home))
 		call("view:changed", ci->focus);
-	popup_resize(ci->home, ppi->style);
+	popup_resize(ci->home, ppi->style, ci->home->x, ci->home->y);
 	return 1;
 }
 
@@ -279,7 +288,7 @@ DEF_CMD(popup_refresh_size)
 	}
 
 	popup_set_style(ci->home);
-	popup_resize(ci->home, ppi->style);
+	popup_resize(ci->home, ppi->style, ci->home->x, ci->home->y);
 	return 0;
 }
 
@@ -531,7 +540,7 @@ DEF_CMD(popup_attach)
 		return Efail;
 	ppi->style = strdup(style);
 	popup_set_style(p);
-	popup_resize(p, style);
+	popup_resize(p, style, ci->x, ci->y);
 	attr_set_str(&p->attrs, "render-wrap", "no");
 
 	pane_add_notify(p, ppi->target, "Notify:Close");
