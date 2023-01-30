@@ -3097,6 +3097,8 @@ class notmuch_message_view(edlib.Pane):
             for  el in path.split(','):
                 if el.startswith("alternative:") and not el.startswith("alternative:0"):
                     vis = False
+            if type == "text/calendar":
+                vis = True
             if type[:4] != "text" and type != "":
                 vis = False
             if type.startswith("image/"):

@@ -630,7 +630,7 @@ Module features
 - [1] allow cursor movement in image: maybe 9x9 positions
 - [X] ensure multipart ends each part with an eol.
 - [ ] next part/prev part button on spacer
-- [ ] handle calendar attachments.
+- [X] handle calendar attachments.
 - [ ] closing a large section pushed cursor to top of display, which
       isn't really what I want.  I'd rather the cursor stayed still.
 - [ ] in notmuch I searched in a message (mimepart), then enter to choose,
