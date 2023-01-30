@@ -632,8 +632,10 @@ DEF_CMD(xcb_text_size)
 
 	if (scale <= 0)
 		scale = 1000;
+	if (!utf8_valid(str))
+		str = "*INV*";
 	parse_attrs(ci->home, attr, scale, NULL, NULL, NULL, &fd);
-	/* If we use an empty string, line-height it wrong */
+	/* If we use an empty string, line-height is wrong */
 	layout = pango_cairo_create_layout(xd->cairo);
 	pango_layout_set_text(layout, *str ? str : "M", -1);
 	pango_layout_set_font_description(layout, fd);
@@ -686,6 +688,9 @@ DEF_CMD(xcb_draw_text)
 	ctx = ps->ctx;
 	if (!ctx)
 		return Efail;
+
+	if (!utf8_valid(str))
+		str = "*INV*";
 
 	pane_damaged(ci->home, DAMAGED_POSTORDER);
 

@@ -487,6 +487,18 @@ int utf8_strnlen(const char *s safe, int n)
 	return cnt;
 }
 
+int utf8_valid(const char *s safe)
+{
+	wint_t c;
+
+	while ((c = get_utf8(&s, NULL)) != WEOF) {
+		if (c == WERR ||
+		    c > 0x10FFFF)
+			return 0;
+	}
+	return 1;
+}
+
 /*
  * When walking backwards through a string, we need to round a point
  * down to the start of a code-point.

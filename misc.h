@@ -21,6 +21,7 @@ char *safe put_utf8(char *buf safe, wchar_t ch);
 int utf8_strlen(const char *s safe);
 int utf8_strnlen(const char *s safe, int n);
 int utf8_round_len(const char *text safe, int len);
+int utf8_valid(const char *s safe);
 static inline int utf8_bytes(wchar_t ch)
 {
 	if (ch < 0x80)
