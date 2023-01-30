@@ -513,6 +513,11 @@ int key_handle(const struct cmd_info *ci safe)
 	struct pane *p;
 	unsigned int hash[2];
 
+	if (ci->mark && !mark_valid(ci->mark))
+		return Einval;
+	if (ci->mark2 && !mark_valid(ci->mark2))
+		return Einval;
+
 	if (times_up())
 		return Efail;
 	time_start_key(ci->key);
