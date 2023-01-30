@@ -3093,6 +3093,21 @@ class notmuch_message_view(edlib.Pane):
                 focus.call("doc:set-attr", "multipart-prev:email:prefix", m, prefix)
                 focus.call("doc:set-attr", "multipart-prev:email:actions", m,
                            "hide:save:external view");
+
+            if type.startswith("text/"):
+                # mark up URLs and quotes in any text part.
+                # The part needs to be visible while we do this.
+                # Examine at most 50000 chars from the start.
+                self.set_vis(focus, m, True)
+                start = m.dup()
+                self.prev(start)
+                self.call("doc:step-part", start, 0)
+                end = start.dup()
+                self.call("doc:char", end, 50000, m)
+
+                self.mark_urls(start, end)
+                self.mark_quotes(start, end)
+
             vis = True
             for  el in path.split(','):
                 if el.startswith("alternative:") and not el.startswith("alternative:0"):
@@ -3103,18 +3118,6 @@ class notmuch_message_view(edlib.Pane):
                 vis = False
             if type.startswith("image/"):
                 vis = True
-            if type.startswith("text/"):
-                self.set_vis(focus, m, True)
-                start = m.dup()
-                # go to start of previous visible part, and mark urls etc
-                self.prev(start)
-                self.call("doc:step-part", start, 0)
-                # at most 50000 chars
-                end = start.dup()
-                self.call("doc:char", end, 50000, m)
-
-                self.mark_urls(start.dup(), end)
-                self.mark_quotes(start.dup(), end)
             self.set_vis(focus, m, vis)
 
     def set_vis(self, focus, m, vis):
@@ -3128,6 +3131,7 @@ class notmuch_message_view(edlib.Pane):
             focus.call("doc:set-attr", "email:visible", m, "none")
 
     def mark_urls(self, ms, me):
+        ms = ms.dup()
         while ms < me:
             try:
                 len = self.call("text-search",
@@ -3152,6 +3156,7 @@ class notmuch_message_view(edlib.Pane):
         # if we find more than 7 quoted lines in a row, we add the
         # 4th and 4th-last to the qview with the first of these
         # having a 'quote-length' attr with number of lines
+        ms = ms.dup()
         while ms < me:
             try:
                 self.call("text-search", "^>", ms, me)
