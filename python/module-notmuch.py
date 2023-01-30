@@ -3064,6 +3064,7 @@ class notmuch_message_view(edlib.Pane):
         # a 'view' for recording where quoted sections are
         self.qview = focus.call("doc:add-view", self) - 1
 
+        choose = {}
         m = edlib.Mark(focus)
         while True:
             self.call("doc:step-part", m, 1)
@@ -3108,16 +3109,61 @@ class notmuch_message_view(edlib.Pane):
                 self.mark_urls(start, end)
                 self.mark_quotes(start, end)
 
-            vis = True
-            for  el in path.split(','):
-                if el.startswith("alternative:") and not el.startswith("alternative:0"):
-                    vis = False
-            if type == "text/calendar":
+            # When presented with alternatives we are supposed to show
+            # the last alternative that we understand.  However html is
+            # only partly understood, so I only want to show that if
+            # there is no other option.
+            # An alternate may contain many parts and we need to make
+            # everything invisible within an invisible part - and we only
+            # know which is invisible when we get to the end.
+            # So record the visibility of each group of alternatives
+            # now, and the walk through again setting visibility.
+            p = path.split(',')
+            if p[-1].startswith("alternative:"):
+                # this is one of several - can we handle it?
+                group = ','.join(p[:-1])
+                this = p[-1][12:]
+                if type in ['text/plain', 'text/calendar', 'text/rfc822-headers',
+                            'message/rfc822']:
+                    choose[group] = this
+                if type.startswith('image/'):
+                    choose[group] = this
+                if type == 'text/html' and group not in choose:
+                    choose[group] = this
+
+        # Now go through and set visibility for alternates.
+        m = edlib.Mark(focus)
+        while True:
+            self.call("doc:step-part", m, 1)
+            which = focus.call("doc:get-attr", "multipart-this:email:which",
+                               m, ret='str')
+            if not which:
+                break
+            if which != "spacer":
+                continue
+            path = focus.call("doc:get-attr", "multipart-prev:email:path",
+                              m, ret='str')
+            type = focus.call("doc:get-attr", "multipart-prev:email:content-type",
+                              m, ret='str')
+
+            vis = False
+
+            # Is this allowed to be visible by default?
+            if (not type or
+                type.startswith("text/") or
+                type.startswith("image/")):
                 vis = True
-            if type[:4] != "text" and type != "":
-                vis = False
-            if type.startswith("image/"):
-                vis = True
+
+            # Is this in a non-selected alternative?
+            p = []
+            for el in path.split(','):
+                p.append(el)
+                if el.startswith("alternative:"):
+                    group = ','.join(p[:-1])
+                    this = el[12:]
+                    if choose[group] != this:
+                        vis = False
+
             self.set_vis(focus, m, vis)
 
     def set_vis(self, focus, m, vis):
