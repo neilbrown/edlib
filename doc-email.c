@@ -453,7 +453,7 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer, char *disp,
 		}
 		if (xfer && xlen == 4 &&
 		    strncasecmp(xfer, "8bit", 6) == 0)
-			need_charset = 2; // ony if not utf-8
+			need_charset = 2; // only if not utf-8
 	}
 	if (type && need_charset &&
 	    (charset = get_822_attr(type, "charset")) != NULL &&
@@ -476,7 +476,8 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer, char *disp,
 			hx = call_ret(pane, "attach-charset-windows-1251", h);
 		if (hx)
 			h = hx;
-	}
+	} else
+		charset = NULL;
 	if (type && (fname = get_822_attr(type, "name")))
 		fname = strsave(h, fname);
 	if (disp && !fname &&

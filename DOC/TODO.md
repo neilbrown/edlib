@@ -35,7 +35,7 @@ Bugs to be fixed
 - [ ] auto-sign emails..
 - [ ] message must be tagged "replied" when a reply is sent.
 - [ ] if a shell command produces no output, message should be shown
-- [ ] pango_layout_set_text() is sometimes given invalid UTF-8
+- [X] pango_layout_set_text() is sometimes given invalid UTF-8
 - [ ] be sure to wait for xdg-open etc.
 - [ ] things slow down after lots of edits.  Maybe track
       number of chunk, marks, undos etc and display them somewhere
