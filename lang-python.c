@@ -674,7 +674,8 @@ static void python_pane_free(struct command *c safe)
 		Doc *d = (Doc*)p;
 		doc_free(&d->doc, safe_cast pn);
 	}
-	pane_put(safe_cast pn);
+	if (pn)
+		pane_put(pn);
 	Py_DECREF(p);
 }
 
