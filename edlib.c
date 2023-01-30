@@ -137,6 +137,7 @@ int main(int argc, char *argv[])
 				attr_set_str(&p->attrs, "REMOTE_SESSION", "yes");
 
 			attr_set_str(&p->attrs, "DISPLAY", getenv("DISPLAY"));
+			attr_set_str(&p->attrs, "XAUTHORITY", getenv("XAUTHORITY"));
 			p = call_ret(pane, "editor:activate-display", p);
 		}
 		if (p)
@@ -163,7 +164,8 @@ int main(int argc, char *argv[])
 
 	if (x11) {
 		p = call_ret(pane, "attach-display-x11",
-			     ed, 0, NULL, getenv("DISPLAY"));
+			     ed, 0, NULL, getenv("DISPLAY"),
+			     0, NULL, getenv("XAUTHORITY"));
 		if (p)
 			p = call_ret(pane, "editor:activate-display", p);
 		if (p)

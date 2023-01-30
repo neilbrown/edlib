@@ -42,6 +42,19 @@ try:
                 self.close()
                 return edlib.Efalse
             else:
+                words = msg.split(b' ')
+                cmd = words[0].decode('utf-8','ignore')
+                env={}
+                if len(words) > 1:
+                    arg = words[1].decode('utf-8','ignore')
+                for v in words[2:]:
+                    vw = v.split(b'=')
+                    if len(vw) == 2 and vw[0] in [b'TERM',
+                                                  b'DISPLAY',
+                                                  b'XAUTHORITY',
+                                                  b'REMOTE_SESSION']:
+                        env[vw[0].decode("utf-8")] = vw[1].decode("utf-8",'ignore')
+
                 if msg[:10] == b"goto-line:":
                     try:
                         self.lineno = int(msg[10:])
@@ -114,27 +127,20 @@ try:
                     self.want_close = True
                     self.sock.send(b"OK")
                     return 1
-                if msg.startswith(b'x11window ') and not self.term:
-                    d = msg[10:].decode('utf-8','ignore')
-                    p = editor.call("interactive-cmd-x11window", d, ret='pane')
+                if cmd == 'x11window' and not self.term:
+                    p = editor.call("interactive-cmd-x11window",
+                                    arg, env['XAUTHORITY'], ret='pane')
                     if p:
+                        for v in env:
+                            p[v] = env[v]
                         p.call("Window:bury")
+
                     self.term = p
                     self.sock.send(b'OK')
                     return 1
-                if msg.startswith(b"term ") and not self.term:
-                    w = msg.split(b' ')
-                    path = w[1].decode("utf-8", 'ignore')
+                if cmd == 'term' and not self.term:
+                    path = arg
                     p = editor
-
-                    env={}
-                    for v in w[2:]:
-                        vw = v.split(b'=')
-                        if len(vw) == 2 and vw[0] in [b'TERM',
-                                                      b'DISPLAY',
-                                                      b'REMOTE_SESSION']:
-                            env[vw[0].decode("utf-8")] = vw[1].decode("utf-8",'ignore')
-
                     p = p.call("attach-display-ncurses", path, env['TERM'],
                                ret='pane')
                     for v in env:
@@ -247,7 +253,11 @@ if is_client:
         else:
             print("edlibclient: -x not supported unless $DISPLAY is set")
             sys.exit(1)
-        s.send(b"x11window %s" % d.encode())
+        m = [ "x11window", d]
+        for i in ['XAUTHORITY']:
+            if i in os.environ:
+                m.append(i + "=" + os.environ[i])
+        s.send(' '.join(m).encode('utf-8'))
         ret = s.recv(100)
         if ret != b'OK':
             print("Cannot start x11 display:" + ret.decode('utf-8','ignore'))
@@ -256,7 +266,7 @@ if is_client:
         t = os.ttyname(0)
         if t:
             m = ["term", t]
-            for i in ['TERM','DISPLAY']:
+            for i in ['TERM','DISPLAY','XAUTHORITY']:
                 if i in os.environ:
                     m.append(i + "=" + os.environ[i])
             if 'SSH_CONNECTION' in os.environ:

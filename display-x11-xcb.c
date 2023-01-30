@@ -138,6 +138,8 @@ void pango_layout_index_to_pos(PangoLayout*, int, PangoRectangle*);
 #include <xkbcommon/xkbcommon-compose.h>
 #include <xkbcommon/xkbcommon-x11.h>
 
+#include "xcb.h"
+
 #undef True
 #undef False
 #include "core.h"
@@ -175,6 +177,7 @@ struct rgb {
 struct xcb_data {
 	xcb_connection_t	*conn safe;
 	char			*display safe;
+	char			*disp_auth;
 
 	const xcb_setup_t	*setup safe;
 	const xcb_screen_t	*screen safe;
@@ -469,6 +472,8 @@ DEF_CMD(xcb_external_viewer)
 		return Efail;
 	case 0: /* Child */
 		setenv("DISPLAY", xd->display, 1);
+		if (xd->disp_auth)
+			setenv("XAUTHORITY", xd->disp_auth, 1);
 		fd = open("/dev/null", O_RDWR);
 		if (fd) {
 			dup2(fd, 0);
@@ -546,6 +551,7 @@ DEF_CMD(xcb_free)
 	cairo_device_finish(cairo_surface_get_device(xd->surface));
 	cairo_surface_destroy(xd->surface);
 	free(xd->display);
+	free(xd->disp_auth);
 	free(xd->noclose);
 	xcb_disconnect(xd->conn);
 	if (xd->need_update)
@@ -1687,7 +1693,9 @@ static void set_atom_prop(struct xcb_data *xd safe,
 			    32, anum, atoms);
 }
 
-static struct pane *xcb_display_init(const char *d safe, struct pane *focus safe)
+static struct pane *xcb_display_init(const char *d safe,
+				     const char *disp_auth,
+				     struct pane *focus safe)
 {
 	struct xcb_data *xd;
 	struct pane *p;
@@ -1708,7 +1716,7 @@ static struct pane *xcb_display_init(const char *d safe, struct pane *focus safe
 	// FIXME SCALE from environ?? or pango_cairo_context_set_resolution dpi
 	// 254 * width_in_pixels / width_in_millimeters / 10
 
-	conn = safe_cast xcb_connect(d, &screen);
+	conn = safe_cast xcb_connect_auth(d, disp_auth, &screen);
 	if (xcb_connection_has_error(conn))
 		return NULL;
 
@@ -1719,6 +1727,8 @@ static struct pane *xcb_display_init(const char *d safe, struct pane *focus safe
 
 	xd->conn = conn;
 	xd->display = strdup(d);
+	if (disp_auth)
+		xd->disp_auth = strdup(disp_auth);
 	xd->setup = safe_cast xcb_get_setup(conn);
 	iter = xcb_setup_roots_iterator(xd->setup);
 	for (i = 0; i < screen; i++)
@@ -1840,6 +1850,7 @@ static struct pane *xcb_display_init(const char *d safe, struct pane *focus safe
 	call_comm("event:read", p, &xcb_input, xcb_get_file_descriptor(conn));
 	call_comm("event:poll", p, &xcb_input);
 	attr_set_str(&p->attrs, "DISPLAY", d);
+	attr_set_str(&p->attrs, "XAUTHORITY", disp_auth);
 	snprintf(scale, sizeof(scale), "%dx%d", xd->charwidth, xd->lineheight);
 	attr_set_str(&p->attrs, "scale:M", scale);
 	xd->last_event = time(NULL);
@@ -1851,6 +1862,7 @@ abort:
 	cairo_surface_destroy(xd->surface);
 	xcb_disconnect(conn);
 	free(xd->display);
+	free(xd->disp_auth);
 	unalloc(xd, pane);
 	return NULL;
 }
@@ -1862,7 +1874,7 @@ DEF_CMD(display_xcb)
 
 	if (!d)
 		return Enoarg;
-	p = xcb_display_init(d, ci->focus);
+	p = xcb_display_init(d, ci->str2, ci->focus);
 	if (p)
 		return comm_call(ci->comm2, "cb", p);
 	return Efail;
@@ -1872,13 +1884,18 @@ DEF_CMD(xcb_new_display)
 {
 	struct pane *p;
 	const char *d = ci->str;
+	const char *disp_auth = ci->str2;
 
 	if (!d)
 		d = pane_attr_get(ci->focus, "DISPLAY");
+	if (!disp_auth)
+		disp_auth = pane_attr_get(ci->focus, "XAUTHORITY");
+	if (!disp_auth)
+		disp_auth = getenv("XAUTHORITY");
 
 	if (!d)
 		return Enoarg;
-	p = xcb_display_init(d, ci->focus);
+	p = xcb_display_init(d, disp_auth, ci->focus);
 	if (p)
 		p = call_ret(pane, "editor:activate-display", p);
 	if (p)

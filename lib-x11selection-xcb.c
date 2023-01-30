@@ -101,6 +101,7 @@
 #include <xcb/xcb.h>
 #include <xcb/xcbext.h>
 
+#include "xcb.h"
 #include "core.h"
 
 enum my_atoms {
@@ -984,8 +985,13 @@ static struct command *xcb_register(struct pane *p safe, char *display safe)
 	uint32_t valwin[1];
 	int screen;
 	int i;
+	char *disp_auth;
 
-	conn = xcb_connect(display, &screen);
+	disp_auth = pane_attr_get(p, "XAUTHORITY");
+	if (!disp_auth)
+		disp_auth = getenv("XAUTHORITY");
+
+	conn = xcb_connect_auth(display, disp_auth, &screen);
 	if (!conn || xcb_connection_has_error(conn))
 		return NULL;
 

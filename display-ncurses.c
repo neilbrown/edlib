@@ -477,6 +477,7 @@ DEF_CMD(nc_external_viewer)
 	struct pane *p = ci->home;
 	struct display_data *dd = p->data;
 	char *disp = pane_attr_get(p, "DISPLAY");
+	char *disp_auth = pane_attr_get(p, "XAUTHORITY");
 	char *remote = pane_attr_get(p, "REMOTE_SESSION");
 	char *fqdn = NULL;
 	const char *path = ci->str;
@@ -493,6 +494,8 @@ DEF_CMD(nc_external_viewer)
 			return Efail;
 		case 0: /* Child */
 			setenv("DISPLAY", disp, 1);
+			if (disp_auth)
+				setenv("XAUTHORITY", disp_auth, 1);
 			fd = open("/dev/null", O_RDWR);
 			if (fd) {
 				dup2(fd, 0);

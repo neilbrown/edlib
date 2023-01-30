@@ -535,7 +535,7 @@ Module features
 
 ###  edlibclient
 - [ ] Catch broken-pipe in all sock.send calls
-- [ ] client needs to pass XAUTHORITY as well as DISPLAY, and these must be
+- [X] client needs to pass XAUTHORITY as well as DISPLAY, and these must be
       used correctly.
 - [ ] run edlib directly if no socket
 - [ ] option to create a new frame
