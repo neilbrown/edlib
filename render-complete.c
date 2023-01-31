@@ -28,6 +28,7 @@
 
 struct complete_data {
 	char *orig;
+	char *attr;
 	struct stk {
 		struct stk *prev;
 		const char *substr safe;
@@ -158,6 +159,7 @@ DEF_CMD(complete_free)
 		free(t);
 	}
 
+	free(cd->attr);
 	unalloc(cd, pane);
 	return 1;
 }
@@ -219,7 +221,8 @@ DEF_CMD(complete_char)
 	np = malloc(pl + strlen(suffix) + 1);
 	strcpy(np, cd->stk->substr);
 	strcpy(np+pl, suffix);
-	call("Complete:prefix", ci->focus, !cd->prefix_only, NULL, np);
+	call("Complete:prefix", ci->focus, !cd->prefix_only, NULL, np,
+	     0, NULL, cd->attr);
 	free(np);
 	return 1;
 }
@@ -240,7 +243,8 @@ DEF_CMD(complete_bs)
 		free((void*)stk->substr);
 		free(stk);
 	}
-	call("Complete:prefix", ci->home, 0, NULL, NULL, 1);
+	call("Complete:prefix", ci->home, 0, NULL, NULL, 1,
+	     NULL, cd->attr);
 	return 1;
 }
 
@@ -403,14 +407,19 @@ DEF_CMD(complete_set_prefix)
 	} else {
 		cb.ss = cd->stk->substr;
 	}
+	if (ci->str2 && (!cd->attr || strcmp(cd->attr, ci->str2) != 0)) {
+		free(cd->attr);
+		cd->attr = strdup(ci->str2);
+	}
 
 	call_comm("Filter:set", ci->focus, &cb.c,
-		  cd->prefix_only ? 3 : 2, NULL, cb.ss);
+		  cd->prefix_only ? 3 : 2, NULL, cb.ss, 0, NULL, cd->attr);
 
 	if (cb.cnt <= 0) {
 		/* Revert */
 		call("Filter:set", ci->focus,
-		     cd->prefix_only ? 3 : 2, NULL, cd->stk->substr);
+		     cd->prefix_only ? 3 : 2, NULL, cd->stk->substr,
+		     0, NULL, cd->attr);
 		if (m)
 			call("Move-to", ci->focus, 0, m);
 	}
@@ -425,7 +434,8 @@ DEF_CMD(complete_set_prefix)
 		cd->stk = stk;
 		cb.common_pre = NULL;
 		call("Filter:set", ci->focus,
-		     cd->prefix_only ? 3 : 2, NULL, cd->stk->substr);
+		     cd->prefix_only ? 3 : 2, NULL, cd->stk->substr,
+			  0, NULL, cd->attr);
 		comm_call(ci->comm2, "callback:prefix", ci->focus, cb.cnt,
 			  NULL, cd->stk->substr);
 		if (!cd->orig)
