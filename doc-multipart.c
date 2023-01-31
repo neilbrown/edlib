@@ -435,6 +435,19 @@ DEF_CMD(mp_step_part)
 	return m->ref.docnum + 1;
 }
 
+DEF_CMD(mp_get_boundary)
+{
+	/* return a mark past which rendering must not go. */
+	struct mark *m = ci->mark;
+
+	if (!m || !ci->comm2)
+		return Enoarg;
+	m = mark_dup(m);
+	call("doc:step-part", ci->home, ci->num, m);
+	comm_call(ci->comm2, "cb", ci->focus, 0, m);
+	return 1;
+}
+
 struct mp_cb {
 	struct command c;
 	struct command *cb;
@@ -793,6 +806,7 @@ static void mp_init_map(void)
 	key_add(mp_map, "doc:get-attr", &mp_attr);
 	key_add(mp_map, "doc:set-attr", &mp_set_attr);
 	key_add(mp_map, "doc:step-part", &mp_step_part);
+	key_add(mp_map, "doc:get-boundary", &mp_get_boundary);
 	key_add(mp_map, "Close", &mp_close);
 	key_add(mp_map, "Free", &mp_free);
 	key_add(mp_map, "Notify:Close", &mp_notify_close);

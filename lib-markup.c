@@ -45,6 +45,7 @@ DEF_CMD(render_prev)
 	struct pane *f = ci->focus;
 	struct mu_info *mu = ci->home->data;
 	struct mark *boundary = NULL;
+	struct mark *doc_boundary = NULL;
 	int count = 0;
 	int rpt = RPT_NUM(ci);
 	wint_t ch;
@@ -52,22 +53,29 @@ DEF_CMD(render_prev)
 	if (!m)
 		return Enoarg;
 
-	if (!rpt)
+	if (!rpt) {
 		boundary = vmark_at_or_before(f, m, mu->view, ci->home);
+		doc_boundary = call_ret(mark, "doc:get-boundary", f, -1, m);
+	}
 	while ((ch = doc_prev(f, m)) != WEOF &&
 	       (!is_eol(ch) || rpt > 0) &&
 	       count < LARGE_LINE &&
-	       (!boundary || mark_ordered_not_same(boundary, m))) {
-		if (rpt)
+	       (!boundary || mark_ordered_not_same(boundary, m)) &&
+	       (!doc_boundary || mark_ordered_not_same(doc_boundary, m))) {
+		if (rpt) {
 			boundary = vmark_at_or_before(f, m, mu->view, ci->home);
+			doc_boundary = call_ret(mark, "doc:get-boundary", f, -1, m);
+		}
 		rpt = 0;
 		count += 1;
 	}
-	if (ch != WEOF && !is_eol(ch)) {
+	if (ch != WEOF && !is_eol(ch) &&
+	    (!doc_boundary || !mark_same(doc_boundary, m))) {
 		/* Just cross the boundary, or the max count.
 		 * Need to step back, and ensure there is a stable boundary
 		 * here.
 		 */
+		mark_free(doc_boundary);
 		doc_next(f, m);
 		if (!boundary || !mark_same(boundary, m)) {
 			boundary = vmark_new(f, mu->view, ci->home);
@@ -76,6 +84,7 @@ DEF_CMD(render_prev)
 		}
 		return 1;
 	}
+	mark_free(doc_boundary);
 	if (ch == WEOF && rpt)
 		return Efail;
 	/* Found a '\n', so step forward over it for start-of-line. */
@@ -273,6 +282,7 @@ DEF_CMD(render_line)
 	struct mark *m = ci->mark;
 	struct mark *pm = ci->mark2; /* The location to render as cursor */
 	struct mark *boundary, *start_boundary = NULL;
+	struct mark *doc_boundary;
 	int o = ci->num;
 	wint_t ch;
 	int chars = 0;
@@ -318,6 +328,8 @@ DEF_CMD(render_line)
 			start_boundary = boundary;
 		boundary = vmark_next(boundary);
 	}
+	doc_boundary = call_ret(mark, "doc:get-boundary", focus, 1, m);
+
 	buf_init(&b);
 	call_comm("map-attr", focus, &ar.rtn, 0, m, "start-of-line");
 	while (1) {
@@ -360,6 +372,8 @@ DEF_CMD(render_line)
 		}
 		if (boundary && mark_ordered_or_same(boundary, m))
 			break;
+		if (doc_boundary && mark_ordered_or_same(doc_boundary, m))
+			break;
 		if (ch == '<') {
 			if (o >= 0 && b.len+1 >= o) {
 				doc_prev(focus, m);
@@ -401,6 +415,8 @@ DEF_CMD(render_line)
 	if (start_boundary && chars < LARGE_LINE - 5)
 		/* This boundary is no longer well-placed. */
 		mark_free(start_boundary);
+
+	mark_free(doc_boundary);
 
 	ret = comm_call(ci->comm2, "callback:render", focus, 0, NULL,
 			buf_final(&b));

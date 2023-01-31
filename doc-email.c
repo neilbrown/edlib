@@ -825,7 +825,7 @@ DEF_CMD(open_email)
 
 	/* create spacer doc to be attached between each part */
 	p = call_ret(pane, "doc:from-text", p, 0, NULL, NULL, 0, NULL,
-		     "\n0123456789\n");
+		     "0123456789\n");
 	if (!p)
 		goto out;
 
@@ -834,7 +834,6 @@ DEF_CMD(open_email)
 	spacer = p;
 	point = vmark_new(p, MARK_POINT, NULL);
 	call("doc:set-ref", p, 1, point);
-	doc_next(p, point);
 	call("doc:set-attr", p, 1, point, "markup:func", 0,
 	     NULL, "doc:email:render-spacer");
 	mark_free(point);
