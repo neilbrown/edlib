@@ -505,8 +505,7 @@ static void prev_line(struct pane *home safe, struct mark *m safe)
 	mark_step(m, 0);
 }
 
-static void next_line(struct pane *home safe, struct pane *focus safe,
-		      struct mark *m safe)
+static void next_line(struct pane *home safe, struct mark *m safe)
 {
 	struct rf_data *rd = home->data;
 
@@ -555,7 +554,7 @@ static int format_step(struct pane *home safe, struct pane *focus safe,
 
 	if (f >= rd->nfields) {
 		if (move)
-			next_line(home, focus, m);
+			next_line(home, m);
 		return CHAR_RET('\n');
 	}
 	rf = &rd->fields[f];
@@ -564,7 +563,7 @@ static int format_step(struct pane *home safe, struct pane *focus safe,
 		mark_step(m, forward);
 		index = normalize(home, focus, m, 1);
 		if (index < 0) {
-			next_line(home, focus, m);
+			next_line(home, m);
 			return CHAR_RET('\n');
 		}
 		update_offset(m, rd, index);
@@ -688,7 +687,7 @@ DEF_CMD(format_content2)
 		o = FIELD_OFFSET(index);
 
 		if (f >= rd->nfields) {
-			next_line(home, focus, m);
+			next_line(home, m);
 			nxt = '\n';
 			continue;
 		}
@@ -698,7 +697,7 @@ DEF_CMD(format_content2)
 		mark_step(m, 1);
 		index = normalize(home, focus, m, 1);
 		if (index < 0) {
-			next_line(home, focus, m);
+			next_line(home, m);
 			nxt = '\n';
 			continue;
 		}
