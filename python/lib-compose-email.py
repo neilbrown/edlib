@@ -32,6 +32,7 @@
 import email.utils
 import email.message
 import email.policy
+import email.parser
 import email.headerregistry
 import tempfile
 import mimetypes
@@ -705,7 +706,7 @@ class compose_email(edlib.Pane):
         if not p:
             return edlib.Efail
         p['prompt'] = "Attachment"
-        p['done-key'] = "compose:attach"
+        p['done-key'] = "compose-email:attach"
         p.call('doc:set-name', "Attachment File")
         p['pane-title'] = "Attachment File"
         p = p.call("attach-history", "*Attachment History*", "popup:close",
@@ -714,12 +715,15 @@ class compose_email(edlib.Pane):
         p.call("attach-file-entry", "file")
         return 1
 
-    def handle_do_attach(self, key, focus, str1, **a):
-        "handle:compose:attach"
+    def handle_do_attach(self, key, focus, str1, str2, **a):
+        "handle:compose-email:attach"
         edlib.LOG("attaching", str1)
         if not str1:
             return 1
-        (type, encoding) = mimetypes.guess_type(str1, False)
+        if str2:
+            type = str2
+        else:
+            (type, encoding) = mimetypes.guess_type(str1, False)
         if not type:
             type = "application/octet-stream"
         edlib.LOG("type=", type)
@@ -727,7 +731,7 @@ class compose_email(edlib.Pane):
         m = edlib.Mark(orig=l)
         self.call("doc:set-ref", 0, m)
         m2 = edlib.Mark(orig=m)
-        # Make sure there 2 are the very last marks.
+        # Make sure these 2 are the very last marks.
         m2.step(1)
         m.step(1)
         self.parent.call("doc:replace", m2, m,
@@ -812,16 +816,21 @@ class compose_email(edlib.Pane):
                 if fn:
                     try:
                         with open(fn, 'rb') as fp:
-                            msg.add_attachment(fp.read(), filename=bn,
-                                               maintype = maintype,
-                                               subtype = subtype)
+                            if maintype == "message":
+                                p = email.parser.BytesParser()
+                                eml = p.parse(fp)
+                                msg.add_attachment(eml)
+                            else:
+                                msg.add_attachment(fp.read(), filename=bn,
+                                                   maintype = maintype,
+                                                   subtype = subtype)
                     except:
                         self.call("Message", "Cannot read attachment %s" % fn)
                         return edlib.Efail
 
-        s = msg.as_string()
+        s = msg.as_bytes()
         tf = tempfile.TemporaryFile()
-        tf.write(s.encode())
+        tf.write(s)
         tf.seek(0)
         sendmail = focus['email:sendmail']
         if not sendmail:

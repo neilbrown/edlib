@@ -377,6 +377,8 @@ def make_composition(db, focus, which = "PopupTile", how = "MD3tsa", tag = None)
     os.close(fd)
     m = focus.call("doc:open", fname, -1, ret='pane')
     m.call("doc:set-name", "*Unsent mail message*")
+    # always good to have a blank line, incase we add an attachment early.
+    m.call("doc:replace", "\n")
     m['view-default'] = 'compose-email'
     m['email-sent'] = 'no'
     name = db['config:user.name']
@@ -2176,24 +2178,33 @@ class notmuch_master_view(edlib.Pane):
         return 1
 
     def handle_reply(self, key, focus, num, **a):
-        "handle-list/doc:char-r/doc:char-R/doc:char-F"
+        "handle-list/doc:char-r/doc:char-R/doc:char-F/doc:char-z"
         if not self.message_pane:
             focus.call("Message", "Can only reply when a message is open")
             return edlib.Efail
+        quote_mode = "inline"
+        if num != edlib.NO_NUMERIC:
+            quote_mode = "none"
         if key[-1] == 'F':
-            mode = "forward"
+            hdr_mode = "forward"
             tag = "forwarded"
+            if quote_mode == "none":
+                quote_mode = "attach"
+        elif key[-1] == 'z':
+            hdr_mode = "forward"
+            tag = "forwarded"
+            quote_mode = "attach"
         elif key[-1] == 'R':
-            mode = "reply-all"
+            hdr_mode = "reply-all"
             tag = "replied"
         else:
-            mode = "reply"
+            hdr_mode = "reply"
             tag = "replied"
         v = make_composition(self.list_pane, focus,
                              tag="tag +%s id:%s" % (tag, self.message_pane['message-id']))
         if v:
-            v.call("compose-email:copy-headers", self.message_pane, mode)
-            if num == edlib.NO_NUMERIC:
+            v.call("compose-email:copy-headers", self.message_pane, hdr_mode)
+            if quote_mode == "inline":
                 # find first text part and copy it
                 msg = self.message_pane
                 m = edlib.Mark(msg)
@@ -2225,6 +2236,11 @@ class notmuch_master_view(edlib.Pane):
 
                 if c:
                     v.call("compose-email:quote-content", c)
+
+            if quote_mode == "attach":
+                fn = self.message_pane["filename"]
+                if fn:
+                    v.call("compose-email:attach", fn, "message/rfc822")
         return 1
 
     def tag_ok(self, t):

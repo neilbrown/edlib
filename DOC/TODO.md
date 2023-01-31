@@ -698,7 +698,7 @@ Module features
 - [ ] capture editing of to/cc and mark ',' as a wrap point.
 - [ ] If attachments are requested, set mime-version etc
 - [ ] inline images get displayed
-- [ ] attach email message: message/rfc
+- [X] attach email message: message/rfc
 - [ ] auto-insert signature... like an attachment?
 - [ ] address-completion should be referred to module, not assumed to be notmuch
 - [ ] support address book and allow completion from there
