@@ -220,6 +220,7 @@ DEF_CMD(complete_char)
 	strcpy(np, cd->stk->substr);
 	strcpy(np+pl, suffix);
 	call("Complete:prefix", ci->focus, !cd->prefix_only, NULL, np);
+	free(np);
 	return 1;
 }
 
