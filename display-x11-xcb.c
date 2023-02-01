@@ -1,5 +1,5 @@
 /*
- * Copyright Neil Brown ©2021-2022 <neil@brown.name>
+ * Copyright Neil Brown ©2021-2023 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
  * X11 display driver for edlib, using xcb, cairopango, libxkbcommon etc.

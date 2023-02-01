@@ -1,5 +1,5 @@
 /*
- * Copyright Neil Brown ©2015-2021 <neil@brown.name>
+ * Copyright Neil Brown ©2015-2022 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
  * A buffer can be viewed in a pane.

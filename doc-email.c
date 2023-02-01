@@ -1,5 +1,5 @@
 /*
- * Copyright Neil Brown ©2016-2022 <neil@brown.name>
+ * Copyright Neil Brown ©2016-2023 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
  * doc-email: Present an email message as its intended content, with

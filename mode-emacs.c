@@ -1,5 +1,5 @@
 /*
- * Copyright Neil Brown ©2015-2022 <neil@brown.name>
+ * Copyright Neil Brown ©2015-2023 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
  * Define some keystrokes to create an editor with an
