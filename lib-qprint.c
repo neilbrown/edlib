@@ -242,6 +242,7 @@ static int qpflush(struct qpcb *c safe, const struct cmd_info *ci, wint_t ch,
 		if (ret > 0) {
 			lws += ret;
 			lws_len -= ret;
+			ret = 1;
 		}
 	}
 	buf_reinit(&c->lws);
