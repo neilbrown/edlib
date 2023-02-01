@@ -464,6 +464,8 @@ DEF_CMD(complete_return)
 
 	cr.c = save_str;
 	cr.s = NULL;
+	/* Go to start of line */
+	home_call(ci->home, "doc:render-line-prev", ci->home, 0, ci->mark);
 	home_call(ci->home, "doc:render-line",
 		  ci->home, NO_NUMERIC, ci->mark, NULL, 0, NULL,
 		  NULL, 0,0, &cr.c);

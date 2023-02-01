@@ -189,7 +189,7 @@ static void popup_finished(struct pane *focus safe, struct pane *home safe,
 
 DEF_CMD(popup_abort)
 {
-	/* A NULL 'result' signals the aboort */
+	/* A NULL 'result' signals the abort */
 	popup_finished(ci->focus, ci->home, NULL);
 	return 1;
 }
