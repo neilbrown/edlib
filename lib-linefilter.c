@@ -465,7 +465,11 @@ DEF_CMD(filter_eol)
 
 DEF_CMD(filter_damaged)
 {
-	pane_damaged(ci->home, DAMAGED_VIEW);
+	// This is called too often and is very expensive.
+	// Moving up/down in a file-completion menu for a large
+	// directory goes extremely slowly.
+	// So disable for now.
+	//pane_damaged(ci->home, DAMAGED_VIEW);
 	return Efallthrough;
 }
 
