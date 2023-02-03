@@ -781,7 +781,11 @@ DEF_CMD(format_content2)
 DEF_CMD(format_attr)
 {
 	/* If there are attrs here, we report that by returning
-	 * "render:format" as "yes"
+	 * "render:format" as "yes".  This causes map-attr to called so
+	 * that it can insert those attrs.
+	 *
+	 * Also "format:plain" which formats the line directly
+	 * without the cost of all the lib-markup machinery.
 	 */
 	struct rf_data *rd = ci->home->data;
 	struct mark *m = ci->mark;
@@ -794,6 +798,13 @@ DEF_CMD(format_attr)
 		return Enoarg;
 	if (!m->ref.p)
 		return Efallthrough;
+	if (strcmp(ci->str, "format:plain") == 0) {
+		char *v = do_format(ci->focus, m, NULL, -1, 0);
+
+		comm_call(ci->comm2, "", ci->focus, 0, m, v);
+		free(v);
+	}
+
 	if (ci->num2 == 0 && strcmp(ci->str, "render:format") != 0)
 		return Efallthrough;
 	if (ci->num2 && strncmp(ci->str, "render:format", strlen(ci->str)) != 0)
