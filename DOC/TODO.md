@@ -662,7 +662,8 @@ Module features
     redraw gets confused and point goes off-screen, which seems
     to leave it confused.
 - [ ] in text/plain, wrap long lines on 'space'. - make this a config in lib-markup
-- [1] allow view of all headers, and of "more" than default (including file names)
+- [X] allow view of all headers
+- [1] allow view of "more" headers than default (including file names, message-id)
 - [ ] maybe hide signature, unless small
 - [ ] When click on first char in tagged range, I don't see the tag and
    don't get a Mouse-Activate event.

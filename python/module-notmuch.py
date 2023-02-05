@@ -3347,13 +3347,15 @@ class notmuch_message_view(edlib.Pane):
         return 1
 
     def handle_toggle_vis(self, key, focus, mark, **a):
-        "handle-list/Mouse-Activate:email-hide/email:select:hide"
+        "handle-list/Mouse-Activate:email-hide/email:select:hide/Mouse-Activate:email-full/email:select:full"
         v = focus.call("doc:get-attr", mark, "email:visible", ret='str')
-        self.parent.call("email:select:hide", focus, mark)
+        self.parent.call("email:select:" + key[-4:], focus, mark)
         v2 = focus.call("doc:get-attr", mark, "email:visible", ret='str')
-        if v == "none" and v2 != "none":
-            # when making visible, move point to start
+        if v != v2:
+            # when visibility changes, move point to start.
             focus.call("doc:email-step-part", mark, -1)
+            pt = focus.call("doc:point", ret='mark');
+            pt.to_mark(mark)
         return 1
 
     def handle_save(self, key, focus, mark, **a):
