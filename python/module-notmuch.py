@@ -1165,14 +1165,21 @@ class notmuch_query(edlib.Doc):
 
         return ret + "> "
 
-    def add_message(self, msg, lst, info, depth):
-        # msg is an array of message and list of replies
+    def add_message(self, msg, lst, info, depth, old_ti):
+        # Add the message ids in depth-first order into 'lst',
+        # and for each message, place summary info info in info[mid]
+        # particularly including a 'depth' description which is a
+        # list of "1" if this message is not the last reply to the parent,
+        # else "0".
+        # If old_ti, then the thread is being viewed and messages mustn't
+        # disappear - so preserve the 'matched' value.
         m = msg[0]
         mid = m['id']
         lst.append(mid)
         l = msg[1]
+        was_matched = old_ti and mid in old_ti and old_ti[mid][2]
         info[mid] = (m['filename'], m['timestamp'],
-                     m['match'],
+                     m['match'] or was_matched,
                      depth + [1 if l else 0],
                      m['headers']["From"],
                      m['headers']["Subject"],
@@ -1180,8 +1187,8 @@ class notmuch_query(edlib.Doc):
         if l:
             l.sort(key=lambda m:(m[0]['timestamp'],m[0]['headers']['Subject']))
             for m in l[:-1]:
-                self.add_message(m, lst, info, depth + [1])
-            self.add_message(l[-1], lst, info, depth + [0])
+                self.add_message(m, lst, info, depth + [1], old_ti)
+            self.add_message(l[-1], lst, info, depth + [0], old_ti)
 
     def step_load_thread(self):
         # start thread loading, either current with query, or next
@@ -1235,14 +1242,23 @@ class notmuch_query(edlib.Doc):
             return
         self.merge_thread(tid, mid, mark, thread)
 
+    def thread_is_open(self, tid):
+        return self.notify("notmuch:thread-open", tid) > 0
+
     def merge_thread(self, tid, mid, mark, thread):
         # thread is a list of top-level messages
         # in each m[0] is the message as a dict
         thread.sort(key=lambda m:(m[0]['timestamp'],m[0]['headers']['Subject']))
         midlist = []
         minfo = {}
+
+        if tid in self.threadinfo and self.thread_is_open(tid):
+            # need to preserve all messages currently visible
+            old_ti = self.threadinfo[tid]
+        else:
+            old_ti = None
         for m in thread:
-            self.add_message(m, midlist, minfo, [2])
+            self.add_message(m, midlist, minfo, [2], old_ti)
         self.messageids[tid] = midlist
         self.threadinfo[tid] = minfo
 
@@ -2622,6 +2638,8 @@ class notmuch_query_view(edlib.Pane):
 
         self.call("doc:request:doc:replaced")
         self.call("doc:request:notmuch:thread-changed")
+        self.updating = False
+        self.call("doc:request:notmuch:thread-open")
 
     def handle_getattr(self, key, focus, str, comm2, **a):
         "handle:get-attr"
@@ -2745,7 +2763,14 @@ class notmuch_query_view(edlib.Pane):
             self.move_thread()
         elif num == 2:
             self.trim_thread()
+            self.updating = False
         return 1
+
+    def handle_notify_thread_open(self, key, str1, **a):
+        "handle:notmuch:thread-open"
+        # If we have requested an update (so .updating is set) pretend
+        # the thread isn't open, so a full update happens
+        return 1 if not self.updating and str1 and self.selected == str1 else 0
 
     def handle_set_ref(self, key, mark, num, **a):
         "handle:doc:set-ref"
@@ -2938,6 +2963,7 @@ class notmuch_query_view(edlib.Pane):
     def handle_update(self, key, focus, **a):
         "handle:doc:char-="
         if self.selected:
+            self.updating = True
             focus.call("doc:notmuch:load-thread", self.thread_start)
         focus.call("doc:notmuch:query:reload")
         return 1

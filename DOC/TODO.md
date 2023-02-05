@@ -572,7 +572,7 @@ Module features
       error that select-message failed
 - [X] don't use '-' for tag removal, use it for numeric prefix instead.  Maybe
       '--' can do tag removal.
-- [1] messages shouldn't disappear from open thread when background refresh happens.
+- [X] messages shouldn't disappear from open thread when background refresh happens.
 - [X] archived threads SHOULD disappear when a query is closed.
 - [X] add command to go to first new message? 'N'?
       'N' is next-thread.  'j' to jump to the next thread?
@@ -583,6 +583,7 @@ Module features
       This is confusing.  Maybe we report an error when open is attempted,
       but somehow allow 'Z' to still work.
 - [1] purge old entries from query when updates but not being viewed
+      ... don't we already do this?
 - [ ] updating tags can take long when 100s.  Enable background queuing of these.
 - [ ] Don't display query entries that have a 0 match count.??
 - [ ] update counts more often when a query is being changed.  e.g. when any change happens
