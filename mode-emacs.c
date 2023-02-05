@@ -2472,8 +2472,10 @@ DEF_CMD(emacs_press)
 DEF_CMD(emacs_release)
 {
 	struct mark *p = call_ret(mark, "doc:point", ci->focus);
+	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
 	struct mark *m2 = call_ret(mark2, "doc:point", ci->focus, 2);
 	struct mark *m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
+	char *type;
 	int prev_pos;
 	int moved;
 
@@ -2484,22 +2486,25 @@ DEF_CMD(emacs_release)
 	}
 
 	prev_pos = attr_find_int(m2->attrs, "emacs:track-selection");
+	type = attr_find(m2->attrs, "emacs:selection-type");
 	moved = prev_pos != (1 + ci->x * 10000 + ci->y);
 	attr_set_int(&m2->attrs, "emacs:track-selection", 0);
 
 	call("Move-CursorXY", ci->focus,
 	     2, m, NULL, moved, NULL, NULL, ci->x, ci->y);
-
-	if (moved)
+	if (moved) {
 		/* Moved the mouse, so new location is point */
 		call("Move-to", ci->focus, 0, m);
-	else
+		update_sel(ci->focus, p, m2, NULL);
+	} else if (type && strcmp(type, "char") != 0) {
 		/* Otherwise use the old location.  Point might not
 		 * be there exactly if it was moved to end of word/line
 		 */
 		call("Move-to", ci->focus, 0, m2);
+		update_sel(ci->focus, p, m2, NULL);
+	} else
+		clear_selection(ci->focus, p, mk, 0);
 
-	update_sel(ci->focus, p, m2, NULL);
 	mark_free(m);
 
 	return 1;
