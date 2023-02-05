@@ -3353,7 +3353,7 @@ class notmuch_message_view(edlib.Pane):
         v2 = focus.call("doc:get-attr", mark, "email:visible", ret='str')
         if v == "none" and v2 != "none":
             # when making visible, move point to start
-            focus.call("doc:step-part", mark, -1)
+            focus.call("doc:email-step-part", mark, -1)
         return 1
 
     def handle_save(self, key, focus, mark, **a):

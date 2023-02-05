@@ -998,6 +998,17 @@ DEF_CMD(email_set_ref)
 	return 1;
 }
 
+DEF_CMD(email_step_part)
+{
+	struct pane *p = ci->home;
+	struct email_view *evi = p->data;
+
+	if (!ci->mark)
+		return Enoarg;
+	home_call(p->parent, "doc:step-part", ci->focus, ci->num, ci->mark, evi->invis);
+	return 1;
+}
+
 DEF_CMD(email_view_get_attr)
 {
 	int p;
@@ -1120,6 +1131,7 @@ static void email_init_map(void)
 	key_add(email_view_map, "doc:content", &email_content);
 	key_add(email_view_map, "doc:content-bytes", &email_content);
 	key_add(email_view_map, "doc:set-ref", &email_set_ref);
+	key_add(email_view_map, "doc:email-step-part", &email_step_part);
 	key_add(email_view_map, "doc:set-attr", &email_view_set_attr);
 	key_add(email_view_map, "doc:get-attr", &email_view_get_attr);
 	key_add(email_view_map, "doc:email:render-spacer", &email_spacer);
