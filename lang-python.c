@@ -2857,7 +2857,7 @@ static PyObject *py_LOG(PyObject *self, PyObject *args)
 	char buf[1024];
 	int l = 0;
 
-	for (i = 0; i < argc; i++) {
+	for (i = 0; i < argc && l < (int)sizeof(buf) - 2; i++) {
 		PyObject *o = PySequence_GetItem(args, i);
 		PyObject *s, *tofree = NULL;
 		char *str;
@@ -2871,7 +2871,7 @@ static PyObject *py_LOG(PyObject *self, PyObject *args)
 			continue;
 		str = python_as_string(s, &tofree);
 		slen = str ? strlen(str) : 0;
-		if (slen > sizeof(buf) - l - 2)
+		if (slen + l + 2 > sizeof(buf))
 			slen = sizeof(buf) - l - 2;
 		if (str) {
 			if (l)

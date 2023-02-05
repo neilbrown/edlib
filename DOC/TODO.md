@@ -452,9 +452,21 @@ Module features
 
 - [ ] if fstatat() fails for an entry, zero out the stat buf, and possibly
       schedule a reload of the directory (but not too often).
-- [ ] allow setting a pattern, as alternate to substr, for 'complete' viewer.
+- [ ] allow setting a pattern, as alternate to substr, for 'complete'
+      viewer.
+      I think this would be more efficient than the current linefilter.
+      We could have a doc-filter which adds the pattern to doc:char
+      commands so forward/backward stepping is v.fast.  The pattern
+      could even be a pre-compiled rexel command.
 - [ ] how to change sort order of a directory listing.  I think this requires
       a separate dir document, which borrows state from the main one.
+      It definitely needs an independent set of marks, so that means
+      a separate document.  Using the same dir_ent content might help
+      save space, but then we need an index separate from the dir_ents.
+      Maybe that is OK.  We could have linked lists of small arrays.
+      Marks would point to entries in the array and we walk back to find
+      find start: low-bit-set.  So each array is fore, back, 14 dir_ent
+      pointers.  Or use aligned_alloc() and mask out unwanted bits.
 
 ### doc-text
 
