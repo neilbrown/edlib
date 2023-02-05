@@ -592,7 +592,7 @@ Module features
       exist, or not be readable
 - [ ] allow opening drafts in composer on restart.
 - [ ] allow deleting of drafts without posting.  Maybe just 'delete'..
-- [1] option to wrap subjects onto next line - in query view
+- [X] option to wrap subjects onto next line - in query view
 - [ ] When active query changes, highlight on list view doesn't immediately
       follow
 - [ ] TESTS

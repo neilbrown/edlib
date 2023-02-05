@@ -873,7 +873,7 @@ class notmuch_query(edlib.Doc):
         self["line-format"] = ("<%BG><%TM-hilite>%TM-date_relative</>" +
                                "<tab:130> <fg:blue>%TM-authors</>" +
                                "<tab:350>%TM-size%TM-threadinfo<%TM-hilite>" +
-                               "<fg:red,bold>%TM-flag</> %TM-subject</></>")
+                               "<fg:red,bold>%TM-flag</> <wrap-margin>%TM-subject</></>")
         self.add_notify(self.maindoc, "Notify:Tag")
         self.add_notify(self.maindoc, "Notify:Close")
         self['doc-status'] = ""
@@ -2538,7 +2538,6 @@ class notmuch_list_view(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
         self['notmuch:pane'] = 'main'
-        self['render-wrap'] = 'no'
         self['background'] = 'color:#A0FFFF'
         self['line-format'] = '<%fmt>%count%space%name</>'
         self.call("notmuch:set_list_pane")
@@ -3496,6 +3495,7 @@ def notmuch_doc(key, home, focus, comm2, **a):
 def render_query_attach(key, focus, comm2, **a):
     p = notmuch_query_view(focus)
     p = p.call("attach-render-format", ret='pane')
+    p['render-wrap'] = 'yes'
     if comm2:
         comm2("callback", p)
     return 1

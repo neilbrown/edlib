@@ -325,8 +325,13 @@ display to affect drawing of the text.  Attributes understood by
   If no text has the "wrap" attribute, then wrap will happen after the
   last character that fits.
 
+- "wrap-margin" - mark a location in the line where any subsequent wrap
+                  will cause a margin to be inserted to.  Only the first
+                  location with this tag is remembered.
+
 - "wrap-head:" - The value of this tag is used to start the line after a
-   wrap point.  By default no text is added.
+                 wrap point.  By default no text is added.  This is added
+                 after the wrap-margin.
 
 - "wrap-tail:" - The value of this tag is placed at the end of a line
   just before it is wrapped.  It will be underlined with blue

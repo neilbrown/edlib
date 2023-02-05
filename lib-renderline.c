@@ -176,7 +176,7 @@ static char *get_last_attr(const char *attrs safe, const char *attr safe)
 
 static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 		      struct render_list **rlp safe,
-		      int y, int scale, int wrap_pos,
+		      int y, int scale, int wrap_pos, int *wrap_margin safe,
 		      const char **xypos, const char **xyattr)
 {
 	/* Flush a render_list returning x-space used.
@@ -217,6 +217,9 @@ static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 
 	for (rl = *rlp; rl && rl != last_wrap; rl = rl->next) {
 		int cp = rl->cursorpos;
+
+		if (!*wrap_margin && strstr(rl->attr, "wrap-margin,"))
+			*wrap_margin = rl->x;
 
 		if (wrap_pos &&
 		    cp >= (int)strlen(rl->text) + wrap_len)
@@ -263,24 +266,27 @@ static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 	*rlp = end_wrap;
 
 	/* Queue the wrap-head for the next flush */
-	if (wrap_pos && last_rl &&
-	    (head = get_last_attr(last_rl->attr, "wrap-head"))) {
-		struct call_return cr =
-			home_call_ret(all, focus, "Draw:text-size", p,
-				      p->w, NULL, head,
-				      scale, NULL, last_rl->attr);
-		rl = calloc(1, sizeof(*rl));
-		rl->text = head;
-		rl->attr = strdup(last_rl->attr); // FIXME underline,fg:blue ???
-		rl->width = cr.x;
-		rl->x = 0;
-		rl->cursorpos = -1;
-		rl->next = *rlp;
-		*rlp = rl;
-		/* 'x' is how much to shift-left remaining rl entries,
-		 * Don't want to shift them over the wrap-head
-		 */
-		x -= cr.x;
+	if (wrap_pos && last_rl) {
+		head = get_last_attr(last_rl->attr, "wrap-head");
+		if (head) {
+			struct call_return cr =
+				home_call_ret(all, focus, "Draw:text-size", p,
+					      p->w, NULL, head,
+					      scale, NULL, last_rl->attr);
+			rl = calloc(1, sizeof(*rl));
+			rl->text = head;
+			rl->attr = strdup(last_rl->attr); // FIXME underline,fg:blue ???
+			rl->width = cr.x;
+			rl->x = *wrap_margin;
+			rl->cursorpos = -1;
+			rl->next = *rlp;
+			*rlp = rl;
+			/* 'x' is how much to shift-left remaining rl entries,
+			 * Don't want to shift them over the wrap-head
+			 */
+			x -= cr.x;
+		}
+		x -= *wrap_margin;
 	}
 
 	for (rl = tofree; rl && rl != end_wrap; rl = tofree) {
@@ -504,6 +510,7 @@ DEF_CMD(renderline)
 	struct buf attr;
 	unsigned char ch;
 	int wrap_offset = 0; /*number of columns displayed in earlier lines */
+	int wrap_margin = 0; /* left margin for wrap */
 	int in_tab = 0;
 	int shift_left = atoi(pane_attr_get(focus, "shift_left") ?:"0");
 	int wrap = shift_left < 0;
@@ -646,7 +653,7 @@ DEF_CMD(renderline)
 			if (wrap && *line && *line != '\n') {
 				int len = flush_line(p, focus, dodraw, &rlst,
 						     y+ascent, scale,
-						     p->w - mwidth,
+						     p->w - mwidth, &wrap_margin,
 						     &xypos, &xyattr);
 				wrap_offset += len;
 				x -= len;
@@ -758,7 +765,7 @@ DEF_CMD(renderline)
 		if (ch == '\n') {
 			xypos = line-1;
 			flush_line(p, focus, dodraw, &rlst, y+ascent, scale, 0,
-				   &xypos, &xyattr);
+				   &wrap_margin, &xypos, &xyattr);
 			y += line_height;
 			x = 0;
 			wrap_offset = 0;
@@ -818,7 +825,7 @@ DEF_CMD(renderline)
 	}
 
 	flush_line(p, focus, dodraw, &rlst, y+ascent, scale, 0,
-		   &xypos, &xyattr);
+		   &wrap_margin, &xypos, &xyattr);
 
 	if (want_xypos == 1) {
 		rd->xyattr = xyattr ? strdup(xyattr) : NULL;
