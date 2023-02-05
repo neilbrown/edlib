@@ -398,6 +398,7 @@ DEF_CMD(mp_step_part)
 	const char *vis = ci->str && (int)strlen(ci->str) >= mpi->nparts ?
 		ci->str : NULL;
 	int start;
+	int first_vis;
 	int n;
 
 	if (!m)
@@ -423,7 +424,10 @@ DEF_CMD(mp_step_part)
 
 	/* If this part is empty, need to move to next visible part */
 	mp_normalize(mpi, m, vis);
-	while (ci->num < 0 && m->ref.docnum == start && n > 0) {
+	first_vis = 0;
+	while (vis && vis[first_vis] == 'i')
+		first_vis++;
+	while (ci->num < 0 && m->ref.docnum == start && n > first_vis) {
 		/* didn't move - must have an empty part, try further */
 		n -= 1;
 		change_part(mpi, m, n, 0);
