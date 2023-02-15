@@ -66,6 +66,8 @@ def notmuch_get_tags(msg=None,thread=None):
     except IOError:
         return
     except TimeoutExpired:
+        p.kill()
+        out,err = p.communicate()
         return
     return out.decode("utf-8","ignore").strip('\n').split('\n')
 
@@ -82,6 +84,8 @@ def notmuch_get_file(msg):
     except IOError:
         return
     except TimeoutExpired:
+        p.kill()
+        out,err = p.communicate()
         return
     return out.decode("utf-8","ignore").strip('\n')
 
