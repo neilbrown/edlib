@@ -92,12 +92,15 @@ DEF_CMD(global_config_dir)
 	dir = key + 7 + strlen(var) + 1;
 	end = dir + strlen(dir);
 	while (!val && end > dir) {
-		while (end[-1] == '/')
-			end -= 1;
 		end[0] = 0;
 		val = attr_find(p->attrs, key);
-		while (end > dir && end[-1] != '/')
-			end -= 1;
+		if (end[-1] == '/') {
+			while (end > dir && end[-1] == '/')
+				end -= 1;
+		} else {
+			while (end > dir && end[-1] != '/')
+				end -= 1;
+		}
 	}
 	if (!val)
 		return Efalse;

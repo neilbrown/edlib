@@ -43,7 +43,7 @@ editor.call("global-load-module", "lib-x11selection-xcb")
 
 editor.call("global-set-attr", "config:make-make:/home/git/linux",
             "kmake -k %%")
-editor.call("global-set-attr", "config:make-make:/home/kernels",
+editor.call("global-set-attr", "config:make-make:/home/kernels/",
             "smake -k %%")
-editor.call("global-set-attr", "config:make-quilt:/home/kernels",
+editor.call("global-set-attr", "config:make-quilt:/home/kernels/",
             "grep -rnH --exclude-dir=.pc --exclude-dir=O --exclude-dir=M ")

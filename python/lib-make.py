@@ -798,6 +798,7 @@ def make_request(key, focus, num, num2, str1, mark, **a):
     mode = cmd
 
     dir = focus['dirname']
+    found_root = False
     if cmd == "git-grep":
         # Walk up tree looking for .git or .pc or TAGS
         # depending on what is found, choose an approach
@@ -816,21 +817,34 @@ def make_request(key, focus, num, num2, str1, mark, **a):
             else:
                 d = os.path.dirname(d)
 
-        if num >= 0 and mode != "grep":
+        if mode != "grep":
+            found_root = True
+        if num >= 0 and found_root:
             # if we found a project-root, run command from there.
+            found_root = True
             if d and d[-1] != '/':
                 d = d + '/'
             dir = d
 
     ret = []
-    dflt_config = focus.call("global-config-dir", "make-"+mode, dir,
-                             lambda key, str1, str2, **a: ret.append((str1, str2)))
+    focus.call("global-config-dir", "make-"+mode, dir,
+               lambda key, str1, str2, **a: ret.append((str1, str2)))
     if ret:
-        d = dir
-        dflt, dir = ret[0]
-        if "%%" in dflt and d.startswith(dir):
-            i = dflt.find("%%")
-            dflt = dflt[:i] + d[len(dir)+1:]+dflt[i+2:]
+        if found_root:
+            dflt = ret[0][0]
+        else:
+            d = dir
+            dflt, dir = ret[0]
+            if dir[-1] == '/' and dir != '/':
+                # want to include the next component
+                i = d[len(dir):].find('/')
+                if i >= 0:
+                    dir = d[:len(dir)+i]
+            if "%%" in dflt and d.startswith(dir):
+                while d.startswith(dir+'/'):
+                    dir += '/'
+                i = dflt.find("%%")
+                dflt = dflt[:i] + d[len(dir):]+dflt[i+2:]
 
     if cmd != "make" and focus['doc-type'] == "text":
         if not mark:
