@@ -770,6 +770,7 @@ static bool handle_rfc822(struct pane *email safe,
 	home_call(h2, "get-header", hdrdoc, 0, point, "Subject", 1, NULL, "text");
 	home_call(h2, "get-header", hdrdoc, 0, point, "To", 1, NULL, "list");
 	home_call(h2, "get-header", hdrdoc, 0, point, "Cc", 1, NULL, "list");
+	home_call(h2, "get-header", hdrdoc, 0, point, "Reply-To", 1, NULL, "list");
 
 	/* copy some headers into attributes for later analysis */
 	call("get-header", h2, 0, NULL, "MIME-Version", 0, NULL, "cmd");
