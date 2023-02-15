@@ -396,7 +396,7 @@ static PyObject *safe python_string(const char *s safe)
 	const char *c = s;
 	while (*c && !(*c & 0x80))
 		c++;
-	if (*c)
+	if (*c && utf8_valid(c))
 		/* must be Unicode */
 		return safe_cast PyUnicode_DecodeUTF8(s, strlen(s), NULL);
 	else
@@ -467,8 +467,7 @@ REDEF_CB(python_call)
 		dict_add(kwds, "str1", str);
 		Py_INCREF(str);
 	} else {
-		rv = 1;
-		Py_DECREF(str);
+		rv = 0;
 	}
 
 	rv = rv && dict_add(kwds, "str2",
