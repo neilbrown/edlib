@@ -465,11 +465,12 @@ DEF_CMD(filter_eol)
 
 DEF_CMD(filter_damaged)
 {
-	// This is called too often and is very expensive.
-	// Moving up/down in a file-completion menu for a large
-	// directory goes extremely slowly.
-	// So disable for now.
-	//pane_damaged(ci->home, DAMAGED_VIEW);
+	// We need this for doc:replaced so that when the
+	// view becomes empty we can Notify:filter:empty.
+	// We used to do it for view:changed as well, but
+	// causes lots of updates for large directories
+	// that are slow, and don't seem to change anything.
+	pane_damaged(ci->home, DAMAGED_VIEW);
 	return Efallthrough;
 }
 
@@ -498,7 +499,9 @@ static void filter_register_map(void)
 	key_add(filter_map, "Clone", &filter_clone);
 	key_add(filter_map, "doc:EOL", &filter_eol);
 	key_add(filter_map, "Filter:set", &filter_changed);
-	key_add(filter_map, "view:changed", &filter_damaged);
+	// handling view:changed seems to cause unnecesary
+	// work.
+	// key_add(filter_map, "view:changed", &filter_damaged);
 	key_add(filter_map, "doc:replaced", &filter_damaged);
 	key_add(filter_map, "Refresh:view", &filter_changed);
 }
