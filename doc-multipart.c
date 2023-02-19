@@ -726,6 +726,17 @@ DEF_CMD(mp_forward_by_num)
 	return ret;
 }
 
+DEF_CMD(mp_get_part)
+{
+	struct mp_info *mpi = ci->home->data;
+	int d = ci->num;
+
+	if (d < 0 || d >= mpi->nparts)
+		return Einval;
+	comm_call(ci->comm2, "cb", mpi->parts[d].pane);
+	return 1;
+}
+
 DEF_CMD(mp_forward)
 {
 	/* forward this command to this/next/prev document based on
@@ -817,6 +828,7 @@ static void mp_init_map(void)
 	key_add(mp_map, "doc:notify-viewers", &mp_notify_viewers);
 	key_add(mp_map, "multipart-add", &mp_add);
 	key_add(mp_map, "debug:validate-marks", &mp_val_marks);
+	key_add(mp_map, "doc:multipart:get-part", &mp_get_part);
 	key_add_prefix(mp_map, "multipart-this:", &mp_forward);
 	key_add_prefix(mp_map, "multipart-next:", &mp_forward);
 	key_add_prefix(mp_map, "multipart-prev:", &mp_forward);

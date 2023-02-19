@@ -3109,6 +3109,8 @@ class notmuch_message_view(edlib.Pane):
         # a 'view' for recording where quoted sections are
         self.qview = focus.call("doc:add-view", self) - 1
 
+        self.extra_headers = False
+
         choose = {}
         m = edlib.Mark(focus)
         while True:
@@ -3350,16 +3352,37 @@ class notmuch_message_view(edlib.Pane):
         focus.call("doc:email:select", mark)
         return 1
 
-    def handle_toggle_vis(self, key, focus, mark, **a):
-        "handle-list/Mouse-Activate:email-hide/email:select:hide/Mouse-Activate:email-full/email:select:full"
+    def handle_vis(self, focus, mark, which):
         v = focus.call("doc:get-attr", mark, "email:visible", ret='str')
-        self.parent.call("email:select:" + key[-4:], focus, mark)
+        self.parent.call("email:select:" + which, focus, mark)
         v2 = focus.call("doc:get-attr", mark, "email:visible", ret='str')
-        if v != v2:
+        if v != v2 or which == "extras":
             # when visibility changes, move point to start.
             focus.call("doc:email-step-part", mark, -1)
             pt = focus.call("doc:point", ret='mark');
             pt.to_mark(mark)
+        return 1
+
+    def handle_toggle_hide(self, key, focus, mark, **a):
+        "handle-list/Mouse-Activate:email-hide/email:select:hide"
+        return self.handle_vis(focus, mark, "hide")
+
+    def handle_toggle_full(self, key, focus, mark, **a):
+        "handle-list/Mouse-Activate:email-full/email:select:full"
+        return self.handle_vis(focus, mark, "full")
+
+    def handle_toggle_extras(self, key, focus, mark, **a):
+        "handle-list/Mouse-Activate:email-extras/email:select:extras"
+        self.handle_vis(focus, mark, "extras")
+        if self.extra_headers:
+            return 1
+        self.extra_headers = 1
+        hdrdoc = focus.call("doc:multipart:get-part", 1, ret='pane')
+        point = hdrdoc.call("doc:vmark-new", edlib.MARK_POINT, ret='mark')
+        hdrdoc.call("doc:set-ref", point)
+        hdrdoc.call("doc:replace", 1, point, point, "Thread-id: ",
+                    ",render:rfc822header=10")
+        hdrdoc.call("doc:replace", 1, point, point, self['notmuch:tid'] + '\n')
         return 1
 
     def handle_save(self, key, focus, mark, **a):

@@ -112,6 +112,7 @@ DEF_CMD(email_spacer)
 	struct buf b;
 	int visible = 1;
 	int orig = 0;
+	int extras = 0;
 	struct mark *m = ci->mark;
 	struct mark *pm = ci->mark2;
 	int o = ci->num;
@@ -149,6 +150,9 @@ DEF_CMD(email_spacer)
 		visible = 0;
 	if (attr && strcmp(attr, "orig") == 0)
 		orig = 1;
+	attr = attr_find(ci->home->attrs, "email:extra-headers");
+	extras = attr && *attr;
+
 	attr = pane_mark_attr(ci->home, m, "multipart-prev:email:actions");
 	if (!attr)
 		attr = "hide";
@@ -162,6 +166,9 @@ DEF_CMD(email_spacer)
 					 o, &cp);
 		else if (is_attr("full", attr))
 			ok = cond_append(&b, orig ? "BRIEF" : "FULL", attr,
+					 o, &cp);
+		else if (is_attr("extras", attr))
+			ok = cond_append(&b, extras ? "-" : "EXTRAS", attr,
 					 o, &cp);
 		else
 			ok = cond_append(&b, attr, attr, o, &cp);
@@ -313,6 +320,45 @@ DEF_CMD(email_select_full)
 		want_orig = 0;
 	call("doc:set-attr", ci->focus, 1, m, "email:visible", 0, NULL,
 	     want_orig ? "orig" : "transformed");
+	return 1;
+}
+
+DEF_CMD(email_select_extras)
+{
+	char *a = attr_find(ci->home->attrs, "email:extra-headers");
+	struct mark *m = ci->mark;
+	struct mark *point;
+	struct pane *hdrdoc, *headers;
+
+	if (!m)
+		return Enoarg;
+	if (a && *a)
+		return 1;
+	headers = call_ret(pane, "doc:multipart:get-part", ci->focus, 0);
+	hdrdoc = call_ret(pane, "doc:multipart:get-part", ci->focus, 1);
+	if (!headers || !hdrdoc)
+		return Einval;
+	point = vmark_new(hdrdoc, MARK_POINT, NULL);
+	if (point) {
+		char *file;
+
+		call("doc:set-ref", hdrdoc, 0, point);
+		home_call(headers, "get-header", hdrdoc, 0, point, "Message-ID", 1);
+		home_call(headers, "get-header", hdrdoc, 0, point, "In-Reply-To", 1);
+		home_call(headers, "get-header", hdrdoc, 0, point, "References", 1, NULL, "list");
+		file = pane_attr_get(headers, "filename");
+		if (file) {
+			call("doc:replace", hdrdoc, 1, point, "Filename: ",
+			     0, point, ",render:rfc822header=9");
+			call("doc:replace", hdrdoc, 1, point, file, 0, point);
+			call("doc:replace", hdrdoc, 1, point, "\n", 0, point);
+		}
+	}
+	mark_free(point);
+
+	attr_set_str(&ci->home->attrs, "email:extra-headers", "done");
+	call("doc:set-attr", ci->focus, 1, m, "email:visible", 0, NULL,
+	     "transformed");
 	return 1;
 }
 
@@ -791,7 +837,7 @@ static bool handle_rfc822(struct pane *email safe,
 
 	newpath = NULL;
 	asprintf(&newpath, "%s%sheaders", path, path[0] ? ",":"");
-	attr_set_str(&hdrdoc->attrs, "email:actions", "hide:full");
+	attr_set_str(&hdrdoc->attrs, "email:actions", "hide:extras:full");
 	attr_set_str(&hdrdoc->attrs, "email:which", "transformed");
 	attr_set_str(&hdrdoc->attrs, "email:content-type", "text/rfc822-headers");
 	attr_set_str(&hdrdoc->attrs, "email:path", newpath);
@@ -1168,6 +1214,7 @@ static void email_init_map(void)
 	key_add(email_view_map, "doc:email:select", &email_select);
 	key_add(email_view_map, "email:select:hide", &email_select_hide);
 	key_add(email_view_map, "email:select:full", &email_select_full);
+	key_add(email_view_map, "email:select:extras", &email_select_extras);
 }
 
 void edlib_init(struct pane *ed safe)
