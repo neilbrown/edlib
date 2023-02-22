@@ -71,10 +71,10 @@ def notmuch_get_tags(msg=None,thread=None):
         return
     return out.decode("utf-8","ignore").strip('\n').split('\n')
 
-def notmuch_get_file(msg):
+def notmuch_get_files(msg):
     query = "id:" + msg
 
-    p = Popen(["/usr/bin/notmuch","search","--output=files","--duplicate=1",
+    p = Popen(["/usr/bin/notmuch","search","--output=files", "--format=text0",
                query],
               stdout = PIPE, stderr = DEVNULL)
     if not p:
@@ -87,7 +87,7 @@ def notmuch_get_file(msg):
         p.kill()
         out,err = p.communicate()
         return
-    return out.decode("utf-8","ignore").strip('\n')
+    return out.decode("utf-8","ignore").strip('\0').split('\0')
 
 def notmuch_set_tags(msg=None, thread=None, add=None, remove=None):
     if not add and not remove:
@@ -688,13 +688,15 @@ class notmuch_main(edlib.Doc):
         "handle:doc:notmuch:byid"
         # Return a document for the email message.
         # This is a global document.
-        fn = notmuch_get_file(str1)
+        fn = notmuch_get_files(str1)
         if not fn:
             return Efail
-        doc = focus.call("doc:open", "email:"+fn, -2, ret='pane')
+        doc = focus.call("doc:open", "email:"+fn[0], -2, ret='pane')
         if doc:
             doc['notmuch:id'] = str1
             doc['notmuch:tid'] = str2
+            for i in range(len(fn)):
+                doc['notmuch:fn-%d' % i] = fn[i]
             comm2("callback", doc)
         return 1
 
@@ -906,6 +908,8 @@ class notmuch_query(edlib.Doc):
         if doc:
             doc['notmuch:id'] = str1
             doc['notmuch:tid'] = str2
+            for i in range(len(minfo[str1][0])):
+                doc['notmuch:fn-%d' % i] = minfo[str1][0][i]
             comm2("callback", doc)
         return 1
 
@@ -3383,6 +3387,16 @@ class notmuch_message_view(edlib.Pane):
         hdrdoc.call("doc:replace", 1, point, point, "Thread-id: ",
                     ",render:rfc822header=10")
         hdrdoc.call("doc:replace", 1, point, point, self['notmuch:tid'] + '\n')
+        for i in range(10):
+            f = self['notmuch:fn-%d' % i]
+            if not f:
+                break
+            if f == self['filename']:
+                continue
+            hdr = "Filename-%d: " % i
+            hdrdoc.call("doc:replace", 1, point, point, hdr,
+                        ",render:rfc822header=%d" % (len(hdr)-1))
+            hdrdoc.call("doc:replace", 1, point, point, f + '\n')
         return 1
 
     def handle_save(self, key, focus, mark, **a):
