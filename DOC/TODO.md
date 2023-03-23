@@ -13,7 +13,7 @@ Current priorities
 - [X] display-xcb ??
 - [ ] git log view with rebase and reword options
 - [ ] git-commit command which presents the patch and allows it to be
-      editted (with consistency checks and number updates). On :Commit
+      edited (with consistency checks and number updates). On :Commit
       the patch is applied with "git apply --cached" an if successful
       the message is added with "| git commit -F"
 - [ ] Add menu/menu-bar support
@@ -31,6 +31,9 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] notmuch shouldn't clear tag:new until *all* views
+      on search have closed.
+- [ ] I think attaching a path starting ~/ to an email fails.
 - [ ] stop consistency checking a text doc when it gets "big" ??
 - [ ] auto-sign emails..
 - [ ] message must be tagged "replied" when a reply is sent.

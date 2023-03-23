@@ -143,6 +143,7 @@ class parse_state:
             else:
                 self.preproc_continue = (
                     c == '\\' and p.following(m) == '\n')
+        # FIXME c can be None here - maybe timeout
         if c not in ' \t':
             self.sol = c == '\n'
 
