@@ -33,7 +33,7 @@ Bugs to be fixed
 
 - [ ] notmuch shouldn't clear tag:new until *all* views
       on search have closed.
-- [ ] I think attaching a path starting ~/ to an email fails.
+- [X] I think attaching a path starting ~/ to an email fails.
 - [ ] stop consistency checking a text doc when it gets "big" ??
 - [ ] auto-sign emails..
 - [ ] message must be tagged "replied" when a reply is sent.

@@ -845,6 +845,7 @@ DEF_CMD(find_done)
 	int ret;
 	char *type = ci->home->data;
 	char *str = call_ret(strsave, "doc:get-str", ci->focus);
+	const char *norm = NULL;
 	struct stat stb;
 
 	if (!str || !str[0])
@@ -856,36 +857,38 @@ DEF_CMD(find_done)
 		return 1;
 	}
 	if (strncmp(type, "file", 4) == 0) {
-		const char *s = file_normalize(ci->focus, str,
-					       attr_find(ci->home->attrs,
-							 "initial_path"));
-		char *sl = strrchr(s, '/');
+		char *sl;
 		bool can_create = True;
 		bool can_create_dir = True;
-		while (sl && sl > s) {
+
+		norm = file_normalize(ci->focus, str,
+				      attr_find(ci->home->attrs,
+						"initial_path"));
+		sl = strrchr(norm, '/');
+		while (sl && sl > norm) {
 			/* Need to check directories exist. */
 			*sl = 0;
 			stb.st_mode = 0;
-			stat(s, &stb);
+			stat(norm, &stb);
 			if ((stb.st_mode & S_IFMT) == S_IFDIR)
 				break;
 			if (stb.st_mode)
 				can_create_dir = False;
 			can_create = False;
-			sl = strrchr(s, '/');
+			sl = strrchr(norm, '/');
 		}
 		if (sl)
 			*sl = '/';
 		if (!can_create_dir) {
 			call("Message:modal", ci->focus, 0, NULL,
-			     strconcat(ci->focus, s, " is not a directory!!"));
+			     strconcat(ci->focus, norm, " is not a directory!!"));
 			return 1;
 		}
 		if (!can_create) {
 			/* Need to create directory first */
 			if (strcmp(ci->key, "K:A:Enter") == 0) {
 				char *m = "Cannot create directory: ";
-				if (mkdir(s, 0777) == 0) {
+				if (mkdir(norm, 0777) == 0) {
 					m = "Created directory: ";
 					attr_set_str(&ci->home->attrs,
 						     "prev_dir", NULL);
@@ -893,34 +896,30 @@ DEF_CMD(find_done)
 					call("doc:replace", ci->focus, 0, NULL, "");
 				}
 				call("Message:modal", ci->focus, 0, NULL,
-				     strconcat(ci->focus, m, s));
+				     strconcat(ci->focus, m, norm));
 				return 1;
 			}
 			call("Message:modal", ci->focus, 0, NULL,
 			     strconcat(ci->focus,
-				       "Use Alt-Enter to create directory ", s));
+				       "Use Alt-Enter to create directory ", norm));
 			return 1;
 		}
 	}
-	if (strcmp(type, "file") == 0 &&
+	if (strcmp(type, "file") == 0 && norm &&
 	    strcmp(ci->key, "K:Enter") == 0 &&
-	    stat(file_normalize(ci->focus, str,
-				attr_find(ci->home->attrs, "initial_path")),
-		 &stb) != 0) {
+	    stat(norm, &stb) != 0) {
 		call("Message:modal", ci->focus, 0, NULL,
 		     "File not found - use Alt-Enter to create");
 		return 1;
 	}
-	if (strcmp(type, "file write") == 0 &&
+	if (strcmp(type, "file write") == 0 && norm &&
 	    strcmp(ci->key, "K:Enter") == 0 &&
-	    stat(file_normalize(ci->focus, str,
-				attr_find(ci->home->attrs, "initial_path")),
-		 &stb) == 0) {
+	    stat(norm, &stb) == 0) {
 		call("Message:modal", ci->focus, 0, NULL,
 		     "File exists - use Alt-Enter to overwrite");
 		return 1;
 	}
-	ret = call("popup:close", ci->focus, 0, NULL, str);
+	ret = call("popup:close", ci->focus, 0, NULL, norm ?: str);
 	return ret;
 }
 
