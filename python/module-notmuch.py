@@ -3127,9 +3127,14 @@ class notmuch_message_view(edlib.Pane):
                 break
             if which != "spacer":
                 continue
-            path = focus.call("doc:get-attr", "multipart-prev:email:path", m, ret='str')
-            type = focus.call("doc:get-attr", "multipart-prev:email:content-type", m, ret='str')
-            fname = focus.call("doc:get-attr", "multipart-prev:email:filename", m, ret='str')
+            path = focus.call("doc:get-attr",
+                              "multipart-prev:email:path", m, ret='str')
+            type = focus.call("doc:get-attr",
+                              "multipart-prev:email:content-type", m, ret='str')
+            disp = focus.call("doc:get-attr",
+                              "multipart-prev:email:content-disposition", m, ret='str')
+            fname = focus.call("doc:get-attr",
+                               "multipart-prev:email:filename", m, ret='str')
             ext = None
             if fname and '/' in fname:
                 fname = os.path.basename(prefix)
@@ -3148,7 +3153,8 @@ class notmuch_message_view(edlib.Pane):
                 focus.call("doc:set-attr", "multipart-prev:email:actions", m,
                            "hide:save:external view");
 
-            if type.startswith("text/"):
+            if (type.startswith("text/") and
+                (not disp or "attachment" not in disp)):
                 # mark up URLs and quotes in any text part.
                 # The part needs to be visible while we do this.
                 # Examine at most 50000 chars from the start.
@@ -3198,6 +3204,8 @@ class notmuch_message_view(edlib.Pane):
                               m, ret='str')
             type = focus.call("doc:get-attr", "multipart-prev:email:content-type",
                               m, ret='str')
+            disp = focus.call("doc:get-attr", "multipart-prev:email:content-disposition",
+                              m, ret='str')
 
             vis = False
 
@@ -3206,6 +3214,10 @@ class notmuch_message_view(edlib.Pane):
                 type.startswith("text/") or
                 type.startswith("image/")):
                 vis = True
+
+            if disp and "attachment" in disp:
+                # Attachments are never visible - even text.
+                vis = False
 
             # Is this in a non-selected alternative?
             p = []

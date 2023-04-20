@@ -616,6 +616,9 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer, char *disp,
 		attr_set_str(&transformed->attrs, "email:charset", charset);
 	if (fname)
 		attr_set_str(&transformed->attrs, "email:filename", fname);
+	if (disp)
+		attr_set_str(&transformed->attrs,
+			     "email:content-disposition", disp);
 	attr_set_str(&h->attrs, "email:which", "orig");
 
 	home_call(mp, "multipart-add", h);
