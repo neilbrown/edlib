@@ -179,6 +179,7 @@ static void change_part(struct mp_info *mpi safe, struct mark *m safe,
 		ASSERT(GET_REFS(m->ref.m) == 1);
 		SET_REFS(m->ref.m, 0);
 		mark_free(m->ref.m);
+		m->ref.m = NULL;
 	}
 	if (part < mpi->nparts) {
 		p = &mpi->parts[part];
