@@ -2924,7 +2924,8 @@ static struct PyModuleDef edlib_mod = {
 void edlib_init(struct pane *ed safe)
 {
 	PyObject *m;
-	wchar_t *argv[1]= { NULL };
+	PyConfig config;
+	char *argv[2]= { "edlib", NULL };
 
 	if (edlib_module_path)
 		module_dir = strdup(edlib_module_path);
@@ -2934,9 +2935,11 @@ void edlib_init(struct pane *ed safe)
 	/* This cast is for sparse, which doesn't seem to cope with L".."
 	 * FIXME
 	 */
-	Py_SetProgramName((wchar_t*)L"edlib");
-	Py_Initialize();
-	PySys_SetArgv(0, argv);
+	PyConfig_InitPythonConfig(&config);
+	config.isolated = 1;
+	PyConfig_SetBytesArgv(&config, 0, argv);
+	Py_InitializeFromConfig(&config);
+	PyConfig_Clear(&config);
 
 	PaneType.tp_new = PyType_GenericNew;
 	PaneIterType.tp_new = PyType_GenericNew;
