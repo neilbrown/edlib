@@ -800,12 +800,16 @@ static inline int do_call_val(enum target_type type, struct pane *home,
 	case TYPE_pane:
 		if (!home->handle || (home->damaged & DAMAGED_DEAD))
 			return Efail;
+		if (times_up_fast())
+			return Efail;
 		if (home)
 			ci.home = home;
 		ci.comm = home->handle;
 		ret = ci.comm->func(&ci);
 		break;
 	case TYPE_comm:
+		if (times_up_fast())
+			return Efail;
 		if (home)
 			ci.home = home;
 		ci.comm = comm2a;

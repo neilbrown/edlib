@@ -531,23 +531,29 @@ int utf8_round_len(const char *text safe, int len)
 	return len;
 }
 
-static time_t timing = 0;
+time_t edlib_timing = 0;
 
 int times_up(void)
 {
 	time_t now;
-	if (!timing)
+	if (edlib_timing == 0)
 		return 0;
+	if (edlib_timing == 1)
+		return 1;
 	now = time(NULL);
-	return timing + 15 < now;
+	if (edlib_timing + 15 < now) {
+		edlib_timing = 1;
+		return 1;
+	}
+	return 0;
 }
 
 void time_starts(void)
 {
-	timing = time(NULL);
+	edlib_timing = time(NULL);
 }
 
 void time_ends(void)
 {
-	timing = 0;
+	edlib_timing = 0;
 }
