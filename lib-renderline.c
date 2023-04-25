@@ -418,13 +418,12 @@ static void render_image(struct pane *p safe, struct pane *focus safe,
 {
 	char *fname = NULL;
 	short width, height;
-	char *size = attr_find(p->attrs, "cached-size");
+	char *ssize = attr_find(p->attrs, "cached-size");
+	struct xy size= {-1, -1};
 
-	if (!size || sscanf(size, "%hdx%hd", &width, &height) != 2) {
-		size = NULL;
-		width = p->parent->w/2;
-		height = p->parent->h/2;
-	}
+	width = p->parent->w/2;
+	height = p->parent->h/2;
+
 	while (*line == '<')
 		line += 1;
 
@@ -433,22 +432,33 @@ static void render_image(struct pane *p safe, struct pane *focus safe,
 
 		if (strncmp(line, "image:", 6) == 0) {
 			fname = strndup(line+6, len-6);
+			if (!ssize ||
+			    sscanf(ssize, "%hdx%hd", &size.x, &size.y) != 2) {
+				struct call_return cr =
+					home_call_ret(all, focus,
+						      "Draw:image-size",
+						      p, 0, NULL, fname);
+				if (cr.x > 0 && cr.y > 0) {
+					size.x = cr.x;
+					size.y = cr.y;
+					asprintf(&ssize, "%hdx%hd",
+						 cr.x, cr.y);
+					attr_set_str(&p->attrs,
+						     "cached-size", ssize);
+				}
+			}
 		} else if (strncmp(line, "width:", 6) == 0) {
 			width = atoi(line + 6);
 			width = width * scale / 1000;
 		} else if (strncmp(line, "height:", 7) == 0) {
 			height = atoi(line + 7);
 			height = height * scale / 1000;
-		} else if (!size && fname && strncmp(line, "noupscale", 9) == 0) {
-			struct call_return cr =
-				home_call_ret(all, focus, "Draw:image-size",
-					      p, 0, NULL, fname);
-			if (cr.x > 0 && cr.x < p->parent->w)
-				width = cr.x;
-			if (cr.y > 0 && cr.y < p->parent->h)
-				height = cr.y;
-			asprintf(&size, "%hdx%hd", width, height);
-			attr_set_str(&p->attrs, "cached-size", size);
+		} else if (strncmp(line, "noupscle", 9) == 0 &&
+			   fname && size.x > 0) {
+			if (size.x < p->parent->w)
+				width = size.x;
+			if (size.y < p->parent->h)
+				height = size.y;
 		}
 		line += len;
 		line += strspn(line, ",");
