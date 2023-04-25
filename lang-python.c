@@ -52,7 +52,7 @@ int PyType_HasFeature(PyTypeObject *type, unsigned long feature);
 #define Py_XDECREF(op) (0)
 #undef Py_IS_TYPE
 #define Py_IS_TYPE(ob, type) (ob == (void*)type)
-#else
+#else /* CHECKER */
 #include <Python.h>
 #endif
 struct Mark;
@@ -2557,7 +2557,7 @@ static bool get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject
 	}
 	for (i = 1; i < argc; i++) {
 		a = PyTuple_GetItem(args, i);
-		if (a == Py_None)
+		if (!a || a == Py_None)
 			/* quietly ignore */;
 		else if (PyObject_TypeCheck(a, &PaneType)) {
 			if ((void*)ci->home == NULL)
