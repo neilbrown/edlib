@@ -3163,7 +3163,7 @@ class notmuch_message_view(edlib.Pane):
                 self.prev(start)
                 self.call("doc:step-part", start, 0)
                 end = start.dup()
-                self.call("doc:char", end, 50000, m)
+                self.call("doc:char", end, 10000, m)
 
                 self.mark_urls(start, end)
                 self.mark_quotes(start, end)
