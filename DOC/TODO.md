@@ -6,6 +6,27 @@ Current priorities
 
 - [X] catch infinite loops more, particularly in b64/utf8/multipart movement
       e.g. cause all key_handle to fail if it has been 30 seconds since waiting for input.
+- [ ] w3m -halfdump -no-cookie -I UTF-8 -O UTF-8 -o ext_halfdump=1 
+         -o display_ins_del=2 -o pre_conv=1 -cols $COLS -T text/html 
+       Then parse the output to display the text with highlights and
+      links.
+      tags:
+        <b>        (bold.  might be B)
+        <a>        (anchor) href  hseq? title target
+        <_SYMBOL>   TYPE=32 e.g. for bullet
+        <img_alt>  src=  width= hseq=  xoffset= title=
+        <internal>  "internal" content, probably ignore . e.g. title_alt
+        <span>    can include id=.  Maybe groups related text?P
+        <pre_int>  images, or white space (for alignment?)
+
+        <title_alt>  title="Foo" - included in <internal>
+        <_id>   ??  no close
+
+      &zwnj; (zero width non joiner)
+      &amp;
+      &rsquo;
+      &emsp;
+
 - [ ] anything marked [1]
 - [ ] fix bugs
 - [ ] core features
