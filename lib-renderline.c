@@ -412,7 +412,7 @@ static void update_line_height(struct pane *p safe, struct pane *focus safe,
 	free(buf_final(&attr));
 }
 
-static void render_image(struct pane *p safe, struct pane *focus safe,
+static int render_image(struct pane *p safe, struct pane *focus safe,
 			const char *line safe,
 			int dodraw, int scale)
 {
@@ -464,10 +464,17 @@ static void render_image(struct pane *p safe, struct pane *focus safe,
 		line += strspn(line, ",");
 	}
 	pane_resize(p, (p->parent->w - width)/2, p->y, width, height);
+
+	attr_set_int(&p->attrs, "line-height", p->h);
+
+	p->cx = p->cy = -1;
+
 	if (fname && dodraw)
 		home_call(focus, "Draw:image", p, 5, NULL, fname);
 
 	free(fname);
+
+	return 1;
 }
 
 static void set_xypos(struct render_list *rlst,
@@ -557,17 +564,12 @@ DEF_CMD(renderline)
 	if (dodraw)
 		home_call(focus, "Draw:clear", p);
 
-	if (strncmp(line, "<image:",7) == 0) {
+	if (strncmp(line, "<image:",7) == 0)
 		/* For now an <image> must be on a line by itself.
 		 * Maybe this can be changed later if I decide on
 		 * something that makes sense.
-		 * The cursor is not on the image.
 		 */
-		render_image(p, focus, line, dodraw, scale);
-		attr_set_int(&p->attrs, "line-height", p->h);
-		p->cx = p->cy = -1;
-		return 1;
-	}
+		return render_image(p, focus, line, dodraw, scale);
 
 	update_line_height(p, focus, &line_height, &ascent, &twidth, &center,
 			   line, scale);
