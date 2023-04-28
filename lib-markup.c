@@ -28,6 +28,17 @@ static struct map *mu_map safe;
 
 #define LARGE_LINE 5000
 
+static int is_render_eol(wint_t ch, struct pane *p safe, struct mark *m safe)
+{
+	char *attr;
+	if (!is_eol(ch))
+		return 0;
+	attr = pane_mark_attr(p, m, "markup:not_eol");
+	if (attr && *attr)
+		return 0;
+	return 1;
+}
+
 DEF_CMD(render_prev)
 {
 	/* In the process of rendering a line we need to find the
@@ -58,7 +69,7 @@ DEF_CMD(render_prev)
 		doc_boundary = call_ret(mark, "doc:get-boundary", f, -1, m);
 	}
 	while ((ch = doc_prev(f, m)) != WEOF &&
-	       (!is_eol(ch) || rpt > 0) &&
+	       (!is_render_eol(ch, f, m) || rpt > 0) &&
 	       count < LARGE_LINE &&
 	       (!boundary || mark_ordered_not_same(boundary, m)) &&
 	       (!doc_boundary || mark_ordered_not_same(doc_boundary, m))) {
@@ -69,7 +80,7 @@ DEF_CMD(render_prev)
 		rpt = 0;
 		count += 1;
 	}
-	if (ch != WEOF && !is_eol(ch) &&
+	if (ch != WEOF && !is_render_eol(ch, f, m) &&
 	    (!doc_boundary || !mark_same(doc_boundary, m))) {
 		/* Just cross the boundary, or the max count.
 		 * Need to step back, and ensure there is a stable boundary
@@ -88,7 +99,7 @@ DEF_CMD(render_prev)
 	if (ch == WEOF && rpt)
 		return Efail;
 	/* Found a '\n', so step forward over it for start-of-line. */
-	if (is_eol(ch))
+	if (is_render_eol(ch, f, m))
 		doc_next(f, m);
 	return 1;
 }
