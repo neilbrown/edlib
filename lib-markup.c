@@ -272,7 +272,7 @@ static int want_vis_newline(struct attr_stack *as)
 DEF_CMD(render_line)
 {
 	/* Render the line from 'mark' to the first '\n' or until
-	 * 'num2' chars.
+	 * 'num' chars.
 	 * Convert '<' to '<<' and if a char has the 'highlight' attribute,
 	 * include that between '<>'.
 	 */
@@ -318,7 +318,7 @@ DEF_CMD(render_line)
 		return Efail;
 	if ((attr = pane_mark_attr(focus, m, "markup:func")) != NULL) {
 		/* An alternate function handles this line */
-		ret = call_comm(attr, focus, ci->comm2, o, m, NULL, ci->num2, pm);
+		ret = call_comm(attr, focus, ci->comm2, o, m, NULL, 0, pm);
 		if (ret)
 			return ret;
 	}

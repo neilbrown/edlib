@@ -3493,7 +3493,7 @@ class notmuch_message_view(edlib.Pane):
                     comm2("cb", focus, mark, 0, "bg:"+bg, 102)
             return edlib.Efallthrough
 
-    def handle_render_line(self, key, focus, num, num2, mark, mark2, comm2, **a):
+    def handle_render_line(self, key, focus, num, mark, mark2, comm2, **a):
         "handle:doc:render-line"
         # If between active quote marks, render a simple marker
         p = self.vmark_at_or_before(self.qview, mark)
@@ -3509,7 +3509,7 @@ class notmuch_message_view(edlib.Pane):
             comm2("cb", focus, "<fg:yellow,bg:blue+30>%d quoted lines</>%s" % (int(p['quote-length']), eol))
         return 1
 
-    def handle_render_line_prev(self, key, focus, num, num2, mark, comm2, **a):
+    def handle_render_line_prev(self, key, focus, num, mark, comm2, **a):
         "handle:doc:render-line-prev"
         # If between active quote marks, move to start first
         p = self.vmark_at_or_before(self.qview, mark)
