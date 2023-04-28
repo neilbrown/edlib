@@ -129,6 +129,10 @@ Draw an image on the pane (or ancestor which as been cleared).
     - 2 right-align horizontally
     - 4 centre vertically
     - 8 bottom-align vertially
+- (x,y) gives a number of rows and cols to overlay on the image for
+    the purpose of cursor positioning.  If these are positive and
+    p->cx,cy are not negative, draw a cursor at p->cx,cy highlighting
+    the relevant cell.
 
 ## all-displays
 

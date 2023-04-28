@@ -255,7 +255,7 @@ class EdDisplay(edlib.Pane):
 
         return True
 
-    def handle_image(self, key, num, num2, focus, str, str2, **a):
+    def handle_image(self, key, num, focus, str, str2, xy, **a):
         "handle:Draw:image"
         self.damaged(edlib.DAMAGED_POSTORDER)
         # 'str' identifies the image. Options are:
@@ -267,6 +267,10 @@ class EdDisplay(edlib.Pane):
         #   0,4,8 for top/middle/bottom in y direction
         # only one of these can be used as image will fill pane
         # in other direction.
+        # xy gives a number of rows and cols to overlay on the image
+        # for the purpose of cursor positioning.  If these are positive
+        # and focus.cx,cy are not negative, draw a cursor at cx,cy
+        # highlighting the relevant cell.
         if not str:
             return edlib.Enoarg
         stretch = num & 16
@@ -309,6 +313,14 @@ class EdDisplay(edlib.Pane):
         cr = cairo.Context(pm)
         Gdk.cairo_set_source_pixbuf(cr, scale, x + xo, y + yo)
         cr.paint()
+
+        (rows,cols) = xy
+        if rows > 0 and cols > 0 and focus.cx >= 0:
+            cr.rectangle(focus.cx + xo, focus.cy + yo,
+                         w/rows, h/cols)
+            cr.set_line_width(1)
+            cr.set_source_rgb(1,0,0)
+            cr.stroke()
         return True
 
     def handle_image_size(self, key, focus, str1, str2, comm2, **a):

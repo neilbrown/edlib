@@ -793,6 +793,9 @@ DEF_CMD(xcb_draw_image)
 	 *   0,4,8 for top/middle/bottom in y direction
 	 * only one of these can be used as image will fill pane
 	 * in other direction.
+	 * If 'x' and 'y' are both positive, draw cursor box at
+	 * p->cx, p->cy of a size so that 'x' will fit across and
+	 * 'y' will fit down.
 	 */
 	struct xcb_data *xd = ci->home->data;
 	bool stretch = ci->num & 16;
@@ -889,6 +892,15 @@ DEF_CMD(xcb_draw_image)
 	cairo_paint(ps->ctx);
 	cairo_surface_destroy(surface);
 	free(buf);
+
+	if (ci->x > 0 && ci->y > 0 && ci->focus->cx >= 0) {
+		struct pane *p = ci->focus;
+		cairo_rectangle(ps->ctx, p->cx + xo, p->cy + yo,
+				w/ci->x, h/ci->y);
+		cairo_set_line_width(ps->ctx, 1.0);
+		cairo_set_source_rgb(ps->ctx, 1.0, 0.0, 0.0);
+		cairo_stroke(ps->ctx);
+	}
 	DestroyMagickWand(wd);
 
 	pane_damaged(ci->home, DAMAGED_POSTORDER);
