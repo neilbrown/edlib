@@ -23,6 +23,7 @@
 
 #define _GNU_SOURCE /*  for asprintf */
 #include <stdio.h>
+#include <ctype.h>
 #include "core.h"
 #include "misc.h"
 
@@ -412,12 +413,52 @@ static void update_line_height(struct pane *p safe, struct pane *focus safe,
 	free(buf_final(&attr));
 }
 
+static void parse_map(const char *map safe, short *rowsp safe, short *colsp safe)
+{
+	/* The map must be a sequence of rows, each of which is
+	 * a sequence of chars starting CAPS and continuing lower.
+	 * Each row must be the same length.
+	 */
+	short cols = -1;
+	short rows = 0;
+	short this_cols = 0;
+
+	for (; *map && isalpha(*map); map += 1) {
+		if (isupper(*map)) {
+			if (rows > 1)
+				if (this_cols != cols)
+					/* Rows aren't all the same */
+					return;
+			if (rows)
+				cols = this_cols;
+
+			this_cols = 1;
+			rows += 1;
+		} else if (rows == 0) {
+			/* First row malformed */
+			return;
+		} else {
+			this_cols += 1;
+		}
+	}
+	if (this_cols != cols)
+		/* Last row is wrong length */
+		return;
+	*rowsp = rows;
+	*colsp = cols;
+}
+
 static int render_image(struct pane *p safe, struct pane *focus safe,
 			const char *line safe,
-			int dodraw, int scale)
+			int dodraw, int scale,
+			int offset, int want_xypos, short x, short y)
 {
 	char *fname = NULL;
+	const char *orig_line = line;
 	short width, height;
+	short rows = -1, cols = -1;
+	int map_offset = 0;
+	int ioffset;
 	char *ssize = attr_find(p->attrs, "cached-size");
 	struct xy size= {-1, -1};
 
@@ -459,6 +500,21 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 				width = size.x;
 			if (size.y < p->parent->h)
 				height = size.y;
+		} else if ((offset >= 0 || want_xypos) &&
+			   strncmp(line, "map:", 4) == 0) {
+			/*
+			 * A map is map:LxxxLxxxLxxxLxxx or similar
+			 * Where each "Lxxx" recognised by a CAP followed
+			 * by lower is a row, and each char is a column.
+			 * So we count the CAPs to get row count, and
+			 * count the chars to get col count.
+			 * If want_xypos then map x,y ino that matrix
+			 * and return pos in original line of cell.
+			 * If offset is in the map, then set ->cx,->cy to
+			 * the appropriate location.
+			 */
+			map_offset = line+4 - orig_line;
+			parse_map(line+4, &rows, &cols);
 		}
 		line += len;
 		line += strspn(line, ",");
@@ -467,13 +523,46 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 
 	attr_set_int(&p->attrs, "line-height", p->h);
 
+	/* Adjust size to be the scaled size - it must fit in
+	 * p->w, p->h
+	 */
+	if (size.x * p->h > size.y * p->w) {
+		/* Image is wider than space */
+		size.y = size.y * p->w / size.x;
+		size.x = p->w;
+		ioffset = 0;
+	} else {
+		/* Image is taller than space */
+		size.x = size.x * p->h / size.y;
+		size.y = p->h;
+		ioffset = (p->w - size.x) / 2;
+	}
+
 	p->cx = p->cy = -1;
 
+	if (offset >= 0 && map_offset > 0 && rows > 0 &&
+	    offset >= map_offset && offset < map_offset + (rows*cols)) {
+		/* Place cursor based on where 'offset' is in the map */
+		short r = (offset - map_offset) / cols;
+		short c = offset - map_offset - r * cols;
+		p->cx = size.x / cols * c + ioffset;
+		p->cy = size.y / rows * r;
+	}
+
 	if (fname && dodraw)
-		home_call(focus, "Draw:image", p, 5, NULL, fname);
+		home_call(focus, "Draw:image", p, 5, NULL, fname,
+			  0, NULL, NULL, cols, rows);
 
 	free(fname);
 
+	if (want_xypos && map_offset > 0 && rows > 0) {
+		/* report where x,y is as a position in the map */
+		short r = y * rows / size.y;
+		short c = (x > ioffset ? x - ioffset : 0) * cols / size.x;
+		if (c >= cols) c = cols - 1;
+		/* +1 below because result must never be zero */
+		return map_offset + r * cols + c + 1;
+	}
 	return 1;
 }
 
@@ -569,7 +658,8 @@ DEF_CMD(renderline)
 		 * Maybe this can be changed later if I decide on
 		 * something that makes sense.
 		 */
-		return render_image(p, focus, line, dodraw, scale);
+		return render_image(p, focus, line, dodraw, scale,
+				    offset, want_xypos, ci->x, ci->y);
 
 	update_line_height(p, focus, &line_height, &ascent, &twidth, &center,
 			   line, scale);

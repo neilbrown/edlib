@@ -178,6 +178,11 @@ The listed attributes can include:
        is declared with virtual pixels in a "scale" attribute.  The actual size
        at any given time is used to determine a scale factor from virtual to
        actual pixels.
+  map:RcccRcccRcccRccc
+       Map for rows and columns for cursor positioning within the image.
+       CAPS to start a row, lower to continue
+       All rows must be the same length.
+       The example provides a 4 by 4 matrix of possible cursor positions.
 
 Several pane attributes can affect the pane as a whole:
  - "heading" is a rendered text line to put at the top of the pane, not to be scolled off.
