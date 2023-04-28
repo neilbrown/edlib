@@ -261,15 +261,16 @@ class EdDisplay(edlib.Pane):
         # 'str' identifies the image. Options are:
         #     file:filename  - load file from fs
         #     comm:command   - run command collecting bytes
-        # 'num' is '1' if image should be stretched to fill pane
-        # if 'num is '0', then 'num2' is 'or' of
+        # 'num' is '16' if image should be stretched to fill pane
+        # otherwise it is 'or' of
         #   0,1,2 for left/middle/right in x direction
         #   0,4,8 for top/middle/bottom in y direction
-        # only one of these can be used as image will fill pane in other direction.
+        # only one of these can be used as image will fill pane
+        # in other direction.
         if not str:
             return edlib.Enoarg
-        stretch = num
-        pos = num2
+        stretch = num & 16
+        pos = num
         w, h = focus.w, focus.h
         x, y = 0, 0
         try:

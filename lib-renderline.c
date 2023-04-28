@@ -465,7 +465,7 @@ static void render_image(struct pane *p safe, struct pane *focus safe,
 	}
 	pane_resize(p, (p->parent->w - width)/2, p->y, width, height);
 	if (fname && dodraw)
-		home_call(focus, "Draw:image", p, 0, NULL, fname, 5);
+		home_call(focus, "Draw:image", p, 5, NULL, fname);
 
 	free(fname);
 }

@@ -787,15 +787,16 @@ DEF_CMD(xcb_draw_image)
 	/* 'str' identifies the image. Options are:
 	 *     file:filename  - load file from fs
 	 *     comm:command   - run command collecting bytes
-	 * 'num' is '1' if image should be stretched to fill pane
-	 * if 'num is '0', then 'num2' is 'or' of
+	 * 'num' is '16' if image should be stretched to fill pane
+	 * Otherwise it is the 'or' of
 	 *   0,1,2 for left/middle/right in x direction
 	 *   0,4,8 for top/middle/bottom in y direction
-	 * only one of these can be used as image will fill pane in other direction.
+	 * only one of these can be used as image will fill pane
+	 * in other direction.
 	 */
 	struct xcb_data *xd = ci->home->data;
-	bool stretch = ci->num == 1;
-	int pos = ci->num2;
+	bool stretch = ci->num & 16;
+	int pos = ci->num;
 	int w = ci->focus->w, h = ci->focus->h;
 	int x = 0, y = 0;
 	int xo, yo;

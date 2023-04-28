@@ -767,7 +767,7 @@ static int render(struct mark *pm, struct pane *p safe,
 		free(a);
 	} else if (strncmp(s, "image:", 6) == 0) {
 		home_call(focus, "Draw:clear", p);
-		home_call(focus, "Draw:image", p, 1, NULL, s+6);
+		home_call(focus, "Draw:image", p, 16, NULL, s+6);
 		rl->background_uniform = False;
 	} else
 		home_call(focus, "Draw:clear", p, 0, NULL, "");

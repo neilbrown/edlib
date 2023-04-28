@@ -121,14 +121,14 @@ Draw an image on the pane (or ancestor which as been cleared).
   If "comm:" the command is run with 'str2' passed as arg 'str1', and
   result should be returned as 'bytes' (comm2 called with ->str1 as
   array of bytes, ->num1 as length).
-- num is 1 if image should be stretched to fill pane
-- num2 (if num == 0) is 'or' of
+- num is the 'or' of the following bit flags:
+   - 16 stretch image to exactly fit pane.  If set, lower bits are ignored.
+  Otherwise image will fill the pane in one dimension, and be positioning
+  left/centre/right in the other.
     - 1 centre horizontally
     - 2 right-align horizontally
     - 4 centre vertically
-    - 8 bottom-align vertialls
-  Image will fill the pane in one dimension, and be positioning
-  left/centre/right in the other.
+    - 8 bottom-align vertially
 
 ## all-displays
 
