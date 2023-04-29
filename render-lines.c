@@ -1514,6 +1514,11 @@ DEF_CMD(render_lines_move_line)
 	/* We are at the start of the target line.  We might
 	 * like to find the target_x column, but if anything
 	 * goes wrong it isn't a failure.
+	 * Need to ensure there is a vmark here. call_render_line_prev()
+	 * wil only move the mark if it is in a multi-line rendering,
+	 * such as an image which acts as though it is multiple lines.
+	 * It will check if there is already a mark at the target location.
+	 * It will free the mark passed in unless it returns it.
 	 */
 	start = vmark_new(focus, rl->typenum, p);
 
@@ -1556,6 +1561,20 @@ DEF_CMD(render_lines_move_line)
 	m2 = call_render_line_offset(focus, start, xypos);
 	if (!m2)
 		goto done;
+
+	if (!mark_same(start, m)) {
+		/* This is a multi-line render and we aren't on
+		 * the first line.  We might need a larger 'y'.
+		 * For now, ensure that we move in the right
+		 * direction.
+		 * FIXME this loses target_x and can move up
+		 * too far.  How to fix??
+		 */
+		if (num > 0 && mark_ordered_not_same(m2, m))
+			mark_to_mark(m2, m);
+		if (num < 0 && mark_ordered_not_same(m, m2))
+			mark_to_mark(m2, m);
+	}
 	mark_to_mark(m, m2);
 
 	mark_free(m2);

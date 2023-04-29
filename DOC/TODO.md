@@ -438,6 +438,9 @@ Module features
 
 ### render-lines
 
+- [ ] improve Move-line in multi-line renders (images). prev
+      must only move up one line, and moving down should start
+     in column
 - [X] improve 'margin' to permit cursor in margin at start of file
 - [X] improve 'margin' to honour previous view of doc
 - [X] update_line_height should handle TAB (and any control) - cannot expect
