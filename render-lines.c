@@ -217,8 +217,10 @@ static struct mark *call_render_line_prev(struct pane *p safe,
 	int ret;
 	struct mark *m2;
 
-	if (m->viewnum < 0)
+	if (m->viewnum < 0) {
+		mark_free(m);
 		return NULL;
+	}
 	ret = call("doc:render-line-prev", p, n, m);
 	if (ret <= 0) {
 		/* if n>0 we can fail because start-of-file was found before
@@ -1480,7 +1482,7 @@ DEF_CMD(render_lines_move_line)
 	int num;
 	int xypos = -1;
 	struct mark *m = ci->mark;
-	struct mark *start;
+	struct mark *start, *m2;
 
 	if (!m)
 		m = call_ret(mark, "doc:point", focus);
@@ -1509,6 +1511,10 @@ DEF_CMD(render_lines_move_line)
 		}
 	}
 
+	/* We are at the start of the target line.  We might
+	 * like to find the target_x column, but if anything
+	 * goes wrong it isn't a failure.
+	 */
 	start = vmark_new(focus, rl->typenum, p);
 
 	if (start) {
@@ -1518,39 +1524,42 @@ DEF_CMD(render_lines_move_line)
 
 	if (!start) {
 		pane_damaged(p, DAMAGED_VIEW);
-		rl->i_moved = 0;
-		return 1;
+		goto done;
 	}
-	if (vmark_first(focus, rl->typenum, p) == start) {
+	if (vmark_first(focus, rl->typenum, p) == start)
 		/* New first mark, so view will have changed */
 		rl->repositioned = 1;
-	}
 
-	if (rl->target_x == 0 && rl->target_y == 0) {
+	if (rl->target_x == 0 && rl->target_y == 0)
 		/* No need to move to target column - already there.
 		 * This simplifies life for render-complete which is
 		 * always at col 0, and messes with markup a bit.
 		 */
-		rl->i_moved = 0;
-		return 1;
-	}
+		goto done;
+
 	/* FIXME only do this if point is active/volatile, or
 	 * if start->mdata is NULL
 	 */
 	vmark_invalidate(start);
 	call_render_line(p, focus, start, NULL);
-	if (start->mdata)
-		xypos = find_xy_line(p, focus, start, rl->target_x,
-				     rl->target_y + start->mdata->y);
+	if (!start->mdata)
+		goto done;
 
+	xypos = find_xy_line(p, focus, start, rl->target_x,
+			     rl->target_y + start->mdata->y);
+
+	if (xypos < 0)
+		goto done;
 	/* xypos is the distance from start-of-line to the target */
-	if (xypos >= 0) {
-		struct mark *m2 = call_render_line_offset(
-			focus, start, xypos);
-		if (m2)
-			mark_to_mark(m, m2);
-		mark_free(m2);
-	}
+
+	m2 = call_render_line_offset(focus, start, xypos);
+	if (!m2)
+		goto done;
+	mark_to_mark(m, m2);
+
+	mark_free(m2);
+
+done:
 	rl->i_moved = 0;
 	return 1;
 }
