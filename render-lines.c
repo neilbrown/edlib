@@ -1526,7 +1526,8 @@ DEF_CMD(render_lines_move_line)
 		pane_damaged(p, DAMAGED_VIEW);
 		goto done;
 	}
-	if (vmark_first(focus, rl->typenum, p) == start)
+	if (vmark_first(focus, rl->typenum, p) == start &&
+	    !vmark_is_valid(start))
 		/* New first mark, so view will have changed */
 		rl->repositioned = 1;
 
