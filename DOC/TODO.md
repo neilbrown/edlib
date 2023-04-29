@@ -667,7 +667,7 @@ Module features
 - [ ] when unhiding for a alternate part, hide any others.
 - [X] separate measuring and drawing images
 - [X] allow images to be full width, and less than half height
-- [1] allow cursor movement in image: maybe 9x9 positions
+- [X] allow cursor movement in image: maybe 9x9 positions
 - [X] ensure multipart ends each part with an eol.
 - [ ] next part/prev part button on spacer
 - [X] handle calendar attachments.

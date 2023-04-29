@@ -232,19 +232,38 @@ DEF_CMD(email_image)
 	char *c = NULL;
 	int p;
 	int ret;
+	int i;
 	struct xy scale;
+	struct mark *point = ci->mark2;
+	int max_chars = ci->num;
+	int map_start;
 
 	if (!ci->mark)
 		return Enoarg;
 	p = get_part(ci->home, ci->mark);
-	doc_next(ci->focus, ci->mark);
 	scale = pane_scale(ci->focus);
 	if (scale.x < 1)
 		scale.x = 1;
-	asprintf(&c, "<image:comm:doc:multipart-%d-doc:get-bytes,width:%d,height:%d,noupscale>\n",
+	asprintf(&c, "<image:comm:doc:multipart-%d-doc:get-bytes,width:%d,height:%d,noupscale,map:RccRccRcc>\n",
 		 to_orig(p),
 		 ci->focus->w * 1000 / scale.x,
 		 ci->focus->h * 750 / scale.x);
+	if (!c)
+		return Efail;
+	map_start = strlen(c) - 2 - 9;
+	if (max_chars >= 0 && max_chars < (int)strlen(c))
+		c[max_chars] = '\0';
+
+	for (i = 0; i < 9 ; i++) {
+		if (point && mark_ordered_or_same(point, ci->mark)) {
+			c[map_start + i] = 0;
+			break;
+		}
+		if (max_chars >= 0 && map_start + i >= max_chars)
+			break;
+		doc_next(ci->focus, ci->mark);
+	}
+
 	ret = comm_call(ci->comm2, "callback:render", ci->focus,
 			0, NULL, c);
 	free(c);
@@ -576,12 +595,17 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer, char *disp,
 	if (ctype && strncasecmp(ctype, "image/", 6) == 0) {
 		struct mark *m;
 		transformed = call_ret(pane, "doc:from-text", h,
-				       0, NULL, NULL, 0, NULL, "\n");
+				       0, NULL, NULL, 0, NULL,
+				       "");
 		if (transformed) {
 			m = vmark_new(transformed, MARK_UNGROUPED, NULL);
 			call("doc:set-ref", transformed, 1, m);
-			call("doc:set-attr", transformed, 1, m, "markup:func", 0,
-			     NULL, "doc:email:render-image");
+			call("doc:replace", transformed, 1, m, "01",
+			     0, m, ",markup:func=doc:email:render-image");
+			call("doc:replace", transformed, 1, m, "\n01",
+			     0, m, ",markup:not_eol=1");
+			call("doc:replace", transformed, 1, m, "\n01\n",
+			     0, m, ",markup:not_eol=1");
 			mark_free(m);
 		}
 	}
