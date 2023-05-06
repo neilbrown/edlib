@@ -390,7 +390,8 @@ Priorities 1-99 are for stable properties of the document, like colour
 to highlight directories in a file listing.  Properties 100-199 are for
 fairly stable results of analysing the document, such as spelling
 errors.  Properties 200-299 are for less stable results like search
-results of a selection.
+results of a selection.  Priorities larger than 65534 are all treated
+identically, as are priorities less than 1.
 
 Importantly and attribute which affects spacing, like 'tab' or 'centre'
 and which cannot be closed and re-opened must have priority of 0.

@@ -124,7 +124,7 @@ struct attr_return {
 		struct attr_stack	*next;
 		char			*attr safe;
 		int			end;
-		short			priority;
+		unsigned short		priority;
 	} *ast, *tmpst;
 	int min_end;
 	int chars;
@@ -221,6 +221,10 @@ static void as_add(struct attr_return *ar safe,
 	if (end == 0 || INT_MAX - end <= ar->chars)
 		end = INT_MAX - 1 - ar->chars;
 	new->end = ar->chars + end;
+	if (prio < 0)
+		prio = 0;
+	if (prio > 65535)
+		prio = 65535;
 	new->priority = prio;
 	*here = new;
 }
