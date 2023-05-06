@@ -357,6 +357,9 @@ display to affect drawing of the text.  Attributes understood by
   the width and half the height, but to be as large as possible.  With
   noupscale this calculation never makes the image larger than the
   native size of the image, only the same size or smaller.
+- "hide" - the text affected by this attribute is not rendered at all.
+   If any other attribute is active with the same or higher priority,
+   "hide" becomes ineffective.
 
 ### lib-markup
 
@@ -395,6 +398,9 @@ identically, as are priorities less than 1.
 
 Importantly and attribute which affects spacing, like 'tab' or 'centre'
 and which cannot be closed and re-opened must have priority of 0.
+Conversely the attribute "hide" is implicitly disabled when any other
+attribute has a higher priority, and so it should typically have the
+largest of the priorities in use.
 
 I would like 'str2' to be inserted with the given attributes, but that
 isn't implemented yet.

@@ -389,6 +389,9 @@ DEF_CMD(render_line)
 			break;
 		if (doc_boundary && mark_ordered_or_same(doc_boundary, m))
 			break;
+		chars++;
+		if (ar.ast && strcmp(ar.ast->attr, "hide") == 0)
+			continue;
 		if (ch == '<') {
 			if (o >= 0 && b.len+1 >= o) {
 				doc_prev(focus, m);
@@ -411,7 +414,6 @@ DEF_CMD(render_line)
 			buf_concat(&b, "</>");
 		} else
 			buf_append(&b, ch);
-		chars++;
 	}
 	if (add_newline && want_vis_newline(ar.ast))
 		buf_concat(&b, "↩");
