@@ -494,7 +494,7 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 		} else if (strncmp(line, "height:", 7) == 0) {
 			height = atoi(line + 7);
 			height = height * scale / 1000;
-		} else if (strncmp(line, "noupscle", 9) == 0 &&
+		} else if (strncmp(line, "noupscale", 9) == 0 &&
 			   fname && size.x > 0) {
 			if (size.x < p->parent->w)
 				width = size.x;
