@@ -3260,8 +3260,12 @@ class notmuch_message_view(edlib.Pane):
                 self.prev(m1)
                 i += 1
             url = self.call("doc:get-str", m1, ms, ret='str')
-            self.call("doc:set-attr", 1, m1, "render:url", "%d" % len)
-            self.call("doc:set-attr", 1, m1, "url", url)
+            tag = self['next-url-tag']
+            if not tag:
+                tag = "1"
+            self.call("doc:set-attr", 1, m1, "render:url", "%d:%s"%(len,tag))
+            self['next-url-tag'] = "%d" % (int(tag) + 1)
+            self["url:" + tag] = url
 
     def mark_quotes(self, ms, me):
         # if we find more than 7 quoted lines in a row, we add the
@@ -3468,8 +3472,9 @@ class notmuch_message_view(edlib.Pane):
             comm2("attr:callback", focus, int(str2), mark, "fg:blue,bold", 120)
             return 1
         if str == "render:url":
-            comm2("attr:callback", focus, int(str2), mark,
-                  "fg:cyan-60,underline,active-tag:url,url-len="+str2, 120)
+            c=str2.index(':')
+            comm2("attr:callback", focus, int(str2[:c]), mark,
+                  "fg:cyan-60,underline,active-tag:url,url-tag="+str2[c+1:], 120)
         if str == 'start-of-line':
             m = self.vmark_at_or_before(self.qview, mark)
             bg = None
@@ -3521,21 +3526,16 @@ class notmuch_message_view(edlib.Pane):
     def handle_click(self, key, focus, mark, str2, **a):
         "handle:Mouse-Activate:url"
         a = str2.split(',')
-        leng = 0
+        tag=""
         for w in a:
-            if w.startswith("url-len="):
-                leng = int(w[8:])
-        if not leng:
+            if w.startswith("url-tag="):
+                tag = w[8:]
+        if not tag:
             return 1
-        i = 0
-        m = mark.dup()
-        while i < leng and not focus.call("doc:get-attr", m, "render:url", ret='str'):
-            i += 1
-            focus.prev(m)
-
-        url = focus.call("doc:get-attr", m, "url", ret='str')
-        focus.call("Message", "Opening url <%s>" % url)
-        focus.call("Display:external-viewer", url)
+        url = focus["url:" + tag]
+        if url:
+            focus.call("Message", "Opening url [%s] <%s>" % (tag,url))
+            focus.call("Display:external-viewer", url)
         return 1
 
 def notmuch_doc(key, home, focus, comm2, **a):
