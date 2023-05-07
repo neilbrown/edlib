@@ -115,7 +115,7 @@ Bugs to be fixed
       Content-Transfer-Encoding: amazonses.com might too
       Maybe CHARSET=UTF-8 // transfer-encodeing=QUOTED/PRINTABLE
 - [X] auto-detect urls stop a ':' - and other bad places.  But not at ) ??
-- [ ] multipart/related base64 text/html doesn't seem to get decoded either
+- [X] multipart/related base64 text/html doesn't seem to get decoded either
 - [ ] catching doc:replace in a pane doesn't catch doc:insert-file.
       I need a simple way to intercept any change.
 - [ ] marks can be used after they go invalid too easily.  How to fix??
