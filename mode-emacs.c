@@ -3168,6 +3168,7 @@ static void emacs_init(void)
 	key_add(m, "K:C- ", &emacs_mark);
 	key_add(m, "mode-set-mark", &emacs_mark);
 	key_add(m, "K:CX:C-X", &emacs_swap_mark);
+	key_add(m, "mode-swap-mark", &emacs_swap_mark);
 	key_add(m, "Abort", &emacs_abort);
 	key_add(m, "K:C-W", &emacs_wipe);
 	key_add(m, "K:A-w", &emacs_copy);

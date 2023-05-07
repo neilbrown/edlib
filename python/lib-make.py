@@ -897,9 +897,11 @@ def make_request(key, focus, num, num2, str1, mark, **a):
     if dflt_arg:
         pnt = p.call("doc:point", ret='mark')
         mk = pnt.dup()
+        p.call("mode-set-mark", 1)
         p.call("Replace", dflt_arg, mk)
         # Move point to start of insertion, for easy editing.
-        pnt.to_mark(mk)
+        # The '1' says to make this mark selection replaceable
+        p.call("mode-swap-mark", 1)
 
     p.call("popup:set-callback", run_make)
     p["prompt"] = "%s Command" % cmd
