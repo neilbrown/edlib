@@ -6,7 +6,7 @@ Current priorities
 
 - [X] catch infinite loops more, particularly in b64/utf8/multipart movement
       e.g. cause all key_handle to fail if it has been 30 seconds since waiting for input.
-- [ ] w3m -halfdump -no-cookie -I UTF-8 -O UTF-8 -o ext_halfdump=1 
+- [X] w3m -halfdump -no-cookie -I UTF-8 -O UTF-8 -o ext_halfdump=1 -o display_image=off
          -o display_ins_del=2 -o pre_conv=1 -cols $COLS -T text/html 
        Then parse the output to display the text with highlights and
       links.

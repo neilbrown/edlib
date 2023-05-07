@@ -3471,10 +3471,40 @@ class notmuch_message_view(edlib.Pane):
         if str == "render:rfc822header-to":
             comm2("attr:callback", focus, int(str2), mark, "fg:blue,bold", 120)
             return 1
-        if str == "render:url":
-            c=str2.index(':')
-            comm2("attr:callback", focus, int(str2[:c]), mark,
-                  "fg:cyan-60,underline,active-tag:url,url-tag="+str2[c+1:], 120)
+        if str == "render:hide":
+            comm2("attr:callback", focus, int(str2), mark, "hide", 100000)
+        if str == "render:bold":
+            comm2("attr:callback", focus, 100000 if str2 == "1" else -1,
+                  mark, "bold", 120)
+        if str == "render:internal":
+            comm2("attr:callback", focus, 100000 if str2 == "1" else -1,
+                  mark, "hide", 120)
+        if str == "render:imgalt":
+            comm2("attr:callback", focus, 100000 if str2 == "1" else -1,
+                  mark, "fg:green-60", 120)
+        if str[:10] == "render:url":
+            w = str2.split(':')
+            if len(w) == 2:
+                tg = w[1]
+                leng = int(w[0])
+            else:
+                tg = str2
+                leng = 100000
+            if str == "render:url-end":
+                leng = -1
+            comm2("attr:callback", focus, leng, mark,
+                  "fg:cyan-60,underline,active-tag:url,url-tag="+tg, 120)
+        if str == "render:char":
+            w = str2.split(':')
+            attr = None
+            if w[1][0] == '!' and w[1] != '!':
+                # not recognised, so highlight the name
+                attr = "fg:magenta-60,bold"
+            comm2("attr:callback", focus, int(w[0]), mark,
+                  attr, 120, w[1])
+            # Don't show the htm entity description, just the rendering.
+            comm2("attr:callback", focus, int(w[0]), mark,
+                  "hide", 60000)
         if str == 'start-of-line':
             m = self.vmark_at_or_before(self.qview, mark)
             bg = None

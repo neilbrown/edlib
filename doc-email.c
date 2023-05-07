@@ -583,8 +583,11 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer, char *disp,
 		asprintf(&ctype, "%1.*s/%1.*s", majlen, major, minlen, minor);
 	else
 		asprintf(&ctype, "%1.*s", majlen, major);
-	if (ctype && strcasecmp(ctype, "text/html") == 0)
-		transformed = call_ret(pane, "html-to-text", h);
+	if (ctype && strcasecmp(ctype, "text/html") == 0) {
+		transformed = call_ret(pane, "html-to-text-w3m", h);
+		if (!transformed)
+			transformed = call_ret(pane, "html-to-text", h);
+	}
 	if (ctype && strcasecmp(ctype, "text/calendar") == 0)
 		transformed = call_ret(pane, "ical-to-text", h);
 	if (ctype && strcasecmp(ctype, "application/pdf") == 0)
@@ -1253,6 +1256,8 @@ void edlib_init(struct pane *ed safe)
 		  "attach-email-view");
 
 	call("global-load-module", ed, 0, NULL, "lib-html-to-text");
+	call("global-load-module", ed, 0, NULL, "lib-html-w3m")
+
 	call("global-load-module", ed, 0, NULL, "lib-pdf-to-text");
 	call("global-load-module", ed, 0, NULL, "lib-ical-to-text");
 }
