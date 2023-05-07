@@ -4,34 +4,10 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [X] catch infinite loops more, particularly in b64/utf8/multipart movement
-      e.g. cause all key_handle to fail if it has been 30 seconds since waiting for input.
-- [X] w3m -halfdump -no-cookie -I UTF-8 -O UTF-8 -o ext_halfdump=1 -o display_image=off
-         -o display_ins_del=2 -o pre_conv=1 -cols $COLS -T text/html 
-       Then parse the output to display the text with highlights and
-      links.
-      tags:
-        <b>        (bold.  might be B)
-        <a>        (anchor) href  hseq? title target
-        <_SYMBOL>   TYPE=32 e.g. for bullet
-        <img_alt>  src=  width= hseq=  xoffset= title=
-        <internal>  "internal" content, probably ignore . e.g. title_alt
-        <span>    can include id=.  Maybe groups related text?P
-        <pre_int>  images, or white space (for alignment?)
-
-        <title_alt>  title="Foo" - included in <internal>
-        <_id>   ??  no close
-
-      &zwnj; (zero width non joiner)
-      &amp;
-      &rsquo;
-      &emsp;
-
 - [ ] anything marked [1]
 - [ ] fix bugs
 - [ ] core features
 - [ ] markdown viewer and editor
-- [X] display-xcb ??
 - [ ] git log view with rebase and reword options
 - [ ] git-commit command which presents the patch and allows it to be
       edited (with consistency checks and number updates). On :Commit
@@ -57,95 +33,39 @@ Bugs to be fixed
       scaling.
 - [ ] notmuch shouldn't clear tag:new until *all* views
       on search have closed.
-- [X] I think attaching a path starting ~/ to an email fails.
 - [ ] stop consistency checking a text doc when it gets "big" ??
 - [ ] auto-sign emails..
 - [ ] message must be tagged "replied" when a reply is sent.
 - [ ] if a shell command produces no output, message should be shown
-- [X] pango_layout_set_text() is sometimes given invalid UTF-8
 - [ ] be sure to wait for xdg-open etc.
 - [ ] things slow down after lots of edits.  Maybe track
       number of chunk, marks, undos etc and display them somewhere
 - [ ] shell output open a window after a timeout, but it the shell
       opened and edit window, that can be a bit confusing
-- [X] if email file cannot be found, report the problem.
 - [?] Make doesn't follow llog_reader.c:723:6: when it have seen
      make[4]: Entering directory '/home2/git/lustre-release/lustre/utils'
-- [X] allow a default compile command to be stored in any directory
-- [X] a server-client window sometimes doesn't get tty attrs restored.
-- [X] when completing email address in compose, no feedback while waiting
-- [X] hide quoted material in emails
-- [X] email summary line should indicate size of message.
 - [ ] Email summary line for single-message threads should show size??
-- [X] long lines wrap badly in xcb display - in emails at least
 - [ ] accessing document list can be slow.  Same for large directories
-- [X] queries don't update in the background - they used to
-- [X] images in email message should never be scaled up
 - [ ] marks sometimes get out of order in email query list
-- [X] C-y sometimes yanks something strange, A-y then needed.
-- [X] fill-mode doesn't propogate 'cols' from one instance to next
-      so if doc is marked 'textfill', that does enable autofill
-- [X] if last line of file does end \n, and cursor is there, then moving
-     up leave the cursor displayed on x11 display.
-- [X] autospell sometimes ignores new text, or highlights partial words
 - [ ] 'other' notmuch search doesn't show older messages sometimes
-- [X] need to refresh notmuch search when closed if any tags were changed.
-- [X] future-dated email messages get date displayed badly in summary
-- [X] email with cc line > 2048 display badly
 - [ ] Don't wrap email header lines when cursor isn't on the line - too noisy
-- [X] email parts that don't end EOL are displayed badly - 012 at end
-- [X] when composing email, header lines mustn't wrap
-- [X] when sending email, wrapped header lines must be unwrapped
 - [ ] lib-utf8 takes chars, not bytes, so it doesn't work over
       a utf8 document
 - [ ] ordering of marks in notmuch search summary can go wrong
 - [ ] sometimes the tid in a notmuch query mark.pos is not in threadids!!
-- [X] message/rfc822 content cannot be displayed
-- [X] invalid quoted-printable/utf8 content like We=E2&#128;&#153;d
-      causes the rest of content not to be displayed.
-- [X] html2text should set decode-errors to ignore
-- [X] base64 saved-file of content ending
-      IHdpZHRoPScxJyBoZWlnaHQ9JzEnID48L3NwYW4+IDwvYm9keT48L2h0bWw+DQo=
-      adds 0x40 0xff to the end.
-- [X] this highlighted added by xterm-keyboard-paste is disabled when chars
-      are typed, but not on 'enter'
-- [X] URL highlighting of email is sometimes bizzare - possibly when
-      orig content is b64
-- [X] Resent- headers need to be handled somehow.
-- [X] structure prefix in email summary gets truncated
-- [X] when content-type is TEXT/html (not multipart), html isn't decoded
-      except when it is??  charset=ISO-8859-1 might cause problems
-      Content-Transfer-Encoding: amazonses.com might too
-      Maybe CHARSET=UTF-8 // transfer-encodeing=QUOTED/PRINTABLE
-- [X] auto-detect urls stop a ':' - and other bad places.  But not at ) ??
-- [X] multipart/related base64 text/html doesn't seem to get decoded either
 - [ ] catching doc:replace in a pane doesn't catch doc:insert-file.
       I need a simple way to intercept any change.
 - [ ] marks can be used after they go invalid too easily.  How to fix??
-- [X] optimize all doc:content handlers to use the 'string' if possible
-     + libsearch
-     + fix charset
-     + qprint
-     + utf8
 - [ ] don't allow starting macro inside a macro
 - [ ] Num-C-l doesn't work if it would require part of a wrapped line
       off top of screen
 - [ ] initial draw of a pane sometime stops halfway down the pane - particularly email.
-- [X] x11selection doesn't work properly on second ncurses display
-      except when it does...
 - [ ] teach input to allow a repeat command to be registered so that e.g.
       search/replace and do a bit of work, then ask to be called again.
       input pboard_waican cancel this on suitable input.
 - [ ] Searching for \U0001f5d1 crashes, [\U0001f5d1] fails.
 - [ ] ctrl-z in elc doesn't ask edlib to release the terminal
 - [ ] use iconv(3) for char-set conversion
-- [X] When visiting a file which is found to be a link to a different name,
-      the file isn't reloaded if it has changed.
-      CANNOT REPRODUCE
-- [X] save-all dialogue sometimes puts cursor at bottom and cannot move up.
-      MY GUESS IS doc:EOL in linefilter is calling doc:render-line-prev
-      and getting an error - maybe from doc:render-line-prev on parent.
-      I need to try when next it happens.
 - [ ] "copy:get" can hang: xs_copy_get_func->gtk_clipboard_wait_for_text->
      g_main_loop_run->poll
 - [ ] 'make' sometimes chooses an info over an error line - both in C file
@@ -164,7 +84,6 @@ Requirements for a v1.0 release
 
 - [ ] logo!!! to use as icon in X11 for example.  Building blocks? Window pane?
 - [ ] efficient refresh using separate lib-renderline for each line
-- [X] efficient X11 drawing using server-side surfaces
 - [ ] configuration
 - [ ] vi mode
 - [ ] office mode
@@ -172,13 +91,11 @@ Requirements for a v1.0 release
 - [ ] multiple front ends: elvi, elma, elnm, eled?
 - [ ] introspection
 - [ ] markdown editor with PDF output
-- [X] spell checking
 - [ ] non-line-based render, such as a tabular render for spreadsheet.
 - [ ] documentation reader
 - [ ] block-dev (mmap) doc type, and some hex-mode support
 - [ ] user documentation
 - [ ] developer documentation
-- [X] notmuch
 - [ ] some git support
 
 Core features
@@ -187,16 +104,12 @@ Core features
 - [ ] design a way for a keystroke to interrupt a long-running function.
 - [ ] extend Draw:measure protocol to allow constant-width-fonts to
       cannot-scale displays can be detected and measurement optimised for.
-- [X] centralize handling of the creation of a pane stack for a new display.
-- [X] have standard way for slow testing of order of marks
-- [X] have a debug mode where mark consistency is checked v.often
 - [ ] improve timeout.  Set timer once, then set a flag so that all commands fail
       until some top-level clears the flag.
 - [ ] reconsider all 'return comm_call()' calls.  Do we every really
       care if the callback succeeded?
 - [ ] Change Efallthough to -1 so I can return '0' meaningfully.
       Efalse probably becomes 0.
-- [X] key_add_prefix() doesn't work if there is no punctuation.
 - [ ] send warning message when recursive notification is prohibited.
        editor:notify:Message:broadcast
 - [ ] detect and limit recursion.
@@ -208,9 +121,6 @@ Core features
       pointer separate to 'focus'?  Maybe panes could have optional
       'child' method which returns main child - pane_leaf() calls that.
       Maybe pane_leaf() find a pane with z=0 and matching w,h ??
-- [X] no.. maybe generalise search and select somehow, so a line-based filter can
-      detect and highlight the selection, rather than major-mode being fully
-      in control  Similarly search might be handled by a render pane.
 - [ ] support text-replace as easy as text-insert (doc:char...)
 - [ ] for doc:cmd transformation,  what about :Enter and BS TAB ESC ???
 - [ ] For a notify handler, returning non-zero doesn't stop other handlers
@@ -220,8 +130,6 @@ Core features
 - [ ] make a doc read-only if dir doesn't exist or isn't writable
 - [ ] account all mem allocation types separately, and (optionally) report
       stats regularly
-- [X] When I call DocPane I normally doc:attach-view a doc there. But it is
-      the same doc, so pointless.  Can I optimise that somehow?
 - [ ] document the use of doc:replaced.  What are the two
       marks exactly? start and end of range.  Verify all clients and providers
       The 'num' is for when mark2 is absent and it suggests a number of bytes
@@ -254,30 +162,12 @@ Module features
 
 ### lib-x11selection-xcb
 
-- [X] need to be fall-back selection owner so if some pane calls selection:discard,
-      we get it.
-- [X] need to control whether selection:commit sets sel_committed, as Xserver's
-      selection might refresh without us being explicitly told.
 - [ ] will need to listen for property-change-event on requestor to know
       when result has been deleted to handle INCR.
-- [X] Need to append large selection a bit at a time(?)
 - [ ] if too big, or alloc error, switch to INCR more for sending
 - [ ] support INCR mode for receiving
-- [X] detect error state and avoid doing anything silly.  Maybe try
-      to reconnect occasionally.
-      Actually, reconnect is probably pointless.  Instead, delete the
-      command and reject all requests until things get freed.  Most
-      likely situation is that the display is gone.
 - [ ] use iso-8859-15 for some of the text formats.
 - [ ] test very large copy/paste
-- [X] resolve timestamps.  I think we are supposed to store a timestamp
-      when the content that we provide was created.
-	- Need something to return for TIMESTAMP conversion
-	- Need event time to declare when setting ownership
-	- Need something to compare timestamp in selection_request_event
-        - Possible record when we lost it via selection_clear
-        - need to know current time to request a selection conversion
-      So: yes.  Whenever I own a selection, I need a timestamp for it.
 - [ ] need a queue of pending selection requests
 
 ### lib-textfill
@@ -286,13 +176,8 @@ Module features
 
 ### render-format
 
-- [X] fix start-line-ref problem
 - [ ] improve caching of attributes
 - [ ] profile performance to find opporunities for optimisation.
-- [X] ensure doc_refs can be stable.  '0' must always be valid.
-      Allow mark to be a start of any val or var field, even var
-      field that might be empty.  Maybe normalize marks if var size
-      appears to change - probably won't matter in practice.
 
 ### lib-search
 
@@ -309,9 +194,6 @@ Module features
 
 ### rexel
 
-- [X] add "get-prefix" function to extract the longest constant
-      prefix from the pattern, so that a 'strstr' can be used to expedite
-      search
 - [ ] move to separate git repo and document well.
 - [ ] review return code of rxl_advance().  What should be
       returned if a flag allowed a match, but the char didn't.
@@ -362,19 +244,13 @@ Module features
 - [ ] filename completion should ignore uninteresting files like ".o"
       Maybe use .gitignore, or have config module understand that.
 - [ ] maybe alt-, does c-x` if that is the recent search?
-- [X] Support write-file (providing a file name) - currently I only save
-      to the file I loaded from.
-- [X] Support include-file (C-x i) to load contents of a file at point.
 - [ ] C-uC-xC-v prompts for file name, like C-xC-v in emacs
 - [ ] compare two panes somehow - new lib-compare function??
-- [X] pipe doc or selection to a command, optionally capture to replace with output.
 
 ##### needs design work
 
 - [ ] search/replace should support undo somehow
       I can already step out, undo, step back.  What more?  Maybe Alt-U (uppercase)?
-- [X] search/replace should make it easy to revisit previous changes.
-       Backspace cannot work.  Alt-P might. No, that is history.  Try up/down
 - [ ] What should be passed to M-x commands?  prefix arg?  selection string?  point?
        Surely everything.  Prefix if present, string if active, point always.
 
@@ -385,16 +261,9 @@ Module features
 
 ### ncurses
 
-- [X] enable bracketed paste mode on xterm
-     \e[?2004h  enables
-     \e[?2004l  disables
-     \e[200~  signals start of paste
-     \e[201~  signals end of paste
-     Report the content with copy:save and send :Paste.
 - [ ] add full list of colour names (to lib-colourmap)
 - [ ] allow a pane to require 'true-colour' and discover number of colours available
       Colour map gets changed when it becomes the focus.
-- [X] merge 'catpic' code to draw low-res images.
 - [ ] When only 16 colours, maybe add underline when insufficient contrast available.
 - [ ] automatically ensure the fg colour contrasts with bg, unless explicitly disabled.
       If bg is bright, reduce fg brightness.  If bg is dark, reduce saturation.
@@ -402,64 +271,21 @@ Module features
 ### pygtk
 
 - [ ] can we capture the substates of character composition, and give feed-back?
-- [X] make sure pixmap handling in optimal - I want the per-pane images to be server-side
-      See cairo_xcb_surface_create. DONE IN display-x11-xcb
-- [X] If a net connection to a display goes away, we can block on IO to that display.
-      Particularly an ssh connection to an ncurses display.
-      The problem is the x11selection X connection. When it is closed, the
-      whole app dies!
-      ARRG.  This is a gtk bug that Emacs wants fixed too.  I guess maybe
-      I need something other than gtk... I wonder if I can tolerate tk??
-      or PyFLTK or WxWidgets .... or XCB??
-      Or maybe run any gtk code in a separate process... or task?
 
 ### display-x11-xcb
 
 - [ ] Add test option, fetching image back from server after 'post'
-- [X] don't create server-side pixmap for uniform-colour panes.
-       delay creation until image or text is drawn
-- [X] find way to sort pane so over-lap detection is easier
-- [X] track a rectangle that needs refresh and clip all refresh
-      to that
-- [X] before drawing, clip pane against anything that overlaps.  Track an
-      internal rectangle which is hidden and external rectangle which is
-      visible.
-- [X] C-_ isn't recognized
-- [X] clip backing-image size against parents so it gets redrawn when no-longer
-      clipped
-- [X] window doesn't redraw immediately after full-screen
-- [X] NONEED always do SOURCE drawing to  server-side pixmaps.  So keep a client-side
-      pixmap for assembling image
-- [X] set window name and other _NET_WM things
 - [ ] would GraphicsMagick be better than ImageMagick?
-- [X] When email with images scolls, the images aren't cleared first.
-- [X] is connection-close handled properly?- I don't free stuff!
 - [ ] share connections among multiple windows
-- [X] always poll for input before waiting on fd.  Need new "event:poll".
-- [X] Check that cursor is always removed when focus changes.  Sometimes
-      it gets left behind.
 
 ### render-lines
 
 - [ ] improve Move-line in multi-line renders (images). prev
       must only move up one line, and moving down should start
      in column
-- [X] improve 'margin' to permit cursor in margin at start of file
-- [X] improve 'margin' to honour previous view of doc
-- [X] update_line_height should handle TAB (and any control) - cannot expect
-      Draw:text-size to handle it.
-- [X] Give lib-renderline a Refresh:view which calls something in the render-line
-      pane which does call_render_line().  Use pane_damaged() to mark panes as invalid
-      and pane_refresh() to update them.
-- [X] If a renderline pane moves the background might not be correct:
-- [X] ... it might have been partly off-screen, so background wasn't copied
-- [X] ... the background that was copied might be non-uniform
 - [ ] the background "call:" option should report if background was changed.
       An attribute could store chosen information for comparison.
       Would need a 'force' flag.
-- [X] revise render_lines_move (Cannot find anything to revise now)
-- [X] revise render_lines_move_line
-- [X] revise render_lines_view_line
 - [ ] Replace <attr> text </> in markup with SOH attr STX text ETX
       This also affects lib-markup and others.
 - [ ] I regularly hit problems because ->mdata is not up to date and we render
@@ -475,7 +301,6 @@ Module features
 
 - [ ] detect errors including Abort and search failure etc. Abort capture or
       replay on error
-- [X] 'capturing' state should be visible in status line.
 - [ ] Possibly wait for a shell-command etc to complete before continuing.
 
 ### doc-dir
@@ -521,24 +346,11 @@ Module features
 
 ### lib-view
 
-- [X] easy way for minor-modes to report existence in status bar
 - [ ] review use of line-drawing chars for window boarders
 - [ ] improve scroll bars
-- [X] make (trailing) space/tab in doc name visible
 - [ ] review decision about that to do when high < 3*border-height.
       Current (disabled) code makes a mess when differing scales causes
       borders to be shorter than content.
-
-### doc-rendering
-
-- [X] create alternative to doc-rendering which *knows* that the int of mark.ref
-      is unused and puts a line-offset in there.  Then mark is safe for use in doc.
-      Content is extracted (e.g. with lib-format) and doc:step and doc:content are
-      implemented in an overlay which detects markup and presents it as attributes:
-      render:markup gives the attr string and len:markup gives the length to ETX
-      Rather than formatting to a string with markup, we could format to a list
-      of attr/text pairs.  lib-format returns these via a callback and we use some
-      bits to index the list and some to index a char.
 
 ### grep/make
 
@@ -562,10 +374,6 @@ Module features
 ### shell mode
 
 - [ ] non-utf8 in output makes python spit the dummy
-- [X] If current directory doesn't exist, cope somehow
-- [X] make sure PWD env var doesn't end '/'.
-- [X] 'shell-command' should try to use same pane even though it
-      kills the old document and creates a new one
 - [ ]  Use pattern-match on command to optionally choose an overlay
        which can highlight output and allow actions.
        e.g. (git )?grep   - highlight file names and jump to match
@@ -577,8 +385,6 @@ Module features
 
 ###  edlibclient
 - [ ] Catch broken-pipe in all sock.send calls
-- [X] client needs to pass XAUTHORITY as well as DISPLAY, and these must be
-      used correctly.
 - [ ] run edlib directly if no socket
 - [ ] option to create a new frame
 - [ ] more work on server mode:
@@ -592,20 +398,12 @@ Module features
 
 - [ ] 'm' in 'move marks on tid to before self.pos' was reportedly NULL once.
 - [ ] Two threads with same timestamp swap order on reload
-- [X] "date:-months" doesn't do what I thought.  It start from beginning
-      of this month, not one month ago.  So use a number of days.
 - [ ] When main_doc notices counts increase, it should ensure the next
       visit of the search triggers a refresh.
 - [ ] all shares-ref docs must be careful about comparing marks ... or else
       we need to compare ignoring offset?  Best to compare <, not <=??
 - [ ] If I open a search but there are no messages (yet) I get a python
       error that select-message failed
-- [X] don't use '-' for tag removal, use it for numeric prefix instead.  Maybe
-      '--' can do tag removal.
-- [X] messages shouldn't disappear from open thread when background refresh happens.
-- [X] archived threads SHOULD disappear when a query is closed.
-- [X] add command to go to first new message? 'N'?
-      'N' is next-thread.  'j' to jump to the next thread?
 - [ ] saved queries that are not mentioned in any other query should get
       presented in the search list. ... except maybe current/unread/new ???
 - [ ] if a thread matched query and so is still cached, but no
@@ -622,7 +420,6 @@ Module features
       exist, or not be readable
 - [ ] allow opening drafts in composer on restart.
 - [ ] allow deleting of drafts without posting.  Maybe just 'delete'..
-- [X] option to wrap subjects onto next line - in query view
 - [ ] When active query changes, highlight on list view doesn't immediately
       follow
 - [ ] TESTS
@@ -634,7 +431,6 @@ Module features
 - [ ] When changing any tag in a thread, or when opening the thread,
       assess thread tags by looking at all matched messages.
 - [ ] make min top/bottom margin configurable, set for message list
-- [X] search in thread list - use 'format2' after fixing bug
 - [ ] display counts of current thread somewhere, so I know where I'm up to. - new/unread/matched in status line
 - [ ] review highlight on query when the message selected isn't the message displayed
 - [ ] fix bugs in stored-query!! query: is slow and (I think) buggy
@@ -668,21 +464,12 @@ Module features
       non-existing file.  Allow a default dir which can be remembered.
       Use this for Emacs, and for saving attachments
 - [ ] when unhiding for a alternate part, hide any others.
-- [X] separate measuring and drawing images
-- [X] allow images to be full width, and less than half height
-- [X] allow cursor movement in image: maybe 9x9 positions
-- [X] ensure multipart ends each part with an eol.
 - [ ] next part/prev part button on spacer
-- [X] handle calendar attachments.
 - [ ] closing a large section pushed cursor to top of display, which
       isn't really what I want.  I'd rather the cursor stayed still.
 - [ ] in notmuch I searched in a message (mimepart), then enter to choose,
    then 'q' and crash.
 - [ ] A multipart still had an active view.
-- [X] make base64 much more efficient.  Stepping back from EOF can sync
-      by counting ='s.  There are always 4n chars. So last for are
-      xxxx or xxx= or xx==. RFC2045 guarantees the == with be there.
-      Also possibly increase MAX_QUAD a bit - 30?
 - [ ] linecount is spinning somewhere.
       Doc is multipart, chars are garbage. underlying is b64
       Email has large attachments
@@ -692,8 +479,6 @@ Module features
     redraw gets confused and point goes off-screen, which seems
     to leave it confused.
 - [ ] in text/plain, wrap long lines on 'space'. - make this a config in lib-markup
-- [X] allow view of all headers
-- [X] allow view of "more" headers than default (including file names, message-id)
 - [ ] maybe hide signature, unless small
 - [ ] When click on first char in tagged range, I don't see the tag and
    don't get a Mouse-Activate event.
@@ -707,7 +492,6 @@ Module features
 - [ ] detect and hide cited text
 - [ ] maybe detect "-----Original Message-----" as indicating cited text
 - [ ] Make long to/cc headers truncate unless selected.
-- [X] display image on ncurses.
 - [ ] Make addresses active (menu?) to allow adding to a saved search
       with options and/or/andnot.  Also "mail to" or "save"..
 - [ ] Allow any selection to be added to a saved search.
@@ -719,7 +503,6 @@ Module features
 
 - [ ] when aborting email composition, unlink the file if it is
       empty.  Probably dispose of autosave too.
-- [X] when I reply to myself it say "someone said"
 - [ ] should I look for Delivered-to headers. Even;
          1. To, Cc, Bcc, Reply-To, From
          2. Envelope-To
@@ -737,12 +520,10 @@ Module features
       - message has already been sent
 - [ ] catch exceptions from email.message creation.
        particularly adding headers can complain
-- [X] attach files - with type and disposition
 - [ ] be smart about quoting displayname before <addr>
 - [ ] capture editing of to/cc and mark ',' as a wrap point.
 - [ ] If attachments are requested, set mime-version etc
 - [ ] inline images get displayed
-- [X] attach email message: message/rfc
 - [ ] auto-insert signature... like an attachment?
 - [ ] address-completion should be referred to module, not assumed to be notmuch
 - [ ] support address book and allow completion from there
@@ -761,7 +542,6 @@ Module features
 ### Presenter
 
 - [1] split into lower pane which parse markdown and upper which handles presentation.
-- [X] command to immediately change current pane in to presenter view
 - [ ] translucent bg colour for paragraphs
 - [ ] partial-view-points. Only render beyond here if mark here or beyond.
     page-down goes to next such point
@@ -830,8 +610,6 @@ Module features
 - [ ] mode-specific so latex can ignore \foo
 - [ ] Some way for 'c-mode' to report where comments are so they can be spell-checked
 - [ ] drop-down with options
-- [X] command to add word to per-document list, or personal list
-- [X] Allow language to be configurable, not always "en_AU".
 
 ### calculator
 - [ ] regression test
