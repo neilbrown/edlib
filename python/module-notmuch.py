@@ -3532,7 +3532,13 @@ class notmuch_message_view(edlib.Pane):
                 tag = w[8:]
         if not tag:
             return 1
-        url = focus["url:" + tag]
+        # might be in a multipart
+        url = focus.call("doc:get-attr", mark,
+                         "multipart-this:url:" + tag,
+                         ret='str')
+        if not url:
+            # or might be in main document
+            url = focus["url:" + tag]
         if url:
             focus.call("Message", "Opening url [%s] <%s>" % (tag,url))
             focus.call("Display:external-viewer", url)
