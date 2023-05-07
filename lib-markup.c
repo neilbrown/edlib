@@ -128,6 +128,7 @@ struct attr_return {
 	} *ast, *tmpst;
 	int min_end;
 	int chars;
+	struct buf insert;
 	short popped;
 };
 
@@ -262,7 +263,8 @@ DEF_CB(text_attr_callback)
 		as_add(ar, ci->num, ci->num2, ci->str);
 	} else
 		as_clear(ar, ci->num2, ci->str);
-	// FIXME ->str2 should be inserted
+	if (ci->str2)
+		buf_concat(&ar->insert, ci->str2);
 	return 1;
 }
 
@@ -316,6 +318,7 @@ DEF_CMD(render_line)
 	ar.ast = ar.tmpst = NULL;
 	ar.min_end = -1;
 	ar.chars = 0;
+	buf_init(&ar.insert);
 	ar.popped = 0;
 
 	if (!m)
@@ -347,6 +350,10 @@ DEF_CMD(render_line)
 
 	buf_init(&b);
 	call_comm("map-attr", focus, &ar.rtn, 0, m, "start-of-line");
+	if (ar.insert.len) {
+		buf_concat(&b, buf_final(&ar.insert));
+		buf_reinit(&ar.insert);
+	}
 	while (1) {
 		struct mark *m2;
 
@@ -377,6 +384,11 @@ DEF_CMD(render_line)
 
 		if (o >= 0 && b.len >= o)
 			break;
+
+		if (ar.insert.len) {
+			buf_concat(&b, buf_final(&ar.insert));
+			buf_reinit(&ar.insert);
+		}
 
 		ch = doc_next(focus, m);
 		if (ch == WEOF)
@@ -438,6 +450,7 @@ DEF_CMD(render_line)
 	ret = comm_call(ci->comm2, "callback:render", focus, 0, NULL,
 			buf_final(&b));
 	free(b.b);
+	free(ar.insert.b);
 	return ret ?: 1;
 }
 

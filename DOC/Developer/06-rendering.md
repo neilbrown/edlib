@@ -402,8 +402,8 @@ Conversely the attribute "hide" is implicitly disabled when any other
 attribute has a higher priority, and so it should typically have the
 largest of the priorities in use.
 
-I would like 'str2' to be inserted with the given attributes, but that
-isn't implemented yet.
+If 'str2' is provided, it is inserted into the rendering.  Attributes
+supplied will be applied to the text.
 
 If the first number passed is negative, then any active tags that match
 the string and the given priority will be cancelled, even if the length
