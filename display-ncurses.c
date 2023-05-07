@@ -86,7 +86,8 @@ struct display_data {
 
 static SCREEN *current_screen;
 static void ncurses_text(struct pane *p safe, struct pane *display safe,
-			 wchar_t ch, int attr, short x, short y, short cursor);
+			 wchar_t ch, int attr, int pair,
+			 short x, short y, short cursor);
 static PANEL * safe pane_panel(struct pane *p safe, struct pane *home);
 DEF_CMD(input_handle);
 DEF_CMD(handle_winch);
@@ -743,7 +744,7 @@ static int to_pair(struct display_data *dd safe, int fg, int bg)
 }
 
 static int cvt_attrs(struct pane *p safe, struct pane *home safe,
-		     const char *attrs, bool use_parent)
+		     const char *attrs, int *pairp safe, bool use_parent)
 {
 	struct display_data *dd = home->data;
 	int attr = 0;
@@ -802,7 +803,7 @@ static int cvt_attrs(struct pane *p safe, struct pane *home safe,
 		a = c;
 	}
 	if (fg != COLOR_BLACK || bg != COLOR_WHITE+8)
-		attr |= COLOR_PAIR(to_pair(dd, fg, bg));
+		*pairp = to_pair(dd, fg, bg);
 	return attr;
 }
 
@@ -867,7 +868,9 @@ DEF_CMD(nc_clear)
 {
 	struct pane *p = ci->home;
 	struct display_data *dd = p->data;
-	int attr = cvt_attrs(ci->focus, p, ci->str, ci->str == NULL);
+	cchar_t cc = {};
+	int pair = 0;
+	int attr = cvt_attrs(ci->focus, p, ci->str, &pair, ci->str == NULL);
 	PANEL *panel;
 	WINDOW *win;
 	int w, h;
@@ -882,7 +885,10 @@ DEF_CMD(nc_clear)
 		wresize(win, ci->focus->h, ci->focus->w);
 		replace_panel(panel, win);
 	}
-	wbkgdset(win, attr);
+	cc.attr = attr;
+	cc.ext_color = pair;
+	cc.chars[0] = ' ';
+	wbkgrndset(win, &cc);
 	werase(win);
 	dd->clears += 1;
 
@@ -919,7 +925,8 @@ DEF_CMD(nc_text_size)
 DEF_CMD(nc_draw_text)
 {
 	struct pane *p = ci->home;
-	int attr = cvt_attrs(ci->focus, p, ci->str2, True);
+	int pair = 0;
+	int attr = cvt_attrs(ci->focus, p, ci->str2, &pair, True);
 	int cursor_offset = ci->num;
 	short x = ci->x, y = ci->y;
 	const char *str = ci->str;
@@ -937,13 +944,13 @@ DEF_CMD(nc_draw_text)
 		if (width < 0)
 			break;
 		if (precurs && str > ci->str + cursor_offset)
-			ncurses_text(ci->focus, p, wc, attr, x, y, 1);
+			ncurses_text(ci->focus, p, wc, attr, pair, x, y, 1);
 		else
-			ncurses_text(ci->focus, p, wc, attr, x, y, 0);
+			ncurses_text(ci->focus, p, wc, attr, pair, x, y, 0);
 		x += width;
 	}
 	if (str == ci->str + cursor_offset)
-		ncurses_text(ci->focus, p, ' ', 0, x, y, 1);
+		ncurses_text(ci->focus, p, ' ', 0, 0, x, y, 1);
 	pane_damaged(p, DAMAGED_POSTORDER);
 	return 1;
 }
@@ -1153,7 +1160,8 @@ DEF_CMD(force_redraw)
 }
 
 static void ncurses_text(struct pane *p safe, struct pane *display safe,
-			 wchar_t ch, int attr, short x, short y, short cursor)
+			 wchar_t ch, int attr, int pair,
+			 short x, short y, short cursor)
 {
 	PANEL *pan;
 	struct pane *p2;
@@ -1174,6 +1182,7 @@ static void ncurses_text(struct pane *p safe, struct pane *display safe,
 			attr = make_cursor(attr);
 	}
 	cc.attr = attr;
+	cc.ext_color = pair;
 	cc.chars[0] = ch;
 
 	p2 = p;
