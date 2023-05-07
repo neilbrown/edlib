@@ -32,8 +32,15 @@
 #include <ctype.h>
 #include <signal.h>
 #include <sys/ioctl.h>
-#include <term.h>
 #include <netdb.h>
+
+#include <wand/MagickWand.h>
+#ifdef __CHECKER__
+// enums confuse sparse...
+#define MagickBooleanType int
+#endif
+
+#include <term.h>
 
 #include "core.h"
 
@@ -955,6 +962,196 @@ DEF_CMD(nc_draw_text)
 	return 1;
 }
 
+DEF_CMD(nc_draw_image)
+{
+	/* 'str' identifies the image. Options are:
+	 *     file:filename  - load file from fs
+	 *     comm:command   - run command collecting bytes
+	 * 'num' is '16' if image should be stretched to fill pane
+	 * Otherwise it is the 'or' of
+	 *   0,1,2 for left/middle/right in x direction
+	 *   0,4,8 for top/middle/bottom in y direction
+	 * only one of these can be used as image will fill pane
+	 * in other direction.
+	 * If 'x' and 'y' are both positive, draw cursor box at
+	 * p->cx, p->cy of a size so that 'x' will fit across and
+	 * 'y' will fit down.
+	 */
+	struct pane *p = ci->home;
+	struct display_data *dd = p->data;
+	int x = 0, y = 0;
+	bool stretch = ci->num & 16;
+	int pos = ci->num;
+	int w = ci->focus->w, h = ci->focus->h * 2;
+	int cx = -1, cy = -1;
+	MagickBooleanType status;
+	MagickWand *wd;
+	unsigned char *buf;
+	int i, j;
+
+	if (!ci->str)
+		return Enoarg;
+	if (strncmp(ci->str, "file:", 5) == 0) {
+		wd = NewMagickWand();
+		status = MagickReadImage(wd, ci->str + 5);
+		if (status == MagickFalse) {
+			DestroyMagickWand(wd);
+			return Efail;
+		}
+	} else if (strncmp(ci->str, "comm:", 5) == 0) {
+		struct call_return cr;
+		wd = NewMagickWand();
+		cr = call_ret(bytes, ci->str+5, ci->focus, 0, NULL, ci->str2);
+		if (!cr.s) {
+			DestroyMagickWand(wd);
+			return Efail;
+		}
+		status = MagickReadImageBlob(wd, cr.s, cr.i);
+		free(cr.s);
+		if (status == MagickFalse) {
+			DestroyMagickWand(wd);
+			return Efail;
+		}
+	} else
+		return Einval;
+
+	MagickAutoOrientImage(wd);
+	if (!stretch) {
+		int ih = MagickGetImageHeight(wd);
+		int iw = MagickGetImageWidth(wd);
+
+		if (iw <= 0 || iw <= 0) {
+			DestroyMagickWand(wd);
+			return Efail;
+		}
+		if (iw * h > ih * w) {
+			/* Image is wider than space, use less height */
+			ih = ih * w / iw;
+			switch(pos & (8+4)) {
+			case 4: /* center */
+				y = (h - ih) / 2; break;
+			case 8: /* bottom */
+				y = h - ih; break;
+			}
+			/* Keep 'h' even! */
+			h = ((ih+1)/2) * 2;
+		} else {
+			/* image is too tall, use less width */
+			iw = iw * h / ih;
+			switch (pos & (1+2)) {
+			case 1: /* center */
+				x = (w - iw) / 2; break;
+			case 2: /* right */
+				x = w - iw ; break;
+			}
+			w = iw;
+		}
+	}
+	MagickAdaptiveResizeImage(wd, w, h);
+	buf = malloc(h * w * 4);
+	MagickExportImagePixels(wd, 0, 0, w, h, "RGBA", CharPixel, buf);
+
+	if (ci->x > 0 && ci->y > 0 && ci->focus->cx >= 0) {
+		/* We want a cursor */
+		cx = x + ci->focus->cx;
+		cy = y + ci->focus->cy;
+	}
+	for (i = 0; i < h; i+= 2) {
+		static wint_t hilo = 0x2580; /* L'▀' */
+		for (j = 0; j < w ; j+= 1) {
+			unsigned char *p1 = buf + i*w*4 + j*4;
+			unsigned char *p2 = buf + (i+1)*w*4 + j*4;
+			int rgb1[3] = { p1[0]*1000/255, p1[1]*1000/255, p1[2]*1000/255 };
+			int rgb2[3] = { p2[0]*1000/255, p2[1]*1000/255, p2[2]*1000/255 };
+			int fg = find_col(dd, rgb1);
+			int bg = find_col(dd, rgb2);
+
+			if (p1[3] < 128 || p2[3] < 128) {
+				/* transparent */
+				cchar_t cc;
+				short f,b;
+				struct pane *pn2 = ci->focus;
+				PANEL *pan = pane_panel(pn2, NULL);
+
+				while (!pan && pn2->parent != pn2) {
+					pn2 = pn2->parent;
+					pan = pane_panel(pn2, NULL);
+				}
+				if (pan) {
+					wgetbkgrnd(panel_window(pan), &cc);
+					pair_content(cc.ext_color, &f, &b);
+					if (p1[3] < 128)
+						fg = b;
+					if (p2[3] < 128)
+						bg = b;
+				}
+			}
+			/* FIXME this doesn't work because
+			 * render-line knows too much and gets it wrong.
+			 */
+			if (cx == x+j && cy == y + (i/2))
+				ncurses_text(ci->focus, p, 'X', 0,
+					     to_pair(dd, 0, 0),
+					     x+j, y+(i/2), 1);
+			else
+				ncurses_text(ci->focus, p, hilo, 0,
+					     to_pair(dd, fg, bg),
+					     x+j, y+(i/2), 0);
+
+		}
+	}
+	free(buf);
+
+	DestroyMagickWand(wd);
+
+	pane_damaged(ci->home, DAMAGED_POSTORDER);
+
+	return 1;
+}
+
+DEF_CMD(nc_image_size)
+{
+	MagickBooleanType status;
+	MagickWand *wd;
+	int ih, iw;
+
+	if (!ci->str)
+		return Enoarg;
+	if (strncmp(ci->str, "file:", 5) == 0) {
+		wd = NewMagickWand();
+		status = MagickReadImage(wd, ci->str + 5);
+		if (status == MagickFalse) {
+			DestroyMagickWand(wd);
+			return Efail;
+		}
+	} else if (strncmp(ci->str, "comm:", 5) == 0) {
+		struct call_return cr;
+		wd = NewMagickWand();
+		cr = call_ret(bytes, ci->str+5, ci->focus, 0, NULL, ci->str2);
+		if (!cr.s) {
+			DestroyMagickWand(wd);
+			return Efail;
+		}
+		status = MagickReadImageBlob(wd, cr.s, cr.i);
+		free(cr.s);
+		if (status == MagickFalse) {
+			DestroyMagickWand(wd);
+			return Efail;
+		}
+	} else
+		return Einval;
+
+	MagickAutoOrientImage(wd);
+	ih = MagickGetImageHeight(wd);
+	iw = MagickGetImageWidth(wd);
+
+	DestroyMagickWand(wd);
+	comm_call(ci->comm2, "callback:size", ci->focus,
+		  0, NULL, NULL, 0, NULL, NULL,
+		  iw, ih);
+	return 1;
+}
+
 DEF_CMD(nc_refresh_size)
 {
 	struct pane *p = ci->home;
@@ -1560,6 +1757,10 @@ void edlib_init(struct pane *ed safe)
 	key_add(nc_map, "Draw:clear", &nc_clear);
 	key_add(nc_map, "Draw:text-size", &nc_text_size);
 	key_add(nc_map, "Draw:text", &nc_draw_text);
+
+	key_add(nc_map, "Draw:image", &nc_draw_image);
+	key_add(nc_map, "Draw:image-size", &nc_image_size);
+
 	key_add(nc_map, "Refresh:size", &nc_refresh_size);
 	key_add(nc_map, "Refresh:postorder", &nc_refresh_post);
 	key_add(nc_map, "Paste:get", &nc_get_paste);

@@ -52,6 +52,9 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] renderline *knows* about scaling and when it places the cursor
+      in an image, it gets it wrong for ncurses.  It should ask about
+      scaling.
 - [ ] notmuch shouldn't clear tag:new until *all* views
       on search have closed.
 - [X] I think attaching a path starting ~/ to an email fails.
@@ -391,7 +394,7 @@ Module features
 - [ ] add full list of colour names (to lib-colourmap)
 - [ ] allow a pane to require 'true-colour' and discover number of colours available
       Colour map gets changed when it becomes the focus.
-- [ ] merge 'catpic' code to draw low-res images.
+- [X] merge 'catpic' code to draw low-res images.
 - [ ] When only 16 colours, maybe add underline when insufficient contrast available.
 - [ ] automatically ensure the fg colour contrasts with bg, unless explicitly disabled.
       If bg is bright, reduce fg brightness.  If bg is dark, reduce saturation.
@@ -704,7 +707,7 @@ Module features
 - [ ] detect and hide cited text
 - [ ] maybe detect "-----Original Message-----" as indicating cited text
 - [ ] Make long to/cc headers truncate unless selected.
-- [ ] display image on ncurses.
+- [X] display image on ncurses.
 - [ ] Make addresses active (menu?) to allow adding to a saved search
       with options and/or/andnot.  Also "mail to" or "save"..
 - [ ] Allow any selection to be added to a saved search.
