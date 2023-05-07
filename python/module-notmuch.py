@@ -3171,7 +3171,8 @@ class notmuch_message_view(edlib.Pane):
             # When presented with alternatives we are supposed to show
             # the last alternative that we understand.  However html is
             # only partly understood, so I only want to show that if
-            # there is no other option.
+            # there is no other option.... but now I have w3m let's try
+            # prefering html...
             # An alternate may contain many parts and we need to make
             # everything invisible within an invisible part - and we only
             # know which is invisible when we get to the end.
@@ -3187,7 +3188,7 @@ class notmuch_message_view(edlib.Pane):
                     choose[group] = this
                 if type.startswith('image/'):
                     choose[group] = this
-                if type == 'text/html' and group not in choose:
+                if type == 'text/html': # and group not in choose:
                     choose[group] = this
 
         # Now go through and set visibility for alternates.
