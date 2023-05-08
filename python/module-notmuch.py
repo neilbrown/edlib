@@ -3502,12 +3502,12 @@ class notmuch_message_view(edlib.Pane):
         if str == "render:char":
             w = str2.split(':')
             attr = None
-            if w[1][0] == '!' and w[1] != '!':
+            if w[1] and  w[1][0] == '!' and w[1] != '!':
                 # not recognised, so highlight the name
                 attr = "fg:magenta-60,bold"
             comm2("attr:callback", focus, int(w[0]), mark,
-                  attr, 120, w[1])
-            # Don't show the htm entity description, just the rendering.
+                  attr, 120, str2=w[1])
+            # Don't show the html entity description, just the rendering.
             comm2("attr:callback", focus, int(w[0]), mark,
                   "hide", 60000)
         if str == 'start-of-line':

@@ -258,9 +258,8 @@ DEF_CB(text_attr_callback)
 	struct attr_return *ar = container_of(ci->comm, struct attr_return,
 					      rtn);
 	if (ci->num >= 0) {
-		if (!ci->str)
-			return Enoarg;
-		as_add(ar, ci->num, ci->num2, ci->str);
+		if (ci->str)
+			as_add(ar, ci->num, ci->num2, ci->str);
 	} else
 		as_clear(ar, ci->num2, ci->str);
 	if (ci->str2)

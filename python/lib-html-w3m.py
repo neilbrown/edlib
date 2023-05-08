@@ -165,7 +165,17 @@ def parse_halfdump(doc):
         elif char == "emsp":
             char = " "
         elif char == "rsquo":
-            char = chr(8217)
+            char = chr(8217) # ’
+        elif char == "lsquo":
+            char = chr(8216) # ‘
+        elif char == "rdquo":
+            char = chr(8221) # ”
+        elif char == "ldquo":
+            char = chr(8220) # “
+        elif char == "copy":
+            char = chr(169) # ©
+        elif char == "reg":
+            char = chr(174) # ®
         else:
             char = "!" + char
         doc.call('doc:set-attr', 1, st, "render:char", "%d:%s" % (len,char))
