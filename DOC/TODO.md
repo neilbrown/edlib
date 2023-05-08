@@ -28,6 +28,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] email: when a convertion pane is created on a 'text' component
+      it should be given utf-8 and not have to use "bytes" like html does.
 - [ ] renderline *knows* about scaling and when it places the cursor
       in an image, it gets it wrong for ncurses.  It should ask about
       scaling.
@@ -35,24 +37,24 @@ Bugs to be fixed
       on search have closed.
 - [ ] stop consistency checking a text doc when it gets "big" ??
 - [ ] auto-sign emails..
-- [ ] message must be tagged "replied" when a reply is sent.
+- [X] message must be tagged "replied" when a reply is sent.
 - [ ] if a shell command produces no output, message should be shown
 - [ ] be sure to wait for xdg-open etc.
 - [ ] things slow down after lots of edits.  Maybe track
       number of chunk, marks, undos etc and display them somewhere
-- [ ] shell output open a window after a timeout, but it the shell
-      opened and edit window, that can be a bit confusing
+- [ ] shell output opens a window after a timeout, but it the shell
+      opened an edit window, that can be a bit confusing
 - [?] Make doesn't follow llog_reader.c:723:6: when it have seen
      make[4]: Entering directory '/home2/git/lustre-release/lustre/utils'
 - [ ] Email summary line for single-message threads should show size??
 - [ ] accessing document list can be slow.  Same for large directories
-- [ ] marks sometimes get out of order in email query list
+- [X] marks sometimes get out of order in email query list
 - [ ] 'other' notmuch search doesn't show older messages sometimes
 - [ ] Don't wrap email header lines when cursor isn't on the line - too noisy
 - [ ] lib-utf8 takes chars, not bytes, so it doesn't work over
       a utf8 document
-- [ ] ordering of marks in notmuch search summary can go wrong
-- [ ] sometimes the tid in a notmuch query mark.pos is not in threadids!!
+- [X] ordering of marks in notmuch search summary can go wrong
+- [X] sometimes the tid in a notmuch query mark.pos is not in threadids!!
 - [ ] catching doc:replace in a pane doesn't catch doc:insert-file.
       I need a simple way to intercept any change.
 - [ ] marks can be used after they go invalid too easily.  How to fix??
@@ -396,6 +398,8 @@ Module features
 
 ### Notmuch - overview
 
+- [ ] Only clear "new" tag on explicit quit, not when going to
+      other search or simply closing the window
 - [ ] 'm' in 'move marks on tid to before self.pos' was reportedly NULL once.
 - [ ] Two threads with same timestamp swap order on reload
 - [ ] When main_doc notices counts increase, it should ensure the next

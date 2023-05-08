@@ -2694,6 +2694,10 @@ class notmuch_query_view(edlib.Pane):
 
     def handle_notify_replace(self, key, **a):
         "handle:doc:replaced"
+        if self.thread_start:
+            # Possible insertion before thread_end - recalc.
+            self.thread_end = self.thread_start.dup()
+            self.leaf.call("doc:step-thread", 1, 1, self.thread_end)
         self.leaf.call("view:changed")
         self.call("doc:notify:doc:status-changed")
         return edlib.Efallthrough
