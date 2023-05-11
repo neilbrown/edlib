@@ -29,7 +29,7 @@ Bugs to be fixed
 ----------------
 
 - [X] w3m: &amp; in URLs confuse rendering
-- [ ] line break in <a hseq="2"\nhref=.....   isn't handled.
+- [X] line break in <a hseq="2"\nhref=.....   isn't handled.
 - [ ] utf-8 output from w3m gets displayed a bytes!!
 - [ ] email: when alternative/1 is related and text/html, is isn't
        displayed by default.

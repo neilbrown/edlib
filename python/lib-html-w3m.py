@@ -349,7 +349,13 @@ def parse_halfdump(doc):
         while i < len:
             doc.prev(st)
             i += 1
-        doc.call('doc:set-attr', 1, st, "render:hide", "%d" % len)
+        doc.call('doc:set-attr', 1, st, "render:hide", "10000")
+        sol = st.dup()
+        while sol < m:
+            if doc.next(sol) in [ '\n', '\v', '\f' ]:
+                doc.call('doc:set-attr', 1, sol, "render:hide", "10000")
+        doc.call('doc:set-attr', 1, m, "render:hide", "-1")
+
 
         # We only parse entities between tags, not within them
         parse_entities(doc, prev_end, st)
@@ -393,7 +399,6 @@ def parse_halfdump(doc):
 
 def parse_entities(doc, m, end):
     while True:
-        edlib.LOG("e", m, end)
         try:
             len = doc.call("text-search", "&[#A-Za-z0-9]*;", m, end)
             len -= 1
