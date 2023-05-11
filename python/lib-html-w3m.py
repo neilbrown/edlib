@@ -320,29 +320,14 @@ def parse_halfdump(doc):
     #   #x.... utf-8 hex
 
     m = edlib.Mark(doc)
-    bold = False; internal = False; imgalt = False; url = None
+    bold = False; internal = False; imgalt = False; urltag = None
     while True:
         prev_end = m.dup()
         try:
-            if bold or internal or url or imgalt:
-                len = doc.call("text-search", "(^.|<[^>]*>)", m)
-            else:
-                len = doc.call("text-search", "<[^>]*>", m)
+            len = doc.call("text-search", "<[^>]*>", m)
             len -= 1
         except:
             break
-
-        if len == 1:
-            # Found start of line - re-assert things
-            if bold:
-                doc.call("doc:set-attr", 1, m, "render:bold", "1")
-            if internal:
-                doc.call("doc:set-attr", 1, m, "render:internal", "1")
-            if imgalt:
-                doc.call("doc:set-attr", 1, m, "render:imgalt", "1")
-            if urltag:
-                doc.call("doc:set-attr", 1, m, "render:url", urltag)
-            continue
 
         st = m.dup()
         i = 0
@@ -356,9 +341,22 @@ def parse_halfdump(doc):
                 doc.call('doc:set-attr', 1, sol, "render:hide", "10000")
         doc.call('doc:set-attr', 1, m, "render:hide", "-1")
 
-
         # We only parse entities between tags, not within them
         parse_entities(doc, prev_end, st)
+        # We need to reassert attributes at the start of each affected line
+        if bold or internal or imgalt or urltag:
+            sol = prev_end.dup()
+            while sol < st:
+                if doc.next(sol) in [ '\n', '\v', '\f' ]:
+                    # Found start of line - re-assert things
+                    if bold:
+                        doc.call("doc:set-attr", 1, m, "render:bold", "1")
+                    if internal:
+                        doc.call("doc:set-attr", 1, m, "render:internal", "1")
+                    if imgalt:
+                        doc.call("doc:set-attr", 1, m, "render:imgalt", "1")
+                    if urltag:
+                        doc.call("doc:set-attr", 1, m, "render:url", urltag)
 
         tag = doc.call("doc:get-str", st, m, ret='str')
         tagl = tag.lower()
