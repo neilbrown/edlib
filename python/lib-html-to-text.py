@@ -9,11 +9,9 @@
 import html2text
 
 def html_to_text(key, home, focus, comm2, **a):
-    # Need "bytes" as might be base64 without UTF-8 overlay
-    htmlb = focus.call("doc:get-str", ret='bytes')
-    if not htmlb:
+    html = focus.call("doc:get-str", ret='str')
+    if not html:
         return edlib.Efail
-    html = htmlb.decode("utf-8", "ignore")
 
     h = html2text.HTML2Text()
     h.inline_links = False

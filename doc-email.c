@@ -543,8 +543,14 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer, char *disp,
 		    strncasecmp(xfer, "8bit", 6) == 0)
 			need_charset = 2; // only if not utf-8
 	}
-	if (type && need_charset &&
-	    (charset = get_822_attr(type, "charset")) != NULL &&
+	if (type)
+		charset = get_822_attr(type, "charset");
+	if (need_charset && !charset && strncasecmp(type, "text/", 5) == 0)
+		/* We really do need a charset, as the doc might
+		 * only provide bytes, not chars.
+		 */
+		charset = "utf-8";
+	if (type && need_charset && charset != NULL &&
 	    !(need_charset == 2 && strcasecmp(charset, "utf-8") == 0)) {
 		char *c = NULL, *cp;
 		struct pane *hx = NULL;

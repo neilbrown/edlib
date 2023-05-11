@@ -28,12 +28,15 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] email: urls should not be followed unless they are visible.
+      Maybe display in the message window, which might be made larger
+      just for this purpose.
 - [X] w3m: &amp; in URLs confuse rendering
 - [X] line break in <a hseq="2"\nhref=.....   isn't handled.
 - [ ] utf-8 output from w3m gets displayed a bytes!!
 - [ ] email: when alternative/1 is related and text/html, is isn't
        displayed by default.
-- [ ] email: when a convertion pane is created on a 'text' component
+- [X] email: when a convertion pane is created on a 'text' component
       it should be given utf-8 and not have to use "bytes" like html does.
 - [ ] renderline *knows* about scaling and when it places the cursor
       in an image, it gets it wrong for ncurses.  It should ask about

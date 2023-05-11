@@ -24,10 +24,9 @@ def get_attr(tagl, tag, attr):
     return None
 
 def html_to_w3m(key, home, focus, comm2, **a):
-    htmlb = focus.call("doc:get-str", ret='bytes')
-    if not htmlb:
+    html = focus.call("doc:get-str", ret='str')
+    if not html:
         return edlib.Efail
-    html = htmlb.decode("utf-8", "ignore")
     p = subprocess.Popen(["/usr/bin/w3m", "-halfdump", "-o", "ext_halfdump=1",
                           "-I", "UTF-8", "-O", "UTF-8",
                           "-o", "display_image=off",
