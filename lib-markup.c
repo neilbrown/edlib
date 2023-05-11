@@ -222,10 +222,6 @@ static void as_add(struct attr_return *ar safe,
 	if (end == 0 || INT_MAX - end <= ar->chars)
 		end = INT_MAX - 1 - ar->chars;
 	new->end = ar->chars + end;
-	if (prio < 0)
-		prio = 0;
-	if (prio > 65535)
-		prio = 65535;
 	new->priority = prio;
 	*here = new;
 }
@@ -257,11 +253,16 @@ DEF_CB(text_attr_callback)
 {
 	struct attr_return *ar = container_of(ci->comm, struct attr_return,
 					      rtn);
+	int prio = ci->num2;
+	if (prio < 0)
+		prio = 0;
+	if (prio > 65535)
+		prio = 65535;
 	if (ci->num >= 0) {
 		if (ci->str)
-			as_add(ar, ci->num, ci->num2, ci->str);
+			as_add(ar, ci->num, prio, ci->str);
 	} else
-		as_clear(ar, ci->num2, ci->str);
+		as_clear(ar, prio, ci->str);
 	if (ci->str2)
 		buf_concat(&ar->insert, ci->str2);
 	return 1;
