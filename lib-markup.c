@@ -356,6 +356,7 @@ DEF_CMD(render_line)
 	}
 	while (1) {
 		struct mark *m2;
+		int is_true_eol = 0;
 
 		if (o >= 0 && b.len >= o)
 			break;
@@ -393,7 +394,13 @@ DEF_CMD(render_line)
 		ch = doc_next(focus, m);
 		if (ch == WEOF)
 			break;
+
 		if (!oneline && is_eol(ch)) {
+			doc_prev(focus, m);
+			is_true_eol = is_render_eol(ch, focus, m);
+			doc_next(focus, m);
+		}
+		if (is_true_eol) {
 			add_newline = 1;
 			break;
 		}
@@ -413,7 +420,7 @@ DEF_CMD(render_line)
 		}
 		if (ch == '\r' && noret) {
 			/* do nothing */
-		} else if (ch < ' ' && ch != '\t' && (oneline || !is_eol(ch))) {
+		} else if (ch < ' ' && ch != '\t' && is_true_eol) {
 			buf_concat(&b, "<fg:red>^");
 			buf_append(&b, '@' + ch);
 			buf_concat(&b, "</>");

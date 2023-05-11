@@ -33,7 +33,8 @@ Bugs to be fixed
       just for this purpose.
 - [X] w3m: &amp; in URLs confuse rendering
 - [X] line break in <a hseq="2"\nhref=.....   isn't handled.
-- [ ] utf-8 output from w3m gets displayed a bytes!!
+- [X] utf-8 output from w3m gets displayed a bytes!!
+       This is actually buggy spam which claims not to be utf-8
 - [ ] email: when alternative/1 is related and text/html, is isn't
        displayed by default.
 - [X] email: when a convertion pane is created on a 'text' component

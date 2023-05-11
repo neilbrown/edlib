@@ -336,8 +336,9 @@ def parse_halfdump(doc):
         doc.call('doc:set-attr', 1, st, "render:hide", "10000")
         sol = st.dup()
         while sol < m:
-            if doc.next(sol) in [ '\n', '\v', '\f' ]:
-                doc.call('doc:set-attr', 1, sol, "render:hide", "10000")
+            if doc.following(sol) in [ '\n', '\v', '\f' ]:
+                doc.call('doc:set-attr', 1, sol, "markup:not_eol", "1")
+            doc.next(sol)
         doc.call('doc:set-attr', 1, m, "render:hide", "-1")
 
         # We only parse entities between tags, not within them
