@@ -322,6 +322,7 @@ def parse_halfdump(doc):
     m = edlib.Mark(doc)
     bold = False; internal = False; imgalt = False; url = None
     while True:
+        prev_end = m.dup()
         try:
             if bold or internal or url or imgalt:
                 len = doc.call("text-search", "(^.|<[^>]*>)", m)
@@ -330,6 +331,7 @@ def parse_halfdump(doc):
             len -= 1
         except:
             break
+
         if len == 1:
             # Found start of line - re-assert things
             if bold:
@@ -348,6 +350,9 @@ def parse_halfdump(doc):
             doc.prev(st)
             i += 1
         doc.call('doc:set-attr', 1, st, "render:hide", "%d" % len)
+
+        # We only parse entities between tags, not within them
+        parse_entities(doc, prev_end, st)
 
         tag = doc.call("doc:get-str", st, m, ret='str')
         tagl = tag.lower()
@@ -386,10 +391,11 @@ def parse_halfdump(doc):
             doc.call("doc:set-attr", 1, m, "render:url-end", urltag)
             url = None; urltag = None
 
-    m = edlib.Mark(doc)
+def parse_entities(doc, m, end):
     while True:
+        edlib.LOG("e", m, end)
         try:
-            len = doc.call("text-search", "&[#A-Za-z0-9]*;", m)
+            len = doc.call("text-search", "&[#A-Za-z0-9]*;", m, end)
             len -= 1
         except:
             break
