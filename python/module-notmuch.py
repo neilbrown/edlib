@@ -3182,11 +3182,21 @@ class notmuch_message_view(edlib.Pane):
             # know which is invisible when we get to the end.
             # So record the visibility of each group of alternatives
             # now, and the walk through again setting visibility.
+            # An alternative itself may be multi-part, typically
+            # multipart/related.  In this case we only look at
+            # whether we can handle the type of the first part.
             p = path.split(',')
-            if p[-1].startswith("alternative:"):
+            i = len(p)-1
+            while (i > 0 and p[i].endswith(":0") and
+                   not p[i].startswith("alternative:")):
+                # Might be the first part of a multi-path alternative,
+                # look earlier in the path
+                i -= 1
+            edlib.LOG("consider", p, i, )
+            if p[i].startswith("alternative:"):
                 # this is one of several - can we handle it?
-                group = ','.join(p[:-1])
-                this = p[-1][12:]
+                group = ','.join(p[:i])
+                this = p[i][12:]
                 if type in ['text/plain', 'text/calendar', 'text/rfc822-headers',
                             'message/rfc822']:
                     choose[group] = this
