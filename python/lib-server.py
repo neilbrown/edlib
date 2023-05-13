@@ -13,7 +13,7 @@ else:
 
 try:
     class ServerPane(edlib.Pane):
-        # This pane received requests on a socket and
+        # This pane receives requests on a socket and
         # forwards them to the editor.  When a notification
         # arrives, it is sent back to the client
         def __init__(self, sock):

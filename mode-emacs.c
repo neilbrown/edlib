@@ -1726,6 +1726,14 @@ DEF_CB(shellcb)
 {
 	char *str;
 
+	if (strcmp(ci->key, "cb:timer") == 0) {
+		/* If focus has moved, don't show shell window,
+		 * probably a popup was requested by command.
+		 */
+		if (!pane_has_focus(ci->home))
+			/* call back when lines or eof */
+			return 2;
+	}
 	if (strcmp(ci->key, "cb:eof") != 0) {
 		struct pane *par = call_ret(pane, "OtherPane", ci->home);
 		if (par)

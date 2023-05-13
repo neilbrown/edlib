@@ -135,7 +135,9 @@ class ShellPane(edlib.Pane):
                     p = self.cb_pane
                     self.cb_pane = None
                     self.cb_lines = 0
-                    self.callback("cb:lines", p, self)
+                    if self.callback("cb:lines", p, self) > 1:
+                        # it still wants EOF
+                        self.cb_pane = p
             self.call("doc:replace", l[:i+1].decode("utf-8", 'ignore'))
             l = l[i+1:]
         self.line = l
@@ -193,7 +195,9 @@ class ShellPane(edlib.Pane):
         if self.cb_pane:
             p = self.cb_pane
             self.cb_pane = None
-            self.callback("cb:timer", p, self)
+            if self.callback("cb:timer", p, self) > 1:
+                # still want moer
+                self.cb_pane = p
         return edlib.Efalse
 
     def handle_nofify_close(self, key, focus, **a):

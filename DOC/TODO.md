@@ -37,7 +37,7 @@ Bugs to be fixed
        This is actually buggy spam which claims not to be utf-8
 - [X] email: when alternative/1 is related and text/html, is isn't
        displayed by default.
-- [X] email: when a convertion pane is created on a 'text' component
+- [X] email: when a conversion pane is created on a 'text' component
       it should be given utf-8 and not have to use "bytes" like html does.
 - [ ] renderline *knows* about scaling and when it places the cursor
       in an image, it gets it wrong for ncurses.  It should ask about
@@ -52,7 +52,7 @@ Bugs to be fixed
 - [ ] be sure to wait for xdg-open etc.
 - [ ] things slow down after lots of edits.  Maybe track
       number of chunk, marks, undos etc and display them somewhere
-- [ ] shell output opens a window after a timeout, but it the shell
+- [X] shell output opens a window after a timeout, but it the shell
       opened an edit window, that can be a bit confusing
 - [?] Make doesn't follow llog_reader.c:723:6: when it have seen
      make[4]: Entering directory '/home2/git/lustre-release/lustre/utils'
