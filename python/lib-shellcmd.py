@@ -113,7 +113,7 @@ class ShellPane(edlib.Pane):
             if self.cb_pane:
                 p = self.cb_pane
                 self.cb_pane = None
-                self.callback("cb:eof", p, self)
+                self.callback("cb:eof", p, ret, self)
             if not self.add_footer:
                 pass
             elif not ret:

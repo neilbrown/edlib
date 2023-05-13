@@ -48,7 +48,7 @@ Bugs to be fixed
 - [ ] stop consistency checking a text doc when it gets "big" ??
 - [ ] auto-sign emails..
 - [X] message must be tagged "replied" when a reply is sent.
-- [ ] if a shell command produces no output, message should be shown
+- [X] if a shell command produces no output, message should be shown
 - [ ] be sure to wait for xdg-open etc.
 - [ ] things slow down after lots of edits.  Maybe track
       number of chunk, marks, undos etc and display them somewhere

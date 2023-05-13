@@ -1733,6 +1733,15 @@ DEF_CB(shellcb)
 		return 1;
 	}
 	str = call_ret(str, "doc:get-str", ci->focus);
+	if (!str || !*str) {
+		free(str);
+		if (ci->num == 0)
+			asprintf(&str, "(shell command completed with no output)");
+		else if (ci->num > 0)
+			asprintf(&str, "(shell command completed with no output (exit code %d))", ci->num);
+		else
+			asprintf(&str, "(shell command completed with no output (signalled %d))", -ci->num);
+	}
 	call("Message", ci->home, 0, NULL, str);
 	free(str);
 	return 1;
