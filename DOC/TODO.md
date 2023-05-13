@@ -42,8 +42,9 @@ Bugs to be fixed
 - [ ] renderline *knows* about scaling and when it places the cursor
       in an image, it gets it wrong for ncurses.  It should ask about
       scaling.
-- [ ] notmuch shouldn't clear tag:new until *all* views
-      on search have closed.
+- [X] notmuch shouldn't clear tag:new until *all* views
+      on search have closed.... I don't think I really want this.
+      Rather I want to only clear on explicit 'quit'
 - [ ] stop consistency checking a text doc when it gets "big" ??
 - [ ] auto-sign emails..
 - [X] message must be tagged "replied" when a reply is sent.

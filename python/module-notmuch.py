@@ -440,9 +440,6 @@ class notmuch_main(edlib.Doc):
     # Only the 'offset' of doc-references is used.  It is an index
     # into the list of saved searches.
     #
-    # FIXME we track "seen_threads" in each thread-list so that we can
-    # later mark them as no-longer "new".  Why is this here rather than
-    # in the thread-list document?
 
     def __init__(self, focus):
         edlib.Doc.__init__(self, focus)
@@ -450,8 +447,6 @@ class notmuch_main(edlib.Doc):
         self.timer_set = False
         self.updating = False
         self.querying = False
-        self.seen_threads = {}
-        self.seen_msgs = {}
         self.container = edlib.Pane(self.root)
         self.changed_queries = []
 
@@ -759,39 +754,6 @@ class notmuch_main(edlib.Doc):
                 notmuch_set_tags(thread=str, remove=[tag])
             self.notify("Notify:Tag", str)
         # FIXME can I ever optimize out the Notify ??
-        return 1
-
-    def handle_notmuch_remember_seen_thread(self, key, focus, str, **a):
-        "handle:doc:notmuch:remember-seen-thread"
-        if str:
-            self.seen_threads[str] = focus
-            return 1
-
-    def handle_notmuch_remember_seen_msg(self, key, focus, str1, str2, **a):
-        "handle:doc:notmuch:remember-seen-msg"
-        if not str1:
-            return edlib.Enoarg
-        self.seen_msgs[str1] = (focus, str2)
-        return 1
-
-    def handle_notmuch_mark_seen(self, key, focus, **a):
-        "handle:doc:notmuch:mark-seen"
-        todel = []
-        for id in self.seen_msgs:
-            if self.seen_msgs[id][0] == focus:
-                notmuch_set_tags(msg=id, remove=['new'])
-                self.notify("Notify:Tag", self.seen_msgs[id][1], id)
-                todel.append(id)
-        for id in todel:
-            del self.seen_msgs[id]
-        todel = []
-        for id in self.seen_threads:
-            if self.seen_threads[id] == focus:
-                notmuch_set_tags(thread=id, remove=['new'])
-                todel.append(id)
-                self.notify("Notify:Tag", id)
-        for id in todel:
-            del self.seen_threads[id]
         return 1
 
     def handle_set_adhoc(self, key, focus, str, **a):
@@ -2409,8 +2371,8 @@ class notmuch_master_view(edlib.Pane):
                 self.query_pane.call("doc:notmuch:set-filter")
                 if key != "doc:char-Q":
                     return 1
-            if key == "doc:char-x":
-                self.query_pane.call("notmuch:clear-seen")
+            if key != "doc:char-x":
+                self.query_pane.call("notmuch:mark-seen")
             p = self.query_pane
             self.query_pane = None
             pnt = self.list_pane.call("doc:point", ret='mark')
@@ -2674,12 +2636,6 @@ class notmuch_query_view(edlib.Pane):
     def handle_close(self, key, focus, **a):
         "handle:Close"
 
-        for i in self.seen_threads:
-            focus.call("doc:notmuch:remember-seen-thread", i)
-        for i in self.seen_msgs:
-            focus.call("doc:notmuch:remember-seen-msg", i, self.seen_msgs[i])
-
-        focus.call("doc:notmuch:mark-seen")
         # Reload the query so archived messages disappear
         self.call("doc:notmuch:query:reload")
         self.call("doc:notmuch:update-one", self['qname'])
@@ -3097,8 +3053,16 @@ class notmuch_query_view(edlib.Pane):
                 break
         return edlib.Efallthrough
 
-    def handle_clear_seen(self, key, focus, **a):
-        "handle:notmuch:clear-seen"
+    def handle_mark_seen(self, key, focus, **a):
+        "handle:notmuch:mark-seen"
+        for id in self.seen_threads:
+            notmuch_set_tags(thread=id, remove=['new'])
+            self.notify("Notify:Tag", id)
+
+        for id in self.seen_msgs:
+            notmuch_set_tags(msg=id, remove=['new'])
+            self.notify("Notify:Tag", self.seen_msgs[id], id)
+
         self.seen_threads =  {}
         self.seen_msgs = {}
         return 1
