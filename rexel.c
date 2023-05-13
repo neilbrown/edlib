@@ -55,21 +55,26 @@
  *
  *   1111: reserve for various special purposes.
  *
- *   The last 16 value have special meanings.
- *     0xfff0 - match any char
- *     0xfff1 - match any character except and EOL character
- *     0xfff2 - match no char - dead end.
- *     0xfff3 - report success.
- *     0xfff4 - match at start of line
- *     0xfff5 - match at start of word
- *     0xfff6 - match at end of line
- *     0xfff7 - match at end of word
- *     0xfff8 - match a word break (start or end)
- *     0xfff9 - match any point that isn't a word break.
- *     0xfffa - match 1 or more spaces/tabs/newlines - lax searching.
- *     0xfffb - match - or _ - lax searching
- *     0xfffc - Subsequent chars (0x..) are matched ignoring case
- *     0xfffd - Subsequent chars are match case-correct.
+ *   The last 32 value have special meanings.
+ *     0xffe0 - match any char
+ *     0xffe1 - match any character except and EOL character
+ *     0xffe2 - match no char - dead end.
+ *     0xffe3 - report success.
+ *     0xffe4 - match at start of line
+ *     0xffe5 - match at end of line
+ *     0xffe6 - match at start of word
+ *     0xffe7 - match at end of word
+ *     0xffe8 - match a word break (start or end)
+ *     0xffe9 - match any point that isn't a word break.
+ *     0xffea - match start of document
+ *     0xffeb - match end of document
+ *     0xffec - match the location indicated by RXL_POINT
+ *
+ *     0xfffb - match any quote: " ' ` - lax searching
+ *     0xfffc - match 1 or more spaces/tabs/newlines - lax searching.
+ *     0xfffd - match - or _ - lax searching
+ *     0xfffe - Subsequent chars (0x..) are matched ignoring case
+ *     0xffff - Subsequent chars are match case-correct.
  *
  * When matching, two pairs of extra arrays are allocated and used.
  * One pair is 'before', one pair is 'after'.  They swap on each char.
@@ -131,7 +136,7 @@
  * ?isLn-isLn:  - flags before any optional '-' are set. Flags after
  *         are cleared.
  *         i - ignore case
- *         L - lax matching for space and hyphen
+ *         L - lax matching for space, hyphen, and quote
  *         s - single line, '.' matches newline
  *         n - no capture in subgroups either
  *
@@ -242,6 +247,7 @@ static inline void clear_bit(int bit, unsigned long *set safe)
 #define	REC_EOD		0xFFEb	/* End of Document */
 #define	REC_POINT	0xFFEc
 
+#define	REC_LAXQUOT	0xFFFb
 #define	REC_LAXSPC	0xFFFc
 #define	REC_LAXDASH	0xFFFd
 #define	REC_IGNCASE	0xFFFe
@@ -579,6 +585,14 @@ static int advance_one(struct match_state *st safe, int i,
 			if (flag)
 				advance = 0;
 			break;
+		case REC_LAXQUOT:
+			if (strchr("'`\"", ch) != NULL)
+				advance = 1;
+			else
+				advance = -1;
+			if (flag)
+				advance = 0;
+			break;
 		case REC_LAXDASH:
 			if (strchr("-_.", ch) != NULL)
 				advance = 1;
@@ -724,6 +738,7 @@ enum rxl_found rxl_advance(struct match_state *st safe, wint_t ch)
 					case REC_NOWBRK: printf("\\B "); break;
 					case REC_MATCH:printf("!!! "); break;
 					case REC_LAXSPC: printf("x20!"); break;
+					case REC_LAXQUOT: printf("'!  "); break;
 					case REC_LAXDASH: printf("-!  "); break;
 					case REC_IGNCASE: printf("?i:"); break;
 					case REC_USECASE: printf("?c:"); break;
@@ -1520,6 +1535,12 @@ static bool parse_atom(struct parse_state *st safe)
 		add_cmd(st, REC_LAXSPC);
 		/* LAXSPC can be repeated */
 		add_cmd(st, REC_FORKFIRST | (st->next - 1));
+		st->patn++;
+		return True;
+	}
+	if ((st->mod & LaxMatch) &&
+	    (st->patn[0] == '"' || st->patn[0] == '`' || st->patn[0] == '\'')) {
+		add_cmd(st, REC_LAXQUOT);
 		st->patn++;
 		return True;
 	}
@@ -2335,6 +2356,7 @@ void rxl_print(unsigned short *rxl safe)
 			case REC_WBRK: printf("match word-break\n"); break;
 			case REC_NOWBRK: printf("match non-wordbreak\n"); break;
 			case REC_LAXSPC: printf("match lax-space\n"); break;
+			case REC_LAXQUOT: printf("match lax-quote\n"); break;
 			case REC_LAXDASH: printf("match lax-dash\n"); break;
 			case REC_IGNCASE: printf("switch ignore-case\n"); break;
 			case REC_USECASE: printf("switch use-case\n"); break;
