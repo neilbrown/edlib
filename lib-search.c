@@ -34,6 +34,7 @@ struct search_state {
 	struct command c;
 	char prefix[64];
 	int prefix_len;
+	bool anchor_at_end;
 
 	unsigned short *rxl safe;
 };
@@ -121,8 +122,17 @@ DEF_CB(search_test)
 				doc_prev(ci->home, ss->endmark);
 		}
 		if (ss->end && ci->mark &&
-		    (mark_ordered_or_same(ss->end, ci->mark)))
-			return Efalse;
+		    mark_ordered_not_same(ss->end, ci->mark)) {
+			/* Mark is *after* the char, so if end and mark
+			 * are the same, we haven't passed the 'end' yet,
+			 * we it is too early to abort.  Hence 'not' above
+			 */
+			if (ss->anchor_at_end) {
+				found = rxl_advance(ss->st, RXL_ANCHOR);
+				anchored = 1;
+			} else
+				return Efalse;
+		}
 		if (found == RXL_DONE)
 			/* No match here */
 			return Efalse;
@@ -149,13 +159,14 @@ DEF_CB(search_test)
 	}
 	if (strcmp(ci->key, "reinit") == 0) {
 		rxl_free_state(ss->st);
-		ss->st = rxl_prepare(ss->rxl, ci->num);
+		ss->st = rxl_prepare(ss->rxl, ci->num & 3);
 		ss->prev_ch = (unsigned int)ci->num2 ?: WEOF;
 		mark_free(ss->end);
 		mark_free(ss->endmark);
-		if (ci->mark)
+		if (ci->mark) {
 			ss->end = mark_dup(ci->mark);
-		else
+			ss->anchor_at_end = ci->num & 4;
+		} else
 			ss->end = NULL;
 		if (ci->mark2)
 			ss->endmark = mark_dup(ci->mark2);
@@ -225,6 +236,7 @@ static int search_forward(struct pane *p safe,
 	ss.prev_point = point ? mark_same(point, m) : False;
 	ss.c = search_test;
 	ss.prev_ch = doc_prior(p, m);
+	ss.anchor_at_end = False;
 	call_comm("doc:content", p, &ss.c, 0, m, NULL, 0, m2);
 	rxl_info(ss.st, &maxlen, NULL, NULL, NULL);
 	rxl_free_state(ss.st);
@@ -251,6 +263,7 @@ static int search_backward(struct pane *p safe,
 	ss.point = point;
 	ss.c = search_test;
 	ss.prefix_len = 0;
+	ss.anchor_at_end = False;
 
 	pane_set_time(p);
 	do {

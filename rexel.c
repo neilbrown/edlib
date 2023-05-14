@@ -675,7 +675,7 @@ enum rxl_found rxl_advance(struct match_state *st safe, wint_t ch)
 		int f;
 		enum rxl_found r;
 		/* Need to handle flags separately */
-		for (f = RXL_SOD ; f <= RXL_EOD; f <<= 1) {
+		for (f = RXL_SOD ; f && f <= RXL_LAST; f <<= 1) {
 			if (!(flag & f))
 				continue;
 			r = rxl_advance(st, f);
@@ -686,6 +686,11 @@ enum rxl_found rxl_advance(struct match_state *st safe, wint_t ch)
 		if (!ch)
 			return ret;
 	}
+	if (flag == RXL_ANCHOR) {
+		st->anchored = True;
+		return ret;
+	}
+
 	active = st->active;
 	next = 1-active;
 

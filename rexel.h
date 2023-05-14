@@ -35,11 +35,13 @@ void rxl_free_state(struct match_state *s);
 /* These are 'or'ed in with the ch and reflect state *before*
  * the ch.  For state at EOF, use WEOF for the ch
  */
-#define	RXL_SOD (1 << 22)
-#define	RXL_SOL	(1 << 23)
-#define	RXL_SOW	(1 << 24)
-#define	RXL_NOWBRK (1 << 25) /* Not at a word boundary */
-#define	RXL_POINT  (1 << 26)
-#define	RXL_EOW	(1 << 27)
-#define	RXL_EOL	(1 << 28)
-#define	RXL_EOD	(1 << 29)
+#define	RXL_SOD		(1 << 22)
+#define	RXL_SOL		(1 << 23)
+#define	RXL_SOW		(1 << 24)
+#define	RXL_NOWBRK	(1 << 25) /* Not at a word boundary */
+#define	RXL_POINT	(1 << 26)
+#define	RXL_EOW		(1 << 27)
+#define	RXL_EOL		(1 << 28)
+#define	RXL_EOD		(1 << 29)
+#define	RXL_ANCHOR	(1 << 30) /* Set RXLF_ANCHORED from there on */
+#define	RXL_LAST RXL_ANCHOR
