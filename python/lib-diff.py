@@ -224,7 +224,7 @@ class DiffPane(edlib.Pane):
             focus.call("Message", "Not on a diff hunk - no '@@' line")
             return 1
         cmd = focus.call("make-search", ptn,
-                         edlib.RXL_ANCHORED|edlib.RXL_BACKTRACK, ret='comm')
+                         edlib.RXLF_ANCHORED|edlib.RXLF_BACKTRACK, ret='comm')
         m2 = m.dup()
         focus.call("doc:content", m2, cmd)
         f = cmd("getcapture", "len", focus, 1)-1

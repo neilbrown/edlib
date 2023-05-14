@@ -491,7 +491,7 @@ DEF_CMD(do_replace)
 			char *Pattern = call_ret(strsave, "doc:get-str", ci->home);
 			struct command *ptn = call_ret(comm, "make-search",
 						       ci->home,
-						       RXL_ANCHORED | RXL_BACKTRACK,
+						       RXLF_ANCHORED | RXLF_BACKTRACK,
 						       NULL, Pattern);
 			if (ptn) {
 				char *new2;

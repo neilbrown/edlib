@@ -18,8 +18,8 @@ unsigned short *rxl_parse(const char *patn safe, int *lenp, int nocase);
 unsigned short *safe rxl_parse_verbatim(const char *patn safe, int nocase);
 
 struct match_state *safe rxl_prepare(unsigned short *rxl safe, int flags);
-#define	RXL_ANCHORED	1
-#define	RXL_BACKTRACK	2
+#define	RXLF_ANCHORED	1
+#define	RXLF_BACKTRACK	2
 
 int rxl_prefix(unsigned short *rxl safe, char *ret safe, int max);
 int rxl_fast_match(const char *needle safe, int nlen,

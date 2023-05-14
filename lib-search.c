@@ -211,7 +211,7 @@ static int search_forward(struct pane *p safe,
 
 	if (m2 && m->seq >= m2->seq)
 		return -1;
-	ss.st = rxl_prepare(rxl, anchored ? RXL_ANCHORED : 0);
+	ss.st = rxl_prepare(rxl, anchored ? RXLF_ANCHORED : 0);
 	ss.prefix_len = rxl_prefix(rxl, ss.prefix, sizeof(ss.prefix));
 	ss.end = m2;
 	ss.endmark = endmark;
@@ -248,7 +248,7 @@ static int search_backward(struct pane *p safe,
 	pane_set_time(p);
 	do {
 
-		ss.st = rxl_prepare(rxl, RXL_ANCHORED);
+		ss.st = rxl_prepare(rxl, RXLF_ANCHORED);
 		ss.prev_ch = doc_prior(p, m);
 
 		mark_to_mark(endmark, m);
@@ -318,7 +318,7 @@ DEF_CMD(text_search)
 			ret = since_start + 1;
 	} else if (ci->str2) {
 		struct match_state *st = rxl_prepare(
-			rxl, strcmp(ci->key, "text-match") == 0 ? RXL_ANCHORED : 0);
+			rxl, strcmp(ci->key, "text-match") == 0 ? RXLF_ANCHORED : 0);
 		int flags = RXL_SOL|RXL_SOD;
 		const char *t = ci->str2;
 		int thelen, start;

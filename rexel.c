@@ -2109,8 +2109,8 @@ struct match_state *safe rxl_prepare(unsigned short *rxl safe, int flags)
 	st = malloc(sizeof(*st));
 	memset(st, 0, sizeof(*st));
 	st->rxl = rxl;
-	st->anchored = flags & RXL_ANCHORED;
-	st->backtrack = flags & RXL_BACKTRACK;
+	st->anchored = flags & RXLF_ANCHORED;
+	st->backtrack = flags & RXLF_BACKTRACK;
 	if (!st->backtrack) {
 		st->link[0] = malloc(len * sizeof(unsigned short) * 4);
 		st->link[1] = st->link[0] + len;
@@ -2509,7 +2509,7 @@ static void run_tests(bool trace)
 
 		if (trace)
 			rxl_print(rxl);
-		st = rxl_prepare(rxl, alg ? RXL_BACKTRACK : 0);
+		st = rxl_prepare(rxl, alg ? RXLF_BACKTRACK : 0);
 		st->trace = trace;
 
 		flags = RXL_SOL|RXL_SOD;
