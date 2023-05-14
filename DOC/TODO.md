@@ -35,7 +35,7 @@ Current priorities
       30 seconds, but preferrably switch to a mode which leaves
       everything else running.
 - [ ] unwanted docs too easily appear high in recent-list - *Output*
-- [ ] search backwards is too slow
+- [X] search backwards is too slow
 - [ ] menus!!
 - [ ] support directory views for sorting.
 - [ ] avoid infinite loops in consistency checks

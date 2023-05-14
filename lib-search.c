@@ -144,12 +144,19 @@ DEF_CB(search_test)
 			int pstart = rxl_fast_match(ss->prefix, ss->prefix_len,
 						    ci->str, ci->num2);
 			/* This may not be a full match even for the prefix,
-			 * but it is a good place to skip too
+			 * but it is a good place to skip to.
+			 * If there was no match, pstart is ci->num2,
+			 * so we skip the entire chunk.
+			 * We reposition to just before the possible match
+			 * so that ->end processesing is handled before the
+			 * match can start.
 			 */
+			if (pstart > 1)
+				pstart = utf8_round_len(ci->str, pstart - 1);
 			if (pstart > 0) {
 				const char *s;
-				int prev = utf8_round_len(ci->str, pstart-1);
-				s = ci->str+prev;
+				int prev = utf8_round_len(ci->str, pstart - 1);
+				s = ci->str + prev;
 				ss->prev_ch = get_utf8(&s, NULL);
 				return pstart + 1;
 			}
@@ -252,47 +259,84 @@ static int search_backward(struct pane *p safe,
 	/* Search backward from @m in @p for a match of @s.  The match
 	 * must start at or before m, but may finish later.  Only search
 	 * as far as @m2 (if set), and leave endmark pointing at the
-	 * start of the match, if one is found.  return length of match,
-	 * or negative.
+	 * start of the match, if one is found.
+	 * Return length of match, or negative.
+	 *
+	 * rexel only lets us search forwards, and stepping back
+	 * one char at a time to match the pattern is too slow.
+	 * So we step back a steadily growing number of
+	 * chars, and search forward as far as the previous location.
+	 * Once we find any match, we check if there is a later one
+	 * that still satisfies.
 	 */
 	struct search_state ss;
+	int step_size = 65536;
 	int maxlen;
+	int ret = -1;
+	struct mark *start = mark_dup(m); /* Start of the range to search */
+	struct mark *end = mark_dup(m);
 
-	ss.end = NULL;
-	ss.endmark = NULL;
+	ss.end = end;
+	ss.endmark = endmark;
 	ss.point = point;
 	ss.c = search_test;
-	ss.prefix_len = 0;
-	ss.anchor_at_end = False;
+	ss.prefix_len = rxl_prefix(rxl, ss.prefix, sizeof(ss.prefix));
+	ss.anchor_at_end = True;
 
 	pane_set_time(p);
-	do {
 
-		ss.st = rxl_prepare(rxl, RXLF_ANCHORED);
-		ss.prev_ch = doc_prior(p, m);
+	while (!m2 || m2->seq < start->seq) {
+		mark_to_mark(end, start);
+		call("doc:char", p, -step_size, start, NULL, 0, m2);
+		if (mark_same(start, end))
+			/* We have hit the start, don't continue */
+			break;
+		step_size *= 2;
+		ss.prev_ch = doc_prior(p, start);
+		ss.st = rxl_prepare(rxl, 0);
 		ss.prev_point = point ? mark_same(point, m) : False;
 
-		mark_to_mark(endmark, m);
-		call_comm("doc:content", p, &ss.c, 0, endmark);
+		mark_to_mark(m, start);
+		call_comm("doc:content", p, &ss.c, 0, m);
 		rxl_info(ss.st, &maxlen, NULL, NULL, NULL);
 		rxl_free_state(ss.st);
-
-		if (maxlen >= 0)
+		if (maxlen >= 0) {
 			/* found a match */
+			ret = maxlen;
 			break;
-		if (pane_too_long(p, 0)) {
+		}
+
+		if (pane_too_long(p, 2000)) {
 			/* FIXME returning success is wrong if we timed out
 			 * But I want to move the point, and this is easiest.
 			 * What do I really want here?
 			 * Do I just need to make reverse search faster?
 			 */
-			maxlen = 0;
+			mark_to_mark(endmark, start);
+			ret = 0;
 			break;
 		}
-	} while((!m2 || m2->seq < m->seq) &&
-		(doc_prev(p, m) != WEOF));
-	mark_to_mark(endmark, m);
-	return maxlen;
+	}
+	while (maxlen >= 0) {
+		/* There is a match starting at 'endmark'.
+		 * The might be a later match - check for it.
+		 */
+		call("doc:char", p, -maxlen, ss.endmark);
+		if (mark_ordered_not_same(end, ss.endmark))
+			break;
+		ret = maxlen;
+		mark_to_mark(endmark, ss.endmark);
+		ss.endmark = m;
+		mark_to_mark(start, endmark);
+		ss.prev_ch = doc_next(p, start);
+		ss.st = rxl_prepare(rxl, 0);
+		call_comm("doc:content", p, &ss.c, 0, start);
+		rxl_info(ss.st, &maxlen, NULL, NULL, NULL);
+		rxl_free_state(ss.st);
+	}
+	mark_free(start);
+	mark_free(end);
+	return ret;
 }
 
 DEF_CMD(text_search)
