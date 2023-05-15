@@ -25,6 +25,31 @@ Current priorities
       From 'grep' this is probably OK.  For Cx-44, it isn't.
 - [ ] review all doc:char implementations for simplification.
 
+- [ ] big pop-up image viewer pane with zoom/pan
+- [ ] 'extra' headers to include:
+  Date: in my timezoneo
+- [ ] in render-c-mode, in parse_code 'c' might be None - need to check
+- [ ] notmuch shouldn't clear tag:new until *all* views
+     on search have closed.
+- [ ] I think attaching a path starting ~/ to an email fails.
+
+- [ ] Wrap subject earlier, so subject entirely goes on next line, indented a bit.
+- [ ] menus!!
+- [ ] support directory views for sorting.
+- [ ] avoid infinite loops in consistency checks
+- [ ] skip consistency checks after several in the one command
+- [ ] more work on remote window?
+- [ ] slowness with large diff
+- [ ] commands to resolve a conflict
+- [ ] command to apply a patch hunk
+- [ ] whitespace: don't show errors unless doc has been changed.???
+
+- [ ] split notmuch into two databases, last 6 months and the rest.
+- [ ] script to move messages every week - but not deleted messages
+  Maybe not spam either
+- [ ] edlib to offer to search older messages
+
+
 Bugs to be fixed
 ----------------
 
