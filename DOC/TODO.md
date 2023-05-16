@@ -101,7 +101,7 @@ Bugs to be fixed
 - [ ] teach input to allow a repeat command to be registered so that e.g.
       search/replace and do a bit of work, then ask to be called again.
       input pboard_waican cancel this on suitable input.
-- [ ] Searching for \U0001f5d1 crashes, [\U0001f5d1] fails.
+- [X] Searching for \U0001f5d1 crashes, [\U0001f5d1] fails.
 - [ ] ctrl-z in elc doesn't ask edlib to release the terminal
 - [ ] use iconv(3) for char-set conversion
 - [ ] "copy:get" can hang: xs_copy_get_func->gtk_clipboard_wait_for_text->

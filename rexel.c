@@ -1433,7 +1433,7 @@ static int do_parse_set(struct parse_state *st safe, int plane)
 			st->sets[st->set] = l;
 		} else {
 			/* We have a set, not empty.  Store size */
-			st->sets[st->set] = st->len;
+			st->sets[st->set] = st->len | (plane << 11);
 		}
 	}
 	st->set += st->len+1;
@@ -2333,7 +2333,7 @@ char *rxl_interp(struct match_state *s safe, const char *form safe)
 
 #ifdef DEBUG
 #include <locale.h>
-static void printc(unsigned short c)
+static void printc(unsigned int c)
 {
 	if (c <= ' ' || c >= 0x7f)
 		printf("\\x%02x", c);
@@ -2346,9 +2346,11 @@ static void print_set(unsigned short *set safe)
 	int len = *set++;
 	int invert = len & 0x8000;
 
+	if (invert)
+		printf("^ ");
 	len &= 0x7fff;
 	if (len)
-		printf("[%s", invert?"^":"");
+		printf("[");
 	while (len--) {
 		unsigned short class = *set++;
 		printf(":%d", class);
@@ -2356,13 +2358,15 @@ static void print_set(unsigned short *set safe)
 			printf("]");
 	}
 	while ((len = *set++) != 0) {
+		unsigned int plane = (len & 0xF800) << 5;
+		len &= 0x7ff;
 		printf("%d:[", len);
 		while (len > 0) {
-			printc(*set);
+			printc(*set | plane);
 			if (len > 1) {
 				printf(",");
 				set += 1;
-				printc(set[0]);
+				printc(set[0] + plane);
 				len -= 1;
 			}
 			set += 1;
@@ -2370,7 +2374,7 @@ static void print_set(unsigned short *set safe)
 			if (len)
 				printf(";");
 		}
-		printf("]");
+		printf("]; ");
 	}
 }
 
@@ -2512,7 +2516,7 @@ static struct test {
 	{ "spa\\hce", "spa\nce spa ce", 0, 7, 6},
 	// \s matches  newline
 	{ "spa\\sce", "spa\nce spa ce", 0, 0, 6},
-	{ "x🗑x\U0001f5d1\\U0001f5d1x\U0001f5d1x", "x🗑x🗑🗑x🗑x", 0, 0, 8},
+	{ "x🗑x\U0001f5d1\\U0001f5d1x[x\U0001f5d1y]x", "x🗑x🗑🗑x🗑x", 0, 0, 8},
 };
 
 static void run_tests(bool trace)
