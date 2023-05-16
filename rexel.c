@@ -780,6 +780,8 @@ enum rxl_found rxl_advance(struct match_state *st safe, wint_t ch)
 				abort();
 			cnt += 1;
 			i = st->link[active][i];
+			if (i >= len)
+				abort();
 		} while (i);
 		for (i = 0; i < len; i++)
 			if (st->link[active][i] == NO_LINK ||
@@ -2120,6 +2122,10 @@ struct match_state *safe rxl_prepare(unsigned short *rxl safe, int flags)
 	st->ignorecase = calloc(BITSET_SIZE(len), sizeof(*st->ignorecase));
 	st->active = 0;
 	st->match = -1;
+	if (!st->backtrack) {
+		st->link[0][0] = 0;
+		st->link[1][0] = 0;
+	}
 	for (i = 1; i < len; i++) {
 		if (rxl[i] == REC_IGNCASE)
 			ic = True;
@@ -2128,8 +2134,8 @@ struct match_state *safe rxl_prepare(unsigned short *rxl safe, int flags)
 		if (ic)
 			set_bit(i, st->ignorecase);
 		if (!st->backtrack) {
-			st->link[0][i] = i ? NO_LINK : 0;
-			st->link[1][i] = i ? NO_LINK : 0;
+			st->link[0][i] = NO_LINK;
+			st->link[1][i] = NO_LINK;
 		}
 	}
 

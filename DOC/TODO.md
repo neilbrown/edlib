@@ -53,6 +53,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] search for "\s" loops infinitely.
 - [ ] email: urls should not be followed unless they are visible.
       Maybe display in the message window, which might be made larger
       just for this purpose.
