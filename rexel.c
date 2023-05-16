@@ -40,8 +40,8 @@
  * even slot, then the target is in the set.
  *
  * The rexels in the "regexp" section come in 4 groups.
- *   0x: 15 bit unicode number.  Other unicode numbers cannot be matched
- *           this way, and must be matched with a "set".
+ *   0:  15 bit unicode number.  Other unicode numbers require the plane
+ *           to be given first, described below.
  *   100: address of a "regex" subarray.   The match forks at this point,
  *        both the next entry and the addressed entry are considered.
  *        This limits total size to 8192 entries.
@@ -49,15 +49,19 @@
  *   101: address of a char set.  This 13 bit address is an offset from the
  *        start of the "set" section.
  *
- *   110: start/end of a capture group.  High bit is 0 for start, 1 for end.
+ *   1100: start of a capture group. 4096 possible groups.
+ *   1101: end of a capture group.
  *
  *   1110: must match the most recent instance of the capture group.
  *
- *   1111: reserve for various special purposes.
+ *   1111 0000 000: A UNICODE plane number - 0..16  The next 16 bit
+ *        number is combined with the plane number to produce a code point
+ *        to match.  The first half of plane zero does not need this
+ *        32bit format - those value can be given in 16 bites.
  *
- *   The last 32 value have special meanings.
+ *   The last several values have special meanings.
  *     0xffe0 - match any char
- *     0xffe1 - match any character except and EOL character
+ *     0xffe1 - match any character except any EOL character
  *     0xffe2 - match no char - dead end.
  *     0xffe3 - report success.
  *     0xffe4 - match at start of line
@@ -261,6 +265,7 @@ static inline void clear_bit(int bit, unsigned long *set safe)
 #define	REC_CAPTURED	0xc800
 /* 0xd??? unused */
 #define	REC_BACKREF	0xe000
+#define	REC_PLANE	0xf000
 #define	REC_ISCHAR(x)	(!((x) & 0x8000))
 #define	REC_ISSPEC(x)	((x) >= REC_ANY)
 #define	REC_ISFORK(x)	(((x) & 0xe000) == REC_FORK)
@@ -271,6 +276,9 @@ static inline void clear_bit(int bit, unsigned long *set safe)
 #define	REC_ISFIRST(x)	(!!((x) & (REC_FORKFIRST ^ REC_FORKLAST)))
 #define	REC_CAPNUM(x)	((x) & 0x07ff)
 #define	REC_CAPEND(x)	((x) & 0x0800)
+#define	REC_ISPLANE(x)	(((x) & 0xFFE0) == 0xF000)
+#define	REC_PLANE_OF(x)	((x) & 0x1F)
+#define	REC_PLANE_MAKE(x, y) ((REC_PLANE_OF(x)<<16) | y)
 
 static inline bool rec_noop(unsigned short cmd)
 {
@@ -475,6 +483,7 @@ static int advance_one(struct match_state *st safe, int i,
 	wint_t lch = ch, uch = ch;
 	bool ic = test_bit(i, st->ignorecase);
 	int advance = 0;
+	int inc = 1;
 
 	if (ic) {
 		uch = toupper(ch);
@@ -611,6 +620,14 @@ static int advance_one(struct match_state *st safe, int i,
 			advance = 1;
 		else
 			advance = -1;
+	} else if (REC_ISPLANE(cmd) && i+1 < RXL_PATNLEN(st->rxl)) {
+		cmd = REC_PLANE_MAKE(cmd, st->rxl[i+1]);
+		inc = 2;
+		if (cmd == ch ||
+		    (ic && (cmd == uch || cmd == lch)))
+			advance = 1;
+		else
+			advance = -1;
 	} else if (REC_ISSET(cmd)) {
 		if (set_match(st, REC_ADDR(cmd), ch, ic))
 			advance = 1;
@@ -633,7 +650,7 @@ static int advance_one(struct match_state *st safe, int i,
 		 * if there is a fork, we might need to link multiple
 		 * addresses in.  Best use recursion.
 		 */
-		do_link(st, i+1, eolp, len + (ch != 0));
+		do_link(st, i+inc, eolp, len + (ch != 0));
 	return advance;
 }
 
@@ -1488,6 +1505,7 @@ static bool parse_atom(struct parse_state *st safe)
 	 *
 	 */
 	wint_t ch;
+	bool is_char = False;
 
 	if (*st->patn == '\0')
 		return False;
@@ -1557,6 +1575,7 @@ static bool parse_atom(struct parse_state *st safe)
 		if (ch >= WERR)
 			return False;
 		st->patn -= 1;
+		is_char = True;
 	} else
 		ch = *st->patn;
 	if (ch == '\\') {
@@ -1594,20 +1613,24 @@ static bool parse_atom(struct parse_state *st safe)
 		case 'f': ch = '\f'; break;
 		case '0': ch = cvt_oct(&st->patn, 4);
 			st->patn -= 1;
+			is_char = True;
 			break;
 		case 'x': ch = cvt_hex(st->patn+1, 2);
 			if (ch >= WERR)
 				return False;
+			is_char = True;
 			st->patn += 2;
 			break;
 		case 'u': ch = cvt_hex(st->patn+1, 4);
 			if (ch >= WERR)
 				return False;
+			is_char = True;
 			st->patn += 4;
 			break;
 		case 'U': ch = cvt_hex(st->patn+1, 8);
 			if (ch >= WERR)
 				return False;
+			is_char = True;
 			st->patn += 8;
 			break;
 		case '1'...'9': ch = st->patn[0] - '0';
@@ -1637,7 +1660,12 @@ static bool parse_atom(struct parse_state *st safe)
 		default: return False;
 		}
 	}
-	add_cmd(st, ch);
+	if (ch < 0x8000 || !is_char) {
+		add_cmd(st, ch);
+	} else if (ch <= 0x10FFFF) {
+		add_cmd(st, REC_PLANE | (ch >> 16));
+		add_cmd(st, ch & 0xFFFF);
+	}
 	st->patn++;
 	return True;
 }
@@ -2086,6 +2114,17 @@ int rxl_prefix(unsigned short *rxl safe, char *ret safe, int max)
 			found += l;
 			continue;
 		}
+		if (REC_ISPLANE(rxl[i]) && i+1 < len) {
+			int ch = REC_PLANE_MAKE(rxl[i], rxl[i+1]);
+			int l = utf8_bytes(ch);
+			i += 1;
+			if (l == 0 || found + l > max)
+				/* No more room */
+				break;
+			put_utf8(ret + found, ch);
+			found += l;
+			continue;
+		}
 		if (rxl[i] >= REC_SOL && rxl[i] <= REC_POINT)
 			/* zero-width match doesn't change prefix */
 			continue;
@@ -2341,7 +2380,7 @@ void rxl_print(unsigned short *rxl safe)
 	unsigned short *i;
 
 	for (i = rxl+1 ; i < set; i++) {
-		unsigned short cmd = *i;
+		unsigned int cmd = *i;
 		char t[5];
 		printf("%04u: ", i-rxl);
 		if (REC_ISCHAR(cmd))
@@ -2368,6 +2407,10 @@ void rxl_print(unsigned short *rxl safe)
 			case REC_USECASE: printf("switch use-case\n"); break;
 			default: printf("ERROR %x\n", cmd); break;
 			}
+		} else if (REC_ISPLANE(cmd) && i + 1 < set) {
+			cmd = REC_PLANE_MAKE(cmd, i[1]);
+			i += 1;
+			printf("match %s (#%x)\n", put_utf8(t, cmd), cmd);
 		} else if (REC_ISFORK(cmd))
 			printf("branch to %d %s\n", REC_ADDR(cmd),
 			       REC_ISFIRST(cmd) ? "first" : "later");
@@ -2469,6 +2512,7 @@ static struct test {
 	{ "spa\\hce", "spa\nce spa ce", 0, 7, 6},
 	// \s matches  newline
 	{ "spa\\sce", "spa\nce spa ce", 0, 0, 6},
+	{ "x🗑x\U0001f5d1\\U0001f5d1x\U0001f5d1x", "x🗑x🗑🗑x🗑x", 0, 0, 8},
 };
 
 static void run_tests(bool trace)
