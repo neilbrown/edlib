@@ -29,11 +29,7 @@ Current priorities
 - [ ] 'extra' headers to include:
   Date: in my timezoneo
 - [ ] in render-c-mode, in parse_code 'c' might be None - need to check
-- [ ] notmuch shouldn't clear tag:new until *all* views
-     on search have closed.
-- [ ] I think attaching a path starting ~/ to an email fails.
 
-- [ ] Wrap subject earlier, so subject entirely goes on next line, indented a bit.
 - [ ] menus!!
 - [ ] support directory views for sorting.
 - [ ] avoid infinite loops in consistency checks
@@ -57,40 +53,22 @@ Bugs to be fixed
 - [ ] email: urls should not be followed unless they are visible.
       Maybe display in the message window, which might be made larger
       just for this purpose.
-- [X] w3m: &amp; in URLs confuse rendering
-- [X] line break in <a hseq="2"\nhref=.....   isn't handled.
-- [X] utf-8 output from w3m gets displayed a bytes!!
-       This is actually buggy spam which claims not to be utf-8
-- [X] email: when alternative/1 is related and text/html, is isn't
-       displayed by default.
-- [X] email: when a conversion pane is created on a 'text' component
-      it should be given utf-8 and not have to use "bytes" like html does.
 - [ ] renderline *knows* about scaling and when it places the cursor
       in an image, it gets it wrong for ncurses.  It should ask about
       scaling.
-- [X] notmuch shouldn't clear tag:new until *all* views
-      on search have closed.... I don't think I really want this.
-      Rather I want to only clear on explicit 'quit'
 - [ ] stop consistency checking a text doc when it gets "big" ??
 - [ ] auto-sign emails..
-- [X] message must be tagged "replied" when a reply is sent.
-- [X] if a shell command produces no output, message should be shown
 - [ ] be sure to wait for xdg-open etc.
 - [ ] things slow down after lots of edits.  Maybe track
       number of chunk, marks, undos etc and display them somewhere
-- [X] shell output opens a window after a timeout, but it the shell
-      opened an edit window, that can be a bit confusing
 - [?] Make doesn't follow llog_reader.c:723:6: when it have seen
      make[4]: Entering directory '/home2/git/lustre-release/lustre/utils'
 - [ ] Email summary line for single-message threads should show size??
 - [ ] accessing document list can be slow.  Same for large directories
-- [X] marks sometimes get out of order in email query list
 - [ ] 'other' notmuch search doesn't show older messages sometimes
 - [ ] Don't wrap email header lines when cursor isn't on the line - too noisy
 - [ ] lib-utf8 takes chars, not bytes, so it doesn't work over
       a utf8 document
-- [X] ordering of marks in notmuch search summary can go wrong
-- [X] sometimes the tid in a notmuch query mark.pos is not in threadids!!
 - [ ] catching doc:replace in a pane doesn't catch doc:insert-file.
       I need a simple way to intercept any change.
 - [ ] marks can be used after they go invalid too easily.  How to fix??
@@ -101,7 +79,6 @@ Bugs to be fixed
 - [ ] teach input to allow a repeat command to be registered so that e.g.
       search/replace and do a bit of work, then ask to be called again.
       input pboard_waican cancel this on suitable input.
-- [X] Searching for \U0001f5d1 crashes, [\U0001f5d1] fails.
 - [ ] ctrl-z in elc doesn't ask edlib to release the terminal
 - [ ] use iconv(3) for char-set conversion
 - [ ] "copy:get" can hang: xs_copy_get_func->gtk_clipboard_wait_for_text->
@@ -215,7 +192,7 @@ Module features
 ### render-format
 
 - [ ] improve caching of attributes
-- [ ] profile performance to find opporunities for optimisation.
+- [ ] profile performance to find opportunities for optimisation.
 
 ### lib-search
 
@@ -274,7 +251,7 @@ Module features
 
 ### emacs
 
-- [ ] :C-q to recognize names of unicode chars: e.g. WASTEBASKET
+- [ ] :C-q to recognise names of Unicode chars: e.g. WASTEBASKET
        Possibly matches a list which continued :C-q cycles through
 - [ ] sort the command names for command-completion?
        Currently lines are inserted into buffer.  I need to store in
