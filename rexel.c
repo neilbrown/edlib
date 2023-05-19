@@ -211,6 +211,8 @@ struct match_state {
 	#endif
 };
 
+#define wctype_cells (sizeof(wctype_t) / sizeof(unsigned short))
+
 /* ignorecase is a bit set */
 #define BITS_PER_LONG (sizeof(unsigned long) * 8)
 static inline int BITSET_SIZE(int bits)
@@ -298,9 +300,6 @@ static inline bool rec_zerowidth(unsigned short cmd)
 /* First entry contains start of maps, and flags */
 #define	RXL_PATNLEN(rxl)	((rxl)[0] & 0x3fff)
 #define	RXL_SETSTART(rxl)	((rxl) + RXL_PATNLEN(rxl))
-
-static int classcnt = 0;
-static wctype_t *classmap safe = NULL;
 
 static enum rxl_found rxl_advance_bt(struct match_state *st safe, wint_t ch);
 static void bt_link(struct match_state *st safe, int pos, int len);
@@ -397,10 +396,14 @@ static int set_match(struct match_state *st safe, unsigned short addr,
 	invert = !!(len & 0x8000);
 	if (len) {
 		len &= 0x7fff;
-		for ( ; len--; set++)
-			if (iswctype(uch, classmap[*set]) ||
-			    (uch != lch && iswctype(lch, classmap[*set])))
+		for ( ; len; set += wctype_cells) {
+			wctype_t class;
+			len -= wctype_cells;
+			memcpy(&class, set, sizeof(wctype_t));
+			if (iswctype(uch, class) ||
+			    (uch != lch && iswctype(lch, class)))
 				return !invert;
+		}
 	}
 	/* now there might be some sets.  Each set starts with a size with
 	 * top 5 bytes indicating top bytes of unicode planes, and bottom
@@ -1285,35 +1288,14 @@ static bool add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
 
 static void add_class(struct parse_state *st safe, int plane, wctype_t cls)
 {
-	int c;
-	if (!st->sets) {
-		/* one entry required per class */
-		st->len += 1;
-		return;
-	} else if (plane >= 0)
+	if (plane >= 0)
 		/* already handled. */
 		return;
 
-	for (c = 0; c < classcnt ; c++)
-		if (classmap[c] == cls)
-			break;
-	if (c < classcnt) {
-		st->sets[st->set + (++st->len)] = c;
-		return;
-	}
-	if ((classcnt & (classcnt - 1)) == 0) {
-		/* need to allocate space */
-		int size;
-		if (classcnt)
-			size = classcnt * 2;
-		else
-			size = 8;
-		classmap = realloc(classmap, size * sizeof(classmap[0]));
-	}
-
-	classmap[classcnt++] = cls;
-	st->sets[st->set + (++st->len)] = c;
-	return;
+	if (st->sets)
+		memcpy(&st->sets[st->set + st->len + 1], &cls,
+		       sizeof(wctype_t));
+	st->len += wctype_cells;
 }
 
 static bool is_set_element(const char *p safe)
@@ -1477,17 +1459,18 @@ static bool parse_set(struct parse_state *st safe)
 static unsigned short add_class_set(struct parse_state *st safe,
 				    char *cls safe, int in)
 {
-	if (!st->rxl /* FIXME redundant, rxl and sets are set at same time */
-	    || !st->sets) {
-		st->set += 3;
+	int set = st->set;
+	if (!st->sets) {
+		/* Need the length header, a class, and another zero length */
+		st->set += 1 + wctype_cells + 1;
 		return REC_SET;
 	}
-	st->sets[st->set] = in ? 1 : 0x8001;
+	st->sets[set] = wctype_cells + (in ? 0 : 0x8000);
 	st->len = 0;
 	add_class(st, -1, wctype(cls));
-	st->sets[st->set + 2] = 0;
-	st->set += 3;
-	return REC_SET | (st->set - 3);
+	st->sets[set + 1 + wctype_cells] = 0;
+	st->set += 1 + wctype_cells + 1;
+	return REC_SET | set;
 }
 static bool parse_re(struct parse_state *st safe, int capture);
 static bool parse_atom(struct parse_state *st safe)
@@ -2350,10 +2333,13 @@ static void print_set(unsigned short *set safe)
 		printf("^ ");
 	len &= 0x7fff;
 	if (len)
-		printf("[");
-	while (len--) {
-		unsigned short class = *set++;
-		printf(":%d", class);
+		printf("[{%d}", sizeof(wctype_t));
+	while (len) {
+		wctype_t class;
+		memcpy(&class, set, sizeof(wctype_t));
+		set += wctype_cells;
+		len -= wctype_cells;
+		printf(":%lx", class);
 		if (!len)
 			printf("]");
 	}

@@ -49,6 +49,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [X] rexel should include the charset id in the rxl, not keep it static.
 - [ ] search for "\s" loops infinitely.
 - [ ] email: urls should not be followed unless they are visible.
       Maybe display in the message window, which might be made larger
