@@ -2174,7 +2174,7 @@ static void text_ref_consistent(struct text *t safe, struct doc_ref *r safe,
 			abort();
 		return;
 	}
-	if (r->o > r->c->end)
+	if (r->o >= r->c->end)
 		abort();
 	if (r->o < r->c->start)
 		abort();
@@ -2232,9 +2232,10 @@ static void text_check_consistent(struct text *t safe)
 			struct doc_ref r = prev->ref;/* SMATCH Bug things prev
 						      * has no state*/
 			int i;
-			text_normalize(t, &m->ref);
+			struct doc_ref r2 = m->ref;
+			text_normalize(t, &r2);
 			while ((i = text_advance_towards(t, &r,
-							 &m->ref)) != 1) {
+							 &r2)) != 1) {
 				if (i == 0)
 					abort();
 			}
