@@ -1935,6 +1935,7 @@ DEF_CMD(text_content)
 			       m2->ref.o <= s - c->txt)
 				mark_to_mark(m, m2);
 			m->ref.o = s - c->txt;
+			text_normalize(t, &m->ref);
 
 			ln -= s - ss;
 			rv = comm_call(ci->comm2, "consume", ci->focus,
