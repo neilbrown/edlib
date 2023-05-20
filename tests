@@ -41,7 +41,7 @@ runtest()
 	run ) EDLIB_RECORD=$2 EDLIB_REPLAY=$3 \
 		screen -D -m sh -c 'stty rows 30 cols 80; ./edlib $TEST_DIR'
 	;;
-	view ) EDLIB_REPLAY=$2 \
+	view ) EDLIB_RECORD=/dev/null EDLIB_REPLAY=$2 \
 		screen -m sh -c 'stty rows 30 cols 80; ./edlib $TEST_DIR'
 	;;
 	extend ) EDLIB_RECORD=$2 EDLIB_REPLAY=$3 \
