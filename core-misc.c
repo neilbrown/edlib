@@ -532,6 +532,11 @@ int utf8_round_len(const char *text safe, int len)
 }
 
 time_t edlib_timing = 0;
+/* Set this to False when using gdb. It must be
+ * extern to avoid it being optimised away.
+ */
+extern bool edlib_timing_allowed;
+bool edlib_timing_allowed = True;
 
 int times_up(void)
 {
@@ -550,7 +555,8 @@ int times_up(void)
 
 void time_starts(void)
 {
-	edlib_timing = time(NULL);
+	if (edlib_timing_allowed)
+		edlib_timing = time(NULL);
 }
 
 void time_ends(void)
