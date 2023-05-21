@@ -601,6 +601,12 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer, char *disp,
 	if (ctype && strcasecmp(ctype, "application/octet-stream") == 0 &&
 	    fname && strcasestr(fname, ".pdf") != NULL)
 		transformed = call_ret(pane, "pdf-to-text", h);
+	if (major && strncasecmp(major, "application", majlen) == 0 &&
+	    fname && (strcasestr(fname, ".docx") != NULL ||
+		      strcasestr(fname, ".doc") != NULL ||
+		      strcasestr(fname, ".odt") != NULL))
+		transformed = call_ret(pane, "doc-to-text", h, 0, NULL, fname);
+
 	if (ctype && strncasecmp(ctype, "image/", 6) == 0) {
 		struct mark *m;
 		transformed = call_ret(pane, "doc:from-text", h,
@@ -1265,5 +1271,6 @@ void edlib_init(struct pane *ed safe)
 	call("global-load-module", ed, 0, NULL, "lib-html-w3m");
 
 	call("global-load-module", ed, 0, NULL, "lib-pdf-to-text");
+	call("global-load-module", ed, 0, NULL, "lib-doc-to-text");
 	call("global-load-module", ed, 0, NULL, "lib-ical-to-text");
 }

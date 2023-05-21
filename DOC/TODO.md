@@ -55,6 +55,10 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] why doesn't doc-to-text auto-load
+- [ ] use mimetypes.guess_type() to interpret filenames in email attachments??
+- [ ] don't allow non-text email parts to appear as text.  Maybe hex??
+- [ ] word-wrap all text in email display
 - [X] rexel should include the charset id in the rxl, not keep it static.
 - [X] search for "\s" loops infinitely. - is currently on several spaces
 - [ ] ->replace_pane, ->replace_popup can be deleted (Abort) but we
@@ -63,7 +67,7 @@ Bugs to be fixed
      Always do word-count async.
 - [ ] moving in a big file is slow
 - [ ] always do word-count async.
-- [ ] make prefix-fast-search work for case-insensity matches??
+- [ ] make prefix-fast-search work for case-insensitive matches??
 - [ ] email: urls should not be followed unless they are visible.
       Maybe display in the message window, which might be made larger
       just for this purpose.
