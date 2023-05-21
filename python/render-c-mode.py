@@ -373,6 +373,10 @@ class CModePane(edlib.Pane):
         # 'zero' point is a start of line that is not empty, not
         #  white space, not #, not /, not }, and not "alphanum:"
         #  But don't accept a match on this line
+        #  Starts either:
+        #   - punctuation, not / or #.  Expect '{' at start of line I guess, or
+        #   - identifier that is followed by puctuation, but not as a label.  Maybe "foo("
+        #   - identifier that is followed by space, but again not a label.
         m = mark.dup()
 
         p.call("doc:EOL", m, -1, 1)

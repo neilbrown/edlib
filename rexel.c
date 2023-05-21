@@ -812,7 +812,7 @@ enum rxl_found rxl_advance(struct match_state *st safe, wint_t ch)
 	}
 #endif /* DEBUG */
 	/* Firstly, clear out next lists */
-	/* This works before NO_LINK is 0xffff */
+	/* This works because NO_LINK is 0xffff */
 	memset(st->link[next], 0xff, RXL_PATNLEN(st->rxl) * 2);
 	memset(st->leng[next], 0, RXL_PATNLEN(st->rxl) * 2);
 	st->link[next][0] = 0;
@@ -1832,6 +1832,7 @@ int rxl_fast_match(const char *needle safe, int nlen,
 		hlen--;
 		ret++;
 	}
+	/* No match - return original hlen, when is now in ret */
 	return ret;
 }
 

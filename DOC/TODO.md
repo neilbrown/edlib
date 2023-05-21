@@ -30,6 +30,12 @@ Current priorities
   Date: in my timezoneo
 - [ ] in render-c-mode, in parse_code 'c' might be None - need to check
 
+- [ ] opening file with e.g. 200,000 lines is very slow
+- [ ] ncurses - don't block in nc_external_viewer - at least abort after
+      30 seconds, but preferrably switch to a mode which leaves
+      everything else running.
+- [ ] unwanted docs too easily appear high in recent-list - *Output*
+- [ ] search backwards is too slow
 - [ ] menus!!
 - [ ] support directory views for sorting.
 - [ ] avoid infinite loops in consistency checks
@@ -50,6 +56,14 @@ Bugs to be fixed
 ----------------
 
 - [X] rexel should include the charset id in the rxl, not keep it static.
+- [ ] search for "\s" loops infinitely. - is currently on several spaces
+- [ ] ->replace_pane, ->replace_popup can be deleted (Abort) but we
+      don't catch it...
+- [ ] opening file with e.g. 200,000 lines is very slow - because of word-count.
+     Always do word-count async.
+- [ ] moving in a big file is slow
+- [ ] always do word-count async.
+- [ ] make prefix-fast-search work for case-insensity matches??
 - [ ] search for "\s" loops infinitely.
 - [ ] email: urls should not be followed unless they are visible.
       Maybe display in the message window, which might be made larger
