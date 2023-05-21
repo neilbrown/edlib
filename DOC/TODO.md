@@ -56,7 +56,7 @@ Bugs to be fixed
 ----------------
 
 - [X] rexel should include the charset id in the rxl, not keep it static.
-- [ ] search for "\s" loops infinitely. - is currently on several spaces
+- [X] search for "\s" loops infinitely. - is currently on several spaces
 - [ ] ->replace_pane, ->replace_popup can be deleted (Abort) but we
       don't catch it...
 - [ ] opening file with e.g. 200,000 lines is very slow - because of word-count.
@@ -64,7 +64,6 @@ Bugs to be fixed
 - [ ] moving in a big file is slow
 - [ ] always do word-count async.
 - [ ] make prefix-fast-search work for case-insensity matches??
-- [ ] search for "\s" loops infinitely.
 - [ ] email: urls should not be followed unless they are visible.
       Maybe display in the message window, which might be made larger
       just for this purpose.

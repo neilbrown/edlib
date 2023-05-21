@@ -30,6 +30,7 @@ struct search_state {
 	struct mark *endmark;
 	struct mark *point;
 	wint_t prev_ch;
+	bool prev_point;
 	struct command c;
 	char prefix[64];
 	int prefix_len;
@@ -102,10 +103,15 @@ DEF_CB(search_test)
 		}
 		if (is_eol(wch))
 			flags |= RXL_EOL;
+		if (ss->prev_point) {
+			flags |= RXL_POINT;
+			ss->prev_point = False;
+		}
+		if (ss->point && ci->mark && mark_same(ss->point, ci->mark))
+			/* Need to assert POINT before next char */
+			ss->prev_point = True;
 
 		found = rxl_advance(ss->st, wch | flags);
-		if (ss->point && ci->mark && mark_same(ss->point, ci->mark))
-			found = rxl_advance(ss->st, RXL_POINT);
 		anchored = rxl_info(ss->st, &maxlen, NULL, NULL, &since_start);
 
 		if (found >= RXL_MATCH && ss->endmark && ci->mark &&
@@ -216,6 +222,7 @@ static int search_forward(struct pane *p safe,
 	ss.end = m2;
 	ss.endmark = endmark;
 	ss.point = point;
+	ss.prev_point = point ? mark_same(point, m) : False;
 	ss.c = search_test;
 	ss.prev_ch = doc_prior(p, m);
 	call_comm("doc:content", p, &ss.c, 0, m, NULL, 0, m2);
@@ -250,6 +257,7 @@ static int search_backward(struct pane *p safe,
 
 		ss.st = rxl_prepare(rxl, RXLF_ANCHORED);
 		ss.prev_ch = doc_prior(p, m);
+		ss.prev_point = point ? mark_same(point, m) : False;
 
 		mark_to_mark(endmark, m);
 		call_comm("doc:content", p, &ss.c, 0, endmark);
