@@ -27,7 +27,7 @@ Current priorities
 
 - [ ] big pop-up image viewer pane with zoom/pan
 - [ ] 'extra' headers to include:
-  Date: in my timezoneo
+  Date: in my timezone
 - [ ] in render-c-mode, in parse_code 'c' might be None - need to check
 
 - [ ] opening file with e.g. 200,000 lines is very slow
@@ -55,7 +55,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] transparent images appear in email with horiz lines
+- [X] transparent images appear in email with horiz lines
 - [ ] Replying to w3m/html mail results in unsightly markup in reply
 - [ ] redefining doc:char but not doc:content in mail-compose causes
       search to get confused.  What should we do?

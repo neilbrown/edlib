@@ -1079,7 +1079,15 @@ DEF_CMD(nc_draw_image)
 				}
 				if (pan) {
 					wgetbkgrnd(panel_window(pan), &cc);
-					pair_content(cc.ext_color, &f, &b);
+					if (cc.ext_color == 0)
+						/* default.  This is light
+						 * gray rather then white,
+						 * but I think it is a good
+						 * result.
+						 */
+						b = COLOR_WHITE;
+					else
+						pair_content(cc.ext_color, &f, &b);
 					if (p1[3] < 128)
 						fg = b;
 					if (p2[3] < 128)
