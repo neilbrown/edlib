@@ -868,10 +868,16 @@ class notmuch_query(edlib.Doc):
             fn = minfo[str1][0][0]
         except:
             return edlib.Efalse
+        try:
+            # timestamp
+            ts = minfo[str1][1]
+        except:
+            ts = 0
         doc = focus.call("doc:open", "email:"+fn, -2, ret='pane')
         if doc:
             doc['notmuch:id'] = str1
             doc['notmuch:tid'] = str2
+            doc['notmuch:timestamp'] = "%d"%ts
             for i in range(len(minfo[str1][0])):
                 doc['notmuch:fn-%d' % i] = minfo[str1][0][i]
             comm2("callback", doc)
@@ -3381,9 +3387,6 @@ class notmuch_message_view(edlib.Pane):
         hdrdoc = focus.call("doc:multipart:get-part", 1, ret='pane')
         point = hdrdoc.call("doc:vmark-new", edlib.MARK_POINT, ret='mark')
         hdrdoc.call("doc:set-ref", point)
-        hdrdoc.call("doc:replace", 1, point, point, "Thread-id: ",
-                    ",render:rfc822header=10")
-        hdrdoc.call("doc:replace", 1, point, point, self['notmuch:tid'] + '\n')
         for i in range(10):
             f = self['notmuch:fn-%d' % i]
             if not f:
@@ -3394,6 +3397,19 @@ class notmuch_message_view(edlib.Pane):
             hdrdoc.call("doc:replace", 1, point, point, hdr,
                         ",render:rfc822header=%d" % (len(hdr)-1))
             hdrdoc.call("doc:replace", 1, point, point, f + '\n')
+        hdrdoc.call("doc:replace", 1, point, point, "Thread-id: ",
+                    ",render:rfc822header=10")
+        hdrdoc.call("doc:replace", 1, point, point, self['notmuch:tid'] + '\n')
+        try:
+            ts = self['notmuch:timestamp']
+            ts = int(ts)
+        except:
+            ts = 0
+        if ts > 0:
+            tm = time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime(ts))
+            hdrdoc.call("doc:replace", 1, point, point, "Local-Time: ",
+                    ",render:rfc822header=11")
+            hdrdoc.call("doc:replace", 1, point, point, tm + '\n')
         return 1
 
     def handle_save(self, key, focus, mark, **a):

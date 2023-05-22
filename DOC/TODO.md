@@ -26,7 +26,7 @@ Current priorities
 - [ ] review all doc:char implementations for simplification.
 
 - [ ] big pop-up image viewer pane with zoom/pan
-- [ ] 'extra' headers to include:
+- [X] 'extra' headers to include:
   Date: in my timezone
 - [ ] in render-c-mode, in parse_code 'c' might be None - need to check
 
