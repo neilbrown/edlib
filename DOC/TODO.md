@@ -208,7 +208,7 @@ Module features
 - [ ] need a queue of pending selection requests
 
 ### lib-textfill
-- [ ] when indenting a new line, copy indent from previous line, not from
+- [X] when indenting a new line, copy indent from previous line, not from
       first.
 
 ### render-format

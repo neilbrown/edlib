@@ -168,7 +168,8 @@ def find_end(focus, mark):
 def get_prefixes(focus, mark, lines):
     # Get the text on the line before 'mark' - the prefix of the line
     # Then based on that, get a prefix of the second line, to be used
-    # on other lines.
+    # on other lines. And also of the last line, to be used when
+    # adding a single line to a para.
     # If there is no second line, use first prefix, but with non-space
     # converted to space.
 
@@ -196,9 +197,11 @@ def get_prefixes(focus, mark, lines):
                     prefix += c
                 else:
                     prefix += ' '
+        prefix_last = prefix
     else:
         prefix = span(lines[1], p0 + ' \t')
-    return (p0, prefix)
+        prefix_last = span(lines[-1], p0 + ' \t')
+    return (p0, prefix, prefix_last)
 
 class FillMode(edlib.Pane):
     def __init__(self, focus, colsarg=None):
@@ -258,7 +261,7 @@ class FillMode(edlib.Pane):
         if len(lines) == 0:
             return 1
 
-        (prefix0, prefix) = get_prefixes(focus, mark, lines)
+        (prefix0, prefix, prefix_last) = get_prefixes(focus, mark, lines)
         tostrip = prefix0 + ' \t'
 
         newpara = reformat(lines, textwidth(prefix0), width, tostrip, prefix)
@@ -314,12 +317,12 @@ class FillMode(edlib.Pane):
         if len(lines) == 0:
             return edlib.Efallthrough
 
-        (prefix0, prefix1) = get_prefixes(focus, st, lines)
+        (prefix0, prefix1, prefix_last) = get_prefixes(focus, st, lines)
 
         if textwidth(line) == self.cols:
             # just insert a line break
             try:
-                focus.call("doc:replace", 1, mark, mark, "\n"+prefix1)
+                focus.call("doc:replace", 1, mark, mark, "\n"+prefix_last)
                 return 1
             except edlib.commandfailed:
                 return edlib.Efallthrough
@@ -331,7 +334,7 @@ class FillMode(edlib.Pane):
             p += focus.next(m)
         lines = [ focus.call("doc:get-str", m, mark, ret='str') ]
         newpara = reformat(lines, textwidth(p), self.cols, prefix0+' \t',
-                           prefix1)
+                           prefix_last)
         if newpara != lines[0]:
             try:
                 do_replace(focus, m, mark, newpara, prefix0+' \t')
