@@ -325,6 +325,13 @@ static int search_backward(struct pane *p safe,
 		if (mark_ordered_not_same(end, ss.endmark))
 			break;
 		ret = maxlen;
+		if (endmark != ss.endmark &&
+		    mark_ordered_or_same(ss.endmark, endmark))
+			/* Didn't move forward!!  Presumably
+			 * buggy doc:step implementation.
+			 */
+			break;
+
 		mark_to_mark(endmark, ss.endmark);
 		ss.endmark = m;
 		mark_to_mark(start, endmark);

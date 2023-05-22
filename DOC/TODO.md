@@ -55,6 +55,10 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] transparent images appear in email with horiz lines
+- [ ] Replying to w3m/html mail results in unsightly markup in reply
+- [ ] redefining doc:char but not doc:content in mail-compose causes
+      search to get confused.  What should we do?
 - [ ] why doesn't doc-to-text auto-load
 - [ ] use mimetypes.guess_type() to interpret filenames in email attachments??
 - [ ] don't allow non-text email parts to appear as text.  Maybe hex??
