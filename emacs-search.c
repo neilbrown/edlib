@@ -313,7 +313,7 @@ DEF_CMD(search_again)
 		/* empty string always matches */
 		ret = 1;
 	else if (esi->backwards && doc_prev(esi->target, m) == WEOF)
-		ret = -2;
+		ret = Efail;
 	else {
 		ret = call("text-search", esi->target,
 			   !esi->case_sensitive, m, str, esi->backwards);
