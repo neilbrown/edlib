@@ -52,12 +52,10 @@ class DiffPane(edlib.Pane):
     def handle_next(self, key, focus, mark, **a):
         "handle-list/K:A-p/K:Prior"
         # Find previous diff hunk
-        edlib.LOG("prev")
         try:
             focus.call("text-search", 0, 1, "^([^-+]|$)", mark)
             focus.call("text-search", 0, 1, "^[-+]", mark)
         except edlib.commandfailed:
-            edlib.LOG("failed")
             pass
         return 1
 

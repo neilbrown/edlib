@@ -123,7 +123,6 @@ class CalcView(edlib.Pane):
                 comm2("cb", focus, val)
                 return 1
             return edlib.Efalse
-        edlib.LOG(key, str)
         if key == "result":
             self.result = str
         if key == "hex-result" or key == "oct-result":

@@ -403,7 +403,6 @@ def make_composition(db, focus, which = "PopupTile", how = "MD3tsa", tag = None)
     set_tag = ""
     if tag:
         set_tag = "/usr/bin/notmuch %s;" % tag
-    edlib.LOG(set_tag)
     m['email:sendmail'] = set_tag + "/usr/bin/notmuch insert --folder=sent --create-folder -new -unread +outbox"
     # NOTE this cannot be in ThisPane, else the pane we want to copy
     # content from will disappear.
@@ -3162,7 +3161,6 @@ class notmuch_message_view(edlib.Pane):
                 # Might be the first part of a multi-path alternative,
                 # look earlier in the path
                 i -= 1
-            edlib.LOG("consider", p, i, )
             if p[i].startswith("alternative:"):
                 # this is one of several - can we handle it?
                 group = ','.join(p[:i])

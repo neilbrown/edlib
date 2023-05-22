@@ -737,10 +737,8 @@ class MarkdownPane(edlib.Pane):
         "handle:Commit"
         p = focus
         while p != p.parent:
-            edlib.LOG(p == self, p)
             p = p.parent
         par = self
-        edlib.LOG("try", par, par.parent);
         p = PresenterPane(par.parent)
         if p:
             p.call("attach-viewer")

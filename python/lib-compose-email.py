@@ -702,7 +702,6 @@ class compose_email(edlib.Pane):
     def handle_attach(self, key, focus, **a):
         "handle:K:CC:C-A"
         p = focus.call("PopupTile", "2", "", ret='pane')
-        edlib.LOG(p)
         if not p:
             return edlib.Efail
         p['prompt'] = "Attachment"
@@ -711,13 +710,11 @@ class compose_email(edlib.Pane):
         p['pane-title'] = "Attachment File"
         p = p.call("attach-history", "*Attachment History*", "popup:close",
                    ret='pane')
-        edlib.LOG("now", p)
         p.call("attach-file-entry", "file")
         return 1
 
     def handle_do_attach(self, key, focus, str1, str2, **a):
         "handle:compose-email:attach"
-        edlib.LOG("attaching", str1)
         if not str1:
             return 1
         if str2:
@@ -726,7 +723,6 @@ class compose_email(edlib.Pane):
             (type, encoding) = mimetypes.guess_type(str1, False)
         if not type:
             type = "application/octet-stream"
-        edlib.LOG("type=", type)
         f, l = self.vmarks(self.view)
         m = edlib.Mark(orig=l)
         self.call("doc:set-ref", 0, m)

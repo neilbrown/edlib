@@ -100,7 +100,6 @@ class ShellPane(edlib.Pane):
                 while b:
                     r += b
                     b = os.read(self.pipe.stdout.fileno(), 4096)
-                edlib.LOG("read", len(r))
         except IOError:
             return 1
         if r is None or len(r) == 0:
