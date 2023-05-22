@@ -27,6 +27,14 @@ def config_appeared(key, focus, **a):
         else:
             focus.call("doc:set:view-default", "textfill,whitespace,autospell")
         focus.call("doc:set:fill-width", "72")
+
+        focus.call("doc:set:fill:start-re",
+                   "^([^a-zA-Z0-9\\n]*$| *-| *- *\\[[ X]]| *#+| *\\*+| *[0-9]*\\.)"
+                   )
+        focus.call("doc:set:fill:end-re",
+                   "^([^a-zA-Z0-9\\n]*$| *-| *- *\\[[ X]]| *#+| *\\*+| *[0-9]*\\.)"
+                   )
+
     return edlib.Efallthrough
 
 editor.call("global-set-command", "doc:appeared-config", config_appeared)

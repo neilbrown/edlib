@@ -129,6 +129,8 @@ def find_start(focus, mark):
     m = mark.dup()
     re = focus.call("doc:get-attr", mark, "fill:start-re", ret='str')
     if not re:
+        re = focus['fill:start-re']
+    if not re:
         re = "^[^a-zA-Z0-9\n]*$"
     focus.call("doc:EOL", -100, m)
     try:
@@ -154,6 +156,8 @@ def find_end(focus, mark):
     m = mark.dup()
     focus.call("doc:EOL", 100, m)
     re = focus.call("doc:get-attr", mark, "fill:end-re", ret='str')
+    if not re:
+        re = focus['fill:end-re']
     if not re:
         re = "^[^a-zA-Z0-9\n]*$"
     try:
@@ -182,12 +186,16 @@ def get_prefixes(focus, mark, lines):
         prefix = focus.call("doc:get-attr", "fill:default-prefix",
                             m, ret='str')
         if not prefix:
+            prefix = focus['fill:default-prefix']
+        if not prefix:
             prefix = ""
             # When a single line is being wrapped, all of these
             # characters in the prefix are preserved for the prefix of
             # other lines.
             repeating_prefix = focus.call("doc:get-attr", "fill:repeating-prefix",
                                           m, ret='str')
+            if not repeating_prefix:
+                repeating_prefix = focus['fill:repeating-prefix']
             if not repeating_prefix:
                 repeating_prefix=''
             repeating_prefix += ' \t'
