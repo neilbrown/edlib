@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright Neil Brown ©2020-2022 <neil@brown.name>
+# Copyright Neil Brown ©2020-2023 <neil@brown.name>
 # May be distributed under terms of GPLv2 - see file:COPYING
 
 # This is a "config" script.  It just for experimenting

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright Neil Brown (c)2020-2022 <neil@brown.name>
+# Copyright Neil Brown (c)2020-2023 <neil@brown.name>
 # May be distributed under terms of GPLv2 - see file:COPYING
 #
 # This module supports keyboard-macros, both recording and replaying.
