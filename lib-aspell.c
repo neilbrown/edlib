@@ -206,7 +206,6 @@ DEF_CMD(aspell_set_dict)
 
 	if (!lang)
 		return Enoarg;
-	LOG("lang = %s", lang);
 	conf2 = aspell_config_clone(spell_config);
 	aspell_config_replace(conf2, "lang", lang);
 	ret = new_aspell_speller(conf2);

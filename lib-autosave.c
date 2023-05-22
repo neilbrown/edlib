@@ -118,7 +118,6 @@ DEF_CMD(autosave_dir_delete)
 	if (!fn || *fn != '/')
 		return 2;
 
-	LOG("Forgetting autosave for %s", fn);
 	dir = pane_attr_get(ci->focus, "dirname");
 	base = pane_mark_attr(ci->focus, m, "name");
 	if (dir && base) {

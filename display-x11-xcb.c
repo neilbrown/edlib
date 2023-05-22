@@ -604,8 +604,7 @@ DEF_CMD(xcb_clear)
 			cairo_paint(dest->ctx);
 			dest->bg.g = -1;
 		}
-	} else
-		LOG("ERROR neither src or bg");
+	}
 	pane_damaged(ci->home, DAMAGED_POSTORDER);
 
 	if (!dest->need_update)
