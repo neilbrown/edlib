@@ -7,6 +7,7 @@ Current priorities
 - [ ] anything marked [1]
 - [ ] fix bugs
 - [ ] core features
+- [X] keystroke to open extra-header in notmuch - K-X
 - [ ] markdown viewer and editor
 - [ ] git log view with rebase and reword options
 - [ ] git-commit command which presents the patch and allows it to be
@@ -57,9 +58,21 @@ Bugs to be fixed
 
 - [X] transparent images appear in email with horiz lines
 - [ ] Replying to w3m/html mail results in unsightly markup in reply
+- [ ] converting email parts with external code should be async
+- [ ] fill:end-re should default to fill:start-re
+- [ ] md-mode should set the fill re-s don't rely on config
+- [ ] config.py should load from $HOME/.config/edlib/config.py
+        exec(read())
+- [ ] lang-python should put each mode in a separate module
+      Maybe PyImport_ExecCodeModuleEx() after reading and compile()ing
+      the source file.  Or set up path to find edlib modules.
 - [ ] redefining doc:char but not doc:content in mail-compose causes
       search to get confused.  What should we do?
-- [ ] why doesn't doc-to-text auto-load
+      Don't redefine doc:char.  Enable mark-moving notification on point
+      and on 'refresh' move to appropriate end of a marker if on one
+- [ ] use mark-moving on point to step over "quoted lines"
+- [X] why doesn't doc-to-text auto-load - because only attach-
+      autoloads.  I need a complete redesign of autoload
 - [ ] use mimetypes.guess_type() to interpret filenames in email attachments??
 - [ ] don't allow non-text email parts to appear as text.  Maybe hex??
 - [ ] word-wrap all text in email display
@@ -70,7 +83,6 @@ Bugs to be fixed
 - [ ] opening file with e.g. 200,000 lines is very slow - because of word-count.
      Always do word-count async.
 - [ ] moving in a big file is slow
-- [ ] always do word-count async.
 - [ ] make prefix-fast-search work for case-insensitive matches??
 - [ ] email: urls should not be followed unless they are visible.
       Maybe display in the message window, which might be made larger
@@ -138,6 +150,7 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] allow doc:get-attr to get a pane attribute if there is no content attribute.
 - [ ] design a way for a keystroke to interrupt a long-running function.
 - [ ] extend Draw:measure protocol to allow constant-width-fonts to
       cannot-scale displays can be detected and measurement optimised for.
@@ -234,6 +247,7 @@ Module features
 - [ ] move to separate git repo and document well.
 - [ ] review return code of rxl_advance().  What should be
       returned if a flag allowed a match, but the char didn't.
+- [ ] support backward search by compiling expression backwards
 
 ### popup
 
@@ -613,6 +627,8 @@ Module features
 
 ### lang-python
 
+- [ ] array index should allow two args, second being a mark for
+      doc:get-attr etc.
 - [ ] should be able to test if a mark is NULL or Freed
 - [ ] should Efallthrough be an exception?
 - [ ] Log loading of modules - Can I provide version info?

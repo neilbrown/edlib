@@ -2236,6 +2236,13 @@ class notmuch_master_view(edlib.Pane):
                     v.call("compose-email:attach", fn, "message/rfc822")
         return 1
 
+    def handle_mesg_cmd(self, key, focus, mark, num, **a):
+        "handle-list/doc:char-X"
+        # general commands to be directed to message view
+        if self.message_pane:
+            self.message_pane.call(key, num)
+        return 1
+
     def tag_ok(self, t):
         for c in t:
             if not (c.isupper() or c.islower() or c.isdigit()):
@@ -3377,7 +3384,11 @@ class notmuch_message_view(edlib.Pane):
         return self.handle_vis(focus, mark, "full")
 
     def handle_toggle_extras(self, key, focus, mark, **a):
-        "handle-list/Mouse-Activate:email-extras/email:select:extras"
+        "handle-list/Mouse-Activate:email-extras/email:select:extras/doc:char-X"
+        if not mark:
+            # a mark at the first "sep" part will identify the headers
+            mark = edlib.Mark(focus)
+            focus.call("doc:email-step-part", mark, 1)
         self.handle_vis(focus, mark, "extras")
         if self.extra_headers:
             return 1
