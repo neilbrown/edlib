@@ -1684,7 +1684,8 @@ class notmuch_query(edlib.Doc):
 
         if not val is None:
             comm2("callback", focus, val, mark, attr)
-        return 1
+            return 1
+        return edlib.Efallthrough
 
     def handle_get_attr(self, key, focus, str, comm2, **a):
         "handle:get-attr"

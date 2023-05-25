@@ -150,7 +150,7 @@ Requirements for a v1.0 release
 Core features
 -------------
 
-- [ ] allow doc:get-attr to get a pane attribute if there is no content attribute.
+- [X] allow doc:get-attr to get a pane attribute if there is no content attribute.
 - [ ] design a way for a keystroke to interrupt a long-running function.
 - [ ] extend Draw:measure protocol to allow constant-width-fonts to
       cannot-scale displays can be detected and measurement optimised for.

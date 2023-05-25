@@ -2396,6 +2396,8 @@ DEF_CMD(text_doc_get_attr)
 		return Enoarg;
 	a = text_attrset(d, m, &o);
 	val = attr_get_str(a, attr, o);
+	if (!val && !ci->num2)
+		return Efallthrough;
 	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, m, val,
 		  0, NULL, attr);
 	if (ci->num2 == 1) {

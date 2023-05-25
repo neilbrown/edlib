@@ -550,6 +550,22 @@ DEF_CMD(doc_get_attr)
 	return 1;
 }
 
+DEF_CMD(doc_doc_get_attr)
+{
+	/* If the document doesn't provide the attribute for
+	 * this location, see if there is a pane-attribute for
+	 * the document.
+	 */
+	char *a;
+
+	if (!ci->str)
+		return Enoarg;
+	a = pane_attr_get(ci->home, ci->str);
+	if (a)
+		comm_call(ci->comm2, "cb", ci->focus, 0, NULL, a);
+	return 1;
+}
+
 DEF_CMD(doc_set_name)
 {
 	struct doc *d = ci->home->data;
@@ -1241,6 +1257,7 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:vmark-prev", &doc_vmarkprev);
 	key_add(doc_default_cmd, "doc:vmark-new", &doc_vmarknew);
 	key_add(doc_default_cmd, "get-attr", &doc_get_attr);
+	key_add(doc_default_cmd, "doc:get-attr", &doc_doc_get_attr);
 	key_add(doc_default_cmd, "doc:set-name", &doc_set_name);
 	key_add(doc_default_cmd, "doc:destroy", &doc_do_destroy);
 	key_add(doc_default_cmd, "doc:drop-cache", &doc_drop_cache);
