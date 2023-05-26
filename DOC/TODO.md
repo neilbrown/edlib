@@ -56,10 +56,12 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] notmuch: don't mark up links in text created by w3m - they are
+      already marked if needed.
 - [X] notmuch: "reply" should clear unread/new flags.
 - [X] transparent images appear in email with horiz lines
 - [ ] Replying to w3m/html mail results in unsightly markup in reply
-- [ ] converting email parts with external code should be async
+- [X] converting email parts with external code should be async
 - [X] fill:end-re should default to fill:start-re
 - [X] md-mode should set the fill re-s don't rely on config - there
       isn't an md-mode yet!
