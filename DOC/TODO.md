@@ -56,12 +56,14 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] notmuch: "reply" should clear unread/new flags.
 - [X] transparent images appear in email with horiz lines
 - [ ] Replying to w3m/html mail results in unsightly markup in reply
 - [ ] converting email parts with external code should be async
 - [X] fill:end-re should default to fill:start-re
-- [ ] md-mode should set the fill re-s don't rely on config
-- [ ] config.py should load from $HOME/.config/edlib/config.py
+- [X] md-mode should set the fill re-s don't rely on config - there
+      isn't an md-mode yet!
+- [X] config.py should load from $HOME/.config/edlib/config.py
         exec(read())
 - [ ] lang-python should put each mode in a separate module
       Maybe PyImport_ExecCodeModuleEx() after reading and compile()ing
