@@ -23,33 +23,102 @@ def get_attr(tagl, tag, attr):
         return tag[k+len(attr)+2:e]
     return None
 
-def html_to_w3m(key, home, focus, comm2, **a):
+class w3m_pane(edlib.Pane):
+    def __init__(self, focus, content, delayed):
+        edlib.Pane.__init__(self, focus)
+        self.doc = focus
+        self.pipe = None
+        self.add_notify(focus, "Close")
+        self.content = content
+        self.have_converting = True
+        focus.call("doc:replace", 1, "(Converting content to text...)\n")
+        if delayed:
+            self.call("doc:request:convert-now")
+        else:
+            self.handle_visible("key", focus)
+
+    def handle_visible(self, key, focus, **a):
+        "handle:convert-now"
+
+        p = subprocess.Popen(["/usr/bin/w3m", "-halfdump", "-o", "ext_halfdump=1",
+                              "-I", "UTF-8", "-O", "UTF-8",
+                              "-o", "display_image=off",
+                              "-o", "pre_conv=1",
+                              "-cols", "72",
+                              "-T", "text/html"],
+                             close_fds = True,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             stdin=subprocess.PIPE)
+        self.pipe = p
+        # FIXME this could block if pipe fills
+        os.write(p.stdin.fileno(), self.content.encode())
+        p.stdin.close()
+        p.stdin = None
+        fd = p.stdout.fileno()
+        fcntl.fcntl(fd, fcntl.F_SETFL,
+                    fcntl.fcntl(fd, fcntl.F_GETFL) | os.O_NONBLOCK)
+        self.call("event:read", fd, self.read)
+
+    def handle_close(self, key, **a):
+        "handle:Close"
+
+        if self.pipe:
+            self.pipe.kill()
+            self.pipe.communicate()
+        return 1
+
+    def handle_doc_close(self, key, focus, **a):
+        "handle:Notify:Close"
+        if focus == self.doc:
+            self.doc = None
+            if self.pipe:
+                self.pipe.kill()
+        return 1
+
+    def read(self, key, **a):
+        if not self.pipe:
+            return edlib.Efalse
+        try:
+            r = os.read(self.pipe.stdout.fileno(), 65536)
+        except IOError:
+            return 1
+
+        if not self.doc:
+            return edlib.Efalse
+
+        if r:
+            if self.have_converting:
+                m = edlib.Mark(self.doc)
+                m2 = m.dup()
+                m.step(1)
+                self.have_converting = False
+            else:
+                m = edlib.Mark(self.doc)
+                m2 = m
+            self.doc.call("doc:set-ref", m2)
+            self.doc.call("doc:replace", 1, r.decode('utf-8','ignore'),
+                          m, m2)
+            parse_halfdump(self.doc)
+            return 1
+        # EOF
+        if not self.pipe:
+            return edlib.Efalse
+        out, err = self.pipe.communicate()
+        self.pipe = None
+        if err:
+            edlib.LOG("w3m-to-text", err.decode('utf-8','ignore'))
+
+        self.close()
+        return edlib.Efalse
+
+def html_to_w3m(key, home, focus, num, comm2, **a):
     html = focus.call("doc:get-str", ret='str')
     if not html:
         return edlib.Efail
-    p = subprocess.Popen(["/usr/bin/w3m", "-halfdump", "-o", "ext_halfdump=1",
-                          "-I", "UTF-8", "-O", "UTF-8",
-                          "-o", "display_image=off",
-                          "-o", "pre_conv=1",
-                          "-cols", "72",
-                          "-T", "text/html"],
-                         close_fds = True,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE,
-                         stdin=subprocess.PIPE)
-    out,err = p.communicate(html.encode())
-    if err:
-        edlib.LOG("w3m:", err.decode("utf-8","ignore"))
-    if out:
-        doc = focus.call("doc:from-text", "html-document",
-                         out.decode("utf-8","ignore"),
-                         ret='pane')
-    else:
-        doc = focus.call("doc:from-text", "html-document",
-                         err.decode("utf-8","ignore"),
-                         ret='pane')
+    doc = focus.call("doc:from-text", "html-document", "", ret='pane')
+    w3m_pane(doc, html, num)
 
-    parse_halfdump(doc)
     comm2("cb", doc)
     return 1
 
