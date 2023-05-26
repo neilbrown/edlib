@@ -2195,7 +2195,7 @@ class notmuch_master_view(edlib.Pane):
             hdr_mode = "reply"
             tag = "replied"
         v = make_composition(self.list_pane, focus,
-                             tag="tag +%s id:%s" % (tag, self.message_pane['message-id']))
+                             tag="tag +%s -new -unread id:%s" % (tag, self.message_pane['message-id']))
         if v:
             v.call("compose-email:copy-headers", self.message_pane, hdr_mode)
             if quote_mode == "inline":

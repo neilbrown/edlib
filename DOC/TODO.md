@@ -56,7 +56,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] notmuch: "reply" should clear unread/new flags.
+- [X] notmuch: "reply" should clear unread/new flags.
 - [X] transparent images appear in email with horiz lines
 - [ ] Replying to w3m/html mail results in unsightly markup in reply
 - [ ] converting email parts with external code should be async
