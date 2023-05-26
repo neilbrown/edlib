@@ -59,7 +59,7 @@ Bugs to be fixed
 - [ ] I cannot dup a mark in a mark:moving handler.  That is too
       restrictive.  I need a different way to decide that incoming marks
       get notified.
-- [ ] when map-attr returns text to be inserted, check for '<' and
+- [X] when map-attr returns text to be inserted, check for '<' and
       double them
 - [ ] when w3m text is copied we get the markup.  I find this useful,
       but is it *right*??

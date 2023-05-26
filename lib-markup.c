@@ -263,8 +263,15 @@ DEF_CB(text_attr_callback)
 			as_add(ar, ci->num, prio, ci->str);
 	} else
 		as_clear(ar, prio, ci->str);
-	if (ci->str2)
-		buf_concat(&ar->insert, ci->str2);
+	if (ci->str2) {
+		const char *c = ci->str2;
+		wint_t wch;
+		while ((wch = get_utf8(&c, NULL)) != WEOF) {
+			if (wch == '<')
+				buf_append(&ar->insert, '<');
+			buf_append(&ar->insert, wch);
+		}
+	}
 	return 1;
 }
 
