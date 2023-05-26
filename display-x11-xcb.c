@@ -566,7 +566,7 @@ DEF_CMD(xcb_clear)
 	const char *attr = ci->str;
 	struct panes *src = NULL, *dest;
 	struct rgb bg;
-	int x, y;
+	int x=0, y=0;
 	cairo_rectangle_int_t r;
 
 	if (attr) {
