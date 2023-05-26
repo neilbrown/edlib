@@ -160,12 +160,7 @@ def add_calc(key, focus, mark, **a):
     if p:
         p.call("view:changed")
 
-    v = focus['view-default']
-    if v:
-        v = v + ',view-calc'
-    else:
-        v = 'view-calc'
-    focus.call("doc:set:view-default", v)
+    focus.call("doc:append:view-default", ",view-calc")
     return 1
 
 def calc_appeared(key, focus, **a):

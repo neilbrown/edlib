@@ -314,17 +314,11 @@ DEF_CMD(whitespace_attach)
 DEF_CMD(whitespace_activate)
 {
 	struct pane *p;
-	char *v, *vn = NULL;
 
 	p = call_ret(pane, "attach-whitespace", ci->focus);
 	if (!p)
 		return Efail;
-	v = pane_attr_get(p, "view-default");
-	asprintf(&vn, "%s%swhitespace", v?:"", v?",":"");
-	if (vn) {
-		call("doc:set:view-default", p, 0, NULL, vn);
-		free(vn);
-	}
+	call("doc:append:view-default", p, 0, NULL, ",whitespace");
 	return 1;
 }
 

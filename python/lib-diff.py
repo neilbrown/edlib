@@ -329,7 +329,7 @@ def add_diff(key, focus, **a):
     p = DiffPane(focus)
     if p:
         p.call("view:changed")
-    focus.call("doc:set:view-default", "diff")
+    focus.call("doc:append:view-default", ",diff")
     return 1
 
 editor.call("global-set-command", "attach-diff", diff_view_attach)

@@ -192,12 +192,7 @@ def add_merge(key, focus, mark, **a):
     if p:
         p.call("view:changed")
 
-    v = focus['view-default']
-    if v:
-        v = v + ',merge'
-    else:
-        v = 'merge'
-    focus.call("doc:set:view-default", v)
+    focus.call("doc:append:view-default", ",merge")
     if mark:
         p.call("K:A-m", focus, mark)
     return 1

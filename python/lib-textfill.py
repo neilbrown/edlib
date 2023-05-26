@@ -279,17 +279,10 @@ class FillMode(edlib.Pane):
 
     def enable_fill(self, key, focus, num, **a):
         "handle:interactive-cmd-fill-mode"
-        v = focus['view-default']
         if not self.cols:
             self.cols = 72
             self.call("doc:set:fill-width", "72")
-        if v and 'textfill'in v:
-            return 1
-        elif v:
-            v = v + ',textfill'
-        else:
-            v = 'textfill'
-        focus.call("doc:set:view-default", v)
+        focus.call("doc:append:view-default", ",textfill")
         return 1
 
     def handle_space(self, key, focus, mark, **a):
@@ -357,12 +350,7 @@ def fill_mode_activate(key, focus, comm2, **a):
     # enable fill-paragraph and auto-fill at col 72
     FillMode(focus, 72)
 
-    v = focus['view-default']
-    if v:
-        v = v + ',textfill'
-    else:
-        v = 'textfill'
-    focus.call("doc:set:view-default", v)
+    focus.call("doc:append:view-default", ",textfill")
     return 1
 
 editor.call("global-set-command", "attach-textfill", fill_mode_attach)

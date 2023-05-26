@@ -312,12 +312,7 @@ def autospell_attach_helper(key, focus, **a):
 def autospell_activate(key, focus, comm2, **a):
     autospell_view(focus)
 
-    v = focus['view-default']
-    if v:
-        v = v + ',autospell'
-    else:
-        v = 'autospell'
-    focus.call("doc:set:view-default", v)
+    focus.call("doc:append:view-default", ",autospell")
 
     return 1
 

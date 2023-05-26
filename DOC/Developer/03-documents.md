@@ -154,6 +154,7 @@ the objects to present
 		       &doc_request_notify);
 	key_add_prefix(doc_default_cmd, "doc:notify:", &doc_notify);
 	key_add_prefix(doc_default_cmd, "doc:set:", &doc_set);
+	key_add_prefix(doc_default_cmd, "doc:append:", &doc_append);
 
 ## The document link pane
 

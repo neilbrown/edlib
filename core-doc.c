@@ -497,6 +497,34 @@ DEF_CMD(doc_set)
 	return 1;
 }
 
+DEF_CMD(doc_append)
+{
+	struct pane *p = ci->home;
+	const char *attr = ksuffix(ci, "doc:append:");
+	const char *val = ci->str;
+	const char *old;
+
+	if (!val || !val[0])
+		return Enoarg;
+	/* Append the string to the attr.  It attr doesn't
+	 * exists, string first char of val and use that.
+	 */
+	old = attr_find(p->attrs, attr);
+	if (!old) {
+		attr_set_str(&p->attrs, attr, val+1);
+	} else {
+		const char *pos = strstr(old, val+1);
+		int len = strlen(val+1);
+		if (pos &&
+		    (pos == old || pos[-1] == val[0]) &&
+		    (pos[len] == 0 || pos[len] == val[0]))
+			; /* val already present */
+		else
+			attr_set_str(&p->attrs, attr, strconcat(p, old, val));
+	}
+	return 1;
+}
+
 DEF_CMD(doc_get_attr)
 {
 	struct doc *d = ci->home->data;
@@ -1284,6 +1312,7 @@ static void init_doc_cmds(void)
 		       &doc_request_notify);
 	key_add_prefix(doc_default_cmd, "doc:notify:", &doc_notify);
 	key_add_prefix(doc_default_cmd, "doc:set:", &doc_set);
+	key_add_prefix(doc_default_cmd, "doc:append:", &doc_append);
 }
 
 static void do_doc_assign(struct pane *p safe, struct pane *doc safe)
