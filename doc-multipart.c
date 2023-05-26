@@ -662,6 +662,15 @@ DEF_CMD(mp_notify_viewers)
 	return 1;
 }
 
+DEF_CMD(mp_doc_replaced)
+{
+	/* Something changed in a component, report that the
+	 * whole doc changed - simplest for now.
+	 */
+	pane_notify("doc:replaced", ci->home);
+	return 1;
+}
+
 static void mp_resize(struct mp_info *mpi safe, int size)
 {
 	if (mpi->parts_size >= size)
@@ -695,6 +704,7 @@ DEF_CMD(mp_add)
 
 	pane_add_notify(ci->home, ci->focus, "Notify:Close");
 	home_call(ci->focus, "doc:request:doc:notify-viewers", ci->home);
+	home_call(ci->focus, "doc:request:doc:replaced", ci->home);
 
 	return 1;
 }
@@ -827,6 +837,7 @@ static void mp_init_map(void)
 	key_add(mp_map, "Free", &mp_free);
 	key_add(mp_map, "Notify:Close", &mp_notify_close);
 	key_add(mp_map, "doc:notify-viewers", &mp_notify_viewers);
+	key_add(mp_map, "doc:replaced", &mp_doc_replaced);
 	key_add(mp_map, "multipart-add", &mp_add);
 	key_add(mp_map, "debug:validate-marks", &mp_val_marks);
 	key_add(mp_map, "doc:multipart:get-part", &mp_get_part);
