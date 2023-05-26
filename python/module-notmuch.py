@@ -3097,6 +3097,10 @@ class notmuch_message_view(edlib.Pane):
         self.qview = focus.call("doc:add-view", self) - 1
 
         self.extra_headers = False
+        self.point = focus.call("doc:point", ret='mark')
+        self.prev_point = None
+        self.have_prev = False
+        self.call("doc:request:mark:moving")
 
         choose = {}
         m = edlib.Mark(focus)
@@ -3577,6 +3581,33 @@ class notmuch_message_view(edlib.Pane):
         if url:
             focus.call("Message", "Opening url [%s] <%s>" % (tag,url))
             focus.call("Display:external-viewer", url)
+        return 1
+
+    def handle_moving(self, key, focus, mark, mark2, **a):
+        "handle:mark:moving"
+        if mark == self.point and not self.have_prev:
+            # We cannot dup because that triggers a recursive notification
+            #self.prev_point = mark.dup()
+            self.prev_point = self.vmark_at_or_before(self.qview, mark)
+            self.have_prev = True
+            self.damaged(edlib.DAMAGED_VIEW)
+        return 1
+
+    def handle_review(self, key, focus, **a):
+        "handle:Refresh:view"
+        # if point is in a "quoted line" section that is hidden,
+        # Move it to start or end opposite prev_point
+        if not self.have_prev:
+            return 1
+        m = self.vmark_at_or_before(self.qview, self.point)
+        if m and m != self.point and m['quote-length'] and m['quote-hidden'] == "yes":
+            if not self.prev_point or self.prev_point < self.point:
+                # moving toward end of file
+                m = m.next()
+            if self.point != m:
+                self.point.to_mark(m)
+        self.prev_point = None
+        self.have_prev = False
         return 1
 
 def notmuch_doc(key, home, focus, comm2, **a):

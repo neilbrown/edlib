@@ -56,6 +56,13 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] I cannot dup a mark in a mark:moving handler.  That is too
+      restrictive.  I need a different way to decide that incoming marks
+      get notified.
+- [ ] when map-attr returns text to be inserted, check for '<' and
+      double them
+- [ ] when w3m text is copied we get the markup.  I find this useful,
+      but is it *right*??
 - [ ] notmuch: don't mark up links in text created by w3m - they are
       already marked if needed.
 - [X] notmuch: "reply" should clear unread/new flags.
@@ -74,7 +81,7 @@ Bugs to be fixed
       search to get confused.  What should we do?
       Don't redefine doc:char.  Enable mark-moving notification on point
       and on 'refresh' move to appropriate end of a marker if on one
-- [ ] use mark-moving on point to step over "quoted lines"
+- [X] use mark-moving on point to step over "quoted lines"
 - [X] why doesn't doc-to-text auto-load - because only attach-
       autoloads.  I need a complete redesign of autoload
 - [ ] use mimetypes.guess_type() to interpret filenames in email attachments??
