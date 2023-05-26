@@ -77,7 +77,7 @@ Bugs to be fixed
 - [ ] lang-python should put each mode in a separate module
       Maybe PyImport_ExecCodeModuleEx() after reading and compile()ing
       the source file.  Or set up path to find edlib modules.
-- [ ] redefining doc:char but not doc:content in mail-compose causes
+- [X] redefining doc:char but not doc:content in mail-compose causes
       search to get confused.  What should we do?
       Don't redefine doc:char.  Enable mark-moving notification on point
       and on 'refresh' move to appropriate end of a marker if on one

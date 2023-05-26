@@ -63,6 +63,12 @@ class compose_email(edlib.Pane):
             if not self.find_empty_header(m):
                 self.to_body(m)
 
+        # track point movement so it can be moved out of a marker
+        self.point = focus.call("doc:point", ret='mark')
+        self.prev_point = None
+        self.have_prev = False
+        self.call("doc:request:mark:moving")
+
     def add_headers_new(self, key, focus, **a):
         "handle:compose-email:empty-headers"
         fr = focus['email:from']
@@ -446,89 +452,32 @@ class compose_email(edlib.Pane):
             m.step(0)
         return edlib.Efallthrough
 
-    def handle_doc_char(self, key, focus, mark, num, num2, mark2, **a):
-        "handle:doc:char"
-        if not mark:
-            return edlib.Enoarg
-        end = mark2
-        steps = num
-        forward = 1 if steps > 0 else 0
-        if end and end == mark:
+    def handle_moving(self, key, focus, mark, mark2, **a):
+        "handle:mark:moving"
+        if mark == self.point and not self.have_prev:
+            # We cannot dup because that triggers a recursive notification
+            #self.prev_point = mark.dup()
+            self.prev_point = self.vmark_at_or_before(self.view, mark)
+            self.have_prev = True
+            self.damaged(edlib.DAMAGED_VIEW)
+        return 1
+
+    def handle_review(self, key, focus, **a):
+        "handle:Refresh:view"
+        # if point is in a "header" move it to start or end
+        # opposite prev_point
+        if not self.have_prev:
             return 1
-        if end and (end < mark) != (steps < 0):
-            # can never cross 'end'
-            return edlib.Einval
-        ret = edlib.Einval
-        while steps and ret != edlib.WEOF and (not end or mark == end):
-            ret = self.handle_doc_step(key, mark, forward, 1)
-            steps -= forward * 2 - 1
-        if end:
-            return 1 + (num - steps if forward else steps - num)
-        if ret == edlib.WEOF or num2 == 0:
-            return ret
-        if num and (num2 < 0) == (num > 0):
-            return ret
-        # want the next character
-        return self.handle_doc_step(key, mark, 1 if num2 > 0 else 0, 0)
-
-    def handle_doc_step(self, key, mark, num, num2):
-        # if in a marker, only allow a space and newline to be seen
-        if not mark:
-            return edlib.Enoarg
-        m = self.vmark_at_or_before(self.view, mark)
-        if m:
-            if m['compose-type'] and m.next() == m:
-                # undo must have destroyed the region
-                m2 = m.next()
-                m.release()
-                m2.release()
-                return edlib.WEOF
-            if not m['compose-type'] and m.prev() == m:
-                m2 = m.prev()
-                m.release()
-                m2.release()
-                return edlib.WEOF
-        if mark == m:
-            if m['compose-type']:
-                # at start of marker
-                if num > 0:
-                    # forward
-                    if num2:
-                        self.parent.call("doc:EOL", 1, mark)
-                    return ' '
-                else:
-                    # backward
-                    return self.parent.call("doc:char", mark,
-                                            -1 if num2 else 0, 0 if num2 else -1)
-            else:
-                # at end of marker
-                if num > 0:
-                    return self.parent.call("doc:char", mark,
-                                            1 if num2 else 0, 0 if num2 else 1)
-                else:
-                    return self.parent.call("doc:char", mark,
-                                            -1 if num2 else 0, 0 if num2 else -1)
-        if not m or not m['compose-type']:
-            # not in a marker
-            if num > 0:
-                return self.parent.call("doc:char", mark,
-                                        1 if num2 else 0, 0 if num2 else 1)
-            else:
-                return self.parent.call("doc:char", mark,
-                                        -1 if num2 else 0, 0 if num2 else -1)
-
-        # should be just before newline
-        if num > 0:
-            #forward, return newline
-            if num2:
-                self.parent.call("doc:EOL", 1, mark)
-                self.parent.next(mark)
-            return '\n'
-        else:
-            # backward, return space
-            if num2:
-                self.parent.call("doc:EOL", -1, mark)
-            return ' '
+        m = self.vmark_at_or_before(self.view, self.point)
+        if m and m != self.point and m['compose-type']:
+            if not self.prev_point or self.prev_point < self.point:
+                # moving toward end of file
+                m = m.next()
+            if self.point != m:
+                self.point.to_mark(m)
+        self.prev_point = None
+        self.have_prev = False
+        return 1
 
     def handle_doc_get_attr(self, key, focus, mark, str, comm2, **a):
         "handle:doc:get-attr"
