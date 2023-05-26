@@ -590,22 +590,22 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer, char *disp,
 	else
 		asprintf(&ctype, "%1.*s", majlen, major);
 	if (ctype && strcasecmp(ctype, "text/html") == 0) {
-		transformed = call_ret(pane, "html-to-text-w3m", h);
+		transformed = call_ret(pane, "html-to-text-w3m", h, 1);
 		if (!transformed)
-			transformed = call_ret(pane, "html-to-text", h);
+			transformed = call_ret(pane, "html-to-text", h, 1);
 	}
 	if (ctype && strcasecmp(ctype, "text/calendar") == 0)
-		transformed = call_ret(pane, "ical-to-text", h);
+		transformed = call_ret(pane, "ical-to-text", h, 1);
 	if (ctype && strcasecmp(ctype, "application/pdf") == 0)
-		transformed = call_ret(pane, "pdf-to-text", h);
+		transformed = call_ret(pane, "pdf-to-text", h, 1);
 	if (ctype && strcasecmp(ctype, "application/octet-stream") == 0 &&
 	    fname && strcasestr(fname, ".pdf") != NULL)
-		transformed = call_ret(pane, "pdf-to-text", h);
+		transformed = call_ret(pane, "pdf-to-text", h, 1);
 	if (major && strncasecmp(major, "application", majlen) == 0 &&
 	    fname && (strcasestr(fname, ".docx") != NULL ||
 		      strcasestr(fname, ".doc") != NULL ||
 		      strcasestr(fname, ".odt") != NULL))
-		transformed = call_ret(pane, "doc-to-text", h, 0, NULL, fname);
+		transformed = call_ret(pane, "doc-to-text", h, 1, NULL, fname);
 
 	if (ctype && strncasecmp(ctype, "image/", 6) == 0) {
 		struct mark *m;
@@ -1205,6 +1205,17 @@ DEF_CMD(email_view_set_attr)
 		call("Notify:clip", ci->focus, 0, m1, NULL, 0, m2);
 		mark_free(m1);
 		mark_free(m2);
+
+		if (w && strcmp(w, "transformed") == 0) {
+			/* If the transformation was delayed, tell it
+			 * to start now.
+			 */
+			struct pane *part =
+				call_ret(pane, "doc:multipart:get-part",
+					 ci->home->parent, p+1);
+			if (part)
+				call("doc:notify:convert-now", part);
+		}
 
 		return 1;
 	}
