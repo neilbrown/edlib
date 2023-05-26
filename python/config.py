@@ -22,18 +22,18 @@ def config_appeared(key, focus, **a):
             focus.call("doc:set:whitespace-width", "60")
 
     if p and p[-3:] == ".md":
+        # Until I have a real markdown module, I need this at least.
         if os.getenv("EDLIB_TESTING"):
             focus.call("doc:set:view-default", "textfill,whitespace")
         else:
             focus.call("doc:set:view-default", "textfill,whitespace,autospell")
-        focus.call("doc:set:fill-width", "72")
-
-        focus.call("doc:set:fill:start-re",
-                   "^([^a-zA-Z0-9\\n]*$| *-| *- *\\[[ X]]| *#+| *\\*+| *[0-9]*\\.)"
-                   )
-        focus.call("doc:set:fill:end-re",
-                   "^([^a-zA-Z0-9\\n]*$| *-| *- *\\[[ X]]| *#+| *\\*+| *[0-9]*\\.)"
-                   )
+        focus["fill-width"] = "72"
+        focus["fill:start-re"] = ("^("
+                                  "[^a-zA-Z0-9\\n]*$|" # empty/puctuation line
+                                  " *-|"               # list item
+                                  " *- *\\[[ X]]|"     # todo list item
+                                  " *#+|"              # section head
+                                  " *[0-9]*\\.)")      # Numbered list
 
     return edlib.Efallthrough
 

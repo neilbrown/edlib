@@ -59,7 +59,7 @@ Bugs to be fixed
 - [X] transparent images appear in email with horiz lines
 - [ ] Replying to w3m/html mail results in unsightly markup in reply
 - [ ] converting email parts with external code should be async
-- [ ] fill:end-re should default to fill:start-re
+- [X] fill:end-re should default to fill:start-re
 - [ ] md-mode should set the fill re-s don't rely on config
 - [ ] config.py should load from $HOME/.config/edlib/config.py
         exec(read())

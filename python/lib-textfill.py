@@ -155,6 +155,8 @@ def find_end(focus, mark):
     focus.call("doc:EOL", 100, m)
     re = focus.call("doc:get-attr", mark, "fill:end-re", ret='str')
     if not re:
+        re = focus.call("doc:get-attr", mark, "fill:start-re", ret='str')
+    if not re:
         re = "^[^a-zA-Z0-9\n]*$"
     try:
         leng = focus.call("text-search", re, mark, m, 1)
