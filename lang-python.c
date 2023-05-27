@@ -391,16 +391,21 @@ DEF_CMD(python_load_module)
 	return 1;
 }
 
-static PyObject *safe python_string(const char *s safe)
+static PyObject *safe python_string(const char *s safe, int len)
 {
 	const char *c = s;
-	while (*c && !(*c & 0x80))
+	const char *e = NULL;
+	wint_t wch;
+
+	if (len >= 0)
+		e = s + len;
+	while ((!e || c < e) && *c && !(*c & 0x80))
 		c++;
-	if (*c && utf8_valid(c))
-		/* must be Unicode */
-		return safe_cast PyUnicode_DecodeUTF8(s, strlen(s), NULL);
-	else
-		return safe_cast Py_BuildValue("s", s);
+	while ((wch = get_utf8(&c, e)) != WEOF)
+		if (wch == WERR || wch > 0x10FFFF)
+			break;
+
+	return safe_cast PyUnicode_DecodeUTF8(s, c - s, NULL);
 }
 
 static char *python_as_string(PyObject *s, PyObject **tofree safe)
@@ -443,6 +448,12 @@ REDEF_CB(python_call)
 	struct python_command *pc = container_of(ci->comm, struct python_command, c);
 	PyObject *ret = NULL, *args, *kwds, *str;
 	int rv = 1;
+	bool unterminated = False;
+	int klen = strlen(ci->key);
+
+	if (klen > 13 &&
+	    strcmp(ci->key + klen - 13, " unterminated") == 0)
+		unterminated = True;
 
 	args = safe_cast Py_BuildValue("(s)", ci->key);
 	kwds = PyDict_New();
@@ -457,7 +468,7 @@ REDEF_CB(python_call)
 			    (Py_INCREF(Py_None), Py_None));
 
 	if (ci->str)
-		str = python_string(ci->str);
+		str = python_string(ci->str, unterminated ? ci->num2 : -1);
 	else {
 		str = Py_None;
 		Py_INCREF(Py_None);
@@ -471,7 +482,7 @@ REDEF_CB(python_call)
 	}
 
 	rv = rv && dict_add(kwds, "str2",
-			    ci->str2 ? python_string(ci->str2):
+			    ci->str2 ? python_string(ci->str2, -1):
 			    (Py_INCREF(Py_None), safe_cast Py_None));
 	rv = rv && dict_add(kwds, "comm", Comm_Fromcomm(ci->comm));
 	rv = rv && dict_add(kwds, "comm2",
@@ -1004,7 +1015,7 @@ DEF_CB(take_str)
 		return Einval;
 	if (!ci->str)
 		return Efallthrough;
-	pr->ret = python_string(ci->str);
+	pr->ret = python_string(ci->str, -1);
 	return 1;
 }
 

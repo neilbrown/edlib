@@ -59,6 +59,16 @@ Bugs to be fixed
 - [ ] I cannot dup a mark in a mark:moving handler.  That is too
       restrictive.  I need a different way to decide that incoming marks
       get notified.
+- [X] doc:text passes an unterminated string to "content" for
+      doc:content.  num2 is the length.  python doesn't know this
+      and so tries to convert it all to utf8.  This is wasteful as
+      we might not want that much.  How can I tell an interpreter
+      that num2 is the length of str1?
+      - extra flag in cmd_info
+      - special key
+      - annotation on called function?
+      Probably a special key  ending " unterminated"
+
 - [X] when map-attr returns text to be inserted, check for '<' and
       double them
 - [ ] when w3m text is copied we get the markup.  I find this useful,

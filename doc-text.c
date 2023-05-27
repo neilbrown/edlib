@@ -1938,7 +1938,11 @@ DEF_CMD(text_content)
 			text_normalize(t, &m->ref);
 
 			ln -= s - ss;
-			rv = comm_call(ci->comm2, "consume", ci->focus,
+			/* Interpreted can see " unterminated" and know
+			 * than ->num2 is the length of ->str
+			 */
+			rv = comm_call(ci->comm2, "consume unterminated",
+				       ci->focus,
 				       wc, m, s, ln, NULL, NULL, size, 0);
 			size = 0;
 			if (rv <= 0 || rv > ln + 1) {
