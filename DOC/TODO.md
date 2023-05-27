@@ -46,6 +46,8 @@ Current priorities
 - [ ] commands to resolve a conflict
 - [ ] command to apply a patch hunk
 - [ ] whitespace: don't show errors unless doc has been changed.???
+- [ ] mailto: links should be sent to nm (if active)
+- [ ] press K:Enter on a link should do something
 
 - [ ] split notmuch into two databases, last 6 months and the rest.
 - [ ] script to move messages every week - but not deleted messages
@@ -56,9 +58,14 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] I cannot dup a mark in a mark:moving handler.  That is too
+- [ ] multipart must handle Notify:Close better.  It should NULL out the
+      pointer to the pane, and always check it isn't NULL.
+- [X] I cannot dup a mark in a mark:moving handler.  That is too
       restrictive.  I need a different way to decide that incoming marks
       get notified.
+      Maybe generate "mark:arrived" when a mark is moved to an
+      interesting mark, and flag new marks as "moved" so they don't
+      initially send a mark:moved notification.
 - [X] doc:text passes an unterminated string to "content" for
       doc:content.  num2 is the length.  python doesn't know this
       and so tries to convert it all to utf8.  This is wasteful as
@@ -73,8 +80,11 @@ Bugs to be fixed
       double them
 - [X] when w3m text is copied we get the markup.  I find this useful,
       but is it *right*??
-- [ ] notmuch: don't mark up links in text created by w3m - they are
-      already marked if needed.
+- [X] notmuch: don't mark up links in text created by w3m - they are
+      already marked if needed.  This was fixed by making conversion
+      async so:
+- [ ] async email part converts need to do their own URL marking.
+      PDF particularly, and html2md.  Maybe others.
 - [X] notmuch: "reply" should clear unread/new flags.
 - [X] transparent images appear in email with horiz lines
 - [X] Replying to w3m/html mail results in unsightly markup in reply
@@ -84,7 +94,7 @@ Bugs to be fixed
       isn't an md-mode yet!
 - [X] config.py should load from $HOME/.config/edlib/config.py
         exec(read())
-- [ ] lang-python should put each mode in a separate module
+- [ ] lang-python should put each module in a separate module
       Maybe PyImport_ExecCodeModuleEx() after reading and compile()ing
       the source file.  Or set up path to find edlib modules.
 - [X] redefining doc:char but not doc:content in mail-compose causes
@@ -108,6 +118,7 @@ Bugs to be fixed
 - [ ] email: urls should not be followed unless they are visible.
       Maybe display in the message window, which might be made larger
       just for this purpose.
+      Maybe "Message-button"
 - [ ] renderline *knows* about scaling and when it places the cursor
       in an image, it gets it wrong for ncurses.  It should ask about
       scaling.

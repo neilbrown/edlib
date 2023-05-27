@@ -210,19 +210,19 @@ void mark_free(struct mark *m)
 
 static void notify_mark_moving(struct mark *m safe, struct mark *m2)
 {
-	if (m2 && !(m2->flags & MARK_FLAG_MOVED))
-		/* Any mark moved here is notified */;
-	else if (m->flags & MARK_FLAG_MOVED)
-		return;
-	m->flags |= MARK_FLAG_MOVED;
+	if (m->flags & MARK_FLAG_WATCHED) {
+		m->flags &= ~MARK_FLAG_WATCHED;
+		pane_notify("mark:moving", m->owner, 0, m);
+	}
 
-	pane_notify("mark:moving", m->owner, 0, m, NULL, 0, m2);
+	if (m2 && (m2->flags & MARK_FLAG_WATCHED))
+		pane_notify("mark:arrived", m->owner, 0, m, NULL, 0, m2);
 }
 
-void mark_ack(struct mark *m)
+void mark_watch(struct mark *m)
 {
 	if (m)
-		m->flags &= ~MARK_FLAG_MOVED;
+		m->flags |= MARK_FLAG_WATCHED;
 }
 
 static void mark_ref_copy(struct mark *to safe, struct mark *from safe)
@@ -492,7 +492,6 @@ struct mark *doc_new_mark(struct pane *p safe, int view, struct pane *owner)
 	INIT_TLIST_HEAD(&ret->view, GRP_MARK);
 	ret->viewnum = view;
 	hlist_add_head(&ret->all, &d->marks);
-	ret->flags = MARK_FLAG_MOVED;
 
 	if (view == MARK_POINT) {
 		struct point_links *lnk = alloc_buf(sizeof(*lnk) +

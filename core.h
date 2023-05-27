@@ -224,7 +224,7 @@ struct mark {
 					      * understands .ref
 					      */
 };
-#define MARK_FLAG_MOVED		1
+#define MARK_FLAG_WATCHED	1
 
 static inline bool mark_valid(struct mark *m)
 {
@@ -245,7 +245,7 @@ struct point_links {
 struct mark *safe mark_dup(struct mark *m safe);
 struct mark *safe mark_dup_view(struct mark *m safe);
 void mark_free(struct mark *m);
-void mark_ack(struct mark *m);
+void mark_watch(struct mark *m);
 
 struct mark *mark_first(struct doc *d safe);
 struct mark *mark_next(struct mark *m safe);

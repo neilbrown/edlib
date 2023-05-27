@@ -182,7 +182,7 @@ DEF_CMD(view_refresh)
 		title = default_title;
 	title = format_status(title, ci->focus, pm);
 
-	mark_ack(pm);
+	mark_watch(pm);
 
 	if (vd->border & BORDER_LEFT) {
 		/* Left border is (currently) always a scroll bar */

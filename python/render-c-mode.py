@@ -913,7 +913,7 @@ class CModePane(edlib.Pane):
     def handle_refresh(self, key, focus, **a):
         "handle:Refresh:view"
         point = focus.call("doc:point", ret = 'mark')
-        point.ack()
+        point.watch()
         skip_pre = False
         skip_post = False
         if self.pre_paren:

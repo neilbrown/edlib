@@ -978,7 +978,7 @@ DEF_CMD(doc_refresh_view)
 		dd->old_point = mark_dup(dd->point);
 	else
 		mark_to_mark(dd->old_point, dd->point);
-	mark_ack(dd->point);
+	mark_watch(dd->point);
 	return 1;
 }
 
@@ -1333,7 +1333,7 @@ static void do_doc_assign(struct pane *p safe, struct pane *doc safe)
 	pane_add_notify(p, doc, "doc:notify-viewers");
 	pane_add_notify(p, doc, "mark:moving");
 	call("doc:notify:doc:revisit", doc, 0);
-	mark_ack(m);
+	mark_watch(m);
 }
 
 static struct pane *doc_attach(struct pane *parent)

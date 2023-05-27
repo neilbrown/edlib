@@ -12,7 +12,7 @@
  * stacking b64 impossible - but who would want to?
  * This can have a value "0", "1", "2".  A mark is never on the
  * 4th char of a QUAD.
- * doc:set-ref initialises this as does a mark:moving notification
+ * doc:set-ref initialises this as does a mark:arrived notification
  * which references another mark.  doc:char and doc:byte will use
  * the pos to know how to interpret, and will update it after any
  * movement as will doc:content.
@@ -90,7 +90,7 @@ static void set_pos(struct mark *m safe, int pos)
 		pos -= 4;
 	ps[0] += pos;
 	attr_set_str(&m->attrs, "b64-pos", ps);
-	mark_ack(m);
+	mark_watch(m);
 }
 
 static int get_pos(struct mark *m safe)
@@ -227,7 +227,7 @@ DEF_CMD(base64_setref)
 	return Efallthrough;
 }
 
-DEF_CMD(base64_moving)
+DEF_CMD(base64_arrived)
 {
 	struct mark *m = ci->mark;
 	struct mark *ref = ci->mark2;
@@ -238,7 +238,7 @@ DEF_CMD(base64_moving)
 
 	if (get_pos(m) >= 0)
 		/* Interesting mark, keep tracking it */
-		mark_ack(m);
+		mark_watch(m);
 	if (!ref)
 		return 1;
 	pos = get_pos(ref);
@@ -436,7 +436,7 @@ DEF_CMD(b64_attach)
 	p = pane_register(ci->focus, 0, &b64_handle.c);
 	if (!p)
 		return Efail;
-	call("doc:request:mark:moving", p);
+	call("doc:request:mark:arrived", p);
 
 	return comm_call(ci->comm2, "callback:attach", p);
 }
@@ -451,7 +451,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(b64_map, "doc:content", &base64_content);
 	key_add(b64_map, "doc:content-bytes", &base64_content);
 	key_add(b64_map, "doc:set-ref", &base64_setref);
-	key_add(b64_map, "mark:moving", &base64_moving);
+	key_add(b64_map, "mark:arrived", &base64_arrived);
 	key_add(b64_map, "Free", &edlib_do_free);
 
 	call_comm("global-set-command", ed, &b64_attach, 0, NULL, "attach-base64");
