@@ -71,13 +71,13 @@ Bugs to be fixed
 
 - [X] when map-attr returns text to be inserted, check for '<' and
       double them
-- [ ] when w3m text is copied we get the markup.  I find this useful,
+- [X] when w3m text is copied we get the markup.  I find this useful,
       but is it *right*??
 - [ ] notmuch: don't mark up links in text created by w3m - they are
       already marked if needed.
 - [X] notmuch: "reply" should clear unread/new flags.
 - [X] transparent images appear in email with horiz lines
-- [ ] Replying to w3m/html mail results in unsightly markup in reply
+- [X] Replying to w3m/html mail results in unsightly markup in reply
 - [X] converting email parts with external code should be async
 - [X] fill:end-re should default to fill:start-re
 - [X] md-mode should set the fill re-s don't rely on config - there

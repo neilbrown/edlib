@@ -112,6 +112,50 @@ class w3m_pane(edlib.Pane):
         self.close()
         return edlib.Efalse
 
+class w3m_content(edlib.Pane):
+    def __init__(self, focus):
+        edlib.Pane.__init__(self, focus)
+
+    def handle_content(self, key, focus, mark, mark2, comm2, **a):
+        "handle:doc:content"
+        ctx = {}
+        return self.parent(key, focus, mark, mark2,
+                           lambda key, **a: self.cb(comm2, ctx, **a))
+
+    def cb(self, callback, ctx, focus, num, mark, num2, xy, **a):
+        if '<' in ctx:
+            # skipping to '>'
+            if num == ord('>'):
+                del ctx['<']
+            return 1
+        if '&' in ctx:
+            # collecting an entity
+            if num != ord(';'):
+                ctx['&'] += chr(num)
+                return 1
+            ent = ctx['&']
+            del ctx['&']
+            if ent[:2] == "#x":
+                val = chr(int(ent[2:], 16))
+            elif ent[:1] == "#":
+                val = chr(int(ent[1:], 10))
+            elif ent in entities:
+                val = chr(entities[ent])
+            else:
+                val = "!"
+            callback("content", focus, ord(val[0]), mark)
+            return 1
+        if num == ord('<'):
+            # skip to next '>'
+            ctx['<'] = True
+            return 1
+        if num == ord('&'):
+            # collect the entity
+            ctx['&'] = ""
+            return 1
+        return callback("content", focus, num, mark)
+
+
 def html_to_w3m(key, home, focus, num, comm2, **a):
     html = focus.call("doc:get-str", ret='str')
     if not html:
@@ -119,7 +163,7 @@ def html_to_w3m(key, home, focus, num, comm2, **a):
     doc = focus.call("doc:from-text", "html-document", "", ret='pane')
     w3m_pane(doc, html, num)
 
-    comm2("cb", doc)
+    comm2("cb", w3m_content(doc))
     return 1
 
 entities = {
