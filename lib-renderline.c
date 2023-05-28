@@ -178,6 +178,7 @@ static char *get_last_attr(const char *attrs safe, const char *attr safe)
 static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 		      struct render_list **rlp safe,
 		      int y, int scale, int wrap_pos, int *wrap_margin safe,
+		      int *wrap_prefix_sizep,
 		      const char **xypos, const char **xyattr)
 {
 	/* Flush a render_list returning x-space used.
@@ -190,6 +191,7 @@ static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 	struct render_list *last_wrap = NULL, *end_wrap = NULL, *last_rl = NULL;
 	int in_wrap = 0;
 	int wrap_len = 0; /* length of text in final <wrap> section */
+	int wrap_prefix_size = 0; /* wrap margin plus prefix */
 	struct render_list *rl, *tofree;
 	int x = 0;
 	char *head;
@@ -286,9 +288,13 @@ static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 			 * Don't want to shift them over the wrap-head
 			 */
 			x -= cr.x;
+			wrap_prefix_size += cr.x;
 		}
 		x -= *wrap_margin;
+		wrap_prefix_size += *wrap_margin;
 	}
+	if (wrap_prefix_sizep)
+		*wrap_prefix_sizep = wrap_prefix_size;
 
 	for (rl = tofree; rl && rl != end_wrap; rl = tofree) {
 		tofree = rl->next;
@@ -627,8 +633,10 @@ DEF_CMD(renderline)
 	const char *start;
 	struct buf attr;
 	unsigned char ch;
-	int wrap_offset = 0; /*number of columns displayed in earlier lines */
-	int wrap_margin = 0; /* left margin for wrap */
+	int wrap_offset = 0; /*number of columns displayed in earlier lines,
+			      * use for calculating TAB size. */
+	int wrap_margin = 0; /* left margin for wrap - carried forward from
+			      * line to line. */
 	int in_tab = 0;
 	int shift_left = atoi(pane_attr_get(focus, "shift_left") ?:"0");
 	int wrap = shift_left < 0;
@@ -771,10 +779,16 @@ DEF_CMD(renderline)
 		    (line[0] != '<' || line[1] == '<')) {
 			/* No room for more text */
 			if (wrap && *line && *line != '\n') {
+				int wrap_prefix_size;
 				int len = flush_line(p, focus, dodraw, &rlst,
 						     y+ascent, scale,
 						     p->w - mwidth, &wrap_margin,
+						     &wrap_prefix_size,
 						     &xypos, &xyattr);
+				if (len + wrap_prefix_size <= cx && cy == y) {
+					cx -= len;
+					cy += line_height;
+				}
 				wrap_offset += len;
 				x -= len;
 				if (x < 0)
@@ -896,7 +910,7 @@ DEF_CMD(renderline)
 		if (ch == '\n') {
 			xypos = line-1;
 			flush_line(p, focus, dodraw, &rlst, y+ascent, scale, 0,
-				   &wrap_margin, &xypos, &xyattr);
+				   &wrap_margin, NULL, &xypos, &xyattr);
 			y += line_height;
 			x = 0;
 			wrap_offset = 0;
@@ -956,7 +970,7 @@ DEF_CMD(renderline)
 	}
 
 	flush_line(p, focus, dodraw, &rlst, y+ascent, scale, 0,
-		   &wrap_margin, &xypos, &xyattr);
+		   &wrap_margin, NULL,  &xypos, &xyattr);
 
 	if (want_xypos == 1) {
 		rd->xyattr = xyattr ? strdup(xyattr) : NULL;
