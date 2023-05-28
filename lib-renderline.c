@@ -24,6 +24,7 @@
 #define _GNU_SOURCE /*  for asprintf */
 #include <stdio.h>
 #include <ctype.h>
+#include <wctype.h>
 #include "core.h"
 #include "misc.h"
 
@@ -31,6 +32,9 @@ struct render_list {
 	struct render_list *next;
 	const char	*text_orig;
 	const char	*text safe, *attr safe; // both are allocated
+	bool		wrap; /* set for LWS when word-wrap enabled, and when
+			       * "wrap" attr seen.
+			       */
 	short		x, width;
 	short		cursorpos;
 	const char	*xypos;	/* location in text_orig where given x,y was found */
@@ -54,7 +58,8 @@ static int draw_some(struct pane *p safe, struct pane *focus safe,
 		     struct render_list **rlp safe,
 		     int *x safe,
 		     const char *start safe, const char **endp safe,
-		     const char *attr safe, int margin, int cursorpos, int xpos,
+		     const char *attr safe, bool wrap,
+		     int margin, int cursorpos, int xpos,
 		     int scale)
 {
 	/* Measure the text from 'start' to '*endp', expecting to
@@ -82,9 +87,12 @@ static int draw_some(struct pane *p safe, struct pane *focus safe,
 	if (len == 0 && cursorpos < 0)
 		/* Nothing to do */
 		return OK;
+
+	if (!wrap && strstr(attr, ",wrap,"))
+		wrap = True;
 	if ((*rlp == NULL ||
 	     ((*rlp)->next == NULL && (*rlp)->text_orig == NULL)) &&
-	    strstr(attr, ",wrap,") && cursorpos < 0)
+	    wrap && cursorpos < 0)
 		/* The text in a <wrap> marker that causes a wrap is
 		 * suppressed unless the cursor is in it.
 		 * This will only ever be at start of line.  <wrap> text
@@ -132,6 +140,7 @@ static int draw_some(struct pane *p safe, struct pane *focus safe,
 	rl->text_orig = start;
 	rl->text = str;
 	rl->attr = strdup(attr);
+	rl->wrap = wrap;
 	rl->width = cr.x;
 	rl->x = *x;
 	*x += rl->width;
@@ -199,7 +208,7 @@ static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 	if (!*rlp)
 		return 0;
 	for (rl = *rlp; wrap_pos && rl; rl = rl->next) {
-		if (strstr(rl->attr, ",wrap,") && rl != *rlp) {
+		if (rl->wrap && rl != *rlp) {
 			if (!in_wrap) {
 				last_wrap = rl;
 				in_wrap = 1;
@@ -638,7 +647,10 @@ DEF_CMD(renderline)
 	int wrap_margin = 0; /* left margin for wrap - carried forward from
 			      * line to line. */
 	int in_tab = 0;
-	int shift_left = atoi(pane_attr_get(focus, "shift_left") ?:"0");
+	int shift_left = pane_attr_get_int(focus, "shift_left", 0);
+	bool word_wrap = pane_attr_get_int(focus, "word-wrap", 0) != 0;
+	bool in_lws = False;
+	bool seen_non_space = False;
 	int wrap = shift_left < 0;
 	char *prefix = pane_attr_get(focus, "prefix");
 	int line_height = 0;
@@ -696,7 +708,7 @@ DEF_CMD(renderline)
 		const char *s = prefix + strlen(prefix);
 		update_line_height_attr(p, focus, &line_height, &ascent, NULL,
 					"bold", prefix, scale);
-		draw_some(p, focus, &rlst, &x, prefix, &s, ",bold,",
+		draw_some(p, focus, &rlst, &x, prefix, &s, ",bold,", False,
 			  0, -1, -1, scale);
 		rd->prefix_len = x + shift_left;
 	} else
@@ -815,21 +827,45 @@ DEF_CMD(renderline)
 		if (line == line_start + offset)
 			rd->curs_width = mwidth;
 		if (ch >= ' ' && ch != '<') {
+			bool was_in_lws = in_lws;
 			line += 1;
 			/* Only flush out if string is getting a bit long.
 			 * i.e.  if we have reached the offset we are
 			 * measuring to, or if we could have reached the
 			 * right margin.
+			 * Alternately, if we are doing word-wrap and we
+			 * have found start or end of a word.
 			 */
 			if ((*line & 0xc0) == 0x80)
 				/* In the middle of a UTF-8 */
 				continue;
+			if (word_wrap) {
+				wint_t wch = ch;
+				const char *trimmed_line = line - 1;
+				if (ch & 0x80) {
+					const char *l = start + utf8_round_len(start, trimmed_line-start);
+					trimmed_line = l;
+					wch = get_utf8(&l, NULL);
+				}
+				if (!iswspace(wch)) {
+					seen_non_space = True;
+					if (in_lws)
+						line = trimmed_line;
+					in_lws = False;
+				} else if (!in_lws&& seen_non_space && iswspace(wch)) {
+					in_lws = True;
+					line = trimmed_line;
+				}
+			}
 			if (offset == (line - line_start) ||
 			    (line-start) * mwidth >= p->w - x ||
-			    (posx > x && (line - start)*mwidth > posx - x)) {
+			    (posx > x && (line - start)*mwidth > posx - x) ||
+			    was_in_lws != in_lws
+			) {
 				ret = draw_some(p, focus, &rlst, &x, start,
 						&line,
 						buf_final(&attr),
+						was_in_lws,
 						wrap ? mwidth : 0,
 						offset - (start - line_start),
 						posx, scale);
@@ -838,7 +874,7 @@ DEF_CMD(renderline)
 			continue;
 		}
 		ret = draw_some(p, focus, &rlst, &x, start, &line,
-				buf_final(&attr),
+				buf_final(&attr), in_lws,
 				wrap ? mwidth : 0,
 				in_tab ?:offset - (start - line_start),
 				posx, scale);
@@ -848,8 +884,9 @@ DEF_CMD(renderline)
 		if (ch == '<') {
 			line += 1;
 			if (*line == '<') {
+				in_lws = False;
 				ret = draw_some(p, focus, &rlst, &x, start, &line,
-						buf_final(&attr),
+						buf_final(&attr), in_lws,
 						wrap ? mwidth : 0,
 						in_tab ?:offset - (start - line_start),
 						posx, scale);
@@ -924,8 +961,10 @@ DEF_CMD(renderline)
 			int xc = (wrap_offset + x) / mwidth;
 			/* Note xc might be negative, so "xc % 8" won't work here */
 			int w = 8 - (xc & 7);
+			if (seen_non_space)
+				in_lws = True;
 			ret = draw_some(p, focus, &rlst, &x, start, &line,
-					buf_final(&attr),
+					buf_final(&attr), in_lws,
 					wrap ? mwidth*2: 0,
 					offset == (start - line_start)
 					? in_tab : -1,
@@ -945,8 +984,9 @@ DEF_CMD(renderline)
 			buf[2] = 0;
 			b = buf+2;
 			buf_concat(&attr, ",underline,fg:red,");
+			in_lws = False;
 			ret = draw_some(p, focus, &rlst, &x, buf, &b,
-					buf_final(&attr),
+					buf_final(&attr), in_lws,
 					wrap ? mwidth*2: 0,
 					offset - (start - line_start),
 					posx, scale);
@@ -964,7 +1004,7 @@ DEF_CMD(renderline)
 			posx = -1;
 
 		draw_some(p, focus, &rlst, &x, start, &line,
-			  buf_final(&attr),
+			  buf_final(&attr), False,
 			  wrap ? mwidth : 0, offset - (start - line_start),
 			  posx, scale);
 	}

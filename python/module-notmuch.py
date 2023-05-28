@@ -3102,6 +3102,8 @@ class notmuch_message_view(edlib.Pane):
         self.have_prev = False
         self.call("doc:request:mark:moving")
 
+        self['word-wrap'] = '1' # Should this be different in different parts?
+
         choose = {}
         m = edlib.Mark(focus)
         while True:

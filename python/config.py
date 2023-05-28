@@ -28,6 +28,7 @@ def config_appeared(key, focus, **a):
         else:
             focus.call("doc:append:view-default", ",textfill,whitespace,autospell")
         focus["fill-width"] = "72"
+        focus["word-wrap"] = "1"
         focus["fill:start-re"] = ("^("
                                   "[^a-zA-Z0-9\\n]*$|" # empty/puctuation line
                                   " *-|"               # list item

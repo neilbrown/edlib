@@ -289,6 +289,10 @@ found in the stack:
 - "prefix" - This marked-up text will be display first.  It will not be
   shifted even when the main text is shifted left.
 
+- "word-wrap" - This can be "0" or non-zero.  If non-zero then text
+  is wrapped on white-space (space, tab, any UNICODE space) that is not
+  at the start of the line.
+
 The pane also sets some attributes when handling these messages:
 
 - "prefix_len" - the length of the appearance of the prefix

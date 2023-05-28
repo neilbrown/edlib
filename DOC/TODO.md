@@ -21,6 +21,7 @@ Current priorities
 - [ ] use common UI for dynamic abbrev and spell (and more?)
 - [ ] Finish render-lines rewrite
 
+- [ ] word-wrap subject (only) in email summary line
 - [ ] switch-buffer in pop-up window - shouldn't kill the popup
 - [ ] file in pop-up window in 'view' mode by default
       From 'grep' this is probably OK.  For Cx-44, it isn't.
@@ -48,6 +49,9 @@ Current priorities
 - [ ] whitespace: don't show errors unless doc has been changed.???
 - [ ] mailto: links should be sent to nm (if active)
 - [ ] press K:Enter on a link should do something
+- [ ] Maybe "word-wrap" should be a list of characters to wrap on??
+      But I might want "comma and following spaces".  How do I say that?
+      Possibly declare some chars that cause a map-attr callback??
 
 - [ ] split notmuch into two databases, last 6 months and the rest.
 - [ ] script to move messages every week - but not deleted messages
@@ -106,7 +110,7 @@ Bugs to be fixed
       autoloads.  I need a complete redesign of autoload
 - [ ] use mimetypes.guess_type() to interpret filenames in email attachments??
 - [ ] don't allow non-text email parts to appear as text.  Maybe hex??
-- [ ] word-wrap all text in email display
+- [X] word-wrap all text in email display
 - [X] rexel should include the charset id in the rxl, not keep it static.
 - [X] search for "\s" loops infinitely. - is currently on several spaces
 - [ ] ->replace_pane, ->replace_popup can be deleted (Abort) but we
@@ -159,6 +163,8 @@ Bugs to be fixed
       to edit at end-of-file
 - [ ] When viewing a diff which pages of "+" (at the end), refresh is quite slow
 - [ ] repeated alarm(10)/alarm(0) calls slow things down
+- [ ] if the first char if a line is marked for <wrap> it disappears
+      without cursor.  This is bad.
 
 Requirements for a v1.0 release
 -------------------------------
@@ -563,7 +569,7 @@ Module features
 - [ ] when I unhide an email part which is a single v.long line,
     redraw gets confused and point goes off-screen, which seems
     to leave it confused.
-- [ ] in text/plain, wrap long lines on 'space'. - make this a config in lib-markup
+- [X] in text/plain, wrap long lines on 'space'. - make this a config in lib-markup
 - [ ] maybe hide signature, unless small
 - [ ] When click on first char in tagged range, I don't see the tag and
    don't get a Mouse-Activate event.
