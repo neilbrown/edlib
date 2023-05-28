@@ -80,6 +80,10 @@ struct display_data {
 	FILE			*log;
 	FILE			*input;
 	int			input_sleeping;
+	/* Sometimes I get duplicate Display lines, but not consistently.
+	 * To avoid these, record last, filter repeats.
+	 */
+	int			last_cx, last_cy;
 	char			last_screen[MD5_DIGEST_SIZE*2+1];
 	char			next_screen[MD5_DIGEST_SIZE*2+1];
 	/* The next event to generate when idle */
@@ -190,6 +194,7 @@ static void record_key(struct pane *p safe, char *key safe)
 	else
 		return;
 	fprintf(dd->log, "Key %c%s%c\n", q,key,q);
+	dd->last_cx = -2; /* Force next Display to be shown */
 	fflush(dd->log);
 }
 
@@ -208,6 +213,7 @@ static void record_mouse(struct pane *p safe, char *key safe, int x, int y)
 	else
 		return;
 	fprintf(dd->log, "Mouse %c%s%c %d,%d\n", q,key,q, x, y);
+	dd->last_cx = -2; /* Force next Display to be shown */
 	fflush(dd->log);
 }
 
@@ -244,13 +250,18 @@ static void record_screen(struct pane *p safe)
 				   (l+3) * sizeof(uint16_t));
 		}
 	md5_final_txt(&ctx, out);
-	if (dd->log) {
+	if (strcmp(out, dd->last_screen) == 0 &&
+	     p->cx == dd->last_cx && p->cy == dd->last_cy) {
+		/* No  change - filter it */
+		dd->clears -= 1;
+	} else if (dd->log) {
 		fprintf(dd->log, "Display %d,%d %s", p->w, p->h, out);
-		strcpy(dd->last_screen, out);
 		if (p->cx >= 0)
 			fprintf(dd->log, " %d,%d", p->cx, p->cy);
 		fprintf(dd->log, "\n");
 		fflush(dd->log);
+		strcpy(dd->last_screen, out);
+		dd->last_cx = p->cx; dd->last_cy = p->cy;
 	}
 	if (dd->input && dd->input_sleeping) {
 		char *delay = getenv("EDLIB_REPLAY_DELAY");
