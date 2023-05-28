@@ -331,10 +331,6 @@ class compose_email(edlib.Pane):
 
     def markup_header(self, key, focus, num, mark, mark2, comm2, **a):
         "handle:compose:markup-header"
-        # Display cursor at start or end, anything else should be suppressed.
-        if num == 0 or (mark2 and mark2 == mark):
-            # appear at the start of the line
-            return comm2("cb", focus, "<fg:red>")
         # at least go to end of line
         self.parent.call("doc:EOL", 1, mark)
         m = self.vmark_at_or_before(self.view, mark)
@@ -348,11 +344,13 @@ class compose_email(edlib.Pane):
             info = m['compose-info']
             if info:
                 markup += ' - ' + info
-        if (num == edlib.NO_NUMERIC or num < 0) and (not mark2 or mark2 > mark):
+        if num < 0:
             # normal render - go past eol
             self.parent.next(mark)
             markup += "</>\n"
-        return comm2("cb", focus, markup)
+        # return num==0 to display cursor at start or end, anything else
+        # should be suppressed.
+        return comm2("cb", focus, 0, markup)
 
     def handle_clone(self, key, focus, **a):
         "handle:Clone"

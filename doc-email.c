@@ -76,22 +76,19 @@ static bool handle_rfc822(struct pane *email safe,
 			  char *path safe);
 
 static bool cond_append(struct buf *b safe, char *txt safe, char *tag safe,
-			int offset, int *cp safe)
+			int offset, int *pos safe)
 {
 	char *tagf = "active-tag:email-";
 	int prelen = 1 + strlen(tagf) + strlen(tag) + 1 + 1;
 	int postlen = 1 + 3;
 	int len = prelen + strlen(txt) + postlen;
-	if (offset != NO_NUMERIC && offset >= 0 && offset <= b->len + len)
+	if (offset >= 0 && offset <= b->len + len)
 		return False;
 	buf_concat(b, "<");
 	buf_concat(b, tagf);
 	buf_concat(b, tag);
 	buf_concat(b, ">[");
-	if (*cp == 0)
-		return False;
-	if (*cp > 0)
-		*cp -= 1;
+	*pos = b->len;
 	buf_concat(b, txt);
 	buf_concat(b, "]</>");
 	return True;
@@ -117,6 +114,7 @@ DEF_CMD(email_spacer)
 	struct mark *pm = ci->mark2;
 	int o = ci->num;
 	int cp = -1;
+	int ret_pos = 0;
 	char *attr;
 	int ret;
 	bool ok = True;
@@ -158,22 +156,27 @@ DEF_CMD(email_spacer)
 		attr = "hide";
 
 	while (ok && attr && *attr) {
+		int pos = 0;
 		char *a = strchr(attr, ':');
 		if (a)
 			*a = 0;
 		if (is_attr("hide", attr))
 			ok = cond_append(&b, visible ? "HIDE" : "SHOW", attr,
-					 o, &cp);
+					 o, &pos);
 		else if (is_attr("full", attr))
 			ok = cond_append(&b, orig ? "BRIEF" : "FULL", attr,
-					 o, &cp);
+					 o, &pos);
 		else if (is_attr("extras", attr))
 			ok = cond_append(&b, extras ? "-" : "EXTRAS", attr,
-					 o, &cp);
+					 o, &pos);
 		else
-			ok = cond_append(&b, attr, attr, o, &cp);
+			ok = cond_append(&b, attr, attr, o, &pos);
 		if (ok)
 			doc_next(ci->focus, m);
+		if (cp >= 0) {
+			cp -= 1;
+			ret_pos = pos;
+		}
 		attr = a;
 		if (attr)
 			*attr++ = ':';
@@ -185,7 +188,7 @@ DEF_CMD(email_spacer)
 	 * if cp > 0, we haven't reached cursor yet, so don't stop
 	 * if cp == 0, this is cursor pos, so stop.
 	 */
-	if (ok && cp != 0 && ((o < 0 || o == NO_NUMERIC))) {
+	if (ok && o < 0) {
 		wint_t wch;
 		buf_concat(&b, "</>");
 		attr = pane_mark_attr(ci->focus, m,
@@ -206,13 +209,17 @@ DEF_CMD(email_spacer)
 			buf_concat(&b, " file=");
 			buf_concat(&b, attr);
 		}
+		if (cp >= 0)
+			ret_pos = b.len;
 		buf_concat(&b, "\n");
+		if (cp >= 1)
+			ret_pos = b.len;
 		while ((wch = doc_next(ci->focus, m)) &&
 		       wch != '\n' && wch != WEOF)
 			;
 	}
 
-	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL,
+	ret = comm_call(ci->comm2, "callback:render", ci->focus, ret_pos, NULL,
 			buf_final(&b));
 	free(b.b);
 	return ret;
@@ -232,6 +239,7 @@ DEF_CMD(email_image)
 	char *c = NULL;
 	int p;
 	int ret;
+	int retlen = 0;
 	int i;
 	struct xy scale;
 	struct mark *point = ci->mark2;
@@ -255,17 +263,15 @@ DEF_CMD(email_image)
 		c[max_chars] = '\0';
 
 	for (i = 0; i < 9 ; i++) {
-		if (point && mark_ordered_or_same(point, ci->mark)) {
-			c[map_start + i] = 0;
-			break;
-		}
+		if (point && mark_ordered_or_same(point, ci->mark))
+			retlen = map_start + i;
 		if (max_chars >= 0 && map_start + i >= max_chars)
 			break;
 		doc_next(ci->focus, ci->mark);
 	}
 
 	ret = comm_call(ci->comm2, "callback:render", ci->focus,
-			0, NULL, c);
+			retlen, NULL, c);
 	free(c);
 	return ret;
 }

@@ -196,12 +196,12 @@ DEF_CMD(render_line)
 
 	if (pm && !mark_same(pm, m))
 		pm = NULL;
-	if (ci->num == NO_NUMERIC || ci->num < 0)
+	if (ci->num < 0)
 		len = -1;
 	else
 		len = ci->num;
 	ret = do_format(ci->focus, ci->mark, pm, len, 1);
-	if (!pm && len < 0)
+	if (len < 0)
 		doc_next(ci->focus, m);
 	rv = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, ret);
 	free(ret);

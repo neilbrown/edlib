@@ -3545,12 +3545,12 @@ class notmuch_message_view(edlib.Pane):
             return edlib.Efallthrough
         mark.to_mark(p.next())
         eol="\n"
-        if mark2 or num > 0 and num < 2000:
+        if num > 0 and num < 2000:
             # don't show eol
             self.prev(mark)
             eol = ""
         if comm2:
-            comm2("cb", focus, "<fg:yellow,bg:blue+30>%d quoted lines</>%s" % (int(p['quote-length']), eol))
+            comm2("cb", focus, 0, "<fg:yellow,bg:blue+30>%d quoted lines</>%s" % (int(p['quote-length']), eol))
         return 1
 
     def handle_render_line_prev(self, key, focus, num, mark, comm2, **a):

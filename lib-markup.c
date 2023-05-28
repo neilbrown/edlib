@@ -308,6 +308,7 @@ DEF_CMD(render_line)
 	struct mark *boundary, *start_boundary = NULL;
 	struct mark *doc_boundary;
 	int o = ci->num;
+	int pm_offset = -1;
 	wint_t ch;
 	int chars = 0;
 	int ret;
@@ -316,9 +317,6 @@ DEF_CMD(render_line)
 	char *oneline;
 	char *noret;
 	char *attr;
-
-	if (o == NO_NUMERIC)
-		o = -1;
 
 	ar.rtn = text_attr_callback;
 	ar.fwd = text_attr_forward;
@@ -367,8 +365,8 @@ DEF_CMD(render_line)
 
 		if (o >= 0 && b.len >= o)
 			break;
-		if (pm && mark_same(m, pm))
-			break;
+		if (pm && mark_same(m, pm) && pm_offset < 0)
+			pm_offset = b.len;
 
 		if (ar.ast && ar.min_end <= chars) {
 			int depth = find_finished(ar.ast, chars, &ar.min_end);
@@ -461,7 +459,10 @@ DEF_CMD(render_line)
 
 	mark_free(doc_boundary);
 
-	ret = comm_call(ci->comm2, "callback:render", focus, 0, NULL,
+	if (pm && pm_offset < 0)
+		pm_offset = b.len;
+
+	ret = comm_call(ci->comm2, "callback:render", focus, pm_offset, NULL,
 			buf_final(&b));
 	free(b.b);
 	free(ar.insert.b);

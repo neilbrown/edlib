@@ -155,9 +155,10 @@ markup to provide font size and colour etc.
 
 "render-lines" also understands that there is a need to map between
 location in the document and locations on the display.
-"doc:render-line" can be asked to only convert up to some location into
-a string, rather than the whole line.  This can be used to determine
-where in the markup the cursor should appear.
+"doc:render-line" can be asked to track when conversion reaches some
+mark, and to report the offset in the rendered string corresponding to
+this point.  This can be used to determine where in the markup the
+cursor should appear.
 
 As "render-lines" collects these marked-up strings, it creates sub-panes
 using "renderline" as described below to draw the marked-up string onto
@@ -424,21 +425,19 @@ length count is usually given as an extremely large number meaning
  - "doc:render-line"
      + mark - start of the line to be rendered.  Line continues until
        first '\n' or until 'num2' chars have been examined and no '\n'
-       found.  'mark' will be mvoe to the end of the range that was
+       found.  'mark' will be moved to the end of the range that was
        rendered (often to the end of line line / start of next line).
-     + mark2 - if num == -1, location not to render beyond.  This is
-       typically set to the current "point", and the cursor will be
-       drawn where the returned string ends.
+     + mark2 - location of interested to be reported as offset in the
+       rendering.  This is typically set to the current "point", and the
+       cursor will be drawn where the returned string ends.
      + num - if >= 0, maximum number of result character to return
        before aborting.  'mark' will be moved to the location that would
        draw at or beyond this place on the screen.  This can be used to
        convert a screen location (from a mouse click) back to a document
        location.
-       If num == -1, rendering stops when mark reaches mark2.  This
-       allows the cursor to be found, and action to be taken if it is
-       off-screen.
-       If num == NO_NUMERIC rendering continues to end-of-line.
-     + comm2 - a callback used to return the rendered string in "str1".
+       If num < 0 rendering continues to end-of-line.
+     + comm2 - a callback used to return the rendered string in "str1",
+       and the offset of mark2 (if given) in "num".
        The string will be freed after the callback returns, so it must
        be duplicated if later access is needed.
 

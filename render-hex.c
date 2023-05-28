@@ -101,6 +101,7 @@ DEF_CMD(render_line)
 	struct mark *m = NULL;
 	struct mark *pm = ci->mark2;
 	int pos;
+	int pm_offset = -1;
 	int i;
 	char buf[30];
 	int rv;
@@ -121,10 +122,9 @@ DEF_CMD(render_line)
 		wint_t ch;
 		struct mark *m2 = ci->mark;
 
-		if (pm && mark_same(m2, pm))
-			goto done;
-		if (ci->num >= 0 && ci->num != NO_NUMERIC &&
-		    ci->num <= ret.len)
+		if (pm && mark_same(m2, pm) && pm_offset < 0)
+			pm_offset = ret.len;
+		if (ci->num >= 0 && ci->num <= ret.len)
 			goto done;
 
 		ch = doc_next(ci->focus, m2);
@@ -158,7 +158,7 @@ DEF_CMD(render_line)
 done:
 	if (m)
 		mark_free(m);
-	rv = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL,
+	rv = comm_call(ci->comm2, "callback:render", ci->focus, pm_offset, NULL,
 		       buf_final(&ret));
 	free(ret.b);
 	return rv ?: 1;

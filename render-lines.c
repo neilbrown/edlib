@@ -9,14 +9,14 @@
  * This takes a mark and moves it to the end of the rendered line
  * so that another call will produce another line.
  * "doc:render-line" must always return a full line including '\n'
- * unless the result would be bigger than the 'max' passed in ->num or,
- * when ->num==-1, unless the rendering would go beyond the location in
- * ->mark2.  In these cases it can stop before a '\n'.  In each case,
+ * unless the result would be bigger than the 'max' passed in ->num or
+ * ->num < 0.  In these cases it can stop before a '\n'.  In each case,
  * the mark is moved to the end of the region that was rendered;
- * This allows a mark to be found for a given character position, or a display
- * position found for a given mark.
+ * This allows a mark to be found for a given character position.
+ * If mark2 is given, the offset in the rendering when mark2 is reached
+ * is reported as ->num in the callback.
  * For the standard 'render the whole line' functionality, ->num should
- * be NO_NUMERIC
+ * be negative.
  *
  * The document or filter must also provide "doc:render-line-prev" which
  * moves mark to a start-of-line.  If num is 0, then don't skip over any
@@ -267,7 +267,7 @@ static void call_render_line(struct pane *home safe, struct pane *p safe,
 		}
 		s = "";
 	} else
-		s = call_ret(strsave, "doc:render-line", p, NO_NUMERIC, m);
+		s = call_ret(strsave, "doc:render-line", p, -1, m);
 
 	if (!mark_valid(start)) {
 		mark_free(m);
@@ -324,16 +324,12 @@ static struct mark *call_render_line_offset(struct pane *p safe,
 	return m;
 }
 
-DEF_CMD(get_len)
+DEF_CMD(get_offset)
 {
-	if (ci->str) {
-		int l = strlen(ci->str);
-		while (l >=4 && strncmp(ci->str+l-3, "</>", 3) == 0 &&
-		ci->str[l-4] != '<')
-			l -= 3;
-		return l + 1;
-	} else
+	if (ci->num < 0)
 		return 1;
+	else
+		return ci->num + 1;
 }
 
 static int call_render_line_to_point(struct pane *p safe, struct mark *pm safe,
@@ -342,7 +338,7 @@ static int call_render_line_to_point(struct pane *p safe, struct mark *pm safe,
 	int len;
 	struct mark *m = mark_dup_view(start);
 
-	len = call_comm("doc:render-line", p, &get_len, -1, m, NULL, 0, pm);
+	len = call_comm("doc:render-line", p, &get_offset, -1, m, NULL, 0, pm);
 	mark_free(m);
 	if (len <= 0)
 		return 0;

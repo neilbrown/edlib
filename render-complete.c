@@ -99,7 +99,7 @@ DEF_CMD(render_complete_line)
 		return Enoarg;
 
 	m = mark_dup(ci->mark);
-	line = call_ret(str, ci->key, ci->home->parent, NO_NUMERIC, m);
+	line = call_ret(str, ci->key, ci->home->parent, -1, m);
 	if (!line) {
 		mark_free(m);
 		return Efail;
@@ -110,7 +110,7 @@ DEF_CMD(render_complete_line)
 		startlen = 0;
 	else
 		startlen = start - line;
-	if (ci->num >= 0 && ci->num != NO_NUMERIC) {
+	if (ci->num >= 0) {
 		/* Only want 'num' bytes from start, with ->mark positioned.
 		 * So need to find how many bytes of 'line' produce num bytes
 		 * of highlighted line.
@@ -123,7 +123,7 @@ DEF_CMD(render_complete_line)
 		mark_free(m);
 		line = call_ret(str, ci->key, ci->home->parent,
 				num, ci->mark);
-	} else if (ci->mark2) {
+	} else if (ci->mark2) { //FIXME
 		/* Only want up-to the cursor, which might be in the middle of
 		 * the highlighted region.  Now we know where that is, we can
 		 * highlight whatever part is still visible.
@@ -477,7 +477,7 @@ DEF_CMD(complete_return)
 	/* Go to start of line */
 	home_call(ci->home, "doc:render-line-prev", ci->home, 0, ci->mark);
 	home_call(ci->home, "doc:render-line",
-		  ci->home, NO_NUMERIC, ci->mark, NULL, 0, NULL,
+		  ci->home, -1, ci->mark, NULL, 0, NULL,
 		  NULL, 0,0, &cr.c);
 	if (!cr.s)
 		return 1;

@@ -207,6 +207,9 @@ DEF_CMD(docs_mod_next)
 		return Enoarg;
 	m = mark_dup(ci->mark);
 	call("doc:EOL", ci->home->parent, 1, m, NULL, 1);
+	/* Passing '0' is deliberate.  We don't want to render
+	 * anything, just see if there is anything tha could be rendered.
+	 */
 	if (call("doc:render-line", ci->focus, 0, m) < 0 ||
 	    m->ref.p == NULL) {
 		mark_free(m);

@@ -40,6 +40,7 @@ struct rlcb {
 	struct filter_data *fd;
 	int keep, cmp;
 	const char *str;
+	int cursor_offset;
 };
 
 DEF_CB(rlcb)
@@ -73,6 +74,7 @@ DEF_CB(rlcb)
 			/* Want the original with markup */
 			strcpy(c, ci->str);
 		cb->str = c;
+		cb->cursor_offset = ci->num;
 	} else
 		free(c);
 	return 1;
@@ -169,9 +171,10 @@ DEF_CMD(render_filter_line)
 			   ci->num, ci->mark, NULL, 0, m2) < 0)
 		return Efail;
 
-	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, cb.str);
+	ret = comm_call(ci->comm2, "callback:render", ci->focus,
+			cb.cursor_offset, NULL, cb.str);
 	free((void*)cb.str);
-	if (ci->num != NO_NUMERIC)
+	if (m2)
 		/* Was rendering to find a cursor, don't need to skip */
 		return ret;
 	/* Need to continue over other non-matching lines */
@@ -367,7 +370,7 @@ DEF_CMD(filter_changed)
 		mark_to_mark(end, m);
 	}
 
-	if (call("doc:render-line", ci->focus, NO_NUMERIC, end) > 0)
+	if (call("doc:render-line", ci->focus, -1, end) > 0)
 		found_one = True;
 
 	m = mark_dup(end);
@@ -451,7 +454,7 @@ DEF_CMD(filter_eol)
 		struct call_return cr;
 		cr.c = eol_cb;
 		if (home_call(ci->home, "doc:render-line",
-			      ci->focus, NO_NUMERIC, ci->mark, NULL,
+			      ci->focus, -1, ci->mark, NULL,
 			      0, NULL, NULL, 0,0, &cr.c) <= 0)
 			line = 1;
 		line -= 1;

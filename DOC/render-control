@@ -39,7 +39,7 @@ the given location.
         or until 'num2' chars have been examined with no '\n' found
         mark will be moved to the end of the range that was rendered (often
         the end of the line)
-  mark2: if num==-1, location not to render beyond.  This is typically set
+  mark2: location or record and report offset of.  This is typically set
        to the current "point", and a cursor will be drawn where the returned
        string end.
   num: if >= 0, max number of result characters to return before
@@ -47,9 +47,7 @@ the given location.
        at or beyond this place on the screen.  This can be used to
        convert a screen location (from a mouse click) back to a document
        location.
-       if == -1, Rendering stops when mark reaches mark2.  This allows the
-       cursor to be found, and action to be taken if it is off-screen
-       if == NO_NUMERIC, ignored.
+       if < 0, ignored.
   comm2: a callback used to return the rendered string in "str".  The string
        will be freed after the callback returns, so it must duplicate it if
        later access is needed.
