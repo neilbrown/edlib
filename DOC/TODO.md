@@ -88,7 +88,8 @@ Bugs to be fixed
       already marked if needed.  This was fixed by making conversion
       async so:
 - [ ] async email part converts need to do their own URL marking.
-      PDF particularly, and html2md.  Maybe others.
+      PDF particularly, and html2md.  Maybe others. - LATER pdf and doc
+      do it now by copying the code.
 - [X] notmuch: "reply" should clear unread/new flags.
 - [X] transparent images appear in email with horiz lines
 - [X] Replying to w3m/html mail results in unsightly markup in reply
