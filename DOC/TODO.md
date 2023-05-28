@@ -62,7 +62,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] multipart must handle Notify:Close better.  It should NULL out the
+- [X] multipart must handle Notify:Close better.  It should NULL out the
       pointer to the pane, and always check it isn't NULL.
 - [X] I cannot dup a mark in a mark:moving handler.  That is too
       restrictive.  I need a different way to decide that incoming marks

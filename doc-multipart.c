@@ -40,7 +40,7 @@ struct mp_info {
 	int		nparts;
 	int		parts_size;
 	struct part {
-		struct pane	*pane safe;
+		struct pane	*pane;
 	} *parts safe;
 };
 
@@ -181,8 +181,7 @@ static void change_part(struct mp_info *mpi safe, struct mark *m safe,
 		mark_free(m->ref.m);
 		m->ref.m = NULL;
 	}
-	if (part < mpi->nparts) {
-		p = &mpi->parts[part];
+	if (part < mpi->nparts && (p = &mpi->parts[part]) && p->pane) {
 		m1 = vmark_new(p->pane, MARK_UNGROUPED, NULL);
 		if (m1) {
 			call("doc:set-ref", p->pane, !end, m1);
@@ -200,9 +199,9 @@ static void mp_normalize(struct mp_info *mpi safe, struct mark *m safe,
 	/* If points the end of a document, point to the start
 	 * of the next instead.
 	 */
-	while (m->ref.m &&
-	       doc_following(mpi->parts[m->ref.docnum].pane,
-				  m->ref.m) == WEOF) {
+	struct part *p;
+	while (m->ref.m && (p = &mpi->parts[m->ref.docnum]) && p->pane &&
+	       doc_following(p->pane, m->ref.m) == WEOF) {
 		int n = m->ref.docnum + 1;
 		while (n < mpi->nparts && vis && vis[n] == 'i')
 			n += 1;
@@ -224,8 +223,11 @@ DEF_CMD(mp_close)
 			if (GET_REFS(m2) == 0)
 				mark_free(m2);
 		}
-	for (i = 0; i < mpi->nparts; i++)
-		call("doc:closed", mpi->parts[i].pane);
+	for (i = 0; i < mpi->nparts; i++) {
+		struct pane *p = mpi->parts[i].pane;
+		if (p)
+			call("doc:closed", p);
+	}
 	return Efallthrough;
 }
 
@@ -536,7 +538,8 @@ DEF_CMD(mp_attr)
 {
 	struct mp_info *mpi = ci->home->data;
 	struct mark *m1 = NULL;
-	int ret;
+	struct part *p;
+	int ret = Efallthrough;
 	int d;
 	const char *attr = ci->str;
 
@@ -546,8 +549,8 @@ DEF_CMD(mp_attr)
 	m1 = ci->mark->ref.m;
 	d = ci->mark->ref.docnum;
 
-	if (d < mpi->nparts && m1 &&
-	    doc_following(mpi->parts[d].pane, m1) == WEOF)
+	if (d < mpi->nparts && m1 && (p = &mpi->parts[d]) &&
+	    p->pane &&  doc_following(p->pane, m1) == WEOF)
 		/* at the wrong end of a part */
 		d += 1;
 
@@ -584,15 +587,17 @@ DEF_CMD(mp_attr)
 		return 1;
 	}
 
-	if (d != ci->mark->ref.docnum) {
-		m1 = vmark_new(mpi->parts[d].pane, MARK_UNGROUPED, NULL);
-		call("doc:set-ref", mpi->parts[d].pane,
+	p = &mpi->parts[d];
+	if (d != ci->mark->ref.docnum && p->pane) {
+		m1 = vmark_new(p->pane, MARK_UNGROUPED, NULL);
+		call("doc:set-ref", p->pane,
 		     (d > ci->mark->ref.docnum), m1);
 	}
 
-	ret = home_call(mpi->parts[d].pane,
-			ci->key, ci->focus, ci->num, m1, ci->str,
-			ci->num2, NULL, ci->str2, 0,0, ci->comm2);
+	if (p->pane)
+		ret = home_call(p->pane,
+				ci->key, ci->focus, ci->num, m1, ci->str,
+				ci->num2, NULL, ci->str2, 0,0, ci->comm2);
 	if (d != ci->mark->ref.docnum)
 		mark_free(m1);
 	return ret;
@@ -601,6 +606,7 @@ DEF_CMD(mp_attr)
 DEF_CMD(mp_set_attr)
 {
 	struct mp_info *mpi = ci->home->data;
+	struct part *p;
 	struct mark *m = ci->mark;
 	struct mark *m1;
 	int dn;
@@ -616,23 +622,27 @@ DEF_CMD(mp_set_attr)
 	if (strncmp(attr, "multipart-", 10) == 0) {
 		/* Set an attribute on a part */
 		if (strncmp(attr, "multipart-prev:", 15) == 0 &&
-		    dn > 0)
-			attr_set_str(&mpi->parts[dn-1].pane->attrs,
+		    dn > 0 && (p = &mpi->parts[dn-1]) && p->pane)
+			attr_set_str(&p->pane->attrs,
 				     attr+15, ci->str2);
 		else if (strncmp(attr, "multipart-next:", 15) == 0 &&
-			 dn < mpi->nparts)
-			attr_set_str(&mpi->parts[dn+1].pane->attrs,
+			 dn < mpi->nparts && (p = &mpi->parts[dn+1]) && p->pane)
+			attr_set_str(&p->pane->attrs,
 				     attr+15, ci->str2);
-		else if (strncmp(attr, "multipart-this:", 15) == 0)
-			attr_set_str(&mpi->parts[dn].pane->attrs,
+		else if (strncmp(attr, "multipart-this:", 15) == 0 &&
+			 (p = &mpi->parts[dn]) && p->pane)
+			attr_set_str(&p->pane->attrs,
 				     attr+15, ci->str2);
 		else
 			return Efail;
 		return 1;
 	}
 	/* Send the request to a sub-document */
-	return call(ci->key, mpi->parts[dn].pane, ci->num, m1, ci->str,
-		    0, NULL, ci->str2);
+	p = &mpi->parts[dn];
+	if (p->pane)
+		return call(ci->key, p->pane, ci->num, m1, ci->str,
+			    0, NULL, ci->str2);
+	return Efail;
 }
 
 DEF_CMD(mp_notify_close)
@@ -648,6 +658,7 @@ DEF_CMD(mp_notify_close)
 			/* sub-document has been closed.
 			 * Can we survive? or should we just shut down?
 			 */
+			mpi->parts[i].pane = NULL;
 			pane_close(ci->home);
 			return 1;
 		}
@@ -713,6 +724,7 @@ DEF_CMD(mp_forward_by_num)
 {
 	struct mp_info *mpi = ci->home->data;
 	struct mark *m1 = NULL, *m2 = NULL;
+	struct part *p;
 	const char *key;
 	int d;
 	int ret;
@@ -732,19 +744,26 @@ DEF_CMD(mp_forward_by_num)
 	if (ci->mark2 && ci->mark2->ref.docnum == d)
 		m2 = ci->mark2->ref.m;
 
-	ret = call(key, mpi->parts[d].pane, ci->num, m1, ci->str,
-		    ci->num2, m2, ci->str2, ci->x, ci->y, ci->comm2);
+	p = &mpi->parts[d];
+	if (p->pane)
+		ret = call(key, p->pane, ci->num, m1, ci->str,
+			   ci->num2, m2, ci->str2, ci->x, ci->y, ci->comm2);
+	else
+		ret = Efail;
 	return ret;
 }
 
 DEF_CMD(mp_get_part)
 {
 	struct mp_info *mpi = ci->home->data;
+	struct part *p;
 	int d = ci->num;
 
 	if (d < 0 || d >= mpi->nparts)
 		return Einval;
-	comm_call(ci->comm2, "cb", mpi->parts[d].pane);
+	p = &mpi->parts[d];
+	if (p->pane)
+		comm_call(ci->comm2, "cb", p->pane);
 	return 1;
 }
 
@@ -755,6 +774,7 @@ DEF_CMD(mp_forward)
 	 * ci->mark is forwarded if it is in same document
 	 */
 	struct mp_info *mpi = ci->home->data;
+	struct part *p;
 	struct mark *m1, *m2;
 	const char *key;
 	int d;
@@ -765,8 +785,8 @@ DEF_CMD(mp_forward)
 	m2 = ci->mark2->ref.m;
 	d = ci->mark2->ref.docnum;
 
-	if (d < mpi->nparts && m2 &&
-	    doc_following(mpi->parts[d].pane, m2) == WEOF)
+	if (d < mpi->nparts && m2 && (p = &mpi->parts[d]) && p->pane &&
+	    doc_following(p->pane, m2) == WEOF)
 		/* at the wrong end of a part */
 		d += 1;
 
@@ -788,8 +808,11 @@ DEF_CMD(mp_forward)
 	m1 = NULL;
 	if (ci->mark && ci->mark->ref.docnum == d)
 		m1 = ci->mark->ref.m;
-	return call(key, mpi->parts[d].pane, ci->num, m1, ci->str,
-		    ci->num2, NULL, ci->str2, 0,0, ci->comm2);
+	p = &mpi->parts[d];
+	if (p->pane)
+		return call(key, p->pane, ci->num, m1, ci->str,
+			    ci->num2, NULL, ci->str2, 0,0, ci->comm2);
+	return Efail;
 }
 
 DEF_CMD(mp_val_marks)
