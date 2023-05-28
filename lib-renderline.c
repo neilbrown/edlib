@@ -84,7 +84,7 @@ static int draw_some(struct pane *p safe, struct pane *focus safe,
 		return OK;
 	if ((*rlp == NULL ||
 	     ((*rlp)->next == NULL && (*rlp)->text_orig == NULL)) &&
-	    strstr(attr, "wrap,") && cursorpos < 0)
+	    strstr(attr, ",wrap,") && cursorpos < 0)
 		/* The text in a <wrap> marker that causes a wrap is
 		 * suppressed unless the cursor is in it.
 		 * This will only ever be at start of line.  <wrap> text
@@ -197,7 +197,7 @@ static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 	if (!*rlp)
 		return 0;
 	for (rl = *rlp; wrap_pos && rl; rl = rl->next) {
-		if (strstr(rl->attr, "wrap,") && rl != *rlp) {
+		if (strstr(rl->attr, ",wrap,") && rl != *rlp) {
 			if (!in_wrap) {
 				last_wrap = rl;
 				in_wrap = 1;
@@ -219,7 +219,7 @@ static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 	for (rl = *rlp; rl && rl != last_wrap; rl = rl->next) {
 		int cp = rl->cursorpos;
 
-		if (!*wrap_margin && strstr(rl->attr, "wrap-margin,"))
+		if (!*wrap_margin && strstr(rl->attr, ",wrap-margin,"))
 			*wrap_margin = rl->x;
 
 		if (wrap_pos &&
@@ -369,8 +369,20 @@ static void update_line_height(struct pane *p safe, struct pane *focus safe,
 		if (st[0] != '/') {
 			char *c2;
 			char *b;
+			const char *aend;
 
-			buf_concat_len(&attr, st, line-st);
+			/* attrs must not contain ",," */
+			aend = strstr(st, ",,");
+			if (aend)
+				aend += 1;
+			if (!aend || line < aend)
+				aend = line;
+
+			buf_concat_len(&attr, st, aend-st);
+			/* Replace trailing '>' with ',', and append ','
+			 * so ",," marks where to strip back to when we
+			 * find </>.
+			 */
 			attr.b[attr.len-1] = ',';
 			buf_append(&attr, ',');
 			b = buf_final(&attr);
@@ -676,7 +688,7 @@ DEF_CMD(renderline)
 		const char *s = prefix + strlen(prefix);
 		update_line_height_attr(p, focus, &line_height, &ascent, NULL,
 					"bold", prefix, scale);
-		draw_some(p, focus, &rlst, &x, prefix, &s, "bold",
+		draw_some(p, focus, &rlst, &x, prefix, &s, ",bold,",
 			  0, -1, -1, scale);
 		rd->prefix_len = x + shift_left;
 	} else
@@ -691,7 +703,13 @@ DEF_CMD(renderline)
 	/* tabs are measured against this margin */
 	margin = x;
 
+	/* The attr string starts and ends with ',' and
+	 * attrs are separated by commas.
+	 * Groups of attrs to be popped by the next </>
+	 * are separated by ",,"
+	 */
 	buf_init(&attr);
+	buf_append(&attr, ',');
 
 	rd->curs_width = 0;
 
@@ -834,9 +852,20 @@ DEF_CMD(renderline)
 				if (a[0] != '/') {
 					int ln = attr.len;
 					char *tb;
+					const char *aend;
 
-					buf_concat_len(&attr, a, line-a);
-					/* mark location with ",," */
+					/* attrs must not contain ",," */
+					aend = strstr(a, ",,");
+					if (aend)
+						aend += 1;
+					if (!aend || line < aend)
+						aend = line;
+
+					buf_concat_len(&attr, a, aend-a);
+					/* Replace trailing '>' with ',', and
+					 * append ',' so ",," marks where to
+					 * strip back to when we find </>.
+					 */
 					attr.b[attr.len-1] = ',';
 					buf_append(&attr, ',');
 					tb = strstr(buf_final(&attr)+ln,
@@ -901,7 +930,7 @@ DEF_CMD(renderline)
 			buf[1] = ch + '@';
 			buf[2] = 0;
 			b = buf+2;
-			buf_concat(&attr, ",underline,fg:red");
+			buf_concat(&attr, ",underline,fg:red,");
 			ret = draw_some(p, focus, &rlst, &x, buf, &b,
 					buf_final(&attr),
 					wrap ? mwidth*2: 0,
