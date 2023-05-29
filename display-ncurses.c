@@ -32,6 +32,7 @@
 #include <ctype.h>
 #include <signal.h>
 #include <sys/ioctl.h>
+#include <sys/wait.h>
 #include <netdb.h>
 
 #include <wand/MagickWand.h>
@@ -73,6 +74,11 @@ struct display_data {
 	time_t			paste_start;
 	char			*paste_latest;
 	int			paste_pending;
+
+	struct pids {
+		pid_t		pid;
+		struct pids	*next;
+	}			*pids;
 
 	char			*rs1, *rs2, *rs3, *clear;
 	char			attr_buf[1024];
@@ -491,6 +497,20 @@ static char *fnormalize(struct pane *p safe, const char *str) safe
 	return ret ?: "_";
 }
 
+static void wait_for(struct display_data *dd safe)
+{
+	struct pids **pp = &dd->pids;
+
+	while (*pp) {
+		struct pids *p = *pp;
+		if (waitpid(p->pid, NULL, WNOHANG) > 0) {
+			*pp = p->next;
+			free(p);
+		} else
+			pp = &p->next;
+	}
+}
+
 DEF_CMD(nc_external_viewer)
 {
 	struct pane *p = ci->home;
@@ -508,6 +528,7 @@ DEF_CMD(nc_external_viewer)
 	if (!path)
 		return Enoarg;
 	if (disp && *disp) {
+		struct pids *pds;
 		switch (pid = fork()) {
 		case -1:
 			return Efail;
@@ -526,9 +547,13 @@ DEF_CMD(nc_external_viewer)
 			execlp("xdg-open", "xdg-open", path, NULL);
 			exit(1);
 		default: /* parent */
-			/* FIXME record pid?? */
+			pds = malloc(sizeof(*pds));
+			pds->pid = pid;
+			pds->next = dd->pids;
+			dd->pids = pds;
 			break;
 		}
+		wait_for(dd);
 		return 1;
 	}
 	/* handle no-display case */
@@ -1675,6 +1700,7 @@ REDEF_CMD(input_handle)
 	if (!(void*)p->data)
 		/* already closed */
 		return 0;
+	wait_for(dd);
 	set_screen(p);
 	while ((is_keycode = get_wch(&c)) != ERR) {
 		if (paste_recv(p, is_keycode, c))

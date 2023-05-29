@@ -15,6 +15,7 @@
 #include <string.h>
 #include <xcb/xcb.h>
 #include <stdarg.h>
+#include <sys/wait.h>
 #ifndef __CHECKER__
 #include <xcb/xkb.h>
 #else
@@ -203,6 +204,11 @@ struct xcb_data {
 	struct xkb_compose_state *compose_state;
 	struct xkb_compose_table *compose_table;
 	struct xkb_keymap	*xkb_keymap;
+
+	struct pids {
+		pid_t		pid;
+		struct pids	*next;
+	}			*pids;
 
 	/* FIXME use hash?? */
 	struct panes {
@@ -458,10 +464,25 @@ DEF_CMD(xcb_set_noclose)
 	return 1;
 }
 
+static void wait_for(struct xcb_data *xd safe)
+{
+	struct pids **pp = &xd->pids;
+
+	while (*pp) {
+		struct pids *p = *pp;
+		if (waitpid(p->pid, NULL, WNOHANG) > 0) {
+			*pp = p->next;
+			free(p);
+		} else
+			pp = &p->next;
+	}
+}
+
 DEF_CMD(xcb_external_viewer)
 {
 	struct xcb_data *xd = ci->home->data;
 	const char *path = ci->str;
+	struct pids *p;
 	int pid;
 	int fd;
 
@@ -485,8 +506,13 @@ DEF_CMD(xcb_external_viewer)
 		execlp("xdg-open", "xdg-open", path, NULL);
 		exit(1);
 	default: /* parent */
+		p = malloc(sizeof(*p));
+		p->pid = pid;
+		p->next = xd->pids;
+		xd->pids = p;
 		break;
 	}
+	wait_for(xd);
 	return 1;
 }
 
@@ -1594,6 +1620,7 @@ DEF_CMD(xcb_input)
 	xcb_generic_event_t *ev;
 	int ret = 1;
 
+	wait_for(xd);
 	if (ci->num < 0)
 		/* This is a poll - only return 1 on something happening */
 		ret = Efalse;

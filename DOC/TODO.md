@@ -62,6 +62,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] notmuch reply should interpolate the first *visible* text part
 - [X] multipart must handle Notify:Close better.  It should NULL out the
       pointer to the pane, and always check it isn't NULL.
 - [X] I cannot dup a mark in a mark:moving handler.  That is too
@@ -129,7 +130,7 @@ Bugs to be fixed
       scaling.
 - [ ] stop consistency checking a text doc when it gets "big" ??
 - [ ] auto-sign emails..
-- [ ] be sure to wait for xdg-open etc.
+- [X] be sure to wait for xdg-open etc.
 - [ ] things slow down after lots of edits.  Maybe track
       number of chunk, marks, undos etc and display them somewhere
 - [?] Make doesn't follow llog_reader.c:723:6: when it have seen

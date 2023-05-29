@@ -28,7 +28,7 @@
 # "query.misc-list" is a subset of current-list for which query:current should not
 # be assumed.
 
-from subprocess import Popen, PIPE, DEVNULL
+from subprocess import Popen, PIPE, DEVNULL, TimeoutExpired
 import re
 import os
 import os.path

@@ -16,6 +16,26 @@ gi.require_version('PangoCairo', '1.0')
 gi.require_foreign("cairo")
 from gi.repository import Gtk, Gdk, Pango, PangoCairo, GdkPixbuf, Gio
 
+def wait_for(p):
+    try:
+        r = os.read(p.stdout.fileno(), 4096)
+    except IOError:
+        # nothing to read yet
+        return 1
+    if r:
+        # not eof yet
+        return 1
+    p.communicate()
+    # stop waiting
+    return edlib.Efalse
+
+def wait_on(self, p):
+    # wait on pipe for exit
+    fd = self.pipe.stdout.fileno()
+    fl = fcntl.fcntl(fd, fcntl.F_GETFL);
+    fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+    self.call("event:read", fd, lambda key, **a: wait_for(p))
+
 class EdDisplay(edlib.Pane):
     def __init__(self, focus, display):
         edlib.Pane.__init__(self, focus, z=1)
@@ -92,8 +112,12 @@ class EdDisplay(edlib.Pane):
         env = os.environ.copy()
         env['DISPLAY'] = disp
 
-        subprocess.Popen(["xdg-open", str], env=env,
+        p = subprocess.Popen(["xdg-open", str], env=env,
+                         stdin = subprocess.DEVNULL,
+                         stdout = subprocess.PIPE,
                          stderr = subprocess.DEVNULL)
+        if p:
+            wait_on(self, p)
         return 1
 
     def handle_close(self, key, **a):
