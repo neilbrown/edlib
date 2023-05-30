@@ -4,7 +4,10 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [ ] anything marked [1]
+- [ ] notmuch: purge old entries from query when updates but not being viewed
+      ... don't we already do this?
+- [ ] notmuch: change from "saved:" to "query:" after re-organizing my queries.
+- [ ] presenter: split into lower pane which parse markdown and upper which handles presentation.
 - [ ] fix bugs
 - [ ] core features
 - [ ] markdown viewer and editor
@@ -452,7 +455,7 @@ Module features
       individual messages match any more, then whole thread is shown.
       This is confusing.  Maybe we report an error when open is attempted,
       but somehow allow 'Z' to still work.
-- [1] purge old entries from query when updates but not being viewed
+- [ ] purge old entries from query when updates but not being viewed
       ... don't we already do this?
 - [ ] updating tags can take long when 100s.  Enable background queuing of these.
 - [ ] Don't display query entries that have a 0 match count.??
@@ -468,7 +471,7 @@ Module features
 - [ ] make sure Clone actually works for all panes - or remove it
 - [ ] add counter and colour for 'flagged'
 - [ ] if no 'saved:current' use "not exclude_tags"
-- [1] change from "saved:" to "query:" after re-organizing my queries.
+- [ ] change from "saved:" to "query:" after re-organizing my queries.
 - [ ] support selection messages and applying tags
 - [ ] When changing any tag in a thread, or when opening the thread,
       assess thread tags by looking at all matched messages.
@@ -582,7 +585,7 @@ Module features
 
 ### Presenter
 
-- [1] split into lower pane which parse markdown and upper which handles presentation.
+- [ ] split into lower pane which parse markdown and upper which handles presentation.
 - [ ] translucent bg colour for paragraphs
 - [ ] partial-view-points. Only render beyond here if mark here or beyond.
     page-down goes to next such point
