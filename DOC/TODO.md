@@ -7,7 +7,6 @@ Current priorities
 - [ ] anything marked [1]
 - [ ] fix bugs
 - [ ] core features
-- [X] keystroke to open extra-header in notmuch - K-X
 - [ ] markdown viewer and editor
 - [ ] git log view with rebase and reword options
 - [ ] git-commit command which presents the patch and allows it to be
@@ -28,8 +27,6 @@ Current priorities
 - [ ] review all doc:char implementations for simplification.
 
 - [ ] big pop-up image viewer pane with zoom/pan
-- [X] 'extra' headers to include:
-  Date: in my timezone
 - [ ] in render-c-mode, in parse_code 'c' might be None - need to check
 
 - [ ] opening file with e.g. 200,000 lines is very slow
@@ -37,7 +34,6 @@ Current priorities
       30 seconds, but preferrably switch to a mode which leaves
       everything else running.
 - [ ] unwanted docs too easily appear high in recent-list - *Output*
-- [X] search backwards is too slow
 - [ ] menus!!
 - [ ] support directory views for sorting.
 - [ ] avoid infinite loops in consistency checks
@@ -63,58 +59,14 @@ Bugs to be fixed
 ----------------
 
 - [ ] notmuch reply should interpolate the first *visible* text part
-- [X] multipart must handle Notify:Close better.  It should NULL out the
-      pointer to the pane, and always check it isn't NULL.
-- [X] I cannot dup a mark in a mark:moving handler.  That is too
-      restrictive.  I need a different way to decide that incoming marks
-      get notified.
-      Maybe generate "mark:arrived" when a mark is moved to an
-      interesting mark, and flag new marks as "moved" so they don't
-      initially send a mark:moved notification.
-- [X] doc:text passes an unterminated string to "content" for
-      doc:content.  num2 is the length.  python doesn't know this
-      and so tries to convert it all to utf8.  This is wasteful as
-      we might not want that much.  How can I tell an interpreter
-      that num2 is the length of str1?
-      - extra flag in cmd_info
-      - special key
-      - annotation on called function?
-      Probably a special key  ending " unterminated"
-
-- [X] when map-attr returns text to be inserted, check for '<' and
-      double them
-- [X] when w3m text is copied we get the markup.  I find this useful,
-      but is it *right*??
-- [X] notmuch: don't mark up links in text created by w3m - they are
-      already marked if needed.  This was fixed by making conversion
-      async so:
 - [ ] async email part converts need to do their own URL marking.
       PDF particularly, and html2md.  Maybe others. - LATER pdf and doc
       do it now by copying the code.
-- [X] notmuch: "reply" should clear unread/new flags.
-- [X] transparent images appear in email with horiz lines
-- [X] Replying to w3m/html mail results in unsightly markup in reply
-- [X] converting email parts with external code should be async
-- [X] fill:end-re should default to fill:start-re
-- [X] md-mode should set the fill re-s don't rely on config - there
-      isn't an md-mode yet!
-- [X] config.py should load from $HOME/.config/edlib/config.py
-        exec(read())
 - [ ] lang-python should put each module in a separate module
       Maybe PyImport_ExecCodeModuleEx() after reading and compile()ing
       the source file.  Or set up path to find edlib modules.
-- [X] redefining doc:char but not doc:content in mail-compose causes
-      search to get confused.  What should we do?
-      Don't redefine doc:char.  Enable mark-moving notification on point
-      and on 'refresh' move to appropriate end of a marker if on one
-- [X] use mark-moving on point to step over "quoted lines"
-- [X] why doesn't doc-to-text auto-load - because only attach-
-      autoloads.  I need a complete redesign of autoload
 - [ ] use mimetypes.guess_type() to interpret filenames in email attachments??
 - [ ] don't allow non-text email parts to appear as text.  Maybe hex??
-- [X] word-wrap all text in email display
-- [X] rexel should include the charset id in the rxl, not keep it static.
-- [X] search for "\s" loops infinitely. - is currently on several spaces
 - [ ] ->replace_pane, ->replace_popup can be deleted (Abort) but we
       don't catch it...
 - [ ] opening file with e.g. 200,000 lines is very slow - because of word-count.
@@ -130,7 +82,6 @@ Bugs to be fixed
       scaling.
 - [ ] stop consistency checking a text doc when it gets "big" ??
 - [ ] auto-sign emails..
-- [X] be sure to wait for xdg-open etc.
 - [ ] things slow down after lots of edits.  Maybe track
       number of chunk, marks, undos etc and display them somewhere
 - [?] Make doesn't follow llog_reader.c:723:6: when it have seen
@@ -190,7 +141,6 @@ Requirements for a v1.0 release
 Core features
 -------------
 
-- [X] allow doc:get-attr to get a pane attribute if there is no content attribute.
 - [ ] design a way for a keystroke to interrupt a long-running function.
 - [ ] extend Draw:measure protocol to allow constant-width-fonts to
       cannot-scale displays can be detected and measurement optimised for.
@@ -261,8 +211,7 @@ Module features
 - [ ] need a queue of pending selection requests
 
 ### lib-textfill
-- [X] when indenting a new line, copy indent from previous line, not from
-      first.
+
 
 ### render-format
 
@@ -571,7 +520,6 @@ Module features
 - [ ] when I unhide an email part which is a single v.long line,
     redraw gets confused and point goes off-screen, which seems
     to leave it confused.
-- [X] in text/plain, wrap long lines on 'space'. - make this a config in lib-markup
 - [ ] maybe hide signature, unless small
 - [ ] When click on first char in tagged range, I don't see the tag and
    don't get a Mouse-Activate event.
