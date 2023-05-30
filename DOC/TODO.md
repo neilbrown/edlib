@@ -9,7 +9,6 @@ All of these are references to todo items elsewhere in the file.
 - [ ] notmuch: purge old entries from query when updates but not being viewed
       ... don't we already do this?
 - [ ] notmuch: change from "saved:" to "query:" after re-organizing my queries.
-- [ ] Bugs to be fixed
 - [ ] Core features
 - [ ] render-markdown.py
 - [ ] presenter: split into lower pane which parse markdown and upper which handles presentation.
@@ -46,14 +45,7 @@ All of these are references to todo items elsewhere in the file.
       But I might want "comma and following spaces".  How do I say that?
       Possibly declare some chars that cause a map-attr callback??
 
-Bugs to be fixed
-----------------
-
-- [ ] switch-buffer in pop-up window - shouldn't kill the popup (does it?)
 - [ ] notmuch reply should interpolate the first *visible* text part
-- [ ] async email part converts need to do their own URL marking.
-      PDF particularly, and html2md.  Maybe others. - LATER pdf and doc
-      do it now by copying the code.
 - [ ] lang-python should put each module in a separate module
       Maybe PyImport_ExecCodeModuleEx() after reading and compile()ing
       the source file.  Or set up path to find edlib modules.
@@ -61,25 +53,22 @@ Bugs to be fixed
 - [ ] don't allow non-text email parts to appear as text.  Maybe hex??
 - [ ] ->replace_pane, ->replace_popup can be deleted (Abort) but we
       don't catch it...
-- [ ] opening file with e.g. 200,000 lines is very slow - because of word-count.
-     Always do word-count async.
+- [ ] Always do word-count async.
 - [ ] moving in a big file is slow
-- [ ] make prefix-fast-search work for case-insensitive matches??
-- [ ] email: urls should not be followed unless they are visible.
+- [ ] rexel: make prefix-fast-search work for case-insensitive matches??
+- [ ] lib-url: urls should not be followed unless they are visible.
       Maybe display in the message window, which might be made larger
       just for this purpose.
       Maybe "Message-button"
 - [ ] renderline *knows* about scaling and when it places the cursor
       in an image, it gets it wrong for ncurses.  It should ask about
       scaling.
-- [ ] stop consistency checking a text doc when it gets "big" ??
-- [ ] auto-sign emails..
-- [ ] things slow down after lots of edits.  Maybe track
+- [ ] doc-text: stop consistency checking a doc when it gets "big" ??
+- [ ] Notmuch composition: encryption and signing
+- [ ] doc-text: things slow down after lots of edits.  Maybe track
       number of chunk, marks, undos etc and display them somewhere
-- [?] Make doesn't follow llog_reader.c:723:6: when it have seen
-     make[4]: Entering directory '/home2/git/lustre-release/lustre/utils'
 - [ ] Email summary line for single-message threads should show size??
-- [ ] accessing document list can be slow.  Same for large directories
+- [ ] docs: accessing document list can be slow.  Same for large directories
 - [ ] 'other' notmuch search doesn't show older messages sometimes
 - [ ] Don't wrap email header lines when cursor isn't on the line - too noisy
 - [ ] lib-utf8 takes chars, not bytes, so it doesn't work over
@@ -90,23 +79,14 @@ Bugs to be fixed
 - [ ] don't allow starting macro inside a macro
 - [ ] Num-C-l doesn't work if it would require part of a wrapped line
       off top of screen
-- [ ] initial draw of a pane sometime stops halfway down the pane - particularly email.
 - [ ] teach input to allow a repeat command to be registered so that e.g.
       search/replace and do a bit of work, then ask to be called again.
-      input pboard_waican cancel this on suitable input.
+      input can cancel this on suitable input.
 - [ ] ctrl-z in elc doesn't ask edlib to release the terminal
 - [ ] use iconv(3) for char-set conversion
-- [ ] "copy:get" can hang: xs_copy_get_func->gtk_clipboard_wait_for_text->
-     g_main_loop_run->poll
-- [ ] 'make' sometimes chooses an info over an error line - both in C file
-      *I think you mean 'note' line (not 'info'), and yes - it is supposed to.
-       It chooses the last 'note' line, preferring ".c" files over others.
-       I guess if I don't like a result next time, I should document the
-       complete result that I didn't like.
 - [ ] make uses too much CPU on large output
 - [ ] When viewing diff or merge can get into infinite loop.  Possibly due
       to edit at end-of-file
-- [ ] When viewing a diff which pages of "+" (at the end), refresh is quite slow
 - [ ] repeated alarm(10)/alarm(0) calls slow things down
 - [ ] if the first char if a line is marked for <wrap> it disappears
       without cursor.  This is bad.
@@ -133,6 +113,13 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] teach input to allow a repeat command to be registered so that e.g.
+      search/replace and do a bit of work, then ask to be called again.
+      input can cancel this on suitable input.
+- [ ] marks can be used after they go invalid too easily.  How to fix??
+- [ ] catching doc:replace in a pane doesn't catch doc:insert-file.
+      I need a simple way to intercept any change.
+- [ ] switch-buffer in pop-up window - shouldn't kill the popup (does it?)
 - [ ] explicitly guard against infinite loops in consistency checks
 - [ ] skip consistency checks after several with no stop for input.
 - [ ] unwanted docs too easily appear high in recent-list - *Output*
@@ -196,6 +183,10 @@ Core features
 Module features
 ---------------
 
+### lib-server
+
+- [ ] ctrl-z in elc doesn't ask edlib to release the terminal
+
 ### lib-x11selection-xcb
 
 - [ ] will need to listen for property-change-event on requestor to know
@@ -233,11 +224,14 @@ Module features
 - [ ] review return code of rxl_advance().  What should be
       returned if a flag allowed a match, but the char didn't.
 - [ ] support backward search by compiling expression backwards
+- [ ] make prefix-fast-search work for case-insensitive matches??
 
 ### popup
 
 ### lib-diff
 
+- [ ] When viewing diff or merge can get into infinite loop.  Possibly due
+      to edit at end-of-file
 - [ ] slowness with large diff - particularly lots of "+" lines at end
 - [ ] highlight white-space errors.
 - [ ] command to apply a hunk to a given document - or to reverse it.
@@ -274,6 +268,10 @@ Module features
 
 ### emacs
 
+- [ ] Num-C-l doesn't work if it would require part of a wrapped line
+      off top of screen
+- [ ] ->replace_pane, ->replace_popup can be deleted (Abort) but we
+      don't catch it...
 - [ ] :C-q to recognise names of Unicode chars: e.g. WASTEBASKET
        Possibly matches a list which continued :C-q cycles through
 - [ ] sort the command names for command-completion?
@@ -345,10 +343,16 @@ Module features
 - [ ] Maybe "word-wrap" should be a list of characters to wrap on??
       But I might want "comma and following spaces".  How do I say that?
       Possibly declare some chars that cause a map-attr callback??
+- [ ] renderline *knows* about scaling and when it places the cursor
+      in an image, it gets it wrong for ncurses.  It should ask about
+      scaling.
+- [ ] if the first char if a line is marked for <wrap> it disappears
+      without cursor.  This is bad.
 
 
 ### lib-macro
 
+- [ ] don't allow starting macro inside a macro
 - [ ] detect errors including Abort and search failure etc. Abort capture or
       replay on error
 - [ ] Possibly wait for a shell-command etc to complete before continuing.
@@ -375,9 +379,13 @@ Module features
 
 ### doc-text
 
+- [ ] things slow down after lots of edits.  Maybe track
+      number of chunk, marks, undos etc and display them somewhere
+- [ ] stop consistency checking a doc when it gets "big" ??
 - [ ] avoid infinite loops in consistency checks
 - [ ] doc-text: opening file with e.g. 200,000 lines is very slow
       Check this..
+- [ ] moving in a big file is slow - check this
 - [ ] support disable of undo in text, e.g. for copybuf document.
       I think this is a completely different doc type
 - [ ] Possibly move read-only handling to core-doc, once docs/dir
@@ -407,6 +415,7 @@ Module features
 
 ### grep/make
 
+- [ ] make uses too much CPU on large output
 - [ ] Need keystroke to step through different grep/make windows
 - [ ] if file isn't already loaded, wait until it is wanted, or something
       else loads it.
@@ -418,6 +427,8 @@ Module features
 - [ ] Differentiate warnings from info, and blink-screen for warnings.
 
 ### docs
+
+- [ ] accessing document list can be slow.  Same for large directories
 
 ### hex
 
@@ -446,14 +457,27 @@ Module features
 ### line count
 
 - [ ] count-lines seems to go very slowly in base64/utf-8 email
+- [ ] Always do word-count async.
+
+### lib-utf-8
+
+- [ ] lib-utf8 takes chars, not bytes, so it doesn't work over
+      a utf8 document
+
+### doc-email
+
+- [ ] use mimetypes.guess_type() to interpret filenames in email attachments??
+- [ ] don't allow non-text email parts to appear as text.  Maybe hex??
 
 ### Notmuch - overview
 
+- [ ] 'other' notmuch search doesn't show older messages sometimes
 - [ ] split notmuch into two databases, last 6 months and the rest.
 - [ ] script to move messages every week - but not deleted messages
   Maybe not spam either
 - [ ] edlib to offer to search older messages
 
+- [ ] Email summary line for single-message threads should show size??
 - [ ] Only clear "new" tag on explicit quit, not when going to
       other search or simply closing the window
 - [ ] 'm' in 'move marks on tid to before self.pos' was reportedly NULL once.
@@ -507,6 +531,8 @@ Module features
 
 ###  Notmuch message display
 
+- [ ] Don't wrap email header lines when cursor isn't on the line - too noisy
+- [ ] notmuch reply should interpolate the first *visible* text part
 - [ ] word-wrap subject (only) in email summary line
 - [ ] check for Efail errors from doc:open
 - [ ] make it practical for 'text' documents to contain non-utf8 so that
@@ -661,6 +687,10 @@ Module features
 
 ### lang-python
 
+- [ ] repeated alarm(10)/alarm(0) calls slow things down
+- [ ] lang-python should put each module in a separate module
+      Maybe PyImport_ExecCodeModuleEx() after reading and compile()ing
+      the source file.  Or set up path to find edlib modules.
 - [ ] array index should allow two args, second being a mark for
       doc:get-attr etc.
 - [ ] should be able to test if a mark is NULL or Freed
@@ -728,6 +758,10 @@ Module features
 - [ ] handlers for that markup.  xdg-open for links, maybe signal
       register email client for mailto: links.
 - [ ] easy way for K:Enter on a link to do just like mouse-click
+- [ ] email: urls should not be followed unless they are visible.
+      Maybe display in the message window, which might be made larger
+      just for this purpose.
+      Maybe "Message-button"
 
 
 New Modules - simple
@@ -739,6 +773,7 @@ New Modules - simple
      I don't think it can be parsed backwards..
      windows-1250 is needed - or at least a reliable fall-back
         AM6PR04MB6328CFDD9A91D3F0125D1A1491809@AM6PR04MB6328.eurprd04.prod.outlook.com
+- [ ] use iconv(3) for char-set conversion
 
 Possibly some of these will end up being features in other modules.
 
