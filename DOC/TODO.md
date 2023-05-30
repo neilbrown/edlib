@@ -4,63 +4,52 @@ To-do list for edlib
 Current priorities
 ------------------
 
+All of these are references to todo items elsewhere in the file.
+
 - [ ] notmuch: purge old entries from query when updates but not being viewed
       ... don't we already do this?
 - [ ] notmuch: change from "saved:" to "query:" after re-organizing my queries.
+- [ ] Bugs to be fixed
+- [ ] Core features
+- [ ] render-markdown.py
 - [ ] presenter: split into lower pane which parse markdown and upper which handles presentation.
-- [ ] fix bugs
-- [ ] core features
-- [ ] markdown viewer and editor
-- [ ] git log view with rebase and reword options
-- [ ] git-commit command which presents the patch and allows it to be
-      edited (with consistency checks and number updates). On :Commit
-      the patch is applied with "git apply --cached" an if successful
-      the message is added with "| git commit -F"
-- [ ] Add menu/menu-bar support
-- [ ] remote ncurses pane
-- [ ] lib-diff improvements
+- [ ] git-mode
+- [ ] lib-menu
+- [ ] Remote display
+- [ ] lib-diff
 - [ ] lib-mergeview improvements
-- [ ] use common UI for dynamic abbrev and spell (and more?)
-- [ ] Finish render-lines rewrite
+- [ ] dynamic completion: unify UI with spell
+- [ ] render-lines
 
-- [ ] word-wrap subject (only) in email summary line
+- [ ] Notmuch message display: word-wrap subject (only) in email summary line
 - [ ] switch-buffer in pop-up window - shouldn't kill the popup
-- [ ] file in pop-up window in 'view' mode by default
-      From 'grep' this is probably OK.  For Cx-44, it isn't.
-- [ ] review all doc:char implementations for simplification.
+- [ ] Core features: review all doc:char implementations for simplification.
 
-- [ ] big pop-up image viewer pane with zoom/pan
-- [ ] in render-c-mode, in parse_code 'c' might be None - need to check
+- [ ] image-display pane
+- [ ] C-mode: in parse_code 'c' might be None - need to check
 
-- [ ] opening file with e.g. 200,000 lines is very slow
+- [ ] doc-text: opening file with e.g. 200,000 lines is very slow
 - [ ] ncurses - don't block in nc_external_viewer - at least abort after
       30 seconds, but preferrably switch to a mode which leaves
       everything else running.
-- [ ] unwanted docs too easily appear high in recent-list - *Output*
-- [ ] menus!!
-- [ ] support directory views for sorting.
-- [ ] avoid infinite loops in consistency checks
-- [ ] skip consistency checks after several in the one command
-- [ ] more work on remote window?
-- [ ] slowness with large diff
-- [ ] commands to resolve a conflict
-- [ ] command to apply a patch hunk
-- [ ] whitespace: don't show errors unless doc has been changed.???
-- [ ] mailto: links should be sent to nm (if active)
-- [ ] press K:Enter on a link should do something
-- [ ] Maybe "word-wrap" should be a list of characters to wrap on??
+- [ ] Core features: unwanted docs too easily appear high in recent-list - *Output*
+- [ ] doc-dir: support directory views for sorting.
+- [ ] Core features: avoid infinite loops in consistency checks
+- [ ] doc-text: avoid infinite loops in consistency checks
+- [ ] Core features: skip consistency checks after several with no stop for input.
+- [ ] lib-diff slowness with large diff
+- [ ] lib-mergeview - commands to resolve a conflict
+- [ ] lib-diff - command to apply a patch hunk
+- [ ] white-space: don't show errors unless doc has been changed.???
+- [ ] lib-url
+- [ ] lib-renderline: Maybe "word-wrap" should be a list of characters to wrap on??
       But I might want "comma and following spaces".  How do I say that?
       Possibly declare some chars that cause a map-attr callback??
-
-- [ ] split notmuch into two databases, last 6 months and the rest.
-- [ ] script to move messages every week - but not deleted messages
-  Maybe not spam either
-- [ ] edlib to offer to search older messages
-
 
 Bugs to be fixed
 ----------------
 
+- [ ] switch-buffer in pop-up window - shouldn't kill the popup (does it?)
 - [ ] notmuch reply should interpolate the first *visible* text part
 - [ ] async email part converts need to do their own URL marking.
       PDF particularly, and html2md.  Maybe others. - LATER pdf and doc
@@ -144,6 +133,10 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] explicitly guard against infinite loops in consistency checks
+- [ ] skip consistency checks after several with no stop for input.
+- [ ] unwanted docs too easily appear high in recent-list - *Output*
+- [ ] review all doc:char implementations for simplification.
 - [ ] design a way for a keystroke to interrupt a long-running function.
 - [ ] extend Draw:measure protocol to allow constant-width-fonts to
       cannot-scale displays can be detected and measurement optimised for.
@@ -245,6 +238,7 @@ Module features
 
 ### lib-diff
 
+- [ ] slowness with large diff - particularly lots of "+" lines at end
 - [ ] highlight white-space errors.
 - [ ] command to apply a hunk to a given document - or to reverse it.
       How much of a hunk?  Selection?  How to record which hunks are done?
@@ -258,6 +252,7 @@ Module features
 
 ### lib-mergeview
 
+- [ ] commands to resolve a conflict
 - [ ] merge-mode to highlight markers with "space-only" or "no-diff" state
       Also have green for "no conflicts", but it doesn't stand out.
       It would be nice if space-only differences didn't stand out so much.
@@ -289,6 +284,8 @@ Module features
 - [ ] maybe alt-, does c-x` if that is the recent search?
 - [ ] C-uC-xC-v prompts for file name, like C-xC-v in emacs
 - [ ] compare two panes somehow - new lib-compare function??
+- [ ] file in pop-up window in 'view' mode by default
+      From 'grep' this is probably OK.  For Cx-44, it isn't.
 
 ##### needs design work
 
@@ -304,6 +301,9 @@ Module features
 
 ### ncurses
 
+- [ ] don't block in nc_external_viewer - at least abort after
+      30 seconds, but preferrably switch to a mode which leaves
+      everything else running.
 - [ ] add full list of colour names (to lib-colourmap)
 - [ ] allow a pane to require 'true-colour' and discover number of colours available
       Colour map gets changed when it becomes the focus.
@@ -340,6 +340,13 @@ Module features
 - [ ] render-lines should always re-render the line containing point, so
       the location of “point” can affect the rendering.
 
+### lib-renderline
+
+- [ ] Maybe "word-wrap" should be a list of characters to wrap on??
+      But I might want "comma and following spaces".  How do I say that?
+      Possibly declare some chars that cause a map-attr callback??
+
+
 ### lib-macro
 
 - [ ] detect errors including Abort and search failure etc. Abort capture or
@@ -356,7 +363,7 @@ Module features
       We could have a doc-filter which adds the pattern to doc:char
       commands so forward/backward stepping is v.fast.  The pattern
       could even be a pre-compiled rexel command.
-- [ ] how to change sort order of a directory listing.  I think this requires
+- [ ] support directory views for sorting.  I think this requires
       a separate dir document, which borrows state from the main one.
       It definitely needs an independent set of marks, so that means
       a separate document.  Using the same dir_ent content might help
@@ -368,6 +375,9 @@ Module features
 
 ### doc-text
 
+- [ ] avoid infinite loops in consistency checks
+- [ ] doc-text: opening file with e.g. 200,000 lines is very slow
+      Check this..
 - [ ] support disable of undo in text, e.g. for copybuf document.
       I think this is a completely different doc type
 - [ ] Possibly move read-only handling to core-doc, once docs/dir
@@ -439,6 +449,11 @@ Module features
 
 ### Notmuch - overview
 
+- [ ] split notmuch into two databases, last 6 months and the rest.
+- [ ] script to move messages every week - but not deleted messages
+  Maybe not spam either
+- [ ] edlib to offer to search older messages
+
 - [ ] Only clear "new" tag on explicit quit, not when going to
       other search or simply closing the window
 - [ ] 'm' in 'move marks on tid to before self.pos' was reportedly NULL once.
@@ -492,6 +507,7 @@ Module features
 
 ###  Notmuch message display
 
+- [ ] word-wrap subject (only) in email summary line
 - [ ] check for Efail errors from doc:open
 - [ ] make it practical for 'text' documents to contain non-utf8 so that
       "Save" can copy to a buffer.  There is some support for a charset
@@ -601,8 +617,22 @@ Module features
      - Maybe stuff before "# " is copied everywhere.
      - Need magic syntax for fields ##page#
 
+### render-markdown.py
+
+- [ ] parse markdown adding attributes for improved display
+     - alignment?  Hide newlines and get render-line to wrap?
+     - centring
+     - Large text for headings
+     - list bullets
+     - non-cw font
+     - bold, italic, colour?
+     - code, quoted, images
+     - urls and other references?
+- [ ] Make sure editing causes quick re-rendering
+
 ### C-mode
 
+- [ ] in parse_code 'c' might be None - need to check
 - [ ] if .. else switch adds into to the switch.  Should it?
 - [ ] auto-indent enhancements: '/' should see if at start of comment line
        following '* ', and discard space?
@@ -615,6 +645,19 @@ Module features
       Not sure how to handle 'else:' which looks like the next block.
 - [ ] in python mode, a comment at the end of an 'if' block confuses indenting.
       next line cannot go back one level
+
+### git-mode
+
+- [ ] log view which uses --max-count and --skip to only collect enough
+      log entries to fill the display
+- [ ] action from log-view to reword and commit - with auto rebase and
+      update of the view
+- [ ] actions to re-arrange and deleted the commits.  Integrate with
+      git-rebase.
+- [ ] git-commit command which presents the patch and allows it to be
+      edited (with consistency checks and number updates). On :Commit
+      the patch is applied with "git apply --cached" an if successful
+      the message is added with "| git commit -F"
 
 ### lang-python
 
@@ -629,6 +672,7 @@ Module features
 
 ### white-space
 
+- [ ] don't show errors unless doc has been changed.???
 - [ ] highlight of adjacent blank lines isn't removed if first has text added
 - [ ] support highlight suitable for diff: a space is first character is allowed,
       even if EOL or followed by space.
@@ -651,11 +695,13 @@ Module features
 ### dynamic completion
 
 - [ ] provide a drop-down menu with options
+- [ ] unify UI with spell
 
 ### spell-checker
 - [ ] mode-specific so latex can ignore \foo
 - [ ] Some way for 'c-mode' to report where comments are so they can be spell-checked
 - [ ] drop-down with options
+- [ ] unify UI with dynamic-completion
 
 ### calculator
 - [ ] regression test
@@ -669,6 +715,20 @@ Module features
 - [ ] fix Make dependencies so changing calc.mdc only requires one 'make'.
 - [ ] Don't always show fraction - maybe request it like with '@' for octal
 - [ ] if calculation produces same result as is present, don't modify doc.
+
+### lib-menu
+
+- [ ] popup menu to which we can add entries, pop it at a location, get
+      a selection
+- [ ] menu-bar to which we can add menus from which commands are sent
+
+### lib-url
+
+- [ ] command to mark-up all URLs in a document
+- [ ] handlers for that markup.  xdg-open for links, maybe signal
+      register email client for mailto: links.
+- [ ] easy way for K:Enter on a link to do just like mouse-click
+
 
 New Modules - simple
 --------------------
