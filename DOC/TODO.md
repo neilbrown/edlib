@@ -4,92 +4,42 @@ To-do list for edlib
 Current priorities
 ------------------
 
-All of these are references to todo items elsewhere in the file.
+All of these, except Trivial, are references to todo items elsewhere in
+the file.
 
-- [ ] notmuch: purge old entries from query when updates but not being viewed
-      ... don't we already do this?
-- [ ] notmuch: change from "saved:" to "query:" after re-organizing my queries.
-- [ ] Core features
-- [ ] render-markdown.py
-- [ ] presenter: split into lower pane which parse markdown and upper which handles presentation.
-- [ ] git-mode
-- [ ] lib-menu
-- [ ] Remote display
-- [ ] lib-diff
-- [ ] lib-mergeview improvements
-- [ ] dynamic completion: unify UI with spell
-- [ ] render-lines
+### Trivial
 
-- [ ] Notmuch message display: word-wrap subject (only) in email summary line
-- [ ] switch-buffer in pop-up window - shouldn't kill the popup
-- [ ] Core features: review all doc:char implementations for simplification.
+- [ ] self.thread_p in notmuch isn't explicitly waited for, so it
+      can remain a zombie
+- [ ] mouse click in "56 quoted lines" put cursor on next line, not
+      in the quoted region
 
-- [ ] image-display pane
-- [ ] C-mode: in parse_code 'c' might be None - need to check
+### Small
 
-- [ ] doc-text: opening file with e.g. 200,000 lines is very slow
+- [ ] ->replace_pane, ->replace_popup can be deleted (Abort) but we
+      don't catch it...
+- [ ] notmuch reply should interpolate the first *visible* text part
 - [ ] ncurses - don't block in nc_external_viewer - at least abort after
       30 seconds, but preferrably switch to a mode which leaves
       everything else running.
-- [ ] Core features: unwanted docs too easily appear high in recent-list - *Output*
-- [ ] doc-dir: support directory views for sorting.
-- [ ] Core features: avoid infinite loops in consistency checks
-- [ ] doc-text: avoid infinite loops in consistency checks
-- [ ] Core features: skip consistency checks after several with no stop for input.
-- [ ] lib-diff slowness with large diff
-- [ ] lib-mergeview - commands to resolve a conflict
-- [ ] lib-diff - command to apply a patch hunk
-- [ ] white-space: don't show errors unless doc has been changed.???
-- [ ] lib-url
-- [ ] lib-renderline: Maybe "word-wrap" should be a list of characters to wrap on??
-      But I might want "comma and following spaces".  How do I say that?
-      Possibly declare some chars that cause a map-attr callback??
-
-- [ ] notmuch reply should interpolate the first *visible* text part
 - [ ] lang-python should put each module in a separate module
       Maybe PyImport_ExecCodeModuleEx() after reading and compile()ing
       the source file.  Or set up path to find edlib modules.
-- [ ] use mimetypes.guess_type() to interpret filenames in email attachments??
-- [ ] don't allow non-text email parts to appear as text.  Maybe hex??
-- [ ] ->replace_pane, ->replace_popup can be deleted (Abort) but we
-      don't catch it...
+
+### Medium
+
 - [ ] Always do word-count async.
-- [ ] moving in a big file is slow
-- [ ] rexel: make prefix-fast-search work for case-insensitive matches??
-- [ ] lib-url: urls should not be followed unless they are visible.
-      Maybe display in the message window, which might be made larger
-      just for this purpose.
-      Maybe "Message-button"
-- [ ] renderline *knows* about scaling and when it places the cursor
-      in an image, it gets it wrong for ncurses.  It should ask about
-      scaling.
-- [ ] doc-text: stop consistency checking a doc when it gets "big" ??
-- [ ] Notmuch composition: encryption and signing
-- [ ] doc-text: things slow down after lots of edits.  Maybe track
-      number of chunk, marks, undos etc and display them somewhere
-- [ ] Email summary line for single-message threads should show size??
-- [ ] docs: accessing document list can be slow.  Same for large directories
-- [ ] 'other' notmuch search doesn't show older messages sometimes
-- [ ] Don't wrap email header lines when cursor isn't on the line - too noisy
-- [ ] lib-utf8 takes chars, not bytes, so it doesn't work over
-      a utf8 document
-- [ ] catching doc:replace in a pane doesn't catch doc:insert-file.
-      I need a simple way to intercept any change.
-- [ ] marks can be used after they go invalid too easily.  How to fix??
-- [ ] don't allow starting macro inside a macro
-- [ ] Num-C-l doesn't work if it would require part of a wrapped line
-      off top of screen
-- [ ] teach input to allow a repeat command to be registered so that e.g.
-      search/replace and do a bit of work, then ask to be called again.
-      input can cancel this on suitable input.
-- [ ] ctrl-z in elc doesn't ask edlib to release the terminal
-- [ ] use iconv(3) for char-set conversion
-- [ ] make uses too much CPU on large output
-- [ ] When viewing diff or merge can get into infinite loop.  Possibly due
-      to edit at end-of-file
-- [ ] repeated alarm(10)/alarm(0) calls slow things down
-- [ ] if the first char if a line is marked for <wrap> it disappears
-      without cursor.  This is bad.
+- [ ] lib-url
+- [ ] lib-mergeview improvements
+- [ ] lib-diff slowness with large diff
+
+### Large
+
+- [ ] image-display pane
+- [ ] git-mode
+- [ ] render-markdown.py
+- [ ] lib-menu
+- [ ] Remote display
 
 Requirements for a v1.0 release
 -------------------------------
