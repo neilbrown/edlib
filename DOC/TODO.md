@@ -13,6 +13,7 @@ the file.
       can remain a zombie
 - [ ] mouse click in "56 quoted lines" put cursor on next line, not
       in the quoted region
+- [X] w3m: convert html entities in URL.
 
 ### Small
 

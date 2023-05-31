@@ -493,6 +493,8 @@ def parse_halfdump(doc):
             imgalt = False
         elif tagl[:3] == "<a ":
             url = get_attr(tagl, tag, "href")
+            if url:
+                url = map_entities(url)
             urltag = get_attr(tagl, tag, "hseq")
             if not urltag:
                 urltag = doc['next-url-tag']
@@ -508,6 +510,15 @@ def parse_halfdump(doc):
             doc.call("doc:set-attr", 1, m, "render:url-end", urltag)
             url = None; urltag = None
 
+def map_one_entity(e):
+    if e[:2] == "#x":
+        return  chr(int(e[2:], 16))
+    if e[:1] == "#":
+        return chr(int(e[1:], 10))
+    if e in entities:
+        return chr(entities[e])
+    return None
+
 def parse_entities(doc, m, end):
     while True:
         try:
@@ -521,16 +532,32 @@ def parse_entities(doc, m, end):
             doc.prev(st)
             i += 1
         name = doc.call("doc:get-str", st, m, ret='str')
-        char = name[1:-1]
-        if char[:2] == "#x":
-            char = chr(int(char[2:], 16))
-        elif char[:1] == "#":
-            char = chr(int(char[1:], 10))
-        elif char in entities:
-            char = chr(entities[char])
-        else:
-            char = "!" + char
+        ent = name[1:-1]
+        char = map_one_entity(ent)
+        if not char:
+            char = "!" + ent
         doc.call('doc:set-attr', 1, st, "render:char", "%d:%s" % (len,char))
+
+def map_entities(str):
+    ret = ""
+    while True:
+        i = str.find('&')
+        if i < 0:
+            break
+        ret += str[:i]
+        str = str[i:]
+        i = str.find(';')
+        if i < 0:
+            break;
+        c = map_one_entity(str[1:i])
+        if c:
+            ret += c
+            str = str[i+1:]
+        else:
+            ret += '&'
+            str = str[1:]
+
+    return ret + str
 
 if "editor" in globals():
     editor.call("global-set-command", "html-to-text-w3m", html_to_w3m)
