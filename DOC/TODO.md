@@ -44,8 +44,9 @@ the file.
 Requirements for a v1.0 release
 -------------------------------
 
-- [ ] logo!!! to use as icon in X11 for example.  Building blocks? Window pane?
-- [ ] efficient refresh using separate lib-renderline for each line
+- [ ] logo!!!  to use as icon in X11 for example.  Building blocks?
+      Window pane?
+      Maybe a pencil in a window pane
 - [ ] configuration
 - [ ] vi mode
 - [ ] office mode
