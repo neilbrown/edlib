@@ -274,6 +274,7 @@ static inline void clear_bit(int bit, unsigned long *set safe)
 #define	REC_ISSET(x)	(((x) & 0xe000) == REC_SET)
 #define	REC_ISCAPTURE(x) (((x) & 0xf000) == REC_CAPTURE)
 #define	REC_ISBACKREF(x) (((x) & 0xf000) == REC_BACKREF)
+#define	REC_BACKREF_MAKE(x) (REC_BACKREF | ((x) & 0x7ff))
 #define	REC_ADDR(x)	((x) & 0x0fff)
 #define	REC_ISFIRST(x)	(!!((x) & (REC_FORKFIRST ^ REC_FORKLAST)))
 #define	REC_CAPNUM(x)	((x) & 0x07ff)
@@ -1528,7 +1529,7 @@ static bool parse_atom(struct parse_state *st safe)
 				ch = ch * 10 + st->patn[0] - '0';
 				st->patn += 1;
 			}
-			add_cmd(st, REC_BACKREF | ch);
+			add_cmd(st, REC_BACKREF_MAKE(ch));
 			return True;
 		}
 		add_cmd(st, REC_EOL);
@@ -1626,7 +1627,7 @@ static bool parse_atom(struct parse_state *st safe)
 				ch = ch * 10 + st->patn[1] - '0';
 				st->patn += 1;
 			}
-			ch |= REC_BACKREF;
+			ch = REC_BACKREF_MAKE(ch);
 			break;
 		case 'd': ch = add_class_set(st, "digit", 1); break;
 		case 'D': ch = add_class_set(st, "digit", 0); break;

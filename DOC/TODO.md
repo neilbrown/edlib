@@ -172,6 +172,7 @@ Module features
 
 ### rexel
 
+- [ ] don't abort if something looks wrong, just fail.
 - [ ] move to separate git repo and document well.
 - [ ] review return code of rxl_advance().  What should be
       returned if a flag allowed a match, but the char didn't.
