@@ -1190,7 +1190,10 @@ class notmuch_query(edlib.Doc):
                 self.thread_text += b
                 b = os.read(self.thread_p.stdout.fileno(), 4096)
         except IOError:
+            # More to be read
             return 1
+        self.thread_p.wait()
+        self.thread_p = None
         # Must have read EOF to get here.
         th = json.loads(self.thread_text.decode("utf-8","ignore"))
         self.thread_text = None

@@ -9,7 +9,7 @@ the file.
 
 ### Trivial
 
-- [ ] self.thread_p in notmuch isn't explicitly waited for, so it
+- [X] self.thread_p in notmuch isn't explicitly waited for, so it
       can remain a zombie
 - [ ] mouse click in "56 quoted lines" put cursor on next line, not
       in the quoted region
