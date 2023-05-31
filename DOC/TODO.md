@@ -9,11 +9,6 @@ the file.
 
 ### Trivial
 
-- [X] self.thread_p in notmuch isn't explicitly waited for, so it
-      can remain a zombie
-- [ ] mouse click in "56 quoted lines" put cursor on next line, not
-      in the quoted region
-- [X] w3m: convert html entities in URL.
 
 ### Small
 
@@ -484,6 +479,8 @@ Module features
 
 ###  Notmuch message display
 
+- [ ] "%d quoted lines" still not quite right.  Moving 'down' past it
+      jumps to end of line.
 - [ ] Don't wrap email header lines when cursor isn't on the line - too noisy
 - [ ] notmuch reply should interpolate the first *visible* text part
 - [ ] word-wrap subject (only) in email summary line

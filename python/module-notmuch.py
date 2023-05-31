@@ -3292,8 +3292,8 @@ class notmuch_message_view(edlib.Pane):
                 self.mark_one_quote(start, ms.dup())
 
     def mark_one_quote(self, ms, me):
-        self.call("doc:EOL", 3, 1, ms)
-        self.call("doc:EOL", -4, 0, me)
+        self.call("doc:EOL", 3, 1, ms)  # Start of 3rd line
+        self.call("doc:EOL", -4, 1, me) # End of 4th last line
         if me <= ms:
             return
         st = edlib.Mark(self, self.qview)
@@ -3363,6 +3363,9 @@ class notmuch_message_view(edlib.Pane):
     def handle_return(self, key, focus, mark, **a):
         "handle:K:Enter"
         m = self.vmark_at_or_before(self.qview, mark)
+        if m and not m['quote-length'] and m == mark:
+            # at end of last line, wan't previous mark
+            m = m.prev()
         if m and m['quote-length']:
             if m['quote-hidden'] == 'yes':
                 m['quote-hidden'] = "no"
@@ -3546,16 +3549,31 @@ class notmuch_message_view(edlib.Pane):
         "handle:doc:render-line"
         # If between active quote marks, render a simple marker
         p = self.vmark_at_or_before(self.qview, mark)
+        if p and not p['quote-length'] and p == mark:
+            # at end of last line
+            p = p.prev()
+        cursor_at_end = mark2 and mark2 > mark
+
         if not(p and p['quote-length'] and p['quote-hidden'] == 'yes'):
             return edlib.Efallthrough
-        mark.to_mark(p.next())
-        eol="\n"
-        if num > 0 and num < 2000:
-            # don't show eol
-            self.prev(mark)
+        if num < 0:
+            # render full line
+            mark.to_mark(p.next())
+            self.next(mark)
+            eol="\n"
+        if num >= 0:
+            # don't move mark from start of line
+            # So 'click' always places at start of line.
             eol = ""
+
         if comm2:
-            comm2("cb", focus, 0, "<fg:yellow,bg:blue+30>%d quoted lines</>%s" % (int(p['quote-length']), eol))
+            line = "<fg:yellow,bg:blue+30>%d quoted lines</>%s" % (int(p['quote-length']), eol)
+            if cursor_at_end:
+                cpos = len(line)-1
+            else:
+                cpos = 0
+
+            return comm2("cb", focus, cpos, line)
         return 1
 
     def handle_render_line_prev(self, key, focus, num, mark, comm2, **a):
