@@ -453,12 +453,23 @@ DEF_CMD(search_replace)
 	p = call_ret(pane, "attach-history", p, 0, NULL, "*Replace History*",
 		     0, NULL, "popup:close");
 	esi->replace_pane = p;
-	if (p)
+	if (p) {
+		pane_add_notify(ci->home, p, "Notify:Close");
 		home_call(esi->target, "highlight:set-popup", p, 1);
+	}
 	if (strcmp(ci->key, "K:A-%") == 0)
 		pane_focus(ci->focus);
 	else
 		pane_focus(p);
+	return 1;
+}
+
+DEF_CMD(search_notify_close)
+{
+	struct es_info *esi = ci->home->data;
+
+	if (ci->focus == esi->replace_pane)
+		esi->replace_pane = NULL;
 	return 1;
 }
 
@@ -633,6 +644,7 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "K:ESC", &search_escape);
 
 	key_add(es_map, "search:replace", &do_replace);
+	key_add(es_map, "Notify:Close", &search_notify_close);
 
 	/* keys for the 'replace' pane */
 	er_map = key_alloc();
@@ -755,7 +767,7 @@ DEF_CMD(emacs_search_highlight)
 	struct mark *m, *start;
 	struct highlight_info *hi = ci->home->data;
 
-	if (hi->view < 0 || !hi->popup)
+	if (hi->view < 0)
 		return Efail;
 
 	while ((start = vmark_first(ci->focus, hi->view, ci->home)) != NULL)
@@ -1094,6 +1106,18 @@ DEF_CMD(emacs_highlight_set_popup)
 		hi->replace_popup = ci->focus;
 	else
 		hi->popup = ci->focus;
+	pane_add_notify(ci->home, ci->focus, "Notify:Close");
+	return 1;
+}
+
+DEF_CMD(emacs_highlight_close_notify)
+{
+	struct highlight_info *hi = ci->home->data;
+
+	if (ci->focus == hi->replace_popup)
+		hi->replace_popup = NULL;
+	if (ci->focus == hi->popup)
+		hi->popup = NULL;
 	return 1;
 }
 
@@ -1162,6 +1186,7 @@ static void emacs_highlight_init_map(void)
 	key_add(m, "Notify:clip", &emacs_highlight_clip);
 	key_add(m, "highlight:set-popup", &emacs_highlight_set_popup);
 	key_add(m, "attach-emacs-search-highlight", &emacs_highlight_reattach);
+	key_add(m, "Notify:Close", &emacs_highlight_close_notify);
 	hl_map = m;
 }
 

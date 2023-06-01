@@ -12,7 +12,7 @@ the file.
 
 ### Small
 
-- [ ] ->replace_pane, ->replace_popup can be deleted (Abort) but we
+- [X] ->replace_pane, ->replace_popup can be deleted (Abort) but we
       don't catch it...
 - [ ] notmuch reply should interpolate the first *visible* text part
 - [ ] ncurses - don't block in nc_external_viewer - at least abort after
@@ -218,7 +218,7 @@ Module features
 
 - [ ] Num-C-l doesn't work if it would require part of a wrapped line
       off top of screen
-- [ ] ->replace_pane, ->replace_popup can be deleted (Abort) but we
+- [X] ->replace_pane, ->replace_popup can be deleted (Abort) but we
       don't catch it...
 - [ ] :C-q to recognise names of Unicode chars: e.g. WASTEBASKET
        Possibly matches a list which continued :C-q cycles through
