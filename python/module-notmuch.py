@@ -2202,7 +2202,7 @@ class notmuch_master_view(edlib.Pane):
         if v:
             v.call("compose-email:copy-headers", self.message_pane, hdr_mode)
             if quote_mode == "inline":
-                # find first text part and copy it
+                # find first visible text part and copy it
                 msg = self.message_pane
                 m = edlib.Mark(msg)
                 while True:
@@ -2213,6 +2213,10 @@ class notmuch_master_view(edlib.Pane):
                     if not which:
                         break
                     if which != "spacer":
+                        continue
+                    vis = msg.call("doc:get-attr", "email:visible", m,
+                                   ret = 'str')
+                    if not vis or vis == 'none':
                         continue
                     type = msg.call("doc:get-attr",
                                     "multipart-prev:email:content-type",

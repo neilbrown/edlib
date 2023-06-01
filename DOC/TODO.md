@@ -14,7 +14,7 @@ the file.
 
 - [X] ->replace_pane, ->replace_popup can be deleted (Abort) but we
       don't catch it...
-- [ ] notmuch reply should interpolate the first *visible* text part
+- [X] notmuch reply should interpolate the first *visible* text part
 - [ ] ncurses - don't block in nc_external_viewer - at least abort after
       30 seconds, but preferrably switch to a mode which leaves
       everything else running.
@@ -482,7 +482,7 @@ Module features
 - [ ] "%d quoted lines" still not quite right.  Moving 'down' past it
       jumps to end of line.
 - [ ] Don't wrap email header lines when cursor isn't on the line - too noisy
-- [ ] notmuch reply should interpolate the first *visible* text part
+- [X] notmuch reply should interpolate the first *visible* text part
 - [ ] word-wrap subject (only) in email summary line
 - [ ] check for Efail errors from doc:open
 - [ ] make it practical for 'text' documents to contain non-utf8 so that
