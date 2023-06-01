@@ -38,7 +38,7 @@ struct es_info {
 	} *s;
 	struct mark *start safe; /* where searching starts */
 	struct mark *end safe; /* where last success ended */
-	struct pane *target safe;
+	struct pane *target;
 	struct pane *replace_pane;
 	short matched;
 	short wrapped;
@@ -58,6 +58,9 @@ DEF_CMD(search_forward)
 	char *str;
 	struct mark *newstart;
 	const char *suffix;
+
+	if (!esi->target)
+		return Efail;
 
 	suffix = ksuffix(ci, "K:C-");
 	if (suffix[0])
@@ -179,6 +182,8 @@ DEF_CMD(search_add)
 
 	if (!str)
 		return 1;
+	if (!esi->target)
+		return Efail;
 
 	if (esi->backwards)
 		/* Move to end of match */
@@ -282,7 +287,8 @@ DEF_CMD(search_close)
 {
 	struct es_info *esi = ci->home->data;
 
-	call("search:highlight", esi->target);
+	if (esi->target)
+		call("search:highlight", esi->target);
 	mark_free(esi->end);
 	esi->end = safe_cast NULL;
 	mark_free(esi->start);
@@ -304,6 +310,9 @@ DEF_CMD(search_again)
 	int ret;
 	struct mark *m;
 	char *str;
+
+	if (!esi->target)
+		return Efail;
 
 	call("search:highlight", esi->target);
 	esi->matched = 0;
@@ -370,6 +379,9 @@ DEF_CMD(search_done)
 	char *str;
 	struct mark *mk;
 
+	if (!esi->target)
+		return Efail;
+
 	if (esi->replace_pane && strcmp(ci->key, "K:Enter") == 0) {
 		/* if there is a replace pane, switch to it instead of closing */
 		pane_focus(esi->replace_pane);
@@ -410,6 +422,8 @@ DEF_CMD(search_recentre)
 	/* Send this command through to target, at current location */
 	struct es_info *esi = ci->home->data;
 
+	if (!esi->target)
+		return Efail;
 	return call(ci->key, esi->target, ci->num, esi->end, NULL,
 		    ci->num2);
 }
@@ -438,6 +452,9 @@ DEF_CMD(search_replace)
 		pane_focus(esi->replace_pane);
 		return 1;
 	}
+
+	if (!esi->target)
+		return Efail;
 
 	p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "P", 0, NULL,
 		     "");
@@ -470,6 +487,10 @@ DEF_CMD(search_notify_close)
 
 	if (ci->focus == esi->replace_pane)
 		esi->replace_pane = NULL;
+	if (ci->focus == esi->target) {
+		esi->target = NULL;
+		//pane_close(ci->home);
+	}
 	return 1;
 }
 
@@ -483,6 +504,8 @@ DEF_CMD(do_replace)
 	if (!new)
 		return Enoarg;
 	if (esi->matched <= 0)
+		return Efail;
+	if (!esi->target)
 		return Efail;
 	m = mark_dup(esi->end);
 	if (esi->backwards) {
@@ -605,7 +628,8 @@ DEF_CMD(replace_prev)
 	struct pane *home = ci->home->data;
 	struct es_info *esi = home->data;
 
-	call("search:step-replace", esi->target, -1);
+	if (esi->target)
+		call("search:step-replace", esi->target, -1);
 	return 1;
 }
 
@@ -614,7 +638,8 @@ DEF_CMD(replace_next)
 	struct pane *home = ci->home->data;
 	struct es_info *esi = home->data;
 
-	call("search:step-replace", esi->target, 1);
+	if (esi->target)
+		call("search:step-replace", esi->target, 1);
 	return 1;
 }
 
@@ -692,6 +717,7 @@ DEF_CMD(emacs_search)
 		call("doc:request:doc:replaced", p);
 		attr_set_str(&p->attrs, "status-line", " Search: case insensitive ");
 		comm_call(ci->comm2, "callback:attach", p);
+		pane_add_notify(p, esi->target, "Notify:Close");
 
 		if (ci->num & 2)
 			call("K:A-%", p);
