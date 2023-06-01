@@ -522,7 +522,7 @@ DEF_CMD(selection_commit)
 DEF_CMD(selection_discard)
 {
 	struct input_mode *im = ci->home->data;
-	struct pane *op safe, *fp safe;
+	struct pane *op, *fp;
 
 	if (!im->sel_owner)
 		return Efalse;
