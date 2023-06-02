@@ -316,7 +316,7 @@ DEF_CMD(count_lines)
 		home_call(ci->focus, "doc:request:doc:CountLines", p);
 		home_call(ci->focus, "doc:request:doc:GotoLine", p);
 		home_call(ci->focus, "doc:request:Notify:Close", p);
-		call("doc:notify:doc:CountLines", ci->focus, 0, ci->mark);
+		call("doc:notify:doc:CountLines", ci->focus);
 	}
 	if (ci->mark) {
 		if (ci->str && strcmp(ci->str, "goto:line") == 0 &&
