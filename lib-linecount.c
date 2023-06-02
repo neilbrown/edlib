@@ -6,10 +6,11 @@
  *
  * This module can be attached to a Document to count lines/words/chars.
  *
- * It attaches active marks every 100 lines or so and records the
- * counts between the marks.  These are stored as attributes
- * 'lines' 'words' 'chars'.
- * When a change is notified, the attributes are cleared.
+ * It attaches an active mark at the start, then one every 100 lines or so
+ * and records the counts between the marks.  These are stored as attributes
+ * 'lines' 'words' 'chars' on the mark at the start of the range.
+ * When a change is notified, the attributes one the preceeding
+ * mark are cleared.
  * When a count is requested, all marks from top-of-file to target
  * are examined.  If attributes are not present they are calculated.
  * Then they are summed.
@@ -21,7 +22,7 @@
  *
  * When CountLines is called on a doc-pane, pane attributes are set
  * to record the number of lines, words, chars.
- * When it is calld on a mark in the pane attributes are set on the
+ * When it is called on a mark in the pane, attributes are set on the
  * mark to indicate the line, work and char where the mark is.
  * These are always at least 1.
  */
@@ -146,16 +147,7 @@ static void count_calculate(struct pane *p safe,
 		/* need to update this one */
 		do_count(p, m, vmark_next(m), &l, &w, &c, 1);
 
-	/* If 'm' is not before 'end', just count from
-	 * start to end.
-	 */
-	if (end && m->seq >= end->seq) {
-		do_count(p, m, end, &lines, &words, &chars, 0);
-		goto done;
-	}
-
-	/* OK, 'm' is before 'end'.
-	 * Add totals from m and subsequent. Then count to 'end'.
+	/* Add totals from m to before end. Then count to 'end'.
 	 */
 	lines = words = chars = 0;
 	while ((m2 = vmark_next(m)) != NULL &&
@@ -179,7 +171,7 @@ static void count_calculate(struct pane *p safe,
 		words += w;
 		chars += c;
 	}
-done:
+
 	if (end) {
 		struct attrset **attrs = &end->attrs;
 		attr_set_int(attrs, "line", lines + 1);
