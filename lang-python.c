@@ -3,10 +3,10 @@
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
  * Python3 bindings for edlib.
- * An edlib command "python-load" will read and execute a python
- * script.
- * It can use "edlib.editor" to get the editor instance, and can
- * use "edlib.call()" to issue edlib commands.
+ * An edlib command "global-load-modules:python" will read and execute
+ * a python module.
+ * It must "import edlib" and it can use "edlib.editor" to get the editor
+ * instance.
  *
  * Types available are:
  *  edlib.pane  - a generic pane.  These form a tree of which edlib.editor
@@ -329,34 +329,6 @@ out:
 	Py_XDECREF(exc_typ);
 	Py_XDECREF(exc_val);
 	Py_XDECREF(exc_tb);
-}
-
-DEF_CMD(python_load)
-{
-	const char *fname = ci->str;
-	FILE *fp;
-	PyObject *globals, *main_mod;
-	PyObject *Ed;
-
-	if (!fname)
-		return Enoarg;
-	fp = fopen(fname, "r");
-	if (!fp)
-		return Efail;
-
-	main_mod = PyImport_AddModule("__main__");
-	if (main_mod == NULL)
-		return Einval;
-	globals = PyModule_GetDict(main_mod);
-
-	Ed = Pane_Frompane(ci->home);
-	PyDict_SetItemString(globals, "editor", Ed);
-	PyDict_SetItemString(globals, "edlib", EdlibModule);
-	PyRun_FileExFlags(fp, fname, Py_file_input, globals, globals, 0, NULL);
-	PyErr_LOG();
-	Py_DECREF(Ed);
-	fclose(fp);
-	return 1;
 }
 
 DEF_CMD(python_load_module)
@@ -3005,7 +2977,6 @@ void edlib_init(struct pane *ed safe)
 	PyModule_AddIntMacro(m, MARK_POINT);
 
 	PyModule_AddIntConstant(m, "WEOF", 0x3FFFFF);
-	call_comm("global-set-command", ed, &python_load, 0, NULL, "python-load");
 	call_comm("global-set-command", ed, &python_load_module,
 		  0, NULL, "global-load-modules:python");
 
