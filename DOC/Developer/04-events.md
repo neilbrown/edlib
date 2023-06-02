@@ -44,7 +44,7 @@ The messages that the event subsystem listens for are:
   be a stream that supports "unget".  In such a case there may be
   content to get, but not from the file descriptor.
 
-- event:free - And register event from the focus pane which is supposed
+- event:free - Any register event from the focus pane which is supposed
   to call the given comm2 will be deactivated.  If no comm2 command is
   given, all registered event for the given focus pane are deregistered.
   Note that when a pane is closed, the event subsystem detects this and

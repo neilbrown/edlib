@@ -69,6 +69,7 @@ struct display_data {
 	long			last_event;
 
 	bool			did_close;
+	bool			suspended;
 
 	struct buf		paste_buf;
 	time_t			paste_start;
@@ -511,6 +512,18 @@ static void wait_for(struct display_data *dd safe)
 	}
 }
 
+DEF_CB(ns_resume)
+{
+	struct display_data *dd = ci->home->data;
+
+	if (dd->suspended) {
+		dd->suspended = False;
+		set_screen(ci->home);
+		doupdate();
+	}
+	return 1;
+}
+
 DEF_CMD(nc_external_viewer)
 {
 	struct pane *p = ci->home;
@@ -576,6 +589,9 @@ DEF_CMD(nc_external_viewer)
 		n -= read(fileno(dd->scr_file), buf,
 			  n <= (int)sizeof(buf) ? n : (int)sizeof(buf));
 	endwin();
+	/* stay in raw mode */
+	raw();
+	noecho();
 
 	/* Endwin doesn't seem to reset properly, at least on xfce-terminal.
 	 * So do it manually
@@ -590,7 +606,7 @@ DEF_CMD(nc_external_viewer)
 		tputs(dd->clear, 1, nc_putc);
 	fflush(dd->scr_file);
 
-	fprintf(dd->scr_file, "# Consider copy-pasting following\n");
+	fprintf(dd->scr_file, "# Consider copy-pasting following\r\n");
 	if (fqdn && path[0] == '/') {
 		/* File will not be local for the user, so help them copy it. */
 		const char *tmp = fnormalize(p, ci->str2 ?: "XXXXXX");
@@ -603,11 +619,11 @@ DEF_CMD(nc_external_viewer)
 			tmp, fqdn, fname);
 		path = "$f";
 	}
-	fprintf(dd->scr_file, "xdg-open %s\n", path);
-	fprintf(dd->scr_file, "# Press Enter to continue\n");
-	n = read(fileno(dd->scr_file), buf, sizeof(buf));
 	free(fqdn);
-	doupdate();
+	fprintf(dd->scr_file, "xdg-open %s\r\n", path);
+	fprintf(dd->scr_file, "# Press Enter to continue\r\n");
+	dd->suspended = True;
+	call_comm("event:timer", p, &ns_resume, 30*1000);
 	return 1;
 }
 
@@ -1209,8 +1225,12 @@ DEF_CMD(nc_refresh_size)
 DEF_CMD(nc_refresh_post)
 {
 	struct pane *p = ci->home;
+	struct display_data *dd = p->data;
 	struct pane *p1;
 	PANEL *pan, *pan2;
+
+	if (dd->suspended)
+		return 1;
 
 	set_screen(p);
 
@@ -1703,6 +1723,13 @@ REDEF_CMD(input_handle)
 	wait_for(dd);
 	set_screen(p);
 	while ((is_keycode = get_wch(&c)) != ERR) {
+		if (dd->suspended && c != KEY_MOUSE) {
+			dd->suspended = False;
+			doupdate();
+			call_comm("event:free", p, &ns_resume);
+			/* swallow the key */
+			continue;
+		}
 		if (paste_recv(p, is_keycode, c))
 			continue;
 		if (c == KEY_MOUSE) {

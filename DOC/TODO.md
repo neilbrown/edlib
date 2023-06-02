@@ -15,7 +15,7 @@ the file.
 - [X] ->replace_pane, ->replace_popup can be deleted (Abort) but we
       don't catch it...
 - [X] notmuch reply should interpolate the first *visible* text part
-- [ ] ncurses - don't block in nc_external_viewer - at least abort after
+- [X] ncurses - don't block in nc_external_viewer - at least abort after
       30 seconds, but preferrably switch to a mode which leaves
       everything else running.
 - [ ] lang-python should put each module in a separate module
@@ -247,7 +247,7 @@ Module features
 
 ### ncurses
 
-- [ ] don't block in nc_external_viewer - at least abort after
+- [X] don't block in nc_external_viewer - at least abort after
       30 seconds, but preferrably switch to a mode which leaves
       everything else running.
 - [ ] add full list of colour names (to lib-colourmap)
