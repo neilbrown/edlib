@@ -6,7 +6,7 @@
  *
  * This module can be attached to a Document to count lines/words/chars.
  *
- * It attaches active marks every 50 lines or so and records the
+ * It attaches active marks every 100 lines or so and records the
  * counts between the marks.  These are stored as attributes
  * 'lines' 'words' 'chars'.
  * When a change is notified, the attributes are cleared.
@@ -15,7 +15,7 @@
  * Then they are summed.
  * The text from the last active mark at the target is always calculated.
  *
- * When recalculating a range, we drop a new mark every 50 lines.
+ * When recalculating a range, we drop a new mark every 100 lines.
  * When we find a mark the needs updating, we discard it if previous mark is
  * closer than 10 lines.
  *
@@ -70,7 +70,8 @@ static void do_count(struct pane *p safe, struct mark *start safe, struct mark *
 			words += 1;
 		} else if (inword && !(iswprint(ch) && !iswspace(ch)))
 			inword = 0;
-		if (add_marks && lines >= 50 &&
+		if (add_marks &&
+		    (lines >= 100 || words > 1000 || chars > 10000) &&
 		    (end == NULL || (mark_ordered_not_same(m, end)))) {
 			/* leave a mark here and keep going */
 			attr_set_int(mark_attr(start), "lines", lines);
@@ -280,6 +281,12 @@ DEF_CMD(linecount_notify_goto)
 		lineno += l;
 	}
 	mark_to_mark(ci->mark, m);
+	if (lineno == ci->num) {
+		/* might not be at start of line */
+		while ((ch = doc_prior(d, ci->mark)) != WEOF &&
+		       !is_eol(ch))
+			doc_prev(d, ci->mark);
+	}
 	while (lineno < ci->num && (ch = doc_next(d, ci->mark)) != WEOF) {
 		if (is_eol(ch))
 			lineno += 1;
