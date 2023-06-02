@@ -3,6 +3,8 @@
 # May be distributed under terms of GPLv2 - see file:COPYING
 #
 
+import edlib
+
 import subprocess, os, fcntl, signal
 
 class ShellPane(edlib.Pane):
@@ -260,5 +262,5 @@ def shell_view_attach(key, focus, comm2, **a):
         comm2("callback", p)
     return 1
 
-editor.call("global-set-command", "attach-shellcmd", shell_attach)
-editor.call("global-set-command", "attach-shell-viewer", shell_view_attach)
+edlib.editor.call("global-set-command", "attach-shellcmd", shell_attach)
+edlib.editor.call("global-set-command", "attach-shell-viewer", shell_view_attach)

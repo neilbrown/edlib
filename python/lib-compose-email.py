@@ -29,6 +29,10 @@
 #   The content of filename is url encoded
 #
 
+import edlib
+
+import os
+import subprocess
 import email.utils
 import email.message
 import email.policy
@@ -37,6 +41,7 @@ import email.headerregistry
 import tempfile
 import mimetypes
 import urllib
+import re
 from datetime import date
 
 def read_status(p, key, focus, **a):
@@ -904,4 +909,4 @@ def compose_mode_attach(key, focus, comm2, **a):
         comm2("cb", p)
     return 1
 
-editor.call("global-set-command", "attach-compose-email", compose_mode_attach)
+edlib.editor.call("global-set-command", "attach-compose-email", compose_mode_attach)

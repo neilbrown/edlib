@@ -6,6 +6,9 @@
 # converts it from pdf to text, and creates a text doc with the
 # text.
 
+import edlib
+
+import os, fcntl
 import subprocess
 
 class pdf_pane(edlib.Pane):
@@ -128,5 +131,4 @@ def pdf_to_text(key, home, focus, num, comm2, **a):
     comm2("cb", doc)
     return 1
 
-if "editor" in globals():
-    editor.call("global-set-command", "pdf-to-text", pdf_to_text)
+edlib.editor.call("global-set-command", "pdf-to-text", pdf_to_text)

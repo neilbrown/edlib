@@ -12,19 +12,21 @@ else:
     sockpath = "/tmp/edlib-neilb"
 
 try:
+    import edlib
+
     class ServerPane(edlib.Pane):
         # This pane receives requests on a socket and
         # forwards them to the editor.  When a notification
         # arrives, it is sent back to the client
         def __init__(self, sock):
-            edlib.Pane.__init__(self, editor)
+            edlib.Pane.__init__(self, edlib.editor)
             self.sock = sock
             self.term = None
             self.disp = None
             self.doc = None
             self.want_close = False
             self.lineno = None
-            editor.call("event:read", sock.fileno(),
+            edlib.editor.call("event:read", sock.fileno(),
                         self.read)
 
         def read(self, key, **a):
@@ -66,7 +68,7 @@ try:
                     path = msg[5:].decode("utf-8",'ignore')
                     try:
                         # 8==reload
-                        d = editor.call("doc:open", -1, 8, path, ret='pane')
+                        d = edlib.editor.call("doc:open", -1, 8, path, ret='pane')
                     except edlib.commandfailed:
                         d = None
                     if not d:
@@ -108,7 +110,7 @@ try:
                     return 1
                 if msg[:21] == b"doc:request:doc:done:":
                     path = msg[21:].decode("utf-8", 'ignore')
-                    d = editor.call("doc:open", -1, path, ret='pane')
+                    d = edlib.editor.call("doc:open", -1, path, ret='pane')
                     if not d:
                         self.sock.send(b"FAIL")
                         return 1
@@ -128,7 +130,7 @@ try:
                     self.sock.send(b"OK")
                     return 1
                 if cmd == 'x11window' and not self.term:
-                    p = editor.call("interactive-cmd-x11window",
+                    p = edlib.editor.call("interactive-cmd-x11window",
                                     arg, env['XAUTHORITY'], ret='pane')
                     if p:
                         for v in env:
@@ -140,7 +142,7 @@ try:
                     return 1
                 if cmd == 'term' and not self.term:
                     path = arg
-                    p = editor
+                    p = edlib.editor
                     p = p.call("attach-display-ncurses", path, env['TERM'],
                                ret='pane')
                     for v in env:
@@ -394,7 +396,7 @@ else:
         if key != "key":
             focus.call("Message", "Server restarted")
         return 1
-    server_rebind("key", editor)
-    editor.call("global-set-command", "lib-server:done", server_done)
-    editor.call("global-set-command", "interactive-cmd-server-start",
+    server_rebind("key", edlib.editor)
+    edlib.editor.call("global-set-command", "lib-server:done", server_done)
+    edlib.editor.call("global-set-command", "interactive-cmd-server-start",
                 server_rebind)

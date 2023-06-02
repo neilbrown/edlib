@@ -12,6 +12,8 @@
 # If cursor is not on any, it is moved forward to the next one.
 #
 
+import edlib
+
 class MergePane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
@@ -197,6 +199,6 @@ def add_merge(key, focus, mark, **a):
         p.call("K:A-m", focus, mark)
     return 1
 
-editor.call("global-set-command", "attach-merge", merge_view_attach)
-editor.call("global-set-command", "interactive-cmd-merge-mode", add_merge)
-editor.call("global-load-module", "lib-wiggle")
+edlib.editor.call("global-set-command", "attach-merge", merge_view_attach)
+edlib.editor.call("global-set-command", "interactive-cmd-merge-mode", add_merge)
+edlib.editor.call("global-load-module", "lib-wiggle")

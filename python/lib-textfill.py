@@ -23,6 +23,8 @@
 # is then chosen as the maximal set of non-alphanumerics non-quote
 # characters.
 
+import edlib
+
 import re
 
 def span(line, chars):
@@ -353,6 +355,6 @@ def fill_mode_activate(key, focus, comm2, **a):
     focus.call("doc:append:view-default", ",textfill")
     return 1
 
-editor.call("global-set-command", "attach-textfill", fill_mode_attach)
-editor.call("global-set-command", "interactive-cmd-fill-mode",
+edlib.editor.call("global-set-command", "attach-textfill", fill_mode_attach)
+edlib.editor.call("global-set-command", "interactive-cmd-fill-mode",
             fill_mode_activate)

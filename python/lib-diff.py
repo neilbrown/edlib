@@ -7,6 +7,8 @@
 # - colourizes + and - lines
 # - interprets ':Enter' to find the given line
 
+import edlib
+
 import os.path
 
 def djoin(dir, tail):
@@ -332,6 +334,6 @@ def add_diff(key, focus, **a):
     focus.call("doc:append:view-default", ",diff")
     return 1
 
-editor.call("global-set-command", "attach-diff", diff_view_attach)
-editor.call("global-set-command", "interactive-cmd-diff-mode", add_diff)
-editor.call("global-load-module", "lib-wiggle")
+edlib.editor.call("global-set-command", "attach-diff", diff_view_attach)
+edlib.editor.call("global-set-command", "interactive-cmd-diff-mode", add_diff)
+edlib.editor.call("global-load-module", "lib-wiggle")

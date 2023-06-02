@@ -18,7 +18,7 @@ the file.
 - [X] ncurses - don't block in nc_external_viewer - at least abort after
       30 seconds, but preferrably switch to a mode which leaves
       everything else running.
-- [ ] lang-python should put each module in a separate module
+- [X] lang-python should put each module in a separate module
       Maybe PyImport_ExecCodeModuleEx() after reading and compile()ing
       the source file.  Or set up path to find edlib modules.
 
@@ -638,7 +638,7 @@ Module features
 ### lang-python
 
 - [ ] repeated alarm(10)/alarm(0) calls slow things down
-- [ ] lang-python should put each module in a separate module
+- [X] lang-python should put each module in a separate module
       Maybe PyImport_ExecCodeModuleEx() after reading and compile()ing
       the source file.  Or set up path to find edlib modules.
 - [ ] array index should allow two args, second being a mark for

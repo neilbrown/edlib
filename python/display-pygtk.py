@@ -6,10 +6,12 @@
 # receive mouse/keyboard events.
 # provides eventloop function using gtk.main.
 
-import os
+import edlib
+import os, fcntl
 import gi
 import time
 import cairo
+import subprocess
 
 gi.require_version('Gtk', '3.0')
 gi.require_version('PangoCairo', '1.0')
@@ -97,8 +99,7 @@ class EdDisplay(edlib.Pane):
 
     def handle_new(self, key, focus, **a):
         "handle:Display:new"
-        global editor
-        newdisp = EdDisplay(editor, self['DISPLAY'])
+        newdisp = EdDisplay(edlib.editor, self['DISPLAY'])
         p = newdisp.call("editor:activate-display", ret='pane')
         if p:
             focus.call("doc:attach-view", p, 1)
@@ -761,5 +762,5 @@ def new_display2(key, focus, **a):
         focus.call("doc:attach-view", p, 1);
     return 1
 
-editor.call("global-set-command", "attach-display-gtk", new_display)
-editor.call("global-set-command", "interactive-cmd-gtkwindow", new_display2)
+edlib.editor.call("global-set-command", "attach-display-gtk", new_display)
+edlib.editor.call("global-set-command", "interactive-cmd-gtkwindow", new_display2)

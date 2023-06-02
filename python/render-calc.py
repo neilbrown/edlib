@@ -6,6 +6,8 @@
 # starting '>'
 #
 
+import edlib
+
 class CalcView(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
@@ -172,7 +174,7 @@ def calc_appeared(key, focus, **a):
         focus["view-default"] = "view-calc"
     return edlib.Efallthrough
 
-editor.call("global-set-command", "attach-view-calc", calc_view_attach)
-editor.call("global-load-module", "lib-calc")
-editor.call("global-set-command", "interactive-cmd-calc", add_calc)
-editor.call("global-set-command", "doc:appeared-calc", calc_appeared)
+edlib.editor.call("global-set-command", "attach-view-calc", calc_view_attach)
+edlib.editor.call("global-load-module", "lib-calc")
+edlib.editor.call("global-set-command", "interactive-cmd-calc", add_calc)
+edlib.editor.call("global-set-command", "doc:appeared-calc", calc_appeared)

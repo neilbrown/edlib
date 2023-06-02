@@ -2,6 +2,8 @@
 # Copyright Neil Brown (c)2018-2023 <neil@brown.name>
 # May be distributed under terms of GPLv2 - see file:COPYING
 
+import edlib
+
 def textwidth(line, w=0):
     for c in line:
         if c == '\t':
@@ -1063,8 +1065,8 @@ def attach_indent(key, focus, **a):
     CModePane(focus)
     return 1
 
-editor.call("global-set-command", "doc:appeared-c-mode", c_mode_appeared)
-editor.call("global-set-command", "doc:appeared-py-mode", py_mode_appeared)
-editor.call("global-set-command", "attach-c-mode", c_mode_attach)
-editor.call("global-set-command", "attach-py-mode", py_mode_attach)
-editor.call("global-set-command", "interactive-cmd-indent", attach_indent)
+edlib.editor.call("global-set-command", "doc:appeared-c-mode", c_mode_appeared)
+edlib.editor.call("global-set-command", "doc:appeared-py-mode", py_mode_appeared)
+edlib.editor.call("global-set-command", "attach-c-mode", c_mode_attach)
+edlib.editor.call("global-set-command", "attach-py-mode", py_mode_attach)
+edlib.editor.call("global-set-command", "interactive-cmd-indent", attach_indent)

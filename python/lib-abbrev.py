@@ -14,6 +14,8 @@
 #   Anything else is passed to parent, and if that doesn't result
 #     in a callback, we self-destruct
 
+import edlib
+
 class AbbrevPane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
@@ -244,4 +246,4 @@ def abbrev_attach(key, focus, comm2, **a):
         comm2("cb", p)
     return 1
 
-editor.call("global-set-command", "attach-abbrev", abbrev_attach)
+edlib.editor.call("global-set-command", "attach-abbrev", abbrev_attach)

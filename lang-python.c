@@ -64,6 +64,7 @@ struct doc_ref {
 	int o;
 };
 
+#include <fcntl.h>
 #include <signal.h>
 #include "core.h"
 #include "misc.h"
@@ -334,32 +335,52 @@ out:
 DEF_CMD(python_load_module)
 {
 	const char *name = ci->str;
-	FILE *fp;
-	PyObject *globals, *main_mod;
-	PyObject *Ed;
-	char buf [PATH_MAX];
+	int fd;
+	long long size;
+	char *code;
+	char buf[PATH_MAX];
+	char buf2[PATH_MAX];
+	PyObject *builtins, *compile, *args, *bytecode;
 
 	if (!name)
 		return Enoarg;
 	snprintf(buf, sizeof(buf), "%s/python/%s.py", module_dir, name);
-	fp = fopen(buf, "r");
-	if (!fp)
+	fd = open(buf, O_RDONLY);
+	if (fd < 0)
 		return Efail;
+	size = lseek(fd, 0, SEEK_END);
+	lseek(fd, 0, SEEK_SET);
+	code = malloc(size+1);
+	if (!code) {
+		close(fd);
+		return Efail;
+	}
+	size = read(fd, code, size);
+	close(fd);
+	if (size <= 0) {
+		free(code);
+		return Efail;
+	}
+	code[size] = 0;
 
 	LOG("Loading python module %s from %s", name, buf);
-	main_mod = PyImport_AddModule("__main__");
-	if (main_mod == NULL)
-		return Einval;
-	globals = PyModule_GetDict(main_mod);
 
-	Ed = Pane_Frompane(ci->home);
-	PyDict_SetItemString(globals, "editor", Ed);
-	PyDict_SetItemString(globals, "pane", Pane_Frompane(ci->focus));
-	PyDict_SetItemString(globals, "edlib", EdlibModule);
-	PyRun_FileExFlags(fp, buf, Py_file_input, globals, globals, 0, NULL);
-	PyErr_LOG();
-	Py_DECREF(Ed);
-	fclose(fp);
+	builtins = PyEval_GetBuiltins();
+	compile = PyDict_GetItemString(builtins, "compile");
+	args = safe_cast Py_BuildValue("(sss)", code, buf, "exec");
+	bytecode = PyObject_Call(compile, args, NULL);
+	Py_DECREF(args);
+	free(code);
+	if (bytecode == NULL) {
+		PyErr_LOG();
+		return Efail;
+	}
+
+	snprintf(buf2, sizeof(buf2), "edlib.%s", name);
+
+	if (PyImport_ExecCodeModule(buf2, bytecode) == NULL)
+		PyErr_LOG();
+	Py_DECREF(bytecode);
 	return 1;
 }
 
@@ -2891,18 +2912,11 @@ static PyMethodDef edlib_methods[] = {
 };
 
 /* This must be visible when the module is loaded so it
- * cannot be static.  spares doesn't like variables that are
+ * cannot be static.  sparse doesn't like variables that are
  * neither extern nor static.  So mark it extern
  */
 extern char *edlib_module_path;
 char *edlib_module_path;
-
-static struct PyModuleDef edlib_mod = {
-	PyModuleDef_HEAD_INIT,
-	.m_name		= "edlib",
-	.m_doc		= "edlib - one more editor is never enough.",
-	.m_methods	= edlib_methods,
-};
 
 void edlib_init(struct pane *ed safe)
 {
@@ -2915,9 +2929,6 @@ void edlib_init(struct pane *ed safe)
 	else
 		module_dir = ".";
 
-	/* This cast is for sparse, which doesn't seem to cope with L".."
-	 * FIXME
-	 */
 	PyConfig_InitPythonConfig(&config);
 	config.isolated = 1;
 	PyConfig_SetBytesArgv(&config, 0, argv);
@@ -2936,11 +2947,16 @@ void edlib_init(struct pane *ed safe)
 	    PyType_Ready(&CommType) < 0)
 		return;
 
-	m = PyModule_Create(&edlib_mod);
-
-	if (!m)
+	m = PyImport_AddModule("edlib");
+	if (!m) {
+		PyErr_LOG();
 		return;
+	}
 
+	PyModule_SetDocString(m , "edlib - one more editor is never enough");
+
+	PyModule_AddFunctions(m, edlib_methods);
+	PyModule_AddObject(m, "editor", Pane_Frompane(ed));
 	PyModule_AddObject(m, "Pane", (PyObject *)&PaneType);
 	PyModule_AddObject(m, "PaneIter", (PyObject *)&PaneIterType);
 	PyModule_AddObject(m, "Mark", (PyObject *)&MarkType);
@@ -2977,12 +2993,14 @@ void edlib_init(struct pane *ed safe)
 	PyModule_AddIntMacro(m, MARK_POINT);
 
 	PyModule_AddIntConstant(m, "WEOF", 0x3FFFFF);
-	call_comm("global-set-command", ed, &python_load_module,
-		  0, NULL, "global-load-modules:python");
 
 	Edlib_CommandFailed = PyErr_NewException("edlib.commandfailed", NULL, NULL);
 	Py_INCREF(Edlib_CommandFailed);
 	PyModule_AddObject(m, "commandfailed", Edlib_CommandFailed);
+
 	EdlibModule = m;
 	ed_pane = ed;
+
+	call_comm("global-set-command", ed, &python_load_module,
+		  0, NULL, "global-load-modules:python");
 }

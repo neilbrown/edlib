@@ -3,6 +3,8 @@
 # May be distributed under terms of GPLv2 - see file:COPYING
 #
 
+import edlib
+
 import os, fcntl, signal
 
 class MakePane(edlib.Pane):
@@ -932,9 +934,9 @@ def next_match(key, focus, num, str1, num2, **a):
 
     return 1
 
-editor.call("global-set-command", "attach-makecmd", make_attach)
-editor.call("global-set-command", "attach-make-viewer", make_view_attach)
-editor.call("global-set-command", "interactive-cmd-make", make_request)
-editor.call("global-set-command", "interactive-cmd-grep", make_request)
-editor.call("global-set-command", "interactive-cmd-git-grep", make_request)
-editor.call("global-set-command", "interactive-cmd-next-match", next_match)
+edlib.editor.call("global-set-command", "attach-makecmd", make_attach)
+edlib.editor.call("global-set-command", "attach-make-viewer", make_view_attach)
+edlib.editor.call("global-set-command", "interactive-cmd-make", make_request)
+edlib.editor.call("global-set-command", "interactive-cmd-grep", make_request)
+edlib.editor.call("global-set-command", "interactive-cmd-git-grep", make_request)
+edlib.editor.call("global-set-command", "interactive-cmd-next-match", next_match)

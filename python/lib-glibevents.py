@@ -4,6 +4,8 @@
 
 # edlib module for getting events from GLib
 
+import edlib
+
 import signal
 import gi
 import os
@@ -216,4 +218,4 @@ def register_events(key, focus, comm2, **a):
     events_activate(focus)
     return 1
 
-editor.call("global-set-command", "attach-glibevents", register_events)
+edlib.editor.call("global-set-command", "attach-glibevents", register_events)

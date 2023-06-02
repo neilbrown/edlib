@@ -16,6 +16,8 @@
 # Other functionality is available simply through global commands.
 #
 
+import edlib
+
 docname = "*Macro History*"
 
 # A macro is a list of keystroke separated by commas
@@ -133,7 +135,7 @@ def name_macro(key, focus, num, str, **a):
         num = 1
     focus.call("history:get-last", num, docname, str)
 
-editor.call("global-set-command", "macro:capture", start_capture)
-editor.call("global-set-command", "macro:finished", end_capture)
-editor.call("global-set-command", "macro:replay", play_macro)
-editor.call("global-set-command", "macro:name", name_macro)
+edlib.editor.call("global-set-command", "macro:capture", start_capture)
+edlib.editor.call("global-set-command", "macro:finished", end_capture)
+edlib.editor.call("global-set-command", "macro:replay", play_macro)
+edlib.editor.call("global-set-command", "macro:name", name_macro)

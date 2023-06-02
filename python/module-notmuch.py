@@ -28,10 +28,12 @@
 # "query.misc-list" is a subset of current-list for which query:current should not
 # be assumed.
 
+import edlib
+
 from subprocess import Popen, PIPE, DEVNULL, TimeoutExpired
 import re
-import os
-import os.path
+import tempfile
+import os, fcntl
 import json
 import time
 import mimetypes
@@ -608,10 +610,9 @@ class notmuch_main(edlib.Doc):
             comm2("callback", focus, "%d" % self.searches.maxlen)
             return 1
         if str.startswith('config:'):
-            p = subprocess.Popen(['/usr/bin/notmuch', 'config', 'get', str[7:]],
-                                 close_fds = True,
-                                 stderr = subprocess.PIPE,
-                                 stdout = subprocess.PIPE)
+            p = Popen(['/usr/bin/notmuch', 'config', 'get', str[7:]],
+                      close_fds = True,
+                      stderr = PIPE, stdout = PIPE)
             out,err = p.communicate()
             p.wait()
             if out:
@@ -3728,14 +3729,13 @@ def notmuch_search(key, focus, **a):
         p.call("doc:char-s")
     return 1
 
-if "editor" in globals():
-    editor.call("global-set-command", "attach-doc-notmuch", notmuch_doc)
-    editor.call("global-set-command", "attach-render-notmuch:master-view",
-                render_master_view_attach)
-    editor.call("global-set-command", "attach-render-notmuch:threads",
-                render_query_attach)
-    editor.call("global-set-command", "attach-render-notmuch:message",
-                render_message_attach)
-    editor.call("global-set-command", "interactive-cmd-nm", notmuch_mode)
-    editor.call("global-set-command", "interactive-cmd-nmc", notmuch_compose)
-    editor.call("global-set-command", "interactive-cmd-nms", notmuch_search)
+edlib.editor.call("global-set-command", "attach-doc-notmuch", notmuch_doc)
+edlib.editor.call("global-set-command", "attach-render-notmuch:master-view",
+                  render_master_view_attach)
+edlib.editor.call("global-set-command", "attach-render-notmuch:threads",
+                  render_query_attach)
+edlib.editor.call("global-set-command", "attach-render-notmuch:message",
+                  render_message_attach)
+edlib.editor.call("global-set-command", "interactive-cmd-nm", notmuch_mode)
+edlib.editor.call("global-set-command", "interactive-cmd-nmc", notmuch_compose)
+edlib.editor.call("global-set-command", "interactive-cmd-nms", notmuch_search)

@@ -10,6 +10,9 @@
 # applied the changes to the text as render attributes.
 #
 
+import edlib
+
+import os, fcntl
 import subprocess
 
 def get_attr(tagl, tag, attr):
@@ -559,5 +562,4 @@ def map_entities(str):
 
     return ret + str
 
-if "editor" in globals():
-    editor.call("global-set-command", "html-to-text-w3m", html_to_w3m)
+edlib.editor.call("global-set-command", "html-to-text-w3m", html_to_w3m)

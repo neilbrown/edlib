@@ -6,9 +6,11 @@
 # converts it to text using lowriter.
 # Unfortunately lowriter only reads and writes a file, not a pipe..
 
+import edlib
+
 import subprocess
 import tempfile
-import os
+import os, fcntl
 
 class doc_pane(edlib.Pane):
     def __init__(self, focus, path, newpath, delayed):
@@ -137,5 +139,4 @@ def doc_to_text(key, home, focus, num, str1, comm2, **a):
     comm2("cb", doc)
     return 1
 
-if "editor" in globals():
-    editor.call("global-set-command", "doc-to-text", doc_to_text)
+edlib.editor.call("global-set-command", "doc-to-text", doc_to_text)

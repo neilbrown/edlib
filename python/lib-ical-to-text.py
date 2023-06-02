@@ -6,6 +6,9 @@
 # converts it from ical to simple text, and creates a text pane with
 # that text.
 
+import edlib
+
+import time
 import icalendar
 
 def ical_to_text(key, home, focus, comm2, **a):
@@ -53,5 +56,4 @@ def ical_to_text(key, home, focus, comm2, **a):
     comm2("cb", doc)
     return 1
 
-if "editor" in globals():
-    editor.call("global-set-command", "ical-to-text", ical_to_text)
+edlib.editor.call("global-set-command", "ical-to-text", ical_to_text)

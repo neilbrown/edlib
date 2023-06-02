@@ -7,6 +7,7 @@
 # config module with a more abstract language one day.
 # But I want some simple configuration NOW
 
+from edlib import editor
 import os
 
 def config_appeared(key, focus, **a):
@@ -35,8 +36,6 @@ def config_appeared(key, focus, **a):
                                   " *- *\\[[ X]]|"     # todo list item
                                   " *#+|"              # section head
                                   " *[0-9]*\\.)")      # Numbered list
-
-    return edlib.Efallthrough
 
 editor.call("global-set-command", "doc:appeared-config", config_appeared)
 

@@ -60,6 +60,7 @@ default_attrs = "normal 10 family:sans fg:black bg:white left:5 space-after:1 sp
 # When change happens, type changed to 'unknown' which triggers self.mark_lines() to
 # reparse some of the page.
 
+import edlib
 import re
 import os
 
@@ -773,6 +774,6 @@ def markdown_appeared(key, focus, **a):
         focus["view-default"] = vd
     return edlib.Efallthrough
 
-editor.call("global-set-command", "attach-markdown-present", markdown_attach)
-editor.call("global-set-command", "attach-present", present_attach)
-editor.call("global-set-command", "doc:appeared-present", markdown_appeared)
+edlib.editor.call("global-set-command", "attach-markdown-present", markdown_attach)
+edlib.editor.call("global-set-command", "attach-present", present_attach)
+edlib.editor.call("global-set-command", "doc:appeared-present", markdown_appeared)

@@ -21,6 +21,8 @@
 #   choose_range(focus, viewnum, attr, start, end) - changes start and end to be
 #    a contiguous unchecked section in the range
 
+import edlib
+
 def show_range(action, focus, viewnum, attr):
     edlib.LOG("range:", attr, action)
     f,l = focus.vmarks(viewnum)
@@ -316,6 +318,6 @@ def autospell_activate(key, focus, comm2, **a):
 
     return 1
 
-editor.call("global-set-command", "attach-autospell", autospell_attach)
-editor.call("global-set-command", "interactive-cmd-autospell",
+edlib.editor.call("global-set-command", "attach-autospell", autospell_attach)
+edlib.editor.call("global-set-command", "interactive-cmd-autospell",
             autospell_activate)

@@ -6,6 +6,8 @@
 # converts it from html to markdown, and creates a text pane with the
 # markdown text.
 
+import edlib
+
 import html2text
 
 def html_to_text(key, home, focus, comm2, **a):
@@ -38,5 +40,4 @@ def html_to_text(key, home, focus, comm2, **a):
     comm2("cb", doc)
     return 1
 
-if "editor" in globals():
-    editor.call("global-set-command", "html-to-text", html_to_text)
+edlib.editor.call("global-set-command", "html-to-text", html_to_text)
