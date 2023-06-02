@@ -252,8 +252,6 @@ DEF_CMD(linecount_notify_count)
 	struct pane *d = ci->focus;
 	struct count_info *cli = ci->home->data;
 	/* Option mark is "mark2" as "mark" gets the "point" */
-	if (ci->num)
-		pane_add_notify(ci->home, d, "Notify:Close");
 	count_calculate(d, NULL, ci->mark2, ci->home, cli->view_num);
 	return 1;
 }
@@ -326,7 +324,8 @@ DEF_CMD(count_lines)
 		home_call(ci->focus, "doc:request:doc:replaced", p);
 		home_call(ci->focus, "doc:request:doc:CountLines", p);
 		home_call(ci->focus, "doc:request:doc:GotoLine", p);
-		call("doc:notify:doc:CountLines", ci->focus, 1, ci->mark);
+		home_call(ci->focus, "doc:request:Notify:Close", p);
+		call("doc:notify:doc:CountLines", ci->focus, 0, ci->mark);
 	}
 	if (ci->mark) {
 		if (ci->str && strcmp(ci->str, "goto:line") == 0 &&
