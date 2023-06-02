@@ -292,15 +292,6 @@ DEF_CMD(linecount_notify_goto)
 	return 1;
 }
 
-DEF_CMD(linecount_clip)
-{
-	struct count_info *cli = ci->home->data;
-
-	marks_clip(ci->home, ci->mark, ci->mark2, cli->view_num, ci->home,
-		   !!ci->num);
-	return Efallthrough;
-}
-
 DEF_CMD(count_lines)
 {
 	char *type = pane_attr_get(ci->focus, "doc-type");
@@ -354,6 +345,5 @@ void edlib_init(struct pane *ed safe)
 	key_add(linecount_map, "doc:replaced", &linecount_notify_replace);
 	key_add(linecount_map, "doc:CountLines", &linecount_notify_count);
 	key_add(linecount_map, "doc:GotoLine", &linecount_notify_goto);
-	key_add(linecount_map, "Notify:clip", &linecount_clip);
 	key_add(linecount_map, "Free", &edlib_do_free);
 }
