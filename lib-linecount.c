@@ -119,7 +119,7 @@ static int need_recalc(struct pane *p safe, struct mark *m)
 }
 
 static void count_calculate(struct pane *p safe,
-			    struct mark *start, struct mark *end,
+			    struct mark *end,
 			    struct pane *owner safe, int type)
 {
 	int lines, words, chars, l, w, c;
@@ -142,45 +142,22 @@ static void count_calculate(struct pane *p safe,
 		m = m2;
 	}
 
-	if (start) {
-		/* find the first mark that isn't before 'start', and count
-		 * from there.
-		 */
-		while (m && mark_ordered_not_same(m, start)) {
-			/* Force and update to make sure spacing stays sensible */
-			if (need_recalc(p, m))
-				/* need to update this one */
-				do_count(p, m, vmark_next(m), &l, &w, &c, 1);
-
-			m = vmark_next(m);
-		}
-		if (!m) {
-			/* fell off the end, just count directly */
-			do_count(p, start, end, &lines, &words, &chars, 0);
-			goto done;
-		}
-	}
 	if (need_recalc(p, m))
 		/* need to update this one */
 		do_count(p, m, vmark_next(m), &l, &w, &c, 1);
 
-	/* 'm' is not before 'start', it might be after.
-	 * if 'm' is not before 'end' either, just count from
+	/* If 'm' is not before 'end', just count from
 	 * start to end.
 	 */
 	if (end && m->seq >= end->seq) {
-		do_count(p, start?:m, end, &lines, &words, &chars, 0);
+		do_count(p, m, end, &lines, &words, &chars, 0);
 		goto done;
 	}
 
-	/* OK, 'm' is between 'start' and 'end'.
-	 * So count from start to m, then add totals from m and subsequent.
-	 * Then count to 'end'.
+	/* OK, 'm' is before 'end'.
+	 * Add totals from m and subsequent. Then count to 'end'.
 	 */
-	if (!start || mark_same(m, start))
-		lines = words = chars = 0;
-	else
-		do_count(p, start, m, &lines, &words, &chars, 0);
+	lines = words = chars = 0;
 	while ((m2 = vmark_next(m)) != NULL &&
 	       (!end || m2->seq < end->seq)) {
 		/* Need everything from m to m2 */
@@ -252,7 +229,7 @@ DEF_CMD(linecount_notify_count)
 	struct pane *d = ci->focus;
 	struct count_info *cli = ci->home->data;
 	/* Option mark is "mark2" as "mark" gets the "point" */
-	count_calculate(d, NULL, ci->mark2, ci->home, cli->view_num);
+	count_calculate(d, ci->mark2, ci->home, cli->view_num);
 	return 1;
 }
 
