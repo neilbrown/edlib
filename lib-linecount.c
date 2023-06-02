@@ -200,19 +200,27 @@ DEF_CMD(linecount_notify_replace)
 {
 	struct pane *d = ci->focus;
 	struct count_info *cli = ci->home->data;
-	if (ci->mark) {
-		struct mark *end;
+	struct mark *m, *m2;
 
-		end = vmark_at_or_before(d, ci->mark, cli->view_num, ci->home);
-		if (end) {
-			attr_del(mark_attr(end), "lines");
-			attr_del(mark_attr(end), "words");
-			attr_del(mark_attr(end), "chars");
-		}
-		attr_del(&d->attrs, "lines");
-		attr_del(&d->attrs, "words");
-		attr_del(&d->attrs, "chars");
-	}
+	attr_del(&d->attrs, "lines");
+	attr_del(&d->attrs, "words");
+	attr_del(&d->attrs, "chars");
+
+	if (ci->mark)
+		m = vmark_at_or_before(d, ci->mark, cli->view_num, ci->home);
+	else
+		m = vmark_first(d, cli->view_num, ci->home);
+	if (!m)
+		return 1;
+
+	attr_del(mark_attr(m), "lines");
+	attr_del(mark_attr(m), "words");
+	attr_del(mark_attr(m), "chars");
+
+	while ((m2 = vmark_next(m)) != NULL &&
+	       (!ci->mark2 || mark_ordered_or_same(m2, ci->mark2)))
+		mark_free(m2);
+
 	return 1;
 }
 
