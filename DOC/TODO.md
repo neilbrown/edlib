@@ -404,7 +404,7 @@ Module features
 
 ### line count
 
-- [ ] count-lines seems to go very slowly in base64/utf-8 email
+- [X] count-lines seems to go very slowly in base64/utf-8 email
 - [ ] Always do word-count async.
 
 ### lib-utf-8
@@ -507,7 +507,7 @@ Module features
 - [ ] in notmuch I searched in a message (mimepart), then enter to choose,
    then 'q' and crash.
 - [ ] A multipart still had an active view.
-- [ ] linecount is spinning somewhere.
+- [X] linecount is spinning somewhere.
       Doc is multipart, chars are garbage. underlying is b64
       Email has large attachments
       This might have been because b64 was slow, but I don't really want
