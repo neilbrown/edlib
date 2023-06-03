@@ -126,6 +126,10 @@ static void count_calculate(struct pane *p safe,
 	int lines, words, chars, l, w, c;
 	struct mark *m, *m2;
 
+	if (!end && attr_find(p->attrs, "lines"))
+		/* nothing to do */
+		return;
+
 	m = vmark_first(p, type, owner);
 	if (m == NULL || doc_prior(p, m) != WEOF) {
 		/* No mark at doc start, make some */
