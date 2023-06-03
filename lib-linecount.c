@@ -127,20 +127,13 @@ static void count_calculate(struct pane *p safe,
 	struct mark *m, *m2;
 
 	m = vmark_first(p, type, owner);
-	if (m == NULL) {
-		/* No marks yet, let's make some */
+	if (m == NULL || doc_prior(p, m) != WEOF) {
+		/* No mark at doc start, make some */
 		m = vmark_new(p, type, owner);
 		if (!m)
 			return;
+		call("doc:set-ref", p, 1, m);
 		do_count(p, m, NULL, &l, &w, &c, 1);
-	}
-	if (doc_prior(p, m) != WEOF) {
-		/* no mark at start of file */
-		m2 = vmark_new(p, type, owner);
-		if (!m2)
-			return;
-		do_count(p, m2, m, &l, &w, &c, 1);
-		m = m2;
 	}
 
 	if (need_recalc(p, m))
