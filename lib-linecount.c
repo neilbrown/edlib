@@ -241,7 +241,8 @@ DEF_CMD(linecount_notify_goto)
 	if (!ci->mark)
 		return 1;
 
-	/* FIXME I might need to recalculate here */
+	/* Ensure counts are up-to-date */
+	count_calculate(d, NULL, ci->home, cli->view_num);
 	m = vmark_first(d, cli->view_num, ci->home);
 	if (!m)
 		return 1;
