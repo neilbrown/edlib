@@ -45,7 +45,7 @@ static struct pane *do_view_attach(struct pane *par, int border);
 static int calc_border(struct pane *p safe);
 
 static char default_status[] =
-	"{!CountLines}M:{doc-modified?,*,-}{doc-readonly?,%%,  } D:{doc-file-changed?,CHANGED:,}{doc-name%-15} L{^line}/{lines} {display-context}{render-default}/{view-default} {doc-status}";
+	"{!CountLinesAsync}M:{doc-modified?,*,-}{doc-readonly?,%%,  } D:{doc-file-changed?,CHANGED:,}{doc-name%-15} L{^line}/{lines} {display-context}{render-default}/{view-default} {doc-status}";
 static char default_title[] =
 	"{doc-name}";
 
@@ -195,11 +195,11 @@ DEF_CMD(view_refresh)
 			int mid;
 
 			if (vd->viewpoint) {
-				call("CountLines", ci->focus, 0, vd->viewpoint);
+				call("CountLinesAsync", ci->focus, 0, vd->viewpoint);
 				vpln = attr_find_int(*mark_attr(vd->viewpoint),
 						     "line");
 			} else if (pm) {
-				call("CountLines", ci->focus, 0, pm);
+				call("CountLinesAsync", ci->focus, 0, pm);
 				vpln = attr_find_int(*mark_attr(pm), "line");
 			}
 

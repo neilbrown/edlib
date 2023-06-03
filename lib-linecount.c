@@ -117,7 +117,8 @@ static int need_recalc(struct pane *p safe, struct mark *m)
 
 static void count_calculate(struct pane *p safe,
 			    struct mark *end,
-			    struct pane *owner safe, int type)
+			    struct pane *owner safe, int type,
+			    bool sync)
 {
 	int lines, words, chars, l, w, c;
 	struct mark *m, *m2;
@@ -222,7 +223,9 @@ DEF_CMD(linecount_notify_count)
 	struct pane *d = ci->focus;
 	struct count_info *cli = ci->home->data;
 	/* Option mark is "mark2" as "mark" gets the "point" */
-	count_calculate(d, ci->mark2, ci->home, cli->view_num);
+	/* num==1 means we don't want to wait for precision */
+	count_calculate(d, ci->mark2, ci->home, cli->view_num,
+			ci->mark2 && ci->num != 1);
 	return 1;
 }
 
@@ -238,7 +241,7 @@ DEF_CMD(linecount_notify_goto)
 		return 1;
 
 	/* Ensure counts are up-to-date */
-	count_calculate(d, NULL, ci->home, cli->view_num);
+	count_calculate(d, NULL, ci->home, cli->view_num, True);
 	m = vmark_first(d, cli->view_num, ci->home);
 	if (!m)
 		return 1;
@@ -266,11 +269,13 @@ DEF_CMD(linecount_notify_goto)
 DEF_CMD(count_lines)
 {
 	char *view = pane_attr_get(ci->focus, "view-default");
+	int async = strcmp(ci->key, "CountLinesAsync") == 0;
+
 	/* FIXME this type-check is a HACK */
 	if (view && strcmp(view, "make-viewer") == 0)
 		return 1;
 	/* FIXME optimise this away most of the time */
-	if (call("doc:notify:doc:CountLines", ci->focus) == 0) {
+	if (call("doc:notify:doc:CountLines", ci->focus, 1) == 0) {
 		/* No counter in place, add one */
 		struct count_info *cli;
 		struct pane *p;
@@ -284,7 +289,7 @@ DEF_CMD(count_lines)
 		home_call(ci->focus, "doc:request:doc:CountLines", p);
 		home_call(ci->focus, "doc:request:doc:GotoLine", p);
 		home_call(ci->focus, "doc:request:Notify:Close", p);
-		call("doc:notify:doc:CountLines", ci->focus);
+		call("doc:notify:doc:CountLines", ci->focus, 1);
 	}
 	if (ci->mark) {
 		if (ci->str && strcmp(ci->str, "goto:line") == 0 &&
@@ -292,11 +297,11 @@ DEF_CMD(count_lines)
 			call("doc:notify:doc:GotoLine", ci->focus, ci->num, NULL, NULL,
 			     0, ci->mark);
 		}
-		call("doc:notify:doc:CountLines", ci->focus, 0, NULL, NULL,
+		call("doc:notify:doc:CountLines", ci->focus, async, NULL, NULL,
 		     0, ci->mark);
 	}
 	if (ci->mark2)
-		call("doc:notify:doc:CountLines", ci->focus, 0, NULL, NULL,
+		call("doc:notify:doc:CountLines", ci->focus, async, NULL, NULL,
 		     0, ci->mark2);
 	return 1;
 }
@@ -304,6 +309,7 @@ DEF_CMD(count_lines)
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &count_lines, 0, NULL, "CountLines");
+	call_comm("global-set-command", ed, &count_lines, 0, NULL, "CountLinesAsync");
 
 	if (linecount_map)
 		return;
