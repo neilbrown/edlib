@@ -195,11 +195,11 @@ DEF_CMD(view_refresh)
 			int mid;
 
 			if (vd->viewpoint) {
-				call("CountLines", p, 0, vd->viewpoint);
+				call("CountLines", ci->focus, 0, vd->viewpoint);
 				vpln = attr_find_int(*mark_attr(vd->viewpoint),
 						     "line");
 			} else if (pm) {
-				call("CountLines", p, 0, pm);
+				call("CountLines", ci->focus, 0, pm);
 				vpln = attr_find_int(*mark_attr(pm), "line");
 			}
 

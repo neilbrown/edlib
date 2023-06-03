@@ -69,7 +69,7 @@ DEF_CMD(render_hex_eol)
 
 	if (!ci->mark)
 		return Enoarg;
-	call("CountLines", ci->home, 0, ci->mark);
+	call("CountLines", ci->focus, 0, ci->mark);
 
 	pos = attr_find_int(*mark_attr(ci->mark), "char") - 1;
 	while (rpt > 0 && ch != WEOF) {
@@ -109,7 +109,7 @@ DEF_CMD(render_line)
 	if (!ci->mark)
 		return Enoarg;
 
-	call("CountLines", ci->home, 0, ci->mark);
+	call("CountLines", ci->focus, 0, ci->mark);
 	pos = attr_find_int(*mark_attr(ci->mark), "char") - 1;
 
 	buf_init(&ret);
@@ -173,7 +173,7 @@ DEF_CMD(render_line_prev)
 
 	if (!ci->mark)
 		return Enoarg;
-	call("CountLines", ci->home, 0, ci->mark);
+	call("CountLines", ci->focus, 0, ci->mark);
 
 	from = attr_find_int(*mark_attr(ci->mark), "char") - 1;
 	to = from & ~0xF;
