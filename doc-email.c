@@ -1233,7 +1233,7 @@ DEF_CMD(attach_email_view)
 	struct pane *p;
 	struct email_view *evi;
 	struct mark *m;
-	int n;
+	int n, i;
 
 	m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
 	if (!m)
@@ -1247,7 +1247,17 @@ DEF_CMD(attach_email_view)
 	alloc(evi, pane);
 	evi->parts = n;
 	evi->invis = calloc(n+1, sizeof(char));
-	memset(evi->invis, 'v', n);
+	for (i = 0; i < n; i++) {
+		if (is_spacer(i))
+			/* Spacers must be visible */
+			evi->invis[i] = 'v';
+		else if (is_orig(i) && i < 2*3)
+			/* Headers and first part can be visible */
+			evi->invis[i] = 'v';
+		else
+			/* Everything else default to invisible */
+			evi->invis[i] = 'i';
+	}
 	p = pane_register(ci->focus, 0, &email_view_handle.c, evi);
 	if (!p) {
 		free(evi);
