@@ -105,14 +105,10 @@ static int need_recalc(struct pane *p safe, struct mark *m)
 		return 1;
 	if (!attr_find(*mark_attr(m), "lines"))
 		ret = 1;
-	while (1) {
-		next = vmark_next(m);
-		if (!next)
-			break;
-		if (is_eol(doc_prior(p, next)) &&
-		    attr_find_int(*mark_attr(next), "lines") > 10)
-			break;
-		/* discard next - we'll find or create another */
+	next = vmark_next(m);
+	if (next && attr_find_int(*mark_attr(m), "lines") < 20) {
+		/* This is tiny, recalc */
+		attr_del(mark_attr(m), "lines");
 		mark_free(next);
 		ret = 1;
 	}
