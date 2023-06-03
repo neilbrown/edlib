@@ -38,6 +38,8 @@
 static struct map *linecount_map;
 DEF_LOOKUP_CMD(handle_count_lines, linecount_map);
 
+static bool testing = False;
+
 struct count_info {
 	int view_num;
 };
@@ -83,6 +85,9 @@ static void do_count(struct pane *p safe, struct mark *start safe, struct mark *
 			*wordp += words;
 			*charp += chars;
 			lines = words = chars = 0;
+			add_marks -= 1;
+			if (!add_marks)
+				return;
 			m = mark_dup_view(m);
 		}
 	}
@@ -95,6 +100,12 @@ static void do_count(struct pane *p safe, struct mark *start safe, struct mark *
 	*wordp += words;
 	*charp += chars;
 	mark_free(m);
+}
+
+DEF_CMD(linecount_restart)
+{
+	pane_notify("doc:CountLines", ci->focus, 1);
+	return Efalse;
 }
 
 static int need_recalc(struct pane *p safe, struct mark *m)
@@ -112,6 +123,9 @@ static int need_recalc(struct pane *p safe, struct mark *m)
 		mark_free(next);
 		ret = 1;
 	}
+	if (ret)
+		/* The background task needs to be stopped */
+		call_comm("event:free", p, &linecount_restart);
 	return ret;
 }
 
@@ -122,6 +136,9 @@ static void count_calculate(struct pane *p safe,
 {
 	int lines, words, chars, l, w, c;
 	struct mark *m, *m2;
+
+	if (testing)
+		sync = True;
 
 	if (!end && attr_find(p->attrs, "lines"))
 		/* nothing to do */
@@ -134,13 +151,21 @@ static void count_calculate(struct pane *p safe,
 		if (!m)
 			return;
 		call("doc:set-ref", p, 1, m);
-		do_count(p, m, NULL, &l, &w, &c, 1);
+		do_count(p, m, NULL, &l, &w, &c, sync ? -1 : 3);
+		if (!sync) {
+			call_comm("event:timer", p, &linecount_restart, 10, end);
+			return;
+		}
 	}
 
-	if (need_recalc(p, m))
+	if (need_recalc(p, m)) {
 		/* need to update this one */
-		do_count(p, m, vmark_next(m), &l, &w, &c, 1);
-
+		do_count(p, m, vmark_next(m), &l, &w, &c, sync ? -1 : 3);
+		if (!sync) {
+			call_comm("event:timer", p, &linecount_restart, 10, end);
+			return;
+		}
+	}
 	/* Add totals from m to before end. Then count to 'end'.
 	 */
 	lines = words = chars = 0;
@@ -151,8 +176,13 @@ static void count_calculate(struct pane *p safe,
 		words += attr_find_int(*mark_attr(m), "words");
 		chars += attr_find_int(*mark_attr(m), "chars");
 		m = m2;
-		if (need_recalc(p, m))
-			do_count(p, m, vmark_next(m), &l, &w, &c, 1);
+		if (!need_recalc(p, m))
+			continue;
+		do_count(p, m, vmark_next(m), &l, &w, &c, sync ? -1 : 3);
+		if (!sync) {
+			call_comm("event:timer", p, &linecount_restart, 10, end);
+			return;
+		}
 	}
 	/* m is the last mark before end */
 	if (!end) {
@@ -175,6 +205,8 @@ static void count_calculate(struct pane *p safe,
 		attr_set_int(&p->attrs, "lines", lines);
 		attr_set_int(&p->attrs, "words", words);
 		attr_set_int(&p->attrs, "chars", chars);
+		if (!testing)
+			pane_notify("doc:status-changed", p);
 	}
 }
 
@@ -183,6 +215,8 @@ DEF_CMD(linecount_close)
 	struct pane *d = ci->focus;
 	struct count_info *cli = ci->home->data;
 	struct mark *m;
+
+	call_comm("event:free", d, &linecount_restart);
 	while ((m = vmark_first(d, cli->view_num, ci->home)) != NULL)
 		mark_free(m);
 	home_call(d, "doc:del-view", ci->home, cli->view_num);
@@ -215,6 +249,7 @@ DEF_CMD(linecount_notify_replace)
 	       (!ci->mark2 || mark_ordered_or_same(m2, ci->mark2)))
 		mark_free(m2);
 
+	call_comm("event:free", d, &linecount_restart);
 	return 1;
 }
 
@@ -310,6 +345,9 @@ void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &count_lines, 0, NULL, "CountLines");
 	call_comm("global-set-command", ed, &count_lines, 0, NULL, "CountLinesAsync");
+
+	if (getenv("EDLIB_TESTING"))
+		testing = True;
 
 	if (linecount_map)
 		return;

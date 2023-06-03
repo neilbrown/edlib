@@ -24,7 +24,7 @@ the file.
 
 ### Medium
 
-- [ ] Always do word-count async.
+- [X] Always do word-count async.
 - [ ] lib-url
 - [ ] lib-mergeview improvements
 - [ ] lib-diff slowness with large diff
@@ -405,7 +405,10 @@ Module features
 ### line count
 
 - [X] count-lines seems to go very slowly in base64/utf-8 email
-- [ ] Always do word-count async.
+- [X] Always do word-count async.
+- [ ] Find a way to locate mark faster than walking the whole list
+      adding up the interval counts.  Maybe a version number and
+      async update.
 
 ### lib-utf-8
 

@@ -869,7 +869,7 @@ void mark_step(struct mark *m safe, int forward)
 void mark_step_sharesref(struct mark *m safe, int forward)
 {
 	/* step mark forward, or backward, over all marks with same
-	 * ref, ignoring the .i, and sets '.' to a safe value wrt the
+	 * ref, ignoring the .i, and sets '.i' to a safe value wrt the
 	 * last mark stepped over.
 	 */
 	struct mark *m2, *target = m;
