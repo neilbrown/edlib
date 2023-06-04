@@ -9,6 +9,7 @@ the file.
 
 ### Trivial
 
+- [ ] Unify edlib_timing and pane_too_long ??
 - [X] If an email part doesn't end with newline, last character is swallowed.
 - [X] What is rule for doc:content?  Does the mark move and get passed
       down, or is it copied and left unchanged?
@@ -27,6 +28,7 @@ the file.
 
 ### Medium
 
+- [ ] add event:on-idle with 3 priority levels
 - [X] Always do word-count async.
 - [ ] lib-url
 - [ ] lib-mergeview improvements
@@ -63,6 +65,15 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] add event:on-idle with 3 priority levels
+      2 - fast cleanup that must be run immediately
+      1 - slower general response to recent command: typically
+          pane_refresh
+      0 - do one of these before checking of other events
+      Use 2 for freeing panes and marks and other memory
+      Use 1 for pane_refresh
+      Use 0 for splitting up background tasks like spell and linecount
+      simplify main loop in edlib.c to:  call("event:run", ed)
 - [ ] teach input to allow a repeat command to be registered so that e.g.
       search/replace and do a bit of work, then ask to be called again.
       input can cancel this on suitable input.
