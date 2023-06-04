@@ -153,25 +153,28 @@ endwhile:
 
 DEF_CMD(format_content)
 {
+	struct mark *m;
+
 	if (!ci->mark || !ci->comm2)
 		return Enoarg;
 	if (ci->num)
 		/* Cannot handle bytes */
 		return Einval;
 
-	while (doc_following(ci->focus, ci->mark) != WEOF) {
+	m = mark_dup(ci->mark);
+	while (doc_following(ci->focus, m) != WEOF) {
 		const char *l, *c;
 		wint_t w;
 
-		l = do_format(ci->focus, ci->mark, NULL, -1, 0);
+		l = do_format(ci->focus, m, NULL, -1, 0);
 		if (!l)
 			break;
-		doc_next(ci->focus, ci->mark);
+		doc_next(ci->focus, m);
 		c = l;
 		while (*c) {
 			w = get_utf8(&c, NULL);
 			if (w >= WERR ||
-			    comm_call(ci->comm2, "consume", ci->focus, w, ci->mark) <= 0)
+			    comm_call(ci->comm2, "consume", ci->focus, w, m) <= 0)
 				/* Finished */
 				break;
 		}
@@ -179,6 +182,7 @@ DEF_CMD(format_content)
 		if (*c)
 			break;
 	}
+	mark_free(m);
 	return 1;
 }
 
@@ -673,6 +677,7 @@ DEF_CMD(format_content2)
 		/* Cannot handle bytes */
 		return Einval;
 	set_format(focus, rd);
+	m = mark_dup(m);
 
 	pane_set_time(home);
 	do {
@@ -776,6 +781,7 @@ DEF_CMD(format_content2)
 		 (!end || mark_ordered_or_same(m, end)) &&
 		 comm_call(ci->comm2, "consume", ci->focus, nxt, m) > 0);
 
+	mark_free(m);
 	return 1;
 }
 

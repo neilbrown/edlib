@@ -822,9 +822,30 @@ DEF_CMD(doc_default_content)
 	 *
 	 * If called as doc:content-bytes: return bytes, not chars
 	 *
-	 * .mark is 'location': to start.  This is moved forwards
+	 * .mark is 'location': to start.  This is not moved.
+	 * .mark2, if set, is location to stop.
 	 * .comm2 is 'consume': pass char mark and report if finished.
 	 *
+	 * comm2 is passed:
+	 * .mark - the mark that was passed in and gets moved
+	 * .num - char character just before .mark
+	 * .str - num utf8 text after mark.  It may not be present
+	 *       and if it is, at most .num2 bytes can be used
+	 * .num2 - usable length of .str
+	 *
+	 * comm2 it typically embedded in another struct that can
+	 * be accessed in the callback (using container_of in C code).
+	 * If the caller need to know where the callback aborted, the
+	 * callback need to record that somehow.
+	 *
+	 * comm2 should return 1 if the main char was consumed,
+	 * 1+n if n bytes (not chars) from str were consumed
+	 * -ve to abort.
+	 *
+	 * If the callback processes some of 'str', the mark will no longer
+	 * be accurate.  If it needs an accurate mark, it can walk a copy
+	 * forward, or return a suitable count and be called again with an
+	 * accurate mark.
 	 */
 	struct mark *m = ci->mark;
 	struct commcache dchar = CCINIT;
@@ -833,6 +854,7 @@ DEF_CMD(doc_default_content)
 
 	if (!m || !ci->comm2)
 		return Enoarg;
+	m = mark_dup(m);
 	if (strcmp(ci->key, "doc:content-bytes") == 0)
 		cmd = "doc:byte";
 
@@ -842,6 +864,7 @@ DEF_CMD(doc_default_content)
 	       comm_call(ci->comm2, "consume", ci->home, (nxt & 0x1FFFF), m) > 0)
 		nxt = ccall(&dchar, cmd, ci->home, 1, m);
 
+	mark_free(m);
 	return nxt < 0 ? nxt : 1;
 }
 
@@ -901,7 +924,7 @@ DEF_CMD(doc_get_str)
 	 */
 	int bytes = strcmp(ci->key, "doc:get-bytes") == 0;
 	struct getstr g;
-	struct mark *from = NULL, *to = NULL, *m;
+	struct mark *from = NULL, *to = NULL;
 
 	if (ci->mark && ci->mark2) {
 		if (ci->mark2->seq < ci->mark->seq) {
@@ -917,11 +940,12 @@ DEF_CMD(doc_get_str)
 	g.bytes = bytes;
 	buf_init(&g.b);
 	g.end = to;
-	if (from)
-		m = mark_dup(from);
-	else
-		m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
-	if (!m)
+	if (!from) {
+		from = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
+		if (from)
+			call("doc:set-ref", ci->focus, 1, from);
+	}
+	if (!from)
 		return Efail;
 	if (!to) {
 		to = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
@@ -929,8 +953,9 @@ DEF_CMD(doc_get_str)
 			call("doc:set-ref", ci->focus, 0, to);
 	}
 	call_comm(bytes ? "doc:content-bytes" : "doc:content",
-		  ci->focus, &g.c, 0, m, NULL, 0, to);
-	mark_free(m);
+		  ci->focus, &g.c, 0, from, NULL, 0, to);
+	if (from != ci->mark && from != ci->mark2)
+		mark_free(from);
 	if (to != ci->mark && to != ci->mark2)
 		mark_free(to);
 	comm_call(ci->comm2, "callback:get-str", ci->focus, g.b.len, NULL,

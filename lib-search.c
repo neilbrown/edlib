@@ -494,17 +494,14 @@ DEF_CB(equal_test)
 DEF_CMD(text_equals)
 {
 	struct texteql te;
-	struct mark *m;
 
 	if (!ci->str || !ci->mark)
 		return Enoarg;
 
-	m = mark_dup(ci->mark);
 	te.c = equal_test;
 	te.text = ci->str;
 	te.matched = False;
-	call_comm("doc:content", ci->focus, &te.c, 0, m);
-	mark_free(m);
+	call_comm("doc:content", ci->focus, &te.c, 0, ci->mark);
 	return te.matched ? 1 : Efalse;
 }
 

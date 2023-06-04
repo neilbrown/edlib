@@ -89,7 +89,7 @@ class CalcView(edlib.Pane):
                 if c and c == '>':
                     self.getvar("reinit", focus,
                                 edlib.RXLF_ANCHORED | edlib.RXLF_BACKTRACK)
-                    focus.call("doc:content", m.dup(), self.getvar)
+                    focus.call("doc:content", m, self.getvar)
                     nm = self.getvar("interp", focus, "\\1", ret='str')
                     # replace this line
                     focus.call("doc:EOL", 1, m)

@@ -145,17 +145,21 @@ DEF_CMD(crop_clip)
 DEF_CMD(crop_content)
 {
 	struct crop_data *cd = ci->home->data;
-	struct mark *m2;
+	struct mark *m, *m2;
 	int ret;
 
-	crop(ci->mark, cd);
+	if (!ci->mark)
+		return Enoarg;
+	m = mark_dup(ci->mark);
+	crop(m, cd);
 	crop(ci->mark2, cd);
 	if (ci->mark2)
 		m2 = ci->mark2;
 	else
 		m2 = mark_dup(cd->end);
 	ret = home_call_comm(ci->home->parent, ci->key, ci->home,
-			     ci->comm2, 0, ci->mark, NULL, 0, m2);
+			     ci->comm2, 0, m, NULL, 0, m2);
+	mark_free(m);
 	if (m2 != ci->mark2)
 		mark_free(m2);
 	return ret;

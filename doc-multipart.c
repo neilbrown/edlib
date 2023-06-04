@@ -496,7 +496,7 @@ DEF_CMD(mp_content)
 
 	if (!ci->mark || !ci->comm2)
 		return Enoarg;
-	m = ci->mark;
+	m = mark_dup(ci->mark);
 	m2 = ci->mark2;
 	cb.last_ret = 1;
 	while (cb.last_ret > 0 && m->ref.docnum < mpi->nparts &&
@@ -531,6 +531,7 @@ DEF_CMD(mp_content)
 			post_move(m);
 		}
 	}
+	mark_free(m);
 	return ret;
 }
 

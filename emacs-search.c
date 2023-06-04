@@ -529,9 +529,7 @@ DEF_CMD(do_replace)
 						       NULL, Pattern);
 			if (ptn) {
 				char *new2;
-				struct mark *tmp = mark_dup(m);
-				call_comm("doc:content", esi->target, ptn, 0, tmp);
-				mark_free(tmp);
+				call_comm("doc:content", esi->target, ptn, 0, m);
 				new2 = comm_call_ret(strsave, ptn, "interp",
 						     esi->target, 0, NULL, new);
 				if (new2)

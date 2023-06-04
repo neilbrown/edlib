@@ -225,8 +225,7 @@ class DiffPane(edlib.Pane):
             return 1
         cmd = focus.call("make-search", ptn,
                          edlib.RXLF_ANCHORED|edlib.RXLF_BACKTRACK, ret='comm')
-        m2 = m.dup()
-        focus.call("doc:content", m2, cmd)
+        focus.call("doc:content", m, cmd)
         f = cmd("getcapture", "len", focus, 1)-1
         if self.which == 0 or self.which > f:
             # get the "after" section
@@ -240,6 +239,7 @@ class DiffPane(edlib.Pane):
         wcmd = focus.call("MakeWiggle", ret='comm')
         if not wcmd:
             return edlib.Efail
+        m2 = m.dup()
         focus.call("doc:EOL", 1, m2, 1)
         m3 = mark.dup()
         focus.call("doc:EOL", -1, m3)

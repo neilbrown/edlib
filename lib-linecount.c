@@ -121,7 +121,6 @@ static void do_count(struct pane *p safe, struct pane *owner safe,
 {
 	/* if 'end' is NULL, go all the way to EOF */
 	struct clcb cl;
-	struct mark *tmp;
 
 	cl.lines = 0;
 	cl.words = 0;
@@ -139,13 +138,9 @@ static void do_count(struct pane *p safe, struct pane *owner safe,
 	*linep = 0;
 	*wordp = 0;
 	*charp = 0;
-	tmp = mark_dup(start);
-	if (call_comm("doc:content", p, &cl.c, 0, tmp, NULL, 0, end) <= 0 ||
-	    (add_marks && cl.add_marks == 0)) {
-		mark_free(tmp);
+	if (call_comm("doc:content", p, &cl.c, 0, start, NULL, 0, end) <= 0 ||
+	    (add_marks && cl.add_marks == 0))
 		return;
-	}
-	mark_free(tmp);
 
 	if (cl.add_marks && cl.start && cl.start != start && cl.chars == 0) {
 		mark_free(cl.start);
