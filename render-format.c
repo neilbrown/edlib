@@ -713,7 +713,7 @@ DEF_CMD(format_content2)
 				if (nxt == '%' || nxt == '<')
 					val += 1;
 				if (o <= i &&
-				    (!end || mark_ordered_not_same(m, end))) {
+				    (!end || mark_ordered_or_same(m, end))) {
 					if (prev != WEOF) {
 						if (comm_call(ci->comm2,
 							      "consume", focus,
@@ -773,7 +773,7 @@ DEF_CMD(format_content2)
 			}
 		}
 	} while (nxt > 0 && nxt != WEOF &&
-		 (!end || mark_ordered_not_same(m, end)) &&
+		 (!end || mark_ordered_or_same(m, end)) &&
 		 comm_call(ci->comm2, "consume", ci->focus, nxt, m) > 0);
 
 	return 1;
