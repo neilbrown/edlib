@@ -838,7 +838,8 @@ DEF_CMD(doc_default_content)
 
 	nxt = ccall(&dchar, cmd, ci->home, 1, m);
 	while (nxt > 0 && nxt != CHAR_RET(WEOF) &&
-	       comm_call(ci->comm2, "consume", ci->home, nxt, m) > 0)
+	       (!ci->mark2 || mark_ordered_or_same(m, ci->mark2)) &&
+	       comm_call(ci->comm2, "consume", ci->home, (nxt & 0x1FFFF), m) > 0)
 		nxt = ccall(&dchar, cmd, ci->home, 1, m);
 
 	return nxt < 0 ? nxt : 1;
