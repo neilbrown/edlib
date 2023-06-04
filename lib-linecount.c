@@ -362,12 +362,8 @@ DEF_CMD(linecount_notify_goto)
 
 DEF_CMD(count_lines)
 {
-	char *view = pane_attr_get(ci->focus, "view-default");
 	int async = strcmp(ci->key, "CountLinesAsync") == 0;
 
-	/* FIXME this type-check is a HACK */
-	if (view && strcmp(view, "make-viewer") == 0)
-		return 1;
 	/* FIXME optimise this away most of the time */
 	if (call("doc:notify:doc:CountLines", ci->focus, 1) == 0) {
 		/* No counter in place, add one */
