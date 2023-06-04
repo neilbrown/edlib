@@ -3160,7 +3160,7 @@ class notmuch_message_view(edlib.Pane):
                 end = start.dup()
                 self.call("doc:char", end, 10000, m)
 
-                self.mark_urls(start, end)
+                self.call("url:mark-up", start, end)
                 self.mark_quotes(start, end)
 
             # When presented with alternatives we are supposed to show
@@ -3246,31 +3246,6 @@ class notmuch_message_view(edlib.Pane):
         else:
             focus.call("doc:set-attr", "email:visible", m, "none")
 
-    def mark_urls(self, ms, me):
-        ms = ms.dup()
-        while ms < me:
-            try:
-                len = self.call("text-search",
-                                "(http|https|ftp|mail):[^][\\s\";<>]+", ms, me)
-                len -= 1
-            except:
-                return
-            # People sometimes put a period or ')' at the end of a URL.
-            while self.prior(ms) in '.)':
-                self.prev(ms)
-                len -= 1
-            m1 = ms.dup()
-            i = 0
-            while i < len:
-                self.prev(m1)
-                i += 1
-            url = self.call("doc:get-str", m1, ms, ret='str')
-            tag = self['next-url-tag']
-            if not tag:
-                tag = "1"
-            self.call("doc:set-attr", 1, m1, "render:url", "%d:%s"%(len,tag))
-            self['next-url-tag'] = "%d" % (int(tag) + 1)
-            self["url:" + tag] = url
 
     def mark_quotes(self, ms, me):
         # if we find more than 7 quoted lines in a row, we add the
@@ -3504,18 +3479,6 @@ class notmuch_message_view(edlib.Pane):
         if str == "render:imgalt":
             comm2("attr:callback", focus, 100000 if str2 == "1" else -1,
                   mark, "fg:green-60", 120)
-        if str[:10] == "render:url":
-            w = str2.split(':')
-            if len(w) == 2:
-                tg = w[1]
-                leng = int(w[0])
-            else:
-                tg = str2
-                leng = 100000
-            if str == "render:url-end":
-                leng = -1
-            comm2("attr:callback", focus, leng, mark,
-                  "fg:cyan-60,underline,active-tag:url,url-tag="+tg, 120)
         if str == "render:char":
             w = str2.split(':')
             attr = None
@@ -3590,27 +3553,6 @@ class notmuch_message_view(edlib.Pane):
         mark.to_mark(p)
         return edlib.Efallthrough
 
-    def handle_click(self, key, focus, mark, str2, **a):
-        "handle:Mouse-Activate:url"
-        a = str2.split(',')
-        tag=""
-        for w in a:
-            if w.startswith("url-tag="):
-                tag = w[8:]
-        if not tag:
-            return 1
-        # might be in a multipart
-        url = focus.call("doc:get-attr", mark,
-                         "multipart-this:url:" + tag,
-                         ret='str')
-        if not url:
-            # or might be in main document
-            url = focus["url:" + tag]
-        if url:
-            focus.call("Message", "Opening url [%s] <%s>" % (tag,url))
-            focus.call("Display:external-viewer", url)
-        return 1
-
     def handle_moving(self, key, focus, mark, mark2, **a):
         "handle:mark:moving"
         if mark == self.point and not self.have_prev:
@@ -3661,6 +3603,10 @@ def render_query_attach(key, focus, comm2, **a):
 def render_message_attach(key, focus, comm2, **a):
     p = focus.call("attach-email-view", ret='pane')
     p = notmuch_message_view(p)
+    if p:
+        p2 = p.call("attach-render-url-view", ret='pane')
+        if p2:
+            p = p2
     if comm2:
         comm2("callback", p)
     return 1

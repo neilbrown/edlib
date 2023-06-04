@@ -48,6 +48,7 @@ editor.call("global-load-module", "lib-whitespace")
 editor.call("global-load-module", "display-pygtk")
 editor.call("global-load-module", "display-x11-xcb")
 editor.call("global-load-module", "lib-x11selection-xcb")
+editor.call("global-load-module", "lib-url")
 
 if 'HOME' in os.environ:
     path = os.environ['HOME'] + "/.config/edlib/config.py"
