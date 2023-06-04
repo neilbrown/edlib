@@ -1117,7 +1117,8 @@ DEF_CMD(email_set_ref)
 
 	if (!ci->mark)
 		return Enoarg;
-	home_call(p->parent, ci->key, ci->focus, ci->num, ci->mark, evi->invis);
+	home_call_comm(p->parent, ci->key, ci->focus, ci->comm2,
+		       ci->num, ci->mark, evi->invis);
 	return 1;
 }
 
@@ -1316,6 +1317,7 @@ static void email_init_map(void)
 	key_add(email_view_map, "doc:content", &email_content);
 	key_add(email_view_map, "doc:content-bytes", &email_content);
 	key_add(email_view_map, "doc:set-ref", &email_set_ref);
+	key_add(email_view_map, "doc:get-boundary", &email_set_ref);
 	key_add(email_view_map, "doc:email-step-part", &email_step_part);
 	key_add(email_view_map, "doc:set-attr", &email_view_set_attr);
 	key_add(email_view_map, "doc:get-attr", &email_view_get_attr);

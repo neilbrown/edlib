@@ -450,7 +450,7 @@ DEF_CMD(mp_get_boundary)
 	if (!m || !ci->comm2)
 		return Enoarg;
 	m = mark_dup(m);
-	call("doc:step-part", ci->home, ci->num, m);
+	call("doc:step-part", ci->home, ci->num, m, ci->str);
 	comm_call(ci->comm2, "cb", ci->focus, 0, m);
 	return 1;
 }

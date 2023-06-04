@@ -9,7 +9,7 @@ the file.
 
 ### Trivial
 
-- [ ] If an email part doesn't end with newline, last character is swallowed.
+- [X] If an email part doesn't end with newline, last character is swallowed.
 - [X] What is rule for doc:content?  Does the mark move and get passed
       down, or is it copied and left unchanged?
 
