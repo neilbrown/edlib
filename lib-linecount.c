@@ -38,6 +38,7 @@
 static struct map *linecount_map;
 DEF_LOOKUP_CMD(handle_count_lines, linecount_map);
 
+static const int batch_marks = 6;
 static bool testing = False;
 
 struct count_info {
@@ -61,23 +62,40 @@ DEF_CB(clcb)
 	wint_t ch = ci->num;
 	struct mark *m = ci->mark;
 	struct count_info *cli = cl->owner->data;
+	const char *s;
+	int i = 0;
 
 	if (!m)
 		return Enoarg;
 
-	cl->chars += 1;
-	if (is_eol(ch))
-		cl->lines += 1;
-	if (!cl->inword && (iswprint(ch) && !iswspace(ch))) {
-		cl->inword = 1;
-		cl->words += 1;
-	} else if (cl->inword && !(iswprint(ch) && !iswspace(ch)))
-		cl->inword = 0;
-	if (!cl->add_marks ||
-	    !cl->start ||
-	    !(cl->lines >= 100 || cl->words >= 1000 || cl->chars >= 10000))
-		return 1;
+	while (1) {
+		cl->chars += 1;
+		if (is_eol(ch))
+			cl->lines += 1;
+		if (!cl->inword && (iswprint(ch) && !iswspace(ch))) {
+			cl->inword = 1;
+			cl->words += 1;
+		} else if (cl->inword && !(iswprint(ch) && !iswspace(ch)))
+			cl->inword = 0;
+		if (cl->add_marks &&
+		    cl->start &&
+		    (cl->lines >= 100 || cl->words >= 1000 || cl->chars >= 10000))
+			break;
+		if (!ci->str || i >= ci->num2)
+			return i+1;
+		s = ci->str + i;
+		ch = get_utf8(&s, ci->str + ci->num2);
+		if (ch == WEOF || ch == WERR)
+			return i+1;
+		i = s - ci->str;
+	}
 
+	if (i > 0) {
+		/* m isn't where we are, so we cannot update
+		 * anything yet - need to return an get called again
+		 */
+		return i+1;
+	}
 	attr_set_int(mark_attr(cl->start), "lines", cl->lines);
 	attr_set_int(mark_attr(cl->start), "words", cl->words);
 	attr_set_int(mark_attr(cl->start), "chars", cl->chars);
@@ -192,7 +210,7 @@ static void count_calculate(struct pane *p safe,
 		if (!m)
 			return;
 		call("doc:set-ref", p, 1, m);
-		do_count(p, owner, m, vmark_next(m), &l, &w, &c, sync ? -1 : 3);
+		do_count(p, owner, m, vmark_next(m), &l, &w, &c, sync ? -1 : batch_marks);
 		if (!sync) {
 			call_comm("event:timer", p, &linecount_restart, 10, end);
 			return;
@@ -201,7 +219,7 @@ static void count_calculate(struct pane *p safe,
 
 	if (need_recalc(p, m)) {
 		/* need to update this one */
-		do_count(p, owner, m, vmark_next(m), &l, &w, &c, sync ? -1 : 3);
+		do_count(p, owner, m, vmark_next(m), &l, &w, &c, sync ? -1 : batch_marks);
 		if (!sync) {
 			call_comm("event:timer", p, &linecount_restart, 10, end);
 			return;
@@ -219,7 +237,7 @@ static void count_calculate(struct pane *p safe,
 		m = m2;
 		if (!need_recalc(p, m))
 			continue;
-		do_count(p, owner, m, vmark_next(m), &l, &w, &c, sync ? -1 : 3);
+		do_count(p, owner, m, vmark_next(m), &l, &w, &c, sync ? -1 : batch_marks);
 		if (!sync) {
 			call_comm("event:timer", p, &linecount_restart, 10, end);
 			return;
