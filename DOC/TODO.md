@@ -9,6 +9,7 @@ the file.
 
 ### Trivial
 
+- [ ] If an email part doesn't end with newline, last character is swallowed.
 
 ### Small
 

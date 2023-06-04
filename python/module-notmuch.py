@@ -3651,6 +3651,7 @@ def notmuch_doc(key, home, focus, comm2, **a):
 
 def render_query_attach(key, focus, comm2, **a):
     p = notmuch_query_view(focus)
+    p["format:no-linecount"] = "1"
     p = p.call("attach-render-format", ret='pane')
     p['render-wrap'] = 'yes'
     if comm2:
