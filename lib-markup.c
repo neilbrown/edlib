@@ -82,7 +82,7 @@ DEF_CMD(render_prev)
 	}
 	if (ch != WEOF && !is_render_eol(ch, f, m) &&
 	    (!doc_boundary || !mark_same(doc_boundary, m))) {
-		/* Just cross the boundary, or the max count.
+		/* Just crossed the boundary, or the max count.
 		 * Need to step back, and ensure there is a stable boundary
 		 * here.
 		 */
@@ -365,6 +365,12 @@ DEF_CMD(render_line)
 
 		if (o >= 0 && b.len >= o)
 			break;
+
+		if (boundary && mark_ordered_or_same(boundary, m))
+			break;
+		if (doc_boundary && mark_ordered_or_same(doc_boundary, m))
+			break;
+
 		if (pm && mark_same(m, pm) && pm_offset < 0)
 			pm_offset = b.len;
 
@@ -409,10 +415,6 @@ DEF_CMD(render_line)
 			add_newline = 1;
 			break;
 		}
-		if (boundary && mark_ordered_or_same(boundary, m))
-			break;
-		if (doc_boundary && mark_ordered_or_same(doc_boundary, m))
-			break;
 		chars++;
 		if (ar.ast && strcmp(ar.ast->attr, "hide") == 0)
 			continue;
