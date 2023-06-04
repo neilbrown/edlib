@@ -44,62 +44,103 @@ struct count_info {
 	int view_num;
 };
 
-static void do_count(struct pane *p safe, struct mark *start safe, struct mark *end,
+struct clcb {
+	int lines, words, chars;
+	int inword;
+	int *linep safe, *wordp safe, *charp safe;
+	int add_marks;
+	struct mark *start;
+	struct mark *end;
+	struct command c;
+	struct pane *owner safe;
+};
+
+DEF_CB(clcb)
+{
+	struct clcb *cl = container_of(ci->comm, struct clcb, c);
+	wint_t ch = ci->num;
+	struct mark *m = ci->mark;
+	struct count_info *cli = cl->owner->data;
+
+	if (!m)
+		return Enoarg;
+
+	cl->chars += 1;
+	if (is_eol(ch))
+		cl->lines += 1;
+	if (!cl->inword && (iswprint(ch) && !iswspace(ch))) {
+		cl->inword = 1;
+		cl->words += 1;
+	} else if (cl->inword && !(iswprint(ch) && !iswspace(ch)))
+		cl->inword = 0;
+	if (!cl->add_marks ||
+	    !cl->start ||
+	    !(cl->lines >= 100 || cl->words >= 1000 || cl->chars >= 10000))
+		return 1;
+
+	attr_set_int(mark_attr(cl->start), "lines", cl->lines);
+	attr_set_int(mark_attr(cl->start), "words", cl->words);
+	attr_set_int(mark_attr(cl->start), "chars", cl->chars);
+	*cl->linep += cl->lines;
+	*cl->wordp += cl->words;
+	*cl->charp += cl->chars;
+	cl->lines = 0;
+	cl->words = 0;
+	cl->chars = 0;
+	cl->start = vmark_new(ci->focus, cli->view_num, cl->owner);
+	if (cl->start)
+		mark_to_mark(cl->start, m);
+	cl->add_marks -= 1;
+	if (!cl->add_marks)
+		/* Added enough marks, abort */
+		return Efalse;
+	return 1;
+}
+
+static void do_count(struct pane *p safe, struct pane *owner safe,
+		     struct mark *start safe, struct mark *end,
 		     int *linep safe, int *wordp safe, int *charp safe, int add_marks)
 {
 	/* if 'end' is NULL, go all the way to EOF */
-	int lines = 0;
-	int words = 0;
-	int chars = 0;
-	int inword = 0;
-	wint_t ch;
-	struct mark *m;
+	struct clcb cl;
+	struct mark *tmp;
 
-	if (add_marks)
-		m = mark_dup_view(start);
-	else
-		m = mark_dup(start);
+	cl.lines = 0;
+	cl.words = 0;
+	cl.chars = 0;
+	cl.inword = 0;
+	cl.end = end;
+	cl.start = start;
+	cl.add_marks = add_marks;
+	cl.c = clcb;
+	cl.linep = linep;
+	cl.wordp = wordp;
+	cl.charp = charp;
+	cl.owner = owner;
 
 	*linep = 0;
 	*wordp = 0;
 	*charp = 0;
-	while ((end == NULL || (mark_ordered_not_same(m, end))) &&
-	       (ch = doc_next(p, m)) != WEOF) {
-		chars += 1;
-		if (is_eol(ch))
-			lines += 1;
-		if (!inword && (iswprint(ch) && !iswspace(ch))) {
-			inword = 1;
-			words += 1;
-		} else if (inword && !(iswprint(ch) && !iswspace(ch)))
-			inword = 0;
-		if (add_marks &&
-		    (lines >= 100 || words > 1000 || chars > 10000) &&
-		    (end == NULL || (mark_ordered_not_same(m, end)))) {
-			/* leave a mark here and keep going */
-			attr_set_int(mark_attr(start), "lines", lines);
-			attr_set_int(mark_attr(start), "words", words);
-			attr_set_int(mark_attr(start), "chars", chars);
-			start = m;
-			*linep += lines;
-			*wordp += words;
-			*charp += chars;
-			lines = words = chars = 0;
-			add_marks -= 1;
-			if (!add_marks)
-				return;
-			m = mark_dup_view(m);
-		}
+	tmp = mark_dup(start);
+	if (call_comm("doc:content", p, &cl.c, 0, tmp, NULL, 0, end) <= 0 ||
+	    (add_marks && cl.add_marks == 0)) {
+		mark_free(tmp);
+		return;
 	}
-	if (add_marks) {
-		attr_set_int(mark_attr(start), "lines", lines);
-		attr_set_int(mark_attr(start), "words", words);
-		attr_set_int(mark_attr(start), "chars", chars);
+	mark_free(tmp);
+
+	if (cl.add_marks && cl.start && cl.start != start && cl.chars == 0) {
+		mark_free(cl.start);
+		cl.start = NULL;
 	}
-	*linep += lines;
-	*wordp += words;
-	*charp += chars;
-	mark_free(m);
+	if (cl.add_marks && cl.start) {
+		attr_set_int(mark_attr(cl.start), "lines", cl.lines);
+		attr_set_int(mark_attr(cl.start), "words", cl.words);
+		attr_set_int(mark_attr(cl.start), "chars", cl.chars);
+	}
+	*linep += cl.lines;
+	*wordp += cl.words;
+	*charp += cl.chars;
 }
 
 DEF_CMD(linecount_restart)
@@ -151,7 +192,7 @@ static void count_calculate(struct pane *p safe,
 		if (!m)
 			return;
 		call("doc:set-ref", p, 1, m);
-		do_count(p, m, NULL, &l, &w, &c, sync ? -1 : 3);
+		do_count(p, owner, m, vmark_next(m), &l, &w, &c, sync ? -1 : 3);
 		if (!sync) {
 			call_comm("event:timer", p, &linecount_restart, 10, end);
 			return;
@@ -160,7 +201,7 @@ static void count_calculate(struct pane *p safe,
 
 	if (need_recalc(p, m)) {
 		/* need to update this one */
-		do_count(p, m, vmark_next(m), &l, &w, &c, sync ? -1 : 3);
+		do_count(p, owner, m, vmark_next(m), &l, &w, &c, sync ? -1 : 3);
 		if (!sync) {
 			call_comm("event:timer", p, &linecount_restart, 10, end);
 			return;
@@ -178,7 +219,7 @@ static void count_calculate(struct pane *p safe,
 		m = m2;
 		if (!need_recalc(p, m))
 			continue;
-		do_count(p, m, vmark_next(m), &l, &w, &c, sync ? -1 : 3);
+		do_count(p, owner, m, vmark_next(m), &l, &w, &c, sync ? -1 : 3);
 		if (!sync) {
 			call_comm("event:timer", p, &linecount_restart, 10, end);
 			return;
@@ -190,7 +231,7 @@ static void count_calculate(struct pane *p safe,
 		words += attr_find_int(*mark_attr(m), "words");
 		chars += attr_find_int(*mark_attr(m), "chars");
 	} else if (!mark_same(m, end)) {
-		do_count(p, m, end, &l, &w, &c, 0);
+		do_count(p, owner, m, end, &l, &w, &c, 0);
 		lines += l;
 		words += w;
 		chars += c;
