@@ -213,6 +213,13 @@ static void count_calculate(struct pane *p safe,
 		/* nothing to do */
 		return;
 
+	if (end && !attr_find(p->attrs, "lines") && !sync)
+		/* We don't have totals, so do that first.
+		 * When asked again, we will be able to find
+		 * the mark quickly.
+		 */
+		end = NULL;
+
 	m = vmark_first(p, type, owner);
 	if (m == NULL || doc_prior(p, m) != WEOF) {
 		/* No mark at doc start, make some */

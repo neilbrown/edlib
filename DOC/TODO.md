@@ -33,6 +33,8 @@ the file.
 - [ ] lib-url
 - [ ] lib-mergeview improvements
 - [ ] lib-diff slowness with large diff
+- [ ] linecount :when used in 'view' mode, stack the counting pane with all the
+      others so it can easily catch view-changed.
 
 ### Large
 
@@ -143,6 +145,13 @@ Core features
 
 Module features
 ---------------
+
+### lib-linecount
+
+- [ ] when used in 'view' mode, stack the counting pane with all the
+      others so it can easily catch view-changed.  In general, make it
+      easier to use this way.  e.g. easier than catching
+      doc:request:doc:CountLines.
 
 ### lib-server
 
