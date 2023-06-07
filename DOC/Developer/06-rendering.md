@@ -205,7 +205,7 @@ document, rather than on its content.
   (1) or release (2) or motion (3).  If it was "release" then
   "render-lines" will check if the attribute "active-tag" appears in the
   markup for that location.  If it does then a message is sent to the
-  stack with a key formed from "Mouse-Activate:" followed by the value
+  stack with a key formed from "Activate:" followed by the value
   of "active-tag".  "mark" will be a mark at the location, "str1" will be
   the tag, and "str2" will be all attributes active at that location.
 

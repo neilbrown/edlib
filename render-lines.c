@@ -1393,7 +1393,7 @@ DEF_CMD(render_lines_set_cursor)
 			tag = get_active_tag(xyattr);
 			if (tag) {
 				char *c = NULL;
-				asprintf(&c, "Mouse-Activate:%s", tag);
+				asprintf(&c, "Activate:%s", tag);
 				if (c)
 					call(c, focus, 0, m2, tag,
 					     0, ci->mark, xyattr);

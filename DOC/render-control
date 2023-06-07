@@ -133,7 +133,7 @@ Standard attributes are:
            attribute.
 
   active-tag:$tag If a mouse-click happens on text with this attribute,
-           Mouse-Activate:$tag is called with:
+           Activate:$tag is called with:
               ->mark being a new mark at the location
               ->str being $tag
 	      ->str2 being all attributes active at the location

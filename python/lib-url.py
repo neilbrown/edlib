@@ -9,7 +9,7 @@
 #
 # "render:url-view" is an overlay pane which:
 #  - responds to map-attr for render:url, adding the active-tag attr
-#  - handles Mouse-Activate:url to also activate the url
+#  - handles Activate:url to also activate the url
 
 import edlib
 
@@ -73,7 +73,7 @@ class url_view(edlib.Pane):
             return 1
 
     def handle_click(self, key, focus, mark, str2, **a):
-        "handle:Mouse-Activate:url"
+        "handle:Activate:url"
         a = str2.split(',')
         tag=""
         for w in a:

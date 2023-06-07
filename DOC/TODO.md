@@ -9,10 +9,13 @@ the file.
 
 ### Trivial
 
+= [ ] :Cx-< and :Cx-> to shift view left and right and disable wrap
 - [ ] Unify edlib_timing and pane_too_long ??
 - [X] If an email part doesn't end with newline, last character is swallowed.
 - [X] What is rule for doc:content?  Does the mark move and get passed
       down, or is it copied and left unchanged?
+- [ ] notmuch: When moving among messages, always move cursor to search
+      pane
 
 ### Small
 
@@ -445,6 +448,7 @@ Module features
 
 ### Notmuch - overview
 
+- [ ] When moving among messages, always move cursor to search pane
 - [ ] 'other' notmuch search doesn't show older messages sometimes
 - [ ] split notmuch into two databases, last 6 months and the rest.
 - [ ] script to move messages every week - but not deleted messages
@@ -543,7 +547,7 @@ Module features
     to leave it confused.
 - [ ] maybe hide signature, unless small
 - [ ] When click on first char in tagged range, I don't see the tag and
-   don't get a Mouse-Activate event.
+   don't get a Activate event.
 - [ ] line wrap in header should not appear as space??
 - [ ] handle all Unicode newline chars.
 - [ ] Auto-hide depending on type - with extensible table
@@ -730,8 +734,8 @@ Module features
 
 ### lib-url
 
-- [ ] command to mark-up all URLs in a document
-- [ ] handlers for that markup.  xdg-open for links, maybe signal
+- [X] command to mark-up all URLs in a document
+- [X] handlers for that markup.  xdg-open for links, maybe signal
       register email client for mailto: links.
 - [ ] easy way for K:Enter on a link to do just like mouse-click
 - [ ] email: urls should not be followed unless they are visible.
