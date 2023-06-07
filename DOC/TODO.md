@@ -737,7 +737,7 @@ Module features
 - [X] command to mark-up all URLs in a document
 - [X] handlers for that markup.  xdg-open for links, maybe signal
       register email client for mailto: links.
-- [ ] easy way for K:Enter on a link to do just like mouse-click
+- [X] easy way for K:Enter on a link to do just like mouse-click
 - [ ] email: urls should not be followed unless they are visible.
       Maybe display in the message window, which might be made larger
       just for this purpose.

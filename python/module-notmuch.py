@@ -3354,9 +3354,6 @@ class notmuch_message_view(edlib.Pane):
             self.leaf.call("view:changed", m, m.next())
             return 1
 
-        focus.call("doc:email:select", mark)
-        return 1
-
     def handle_vis(self, focus, mark, which):
         v = focus.call("doc:get-attr", mark, "email:visible", ret='str')
         self.parent.call("email:select:" + which, focus, mark)

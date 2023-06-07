@@ -276,44 +276,6 @@ DEF_CMD(email_image)
 	return ret;
 }
 
-DEF_CMD(email_select)
-{
-	/* If mark is on a button, press it... */
-	struct mark *m = ci->mark;
-	char *a, *e, *cmd = NULL;
-	wint_t ch;
-	int p;
-	int b;
-
-	if (!m)
-		return Enoarg;
-	p = get_part(ci->home, m);
-	if (!is_spacer(p))
-		return Efallthrough;
-	ch = doc_following(ci->home, m);
-	if (ch == WEOF || !isdigit(ch))
-		return 1;
-	b = ch - '0';
-	a = pane_mark_attr(ci->focus, m, "multipart-prev:email:actions");
-	if (!a)
-		a = "hide";
-	while (b > 0 && a) {
-		a = strchr(a, ':');
-		if (a)
-			a += 1;
-		b -= 1;
-	}
-	if (!a)
-		return 1;
-	e = strchr(a, ':');
-	if (!e)
-		e = a + strlen(a);
-	asprintf(&cmd, "email:select:%.*s", (int)(e-a), a);
-	if (!cmd)
-		return Efail;
-	return call(cmd, ci->focus, 0, m);
-}
-
 DEF_CMD(email_select_hide)
 {
 	int vis = 1;
@@ -1323,7 +1285,6 @@ static void email_init_map(void)
 	key_add(email_view_map, "doc:get-attr", &email_view_get_attr);
 	key_add(email_view_map, "doc:email:render-spacer", &email_spacer);
 	key_add(email_view_map, "doc:email:render-image", &email_image);
-	key_add(email_view_map, "doc:email:select", &email_select);
 	key_add(email_view_map, "email:select:hide", &email_select_hide);
 	key_add(email_view_map, "email:select:full", &email_select_full);
 	key_add(email_view_map, "email:select:extras", &email_select_extras);

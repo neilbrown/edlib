@@ -1414,6 +1414,46 @@ DEF_CMD(render_lines_set_cursor)
 	return 1;
 }
 
+DEF_CMD(render_lines_activate)
+{
+	/* If there is an active-tag: at '->mark', send Activate:tag
+	 * to the focus
+	 */
+	struct mark *m = ci->mark;
+	struct pane *p = ci->home;
+	struct rl_data *rl = p->data;
+	struct pane *focus = ci->focus;
+	struct mark *v, *n;
+	int offset;
+	char *attr, *tag;
+
+	if (!m)
+		return Enoarg;
+	v = vmark_first(p, rl->typenum, p);
+
+	while (v && v->mdata && (n = vmark_next(v)) &&
+	       mark_ordered_or_same(n, m))
+		v = n;
+
+	if (!v || !v->mdata || !mark_ordered_or_same(v, m))
+		return Efallthrough;
+	offset = call_render_line_to_point(focus, m, v);
+	if (offset < 0)
+		return Efallthrough;
+	measure_line(p, focus, v, offset);
+	attr = pane_attr_get(v->mdata, "cursattr");
+	tag = get_active_tag(attr);
+	if (tag) {
+		char *c = NULL;
+		asprintf(&c, "Activate:%s", tag);
+		if (c)
+			call(c, focus, 0, m, tag,
+			     0, NULL, attr);
+		free(c);
+	}
+	return 1;
+}
+
 DEF_CMD(render_lines_move_pos)
 {
 	struct pane *p = ci->home;
@@ -1743,6 +1783,8 @@ static void render_lines_register_map(void)
 
 	/* Make it easy to stop ignoring point */
 	key_add(rl_map, "Abort", &render_lines_abort);
+
+	key_add(rl_map, "Activate", &render_lines_activate);
 
 	key_add(rl_map, "Close", &render_lines_close);
 	key_add(rl_map, "Close:mark", &render_lines_close_mark);

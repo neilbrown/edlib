@@ -95,5 +95,9 @@ class url_view(edlib.Pane):
             focus.call("Message", "URL tag %s not found" % tag)
         return 1
 
+    def handle_enter(self, key, focus, mark, **a):
+        "handle:K:Enter"
+        return focus.call("Activate", mark)
+
 edlib.editor.call("global-set-command", "url:mark-up", mark_urls)
 edlib.editor.call("global-set-command", "attach-render-url-view", attach_url)

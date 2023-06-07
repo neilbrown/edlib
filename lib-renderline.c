@@ -43,6 +43,7 @@ struct render_list {
 struct rline_data {
 	short		prefix_len;
 	const char	*xyattr;
+	const char	*cursattr;
 	short		curs_width;
 	int		scale;
 	const char	*line;
@@ -188,7 +189,7 @@ static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 		      struct render_list **rlp safe,
 		      int y, int scale, int wrap_pos, int *wrap_margin safe,
 		      int *wrap_prefix_sizep,
-		      const char **xypos, const char **xyattr)
+		      const char **xypos, const char **xyattr, const char **cursattr)
 {
 	/* Flush a render_list returning x-space used.
 	 * If wrap_pos is > 0, stop rendering before last entry with the
@@ -252,6 +253,8 @@ static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 			if (xyattr)
 				*xyattr = strsave(p, rl->attr);
 		}
+		if (cp >= 0 && cursattr)
+			*cursattr = strsave(p, rl->attr);
 	}
 	/* Draw the wrap text if it contains the cursor */
 	for (; rl && rl != end_wrap; rl = rl->next) {
@@ -665,6 +668,7 @@ DEF_CMD(renderline)
 	const char *xypos = NULL;
 	const char *ret_xypos = NULL;
 	const char *xyattr = NULL;
+	const char *cursattr = NULL;
 	/* want_xypos becomes 2 when the pos is found */
 	int want_xypos = strcmp(ci->key, "render-line:findxy") == 0;
 	struct xy xyscale = pane_scale(focus);
@@ -796,7 +800,7 @@ DEF_CMD(renderline)
 						     y+ascent, scale,
 						     p->w - mwidth, &wrap_margin,
 						     &wrap_prefix_size,
-						     &xypos, &xyattr);
+						     &xypos, &xyattr, &cursattr);
 				if (len + wrap_prefix_size <= cx && cy == y) {
 					cx -= len;
 					cy += line_height;
@@ -947,7 +951,7 @@ DEF_CMD(renderline)
 		if (ch == '\n') {
 			xypos = line-1;
 			flush_line(p, focus, dodraw, &rlst, y+ascent, scale, 0,
-				   &wrap_margin, NULL, &xypos, &xyattr);
+				   &wrap_margin, NULL, &xypos, &xyattr, &cursattr);
 			y += line_height;
 			x = 0;
 			wrap_offset = 0;
@@ -1010,12 +1014,16 @@ DEF_CMD(renderline)
 	}
 
 	flush_line(p, focus, dodraw, &rlst, y+ascent, scale, 0,
-		   &wrap_margin, NULL,  &xypos, &xyattr);
+		   &wrap_margin, NULL,  &xypos, &xyattr, &cursattr);
 
 	if (want_xypos == 1) {
 		rd->xyattr = xyattr ? strdup(xyattr) : NULL;
 		ret_xypos = xypos ?: line;
 		want_xypos = 2;
+	}
+	if (cursattr) {
+		free((void*)rd->cursattr);
+		rd->cursattr = strdup(cursattr);
 	}
 
 	if (offset >= 0 && line - line_start <= offset) {
@@ -1070,6 +1078,8 @@ DEF_CMD(renderline_get)
 		snprintf(buf, sizeof(buf), "%d", rd->curs_width);
 	else if (strcmp(ci->str, "xyattr") == 0)
 		val = rd->xyattr;
+	else if (strcmp(ci->str, "cursattr") == 0)
+		val = rd->cursattr;
 	else
 		return Einval;
 
