@@ -23,7 +23,7 @@ the file.
       don't catch it...
 - [X] notmuch reply should interpolate the first *visible* text part
 - [X] ncurses - don't block in nc_external_viewer - at least abort after
-      30 seconds, but preferrably switch to a mode which leaves
+      30 seconds, but preferably switch to a mode which leaves
       everything else running.
 - [X] lang-python should put each module in a separate module
       Maybe PyImport_ExecCodeModuleEx() after reading and compile()ing
@@ -33,7 +33,7 @@ the file.
 
 - [ ] add event:on-idle with 3 priority levels
 - [X] Always do word-count async.
-- [ ] lib-url
+- [X] lib-url
 - [ ] lib-mergeview improvements
 - [ ] lib-diff slowness with large diff
 - [ ] linecount :when used in 'view' mode, stack the counting pane with all the
@@ -738,7 +738,7 @@ Module features
 - [X] handlers for that markup.  xdg-open for links, maybe signal
       register email client for mailto: links.
 - [X] easy way for K:Enter on a link to do just like mouse-click
-- [ ] email: urls should not be followed unless they are visible.
+- [X] email: urls should not be followed unless they are visible.
       Maybe display in the message window, which might be made larger
       just for this purpose.
       Maybe "Message-button"

@@ -55,6 +55,7 @@ def attach_url(key, focus, comm2, **a):
 class url_view(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
+        self.displayed_tag = None
 
     def handle_map_attr(self, key, focus, mark, str1, str2, comm2, **a):
         "handle:map-attr"
@@ -89,8 +90,10 @@ class url_view(edlib.Pane):
             # or might be in main document
             url = focus["url:" + tag]
         if url:
-            focus.call("Message", "Opening url [%s] <%s>" % (tag,url))
-            focus.call("Display:external-viewer", url)
+            focus.call("Message", "Url: <%s>" % url)
+            if self.displayed_tag == tag:
+                focus.call("Display:external-viewer", url)
+            self.displayed_tag = tag
         else:
             focus.call("Message", "URL tag %s not found" % tag)
         return 1
