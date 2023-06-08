@@ -51,7 +51,6 @@ struct evt {
 static void call_event(int thing, short sev, void *evv)
 {
 	struct evt *ev safe = safe_cast evv;
-	int oldfd = ev->fd;
 	int type;
 
 	if (sev & EV_SIGNAL)
@@ -63,9 +62,7 @@ static void call_event(int thing, short sev, void *evv)
 	time_start(type);
 	if (comm_call(ev->comm, "callback:event", ev->home, thing) < 0 ||
 	    ev->active == 2) {
-		if (oldfd == ev->fd)
-			/* No early removal */
-			event_del(ev->l);
+		event_del(ev->l);
 		event_free(ev->l);
 		list_del(&ev->lst);
 		command_put(ev->comm);
@@ -111,10 +108,8 @@ DEF_CB(libevent_read)
 	 * soon.
 	 */
 	list_for_each_entry(ev, &ei->event_list, lst)
-		if (ci->num >= 0 && ev->fd == ci->num) {
+		if (ci->num >= 0 && ev->fd == ci->num)
 			event_del(ev->l);
-			ev->fd = -1;
-		}
 
 	ev = malloc(sizeof(*ev));
 
@@ -334,8 +329,10 @@ DEF_CB(libevent_free)
 			if (ev->active)
 				ev->active = 2;
 			else {
-				if (ev->fd != POLL_FD)
+				if (ev->fd != POLL_FD) {
 					event_del(ev->l);
+					event_free(ev->l);
+				}
 				command_put(ev->comm);
 				free(ev);
 			}
@@ -353,8 +350,10 @@ DEF_CB(libevent_refresh)
 	list_add(&old, &ei->event_list);
 	list_del_init(&ei->event_list);
 	list_for_each_entry_safe(ev, tmp, &old, lst) {
-		if (ev->fd != POLL_FD)
+		if (ev->fd != POLL_FD) {
 			event_del(ev->l);
+			event_free(ev->l);
+		}
 		list_del(&ev->lst);
 		call_comm(ev->event, ev->home, ev->comm, ev->num);
 		command_put(ev->comm);
