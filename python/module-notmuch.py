@@ -2033,6 +2033,8 @@ class notmuch_master_view(edlib.Pane):
 
         m = p.call("doc:dup-point", 0, edlib.MARK_UNGROUPED, ret='mark')
         p.call("notmuch:select", m, direction)
+        if self.query_pane:
+            self.query_pane.take_focus()
         return 1
 
     def handle_j(self, key, focus, **a):
