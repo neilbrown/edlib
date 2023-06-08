@@ -25,9 +25,15 @@
 static struct map *libevent_map;
 DEF_LOOKUP_CMD(libevent_handle, libevent_map);
 
+enum {
+	EV_LIST,	/* Events handled by libevent */
+	POLL_LIST,	/* Events to poll before calling event_base_loop */
+	NR_LISTS
+};
+
 struct event_info {
 	struct event_base *base;
-	struct list_head event_list;
+	struct list_head event_list[NR_LISTS];
 	struct pane *home safe;
 	int dont_block;
 	int deactivated;
@@ -35,17 +41,14 @@ struct event_info {
 		free, refresh, noblock;
 };
 
-/* A 'poll' event has fd of -2 */
-#define POLL_FD (-2)
 struct evt {
-	struct event *l safe;
+	struct event *l;
 	struct pane *home safe;
 	char *event safe;
 	struct command *comm safe;
 	struct list_head lst;
 	int active;	/* Don't delete or free this event, it is running */
 	int num;	/* signal or mseconds or fd */
-	int fd;
 };
 
 static void call_event(int thing, short sev, void *evv)
@@ -107,9 +110,11 @@ DEF_CB(libevent_read)
 	 * Presumably call_event() is now running and will clean up
 	 * soon.
 	 */
-	list_for_each_entry(ev, &ei->event_list, lst)
-		if (ci->num >= 0 && ev->fd == ci->num)
+	list_for_each_entry(ev, &ei->event_list[EV_LIST], lst) {
+		int fd = event_get_fd(ev->l);
+		if (fd >= 0 && ci->num >= 0 && fd == ci->num)
 			event_del(ev->l);
+	}
 
 	ev = malloc(sizeof(*ev));
 
@@ -120,12 +125,11 @@ DEF_CB(libevent_read)
 				    call_event, ev);
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
-	ev->fd = ci->num;
 	ev->num = ci->num;
 	ev->active = 0;
 	ev->event = "event:read";
 	pane_add_notify(ei->home, ev->home, "Notify:Close");
-	list_add(&ev->lst, &ei->event_list);
+	list_add(&ev->lst, &ei->event_list[EV_LIST]);
 	event_add(ev->l, NULL);
 	return 1;
 }
@@ -143,11 +147,11 @@ DEF_CB(libevent_write)
 	 * Presumably call_event() is now running and will clean up
 	 * soon.
 	 */
-	list_for_each_entry(ev, &ei->event_list, lst)
-		if (ci->num >= 0 && ev->fd == ci->num) {
+	list_for_each_entry(ev, &ei->event_list[EV_LIST], lst) {
+		int fd = event_get_fd(ev->l);
+		if (fd >= 0 && ci->num >= 0 && fd == ci->num)
 			event_del(ev->l);
-			ev->fd = -1;
-		}
+	}
 
 	ev = malloc(sizeof(*ev));
 
@@ -158,12 +162,11 @@ DEF_CB(libevent_write)
 				    call_event, ev);
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
-	ev->fd = ci->num;
 	ev->num = ci->num;
 	ev->active = 0;
 	ev->event = "event:write";
 	pane_add_notify(ei->home, ev->home, "Notify:Close");
-	list_add(&ev->lst, &ei->event_list);
+	list_add(&ev->lst, &ei->event_list[EV_LIST]);
 	event_add(ev->l, NULL);
 	return 1;
 }
@@ -185,12 +188,11 @@ DEF_CB(libevent_signal)
 				    call_event, ev);
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
-	ev->fd = -1;
 	ev->num = ci->num;
 	ev->active = 0;
 	ev->event = "event:signal";
 	pane_add_notify(ei->home, ev->home, "Notify:Close");
-	list_add(&ev->lst, &ei->event_list);
+	list_add(&ev->lst, &ei->event_list[EV_LIST]);
 	event_add(ev->l, NULL);
 	return 1;
 }
@@ -213,12 +215,11 @@ DEF_CB(libevent_timer)
 				    call_timeout_event, ev);
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
-	ev->fd = -1;
 	ev->num = ci->num;
 	ev->active = 0;
 	ev->event = "event:timer";
 	pane_add_notify(ei->home, ev->home, "Notify:Close");
-	list_add(&ev->lst, &ei->event_list);
+	list_add(&ev->lst, &ei->event_list[EV_LIST]);
 	tv.tv_sec = ev->num / 1000;
 	tv.tv_usec = (ev->num % 1000) * 1000;
 	event_add(ev->l, &tv);
@@ -238,14 +239,12 @@ DEF_CB(libevent_poll)
 	if (!ei->base)
 		ei->base = event_base_new();
 
-	ev->l = safe_cast NULL;
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
-	ev->fd = POLL_FD;
 	ev->active = 0;
 	ev->event = "event:poll";
 	pane_add_notify(ei->home, ev->home, "Notify:Close");
-	list_add(&ev->lst, &ei->event_list);
+	list_add(&ev->lst, &ei->event_list[POLL_LIST]);
 	return 1;
 }
 
@@ -255,6 +254,7 @@ DEF_CB(libevent_run)
 	struct event_base *b = ei->base;
 	int dont_block = ei->dont_block;
 	struct evt *ev;
+	int i;
 
 	ei->dont_block = 0;
 
@@ -268,38 +268,39 @@ DEF_CB(libevent_run)
 	}
 
 	/* First run any 'poll' events */
-	list_for_each_entry(ev, &ei->event_list, lst)
-		if (ev->fd == POLL_FD) {
-			ev->active = 1;
-			if (comm_call(ev->comm, "callback:poll", ev->home,
-				      POLL_FD) >= 1)
-				dont_block = True;
-			if (ev->active == 2) {
-				list_del(&ev->lst);
-				command_put(ev->comm);
-				free(ev);
-				break;
-			} else
-				ev->active = 0;
-			if (dont_block)
-				/* Other things might have been removed from list */
-				break;
-		}
+	list_for_each_entry(ev, &ei->event_list[POLL_LIST], lst) {
+		ev->active = 1;
+		if (comm_call(ev->comm, "callback:poll", ev->home,
+			      -1) >= 1)
+			dont_block = True;
+		if (ev->active == 2) {
+			list_del(&ev->lst);
+			command_put(ev->comm);
+			free(ev);
+			break;
+		} else
+			ev->active = 0;
+		if (dont_block)
+			/* Other things might have been removed from list */
+			break;
+	}
 
 	/* Disable any alarm set by python (or other interpreter) */
 	alarm(0);
 	event_base_loop(b, EVLOOP_ONCE | (dont_block ? EVLOOP_NONBLOCK : 0));
 	if (ei->base == b)
 		return 1;
-	while (!list_empty(&ei->event_list)) {
-		ev = list_first_entry(&ei->event_list, struct evt, lst);
-		list_del(&ev->lst);
-		if (ev->fd != POLL_FD) {
-			event_del(ev->l);
-			event_free(ev->l);
+	for (i = 0 ; i < NR_LISTS; i++) {
+		while (!list_empty(&ei->event_list[i])) {
+			ev = list_first_entry(&ei->event_list[i], struct evt, lst);
+			list_del(&ev->lst);
+			if (i == EV_LIST) {
+				event_del(ev->l);
+				event_free(ev->l);
+			}
+			command_put(ev->comm);
+			free(ev);
 		}
-		command_put(ev->comm);
-		free(ev);
 	}
 	event_base_free(b);
 	return Efail;
@@ -321,22 +322,25 @@ DEF_CB(libevent_free)
 	struct evt *ev;
 	struct list_head *tmp;
 	struct event_info *ei = container_of(ci->comm, struct event_info, free);
+	int i;
 
-	list_for_each_entry_safe(ev, tmp, &ei->event_list, lst)
-		if (ev->home == ci->focus &&
-		    (ci->comm2 == NULL || ev->comm == ci->comm2)) {
-			list_del_init(&ev->lst);
-			if (ev->active)
-				ev->active = 2;
-			else {
-				if (ev->fd != POLL_FD) {
-					event_del(ev->l);
-					event_free(ev->l);
+	for (i = 0; i < NR_LISTS; i++) {
+		list_for_each_entry_safe(ev, tmp, &ei->event_list[i], lst)
+			if (ev->home == ci->focus &&
+			    (ci->comm2 == NULL || ev->comm == ci->comm2)) {
+				list_del_init(&ev->lst);
+				if (ev->active)
+					ev->active = 2;
+				else {
+					if (i == EV_LIST) {
+						event_del(ev->l);
+						event_free(ev->l);
+					}
+					command_put(ev->comm);
+					free(ev);
 				}
-				command_put(ev->comm);
-				free(ev);
 			}
-		}
+	}
 	return 1;
 }
 
@@ -346,18 +350,21 @@ DEF_CB(libevent_refresh)
 	struct list_head *tmp;
 	struct event_info *ei = container_of(ci->comm, struct event_info, refresh);
 	struct list_head old;
+	int i;
 
-	list_add(&old, &ei->event_list);
-	list_del_init(&ei->event_list);
-	list_for_each_entry_safe(ev, tmp, &old, lst) {
-		if (ev->fd != POLL_FD) {
-			event_del(ev->l);
-			event_free(ev->l);
+	for (i = 0; i < NR_LISTS; i++) {
+		list_add(&old, &ei->event_list[i]);
+		list_del_init(&ei->event_list[i]);
+		list_for_each_entry_safe(ev, tmp, &old, lst) {
+			if (i == EV_LIST) {
+				event_del(ev->l);
+				event_free(ev->l);
+			}
+			list_del(&ev->lst);
+			call_comm(ev->event, ev->home, ev->comm, ev->num);
+			command_put(ev->comm);
+			free(ev);
 		}
-		list_del(&ev->lst);
-		call_comm(ev->event, ev->home, ev->comm, ev->num);
-		command_put(ev->comm);
-		free(ev);
 	}
 	return Efallthrough;
 }
@@ -383,9 +390,11 @@ DEF_CMD(libevent_activate)
 {
 	struct event_info *ei;
 	struct pane *p;
+	int i;
 
 	alloc(ei, pane);
-	INIT_LIST_HEAD(&ei->event_list);
+	for (i = 0; i < NR_LISTS; i++)
+		INIT_LIST_HEAD(&ei->event_list[i]);
 	ei->read = libevent_read;
 	ei->write = libevent_write;
 	ei->signal = libevent_signal;
