@@ -11,6 +11,15 @@ the file.
 
 - [X] :Cx-< and :Cx-> to shift view left and right and disable wrap
 - [ ] Unify edlib_timing and pane_too_long ??
+     edlib_timing is for times_up().  We start before a keystroke or
+     mouse event, and force all commands to fail after 15 seconds.
+     pane_too_long fires 500msec or more after pane_set_time()
+     It is used to avoid search taking too long and to avoid hogging
+     cpu for too long in parsing make output.  I should use it for
+     linecount too.
+     times_up() callers don't have easy access to a common pane.
+     Maybe each pane should hold a link to 'editor', then we could
+     do away with static variables.
 - [X] If an email part doesn't end with newline, last character is swallowed.
 - [X] What is rule for doc:content?  Does the mark move and get passed
       down, or is it copied and left unchanged?
@@ -70,6 +79,9 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] give every pane a link to root/editor main and use that
+      instead of statics.  Then maybe times_up() can use pane_too_long()
+- [ ] mark DEF_CMD structs as const
 - [ ] add event:on-idle with 3 priority levels
       2 - fast cleanup that must be run immediately
       1 - slower general response to recent command: typically
