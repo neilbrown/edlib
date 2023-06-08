@@ -39,6 +39,7 @@ enum {
 	N2_undo,	/* Last command was 'undo' too */
 	N2_close_others,/* Last command was close-other, just a 1 can repeat */
 	N2_runmacro,	/* Last command was CX-e, just an 'e' can repeat */
+	N2_shift,	/* Laset command was CX-< or CX-> */
 };
 static inline int N2(const struct cmd_info *ci safe)
 {
@@ -2631,6 +2632,54 @@ DEF_CMD(emacs_readonly)
 	return 1;
 }
 
+DEF_CMD(emacs_shift)
+{
+	int rpt = ci->num;
+	int shift;
+
+	shift = pane_attr_get_int(ci->focus, "shift-left", -1);
+	if (strcmp(ci->key, "K:CX->") == 0 || strcmp(ci->key, "K->") == 0)
+		rpt = -rpt;
+	if (rpt == NO_NUMERIC) {
+		if (shift < 0)
+			shift = 0;
+		else
+			shift += 8;
+	} else if (rpt == -NO_NUMERIC) {
+		if (shift >= 8)
+			shift -= 8;
+		else if (shift > 0)
+			shift = 0;
+		else
+			shift = -1;
+	} else if (rpt >= 0) {
+		if (shift < 0)
+			shift = 0;
+		shift += rpt;
+	} else {
+		if (shift > 0 && shift + rpt < 0)
+			shift = 0;
+		else
+			shift += rpt;
+	}
+	if (shift < 0)
+		attr_set_str(&ci->focus->attrs, "shift-left", "");
+	else
+		attr_set_int(&ci->focus->attrs, "shift-left", shift);
+	call("view:changed", ci->focus);
+	call("Mode:set-num2", ci->focus, N2_shift);
+	call("Message:modal", ci->focus, 0, NULL, "Type < or > to shift again");
+	return 1;
+}
+
+DEF_CMD(emacs_shift_again)
+{
+	if (N2(ci) != N2_shift)
+		return emacs_insert_func(ci);
+	else
+		return emacs_shift_func(ci);
+}
+
 DEF_CMD(emacs_curs_pos)
 {
 	struct mark *c;
@@ -3158,6 +3207,11 @@ static void emacs_init(void)
 
 	key_add(m, "K:CX-=", &emacs_curs_pos);
 	key_add(m, "K:A-=", &emacs_word_count);
+
+	key_add(m, "K:CX-<", &emacs_shift);
+	key_add(m, "K:CX->", &emacs_shift);
+	key_add(m, "K-<", &emacs_shift_again);
+	key_add(m, "K->", &emacs_shift_again);
 
 	key_add(m, "K:C-S", &emacs_start_search);
 	key_add(m, "K:C-R", &emacs_start_search);

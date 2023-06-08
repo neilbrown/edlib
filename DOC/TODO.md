@@ -9,7 +9,7 @@ the file.
 
 ### Trivial
 
-= [ ] :Cx-< and :Cx-> to shift view left and right and disable wrap
+- [X] :Cx-< and :Cx-> to shift view left and right and disable wrap
 - [ ] Unify edlib_timing and pane_too_long ??
 - [X] If an email part doesn't end with newline, last character is swallowed.
 - [X] What is rule for doc:content?  Does the mark move and get passed
@@ -251,6 +251,9 @@ Module features
 - [ ] sort the command names for command-completion?
        Currently lines are inserted into buffer.  I need to store in
        an array first, then qsort()
+- [ ] Do I want a 'truncated' marker at start/end of line when not
+      wrapping, and does the '\' go away properly when I start shifting.
+- [ ] change shift left/right to work in characters rather than pixels
 - [ ] filename completion should ignore uninteresting files like ".o"
       Maybe use .gitignore, or have config module understand that.
 - [ ] maybe alt-, does c-x` if that is the recent search?

@@ -110,7 +110,8 @@ struct rl_data {
 	short		i_moved;	/* I moved cursor, so don't clear
 					 * target
 					 */
-	int		do_wrap;
+	short		do_wrap;
+	short		shift_locked;
 	short		shift_left;
 	short		shift_left_last_refresh;
 	struct mark	*header;
@@ -544,7 +545,8 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	 * call_render_line() will have created 'end' if it didn't exist.
 	 */
 
-	rl->shift_left = 0;
+	if (!rl->shift_locked)
+		rl->shift_left = 0;
 
 	/* ->cy is top of cursor, we want to measure from bottom */
 	if (start->mdata) {
@@ -554,7 +556,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 
 		curs_width = pane_attr_get_int(
 			start->mdata, "curs_width", 1);
-		while (!rl->do_wrap && curs_width > 0 &&
+		while (!rl->do_wrap && !rl->shift_locked && curs_width > 0 &&
 		       hp->cx + curs_width >= p->w) {
 			int shift = 8 * curs_width;
 			if (shift > hp->cx)
@@ -869,7 +871,7 @@ DEF_CMD(render_lines_get_attr)
 
 	if (ci->str && strcmp(ci->str, "shift_left") == 0) {
 		char ret[10];
-		if (rl->do_wrap)
+		if (rl->do_wrap && !rl->shift_locked)
 			return comm_call(ci->comm2, "cb", ci->focus,
 					 0, NULL, "-1");
 		snprintf(ret, sizeof(ret), "%d", rl->shift_left);
@@ -918,7 +920,7 @@ static int revalidate_start(struct rl_data *rl safe,
 	/* This loop is fragile and sometimes spins.  So ensure we
 	 * never loop more than 1000 times.
 	 */
-	if (pm && !rl->do_wrap && shifts++ < 1000) {
+	if (pm && !rl->do_wrap && !rl->shift_locked && shifts++ < 1000) {
 		int prefix_len;
 		int curs_width;
 		/* Need to check if side-shift is needed on cursor line */
@@ -1095,11 +1097,31 @@ DEF_CMD(render_lines_revise)
 	bool refresh_all = False;
 	char *hdr;
 	char *a;
+	int shift;
 
 	a = pane_attr_get(focus, "render-wrap");
 	if (rl->do_wrap != (!a || strcmp(a, "yes") ==0)) {
 		rl->do_wrap = (!a || strcmp(a, "yes") ==0);
 		refresh_all = True;
+	}
+
+	shift = pane_attr_get_int(focus, "shift-left", -1);
+	if (shift >= 0) {
+		if (rl->shift_left != shift)
+			refresh_all = True;
+
+		rl->shift_left = shift;
+		rl->shift_locked = 1;
+	} else {
+		if (rl->shift_locked)
+			refresh_all = True;
+		rl->shift_locked = 0;
+	}
+	if (refresh_all) {
+		struct mark *v;
+		for (v = vmark_first(focus, rl->typenum, p);
+		     (v && v->mdata) ; v = vmark_next(v))
+			pane_damaged(v->mdata, DAMAGED_REFRESH);
 	}
 
 	rl->margin = pane_attr_get_int(focus, "render-vmargin", 0);
