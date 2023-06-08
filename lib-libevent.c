@@ -243,9 +243,33 @@ DEF_CB(libevent_poll)
 	ev->comm = command_get(ci->comm2);
 	ev->active = 0;
 	ev->event = "event:poll";
+	ev->num = -1;
 	pane_add_notify(ei->home, ev->home, "Notify:Close");
 	list_add(&ev->lst, &ei->event_list[POLL_LIST]);
 	return 1;
+}
+
+static int run_list(struct event_info *ei safe, int list, char *cb safe)
+{
+	bool dont_block = False;
+	struct evt *ev;
+
+	list_for_each_entry(ev, &ei->event_list[list], lst) {
+		ev->active = 1;
+		if (comm_call(ev->comm, cb, ev->home, ev->num) >= 1)
+			dont_block = True;
+		if (ev->active == 2) {
+			list_del(&ev->lst);
+			command_put(ev->comm);
+			free(ev);
+			break;
+		} else
+			ev->active = 0;
+		if (dont_block)
+			/* Other things might have been removed from list */
+			break;
+	}
+	return dont_block;
 }
 
 DEF_CB(libevent_run)
@@ -268,22 +292,8 @@ DEF_CB(libevent_run)
 	}
 
 	/* First run any 'poll' events */
-	list_for_each_entry(ev, &ei->event_list[POLL_LIST], lst) {
-		ev->active = 1;
-		if (comm_call(ev->comm, "callback:poll", ev->home,
-			      -1) >= 1)
-			dont_block = True;
-		if (ev->active == 2) {
-			list_del(&ev->lst);
-			command_put(ev->comm);
-			free(ev);
-			break;
-		} else
-			ev->active = 0;
-		if (dont_block)
-			/* Other things might have been removed from list */
-			break;
-	}
+	if (run_list(ei, POLL_LIST, "callback:poll"))
+		dont_block = True;
 
 	/* Disable any alarm set by python (or other interpreter) */
 	alarm(0);
