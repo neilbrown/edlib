@@ -790,7 +790,7 @@ DEF_CMD(doc_do_closed)
 	if (child)
 		pane_close(child);
 
-	call_comm("editor-on-idle", p, &doc_delayed_close);
+	call_comm("event:on-idle", p, &doc_delayed_close, 1);
 	return 1;
 }
 

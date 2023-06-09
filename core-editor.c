@@ -21,11 +21,6 @@ struct ed_info {
 	unsigned long magic;
 	struct pane *freelist;
 	struct mark *mark_free_list;
-	struct idle_call {
-		struct idle_call *next;
-		struct pane *focus safe;
-		struct command *callback safe;
-	} *idle_calls;
 	struct map *map safe;
 	struct lookup_cmd cmd;
 	struct store {
@@ -301,19 +296,7 @@ DEF_CMD(editor_send_notify)
 DEF_CMD(editor_clean_up)
 {
 	struct ed_info *ei = ci->home->data;
-	struct idle_call *pending = ei->idle_calls;
 
-	/* Note that if an idle-call registers an idle call,
-	 * the new one won't be handled until the next time around
-	 */
-	ei->idle_calls = NULL;
-	while (pending) {
-		struct idle_call *i = pending;
-		pending = i->next;
-		comm_call(i->callback, "idle-callback", i->focus);
-		command_put(i->callback);
-		free(i);
-	}
 	while (ei->freelist) {
 		struct pane *p = ei->freelist;
 		ei->freelist = p->focus;
@@ -352,45 +335,6 @@ DEF_EXTERN_CMD(edlib_do_free)
 DEF_EXTERN_CMD(edlib_noop)
 {
 	return Efallthrough;
-}
-
-DEF_CMD(editor_on_idle)
-{
-	/* register comm2 to be called when next idle. */
-	struct ed_info *ei = ci->home->data;
-	struct idle_call *ic;
-
-	if (!ci->comm2)
-		return Enoarg;
-
-	ic = calloc(1, sizeof(*ic));
-	ic->focus = ci->focus;
-	pane_add_notify(ci->home, ci->focus, "Notify:Close");
-	ic->callback = command_get(ci->comm2);
-	if (!ei->idle_calls)
-		/* Make sure we don't block waiting for events */
-		call("event:noblock", ci->home);
-	ic->next = ei->idle_calls;
-	ei->idle_calls = ic;
-	return 1;
-}
-
-DEF_CMD(editor_notify_close)
-{
-	struct ed_info *ei = ci->home->data;
-	struct idle_call **icp, *ic;
-
-	icp = &ei->idle_calls;
-	while ((ic = *icp) != NULL) {
-		if (ic->focus != ci->focus) {
-			icp = &ic->next;
-			continue;
-		}
-		command_put(ic->callback);
-		*icp = ic->next;
-		free(ic);
-	}
-	return 1;
 }
 
 DEF_CMD(editor_close)
@@ -519,7 +463,6 @@ struct pane *editor_new(void)
 		key_add(ed_map, "global-get-command", &global_get_command);
 		key_add(ed_map, "global-load-module", &editor_load_module);
 		key_add(ed_map, "global-config-dir", &global_config_dir);
-		key_add(ed_map, "editor-on-idle", &editor_on_idle);
 		key_add_prefix(ed_map, "attach-", &editor_auto_load);
 		key_add_prefix(ed_map, "event:", &editor_auto_event);
 		key_add_prefix(ed_map, "global-multicall-", &editor_multicall);
@@ -531,7 +474,6 @@ struct pane *editor_new(void)
 			&editor_activate_display);
 		key_add(ed_map, "Close", &editor_close);
 		key_add(ed_map, "Free", &editor_free);
-		key_add(ed_map, "Notify:Close", &editor_notify_close);
 	}
 	ei->map = key_alloc();
 	key_add(ei->map, "on_idle-clean_up", &editor_clean_up);

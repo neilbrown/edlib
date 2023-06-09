@@ -382,7 +382,7 @@ DEF_CMD(popup_defocus)
 		/* New focus is a popup, so stay for now */
 		return Efallthrough;
 
-	call_comm("editor-on-idle", ci->home, &popup_delayed_close);
+	call_comm("event:on-idle", ci->home, &popup_delayed_close, 1);
 
 	return Efallthrough;
 }

@@ -262,7 +262,7 @@ DEF_CMD(check_autosave)
 	if (!s || strcmp(s, "yes") != 0)
 		s = pane_attr_get(p, "is_backup");
 	if (s && strcmp(s, "yes") == 0)
-		call_comm("editor-on-idle", p, &ask_autosave);
+		call_comm("event:on-idle", p, &ask_autosave);
 
 	return Efallthrough;
 }

@@ -276,7 +276,7 @@ static void record_screen(struct pane *p safe)
 		if (delay)
 			call_comm("event:timer", p, &next_evt, atoi(delay));
 		else
-			call_comm("editor-on-idle", p, &next_evt);
+			call_comm("event:on-idle", p, &next_evt);
 	}
 }
 
@@ -371,7 +371,7 @@ static bool parse_event(struct pane *p safe)
 		if (delay)
 			call_comm("event:timer", p, &next_evt, atoi(delay));
 		else
-			call_comm("editor-on-idle", p, &next_evt);
+			call_comm("event:on-idle", p, &next_evt);
 	} else
 		call_comm("event:timer", p, &next_evt, 10*1000);
 	return True;
