@@ -38,7 +38,7 @@
 static struct map *linecount_map;
 DEF_LOOKUP_CMD(handle_count_lines, linecount_map);
 
-static const int batch_marks = 1;
+static const int batch_marks = 10;
 static bool testing = False;
 
 struct count_info {
@@ -79,7 +79,8 @@ DEF_CB(clcb)
 			cl->inword = 0;
 		if (cl->add_marks &&
 		    cl->start &&
-		    (cl->lines >= 100 || cl->words >= 1000 || cl->chars >= 10000))
+		    (cl->lines >= 100 || cl->words >= 1000 || cl->chars >= 10000 ||
+		     pane_too_long(cl->owner, 0)))
 			break;
 		if (!ci->str || i >= ci->num2)
 			return i+1;
@@ -108,6 +109,8 @@ DEF_CB(clcb)
 	cl->start = vmark_new(ci->focus, cli->view_num, cl->owner);
 	if (cl->start)
 		mark_to_mark(cl->start, m);
+	if (cl->add_marks > 1 && pane_too_long(cl->owner, 0))
+		cl->add_marks = 1;
 	cl->add_marks -= 1;
 	if (!cl->add_marks)
 		/* Added enough marks, abort */
@@ -219,6 +222,7 @@ static void count_calculate(struct pane *p safe,
 		 */
 		end = NULL;
 
+	pane_set_time(owner);
 	m = vmark_first(p, type, owner);
 	if (m == NULL || doc_prior(p, m) != WEOF) {
 		/* No mark at doc start, make some */
@@ -254,7 +258,7 @@ static void count_calculate(struct pane *p safe,
 		if (!need_recalc(p, m))
 			continue;
 		do_count(p, owner, m, vmark_next(m), &l, &w, &c, sync ? -1 : batch_marks);
-		if (!sync) {
+		if (!sync || pane_too_long(owner, 0)) {
 			call_comm("event:on-idle", p, &linecount_restart);
 			return;
 		}

@@ -100,8 +100,8 @@ static inline bool pane_too_long(struct pane *p safe, unsigned int msec)
 	unsigned int duration;
 	clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
 	duration = ts_to_ms(&ts) - p->timestamp;
-	if (msec < 500)
-		msec = 500;
+	if (msec < 100)
+		msec = 100;
 	return (duration > msec);
 }
 
