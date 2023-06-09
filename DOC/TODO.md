@@ -40,7 +40,7 @@ the file.
 
 ### Medium
 
-- [ ] add event:on-idle with 3 priority levels
+- [X] add event:on-idle with 3 priority levels
 - [X] Always do word-count async.
 - [X] lib-url
 - [ ] lib-mergeview improvements
@@ -82,7 +82,7 @@ Core features
 - [ ] give every pane a link to root/editor main and use that
       instead of statics.  Then maybe times_up() can use pane_too_long()
 - [ ] mark DEF_CMD structs as const
-- [ ] add event:on-idle with 3 priority levels
+- [X] add event:on-idle with 3 priority levels
       2 - fast cleanup that must be run immediately
       1 - slower general response to recent command: typically
           pane_refresh

@@ -9,12 +9,9 @@ messages that themselves register other handlers for various events.
 When these events occurs the relevant handlers are called, and so begins
 the chain of messages that results in anything happening in the editor.
 
-FIXME this isn't quite right at present.
-The event subsystems isn't quite the ultimate starting point.  The
-editor must have a main loop with sends the message "event:run" to the
-root pane, and then runs "pane_refresh()" on that pane.  The "event:run"
-handler, registered by the event subsystem, determines what events have
-happening, if any, and calls the relevant handlers.
+The event subsystem handles all events.  After any initialisation it is
+sufficient to call it repeatedly with the "event:run" message while it
+returns 1.
 
 The messages that the event subsystem listens for are:
 
