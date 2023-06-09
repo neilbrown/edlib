@@ -22,6 +22,7 @@
 #    a contiguous unchecked section in the range
 
 import edlib
+import os
 
 def show_range(action, focus, viewnum, attr):
     edlib.LOG("range:", attr, action)
@@ -274,11 +275,15 @@ class autospell_view(edlib.Pane):
             # nothing to do
             return edlib.Efail
 
+        self.set_time()
         focus = focus.leaf
 
-        remain = 20
+        if 'EDLIB_TESTING' in os.environ:
+            remain = 20
+        else:
+            remain = 200
         ch = None
-        while start < end and remain > 0:
+        while start < end and remain > 0 and not self.too_long():
             remain -= 1
             ed = start.dup()
             focus.call("Spell:NextWord", ed)
