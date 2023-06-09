@@ -29,7 +29,7 @@ enum {
 	EV_LIST,	/* Events handled by libevent */
 	POLL_LIST,	/* Events to poll before calling event_base_loop */
 	PRIO_0_LIST,	/* background task - run one per loop */
-	PRIO_1_LIST,	/* non-trivial follow-up tasks, line pane_refresh() */
+	PRIO_1_LIST,	/* non-trivial follow-up tasks, line pane_refresh */
 	PRIO_2_LIST,	/* fast follow-up tasks like freeing memory */
 	NR_LISTS
 };

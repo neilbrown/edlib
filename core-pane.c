@@ -79,6 +79,8 @@ static void pane_check(struct pane *p safe)
 {
 	__pane_check(pane_root(p));
 }
+
+DEF_CMD(pane_refresh);
 /*
  * pane_damaged: mark a pane as being 'damaged', and make
  * sure all parents know about it.
@@ -90,6 +92,8 @@ void pane_damaged(struct pane *p, int type)
 	int orig_type = type;
 	if (!p || (p->damaged | type) == p->damaged)
 		return;
+	if (p == p->parent && !p->damaged)
+		call_comm("event:on-idle", p, &pane_refresh, 1);
 	if (type & (type-1)) {
 		/* multiple bits are set, handle
 		 * them separately
@@ -126,6 +130,10 @@ void pane_damaged(struct pane *p, int type)
 			LOG("damage %s %d (%d)", orig->name, orig_type, type);
 			LOG_BT();
 		}
+
+		if (p == p->parent && !p->damaged)
+			call_comm("event:on-idle", p, &pane_refresh, 1);
+
 		if (z > 0 && (type & DAMAGED_SIZE_CHILD))
 			/* overlay changed size, so we must refresh */
 			/* FIXME should this be a notification? */
@@ -368,12 +376,15 @@ restart:
 		call("Refresh:postorder", p);
 }
 
-void pane_refresh(struct pane *p safe)
+REDEF_CMD(pane_refresh)
 {
+	struct pane *p = ci->home;
 	int cnt = 5;
 
 	if (p->damaged & DAMAGED_CLOSED)
-		return;
+		return 1;
+
+	time_start(TIME_REFRESH);
 	while (cnt-- &&
 	       (p->damaged &
 		~(DAMAGED_CLOSED|DAMAGED_POSTORDER|DAMAGED_POSTORDER_CHILD))) {
@@ -397,6 +408,8 @@ void pane_refresh(struct pane *p safe)
 		call("editor:notify:Message:broadcast",p, 0, NULL,
 		     "Refresh looping - see log");
 	}
+	time_stop(TIME_REFRESH);
+	return 1;
 }
 
 void pane_add_notify(struct pane *target safe, struct pane *source safe,

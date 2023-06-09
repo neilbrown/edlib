@@ -9,6 +9,7 @@ messages that themselves register other handlers for various events.
 When these events occurs the relevant handlers are called, and so begins
 the chain of messages that results in anything happening in the editor.
 
+FIXME this isn't quite right at present.
 The event subsystems isn't quite the ultimate starting point.  The
 editor must have a main loop with sends the message "event:run" to the
 root pane, and then runs "pane_refresh()" on that pane.  The "event:run"
@@ -53,7 +54,7 @@ The messages that the event subsystem listens for are:
 
   0/ is for background tasks.  Only one of these is run before checking
      for regular events.
-  1/ is for pane_refresh(), and maybe similar tasks.  It is probably
+  1/ is for pane_refresh, and maybe similar tasks.  It is probably
      needed every time around the loop, and does non-trivial work
   2/ is for simple high priority tasks like freeing memory that was in
      using during the previous event.

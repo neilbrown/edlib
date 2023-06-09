@@ -177,16 +177,10 @@ int main(int argc, char *argv[])
 
 	if (first_window) {
 		call("global-multicall-startup-", first_window);
-		time_start(TIME_REFRESH);
-		pane_refresh(ed);
-		time_stop(TIME_REFRESH);
 		while (call("event:run", ed) == 1) {
 			time_start(TIME_IDLE);
 			call("global-multicall-on_idle-", ed);
 			time_stop(TIME_IDLE);
-			time_start(TIME_REFRESH);
-			pane_refresh(ed);
-			time_stop(TIME_REFRESH);
 		}
 	} else
 		fprintf(stderr, "edlib: cannot create a display\n");

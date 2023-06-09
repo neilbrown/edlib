@@ -896,16 +896,6 @@ static PyObject *Pane_has_focus(Pane *self safe, PyObject *args)
 	}
 }
 
-static PyObject *Pane_refresh(Pane *self safe, PyObject *args)
-{
-	if (!pane_valid(self))
-		return NULL;
-
-	pane_refresh(self->pane);
-	Py_INCREF(Py_None);
-	return Py_None;
-}
-
 static PaneIter *pane_this_iter(PaneIter *self safe)
 {
 	Py_INCREF(self);
@@ -1518,8 +1508,6 @@ static PyMethodDef pane_methods[] = {
 	 "Claim the focus for this pane"},
 	{"has_focus", (PyCFunction)Pane_has_focus, METH_NOARGS,
 	 "Check if pane is focus of display"},
-	{"refresh", (PyCFunction)Pane_refresh, METH_NOARGS,
-	 "Trigger refresh on this pane"},
 	{"call", (void*)(PyCFunctionWithKeywords)Pane_call, METH_VARARGS|METH_KEYWORDS,
 	 "Call a command from a pane"},
 	{"notify", (void*)(PyCFunctionWithKeywords)Pane_notify, METH_VARARGS|METH_KEYWORDS,
