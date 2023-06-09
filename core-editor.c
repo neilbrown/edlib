@@ -325,7 +325,7 @@ DEF_CMD(editor_free_marks)
 	return 1;
 }
 
-DEF_CMD(editor_clean_up)
+DEF_CMD(editor_free_store)
 {
 	struct ed_info *ei = ci->home->data;
 
@@ -334,7 +334,7 @@ DEF_CMD(editor_clean_up)
 		ei->store = s->next;
 		free(s);
 	}
-	return Efallthrough;
+	return 1;
 }
 
 DEF_EXTERN_CMD(edlib_do_free)
@@ -373,6 +373,8 @@ void * safe memsave(struct pane *p safe, const char *buf, int len)
 	p = pane_root(p);
 	ei = p->data;
 	ASSERT(ei->magic==ED_MAGIC);
+	if (!ei->store)
+		call_comm("event:on-idle", p, &editor_free_store, 2);
 	if (ei->store == NULL || ei->store->size < len) {
 		struct store *s;
 		int l = 4096 - sizeof(*s);
@@ -495,7 +497,6 @@ struct pane *editor_new(void)
 		key_add(ed_map, "Free", &editor_free);
 	}
 	ei->map = key_alloc();
-	key_add(ei->map, "on_idle-clean_up", &editor_clean_up);
 	key_add_chain(ei->map, ed_map);
 	ei->cmd = ed_handle;
 	ei->cmd.m = &ei->map;
