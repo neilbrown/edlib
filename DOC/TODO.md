@@ -9,44 +9,34 @@ the file.
 
 ### Trivial
 
-- [X] :Cx-< and :Cx-> to shift view left and right and disable wrap
-- [ ] Unify edlib_timing and pane_too_long ??
-     edlib_timing is for times_up().  We start before a keystroke or
-     mouse event, and force all commands to fail after 15 seconds.
-     pane_too_long fires 500msec or more after pane_set_time()
-     It is used to avoid search taking too long and to avoid hogging
-     cpu for too long in parsing make output.  I should use it for
-     linecount too.
-     times_up() callers don't have easy access to a common pane.
-     Maybe each pane should hold a link to 'editor', then we could
-     do away with static variables.
-- [X] If an email part doesn't end with newline, last character is swallowed.
-- [X] What is rule for doc:content?  Does the mark move and get passed
-      down, or is it copied and left unchanged?
-- [X] notmuch: When moving among messages, always move cursor to search
-      pane
+- [ ] give every pane a link to root/editor main and use that
+      instead of statics.  Then maybe times_up() can use pane_too_long()
+- [ ] mark DEF_CMD structs as const
+- [ ] rexel: don't abort if something looks wrong, just fail.
 
 ### Small
 
-- [X] ->replace_pane, ->replace_popup can be deleted (Abort) but we
-      don't catch it...
-- [X] notmuch reply should interpolate the first *visible* text part
-- [X] ncurses - don't block in nc_external_viewer - at least abort after
-      30 seconds, but preferably switch to a mode which leaves
-      everything else running.
-- [X] lang-python should put each module in a separate module
-      Maybe PyImport_ExecCodeModuleEx() after reading and compile()ing
-      the source file.  Or set up path to find edlib modules.
+- [ ] detect and limit recursion.
+- [ ] message-line: use lib-renderline for the one line, so we have
+      markup support.
+- [ ] history: Make it possible to search through history. Maybe Alt-p only shows
+      lines containing current content.
+- [ ] emacs: Num-C-l doesn't work if it would require part of a wrapped line
+      off top of screen
+- [ ] emacs: :C-q to recognise names of Unicode chars: e.g. WASTEBASKET
+       Possibly matches a list which continued :C-q cycles through
+- [ ] linecount 'view' mode improvements
 
 ### Medium
 
-- [X] add event:on-idle with 3 priority levels
-- [X] Always do word-count async.
-- [X] lib-url
 - [ ] lib-mergeview improvements
 - [ ] lib-diff slowness with large diff
 - [ ] linecount :when used in 'view' mode, stack the counting pane with all the
       others so it can easily catch view-changed.
+- [ ] C config module that reads an ini-style file to set attributes
+      based on path
+- [ ] review all doc:char implementations for simplification.
+- [ ] make it easy for a make-search command to search backwards
 
 ### Large
 
@@ -82,15 +72,6 @@ Core features
 - [ ] give every pane a link to root/editor main and use that
       instead of statics.  Then maybe times_up() can use pane_too_long()
 - [ ] mark DEF_CMD structs as const
-- [X] add event:on-idle with 3 priority levels
-      2 - fast cleanup that must be run immediately
-      1 - slower general response to recent command: typically
-          pane_refresh
-      0 - do one of these before checking of other events
-      Use 2 for freeing panes and marks and other memory
-      Use 1 for pane_refresh
-      Use 0 for splitting up background tasks like spell and linecount
-      simplify main loop in edlib.c to:  call("event:run", ed)
 - [ ] teach input to allow a repeat command to be registered so that e.g.
       search/replace and do a bit of work, then ask to be called again.
       input can cancel this on suitable input.
@@ -232,7 +213,14 @@ Module features
 
 ### lib-mergeview
 
-- [ ] commands to resolve a conflict
+- [ ] commands to resolve a conflict with numeric args to :A-m
+      negative: discard change, keep original
+      0: if no conflicts remain, wiggle change into place
+      1: ignore conflicts, keep replacement
+      9: if in merge cut patch to copy-buffer
+         if there is a selection, paste in patch with selection as
+         "orig"
+         if no selection - just paste it in with empty orih
 - [ ] merge-mode to highlight markers with "space-only" or "no-diff" state
       Also have green for "no conflicts", but it doesn't stand out.
       It would be nice if space-only differences didn't stand out so much.
@@ -244,22 +232,22 @@ Module features
           space-conflicts: bold blue
           conflicts: red
           in text, space conflicts get underline, no inverse
-- [ ] merge-mode command to select one of the three "this only".
-       "discard" keeps first, or "apply" does wiggle
-       A-- A-m  to discard, A-1 A-m to apply
+- [ ] Capture '-<' and '->' on the marker lines to move the orig section
+      w.r.t surrounding text, or to prune the before and after sections.
+- [ ] Capture :CX:C-x command to cycle through matching places in the
+      three branches.
 - [ ] merge-mode automatic detect, enable, goto-first
        I'm not sure I want this, but probably try it and see
-- [ ] command to cycle through matching places in other 2 branches.
-       Capture Cx-Cx ??
+      Maybe time-limit on search
 
 ### emacs
 
 - [ ] Num-C-l doesn't work if it would require part of a wrapped line
       off top of screen
-- [X] ->replace_pane, ->replace_popup can be deleted (Abort) but we
-      don't catch it...
 - [ ] :C-q to recognise names of Unicode chars: e.g. WASTEBASKET
        Possibly matches a list which continued :C-q cycles through
+- [ ] split some generic functionality like arrows and mouse clicks
+      into a separate module to be shared with other edit modes.
 - [ ] sort the command names for command-completion?
        Currently lines are inserted into buffer.  I need to store in
        an array first, then qsort()
@@ -288,9 +276,6 @@ Module features
 
 ### ncurses
 
-- [X] don't block in nc_external_viewer - at least abort after
-      30 seconds, but preferrably switch to a mode which leaves
-      everything else running.
 - [ ] add full list of colour names (to lib-colourmap)
 - [ ] allow a pane to require 'true-colour' and discover number of colours available
       Colour map gets changed when it becomes the focus.
@@ -414,6 +399,7 @@ Module features
 ### message-line
 
 - [ ] Differentiate warnings from info, and blink-screen for warnings.
+- [ ] use lib-renderline for the one line, so we have markup support.
 
 ### docs
 
@@ -445,11 +431,9 @@ Module features
 
 ### line count
 
-- [X] count-lines seems to go very slowly in base64/utf-8 email
-- [X] Always do word-count async.
 - [ ] Find a way to locate mark faster than walking the whole list
-      adding up the interval counts.  Maybe a version number and
-      async update.
+      adding up the interval counts.  Add a second mark list as a
+      'skiplist' with 1 mark for every 100 of the main sequence.
 
 ### lib-utf-8
 
@@ -527,7 +511,6 @@ Module features
 - [ ] "%d quoted lines" still not quite right.  Moving 'down' past it
       jumps to end of line.
 - [ ] Don't wrap email header lines when cursor isn't on the line - too noisy
-- [X] notmuch reply should interpolate the first *visible* text part
 - [ ] word-wrap subject (only) in email summary line
 - [ ] check for Efail errors from doc:open
 - [ ] make it practical for 'text' documents to contain non-utf8 so that
@@ -552,11 +535,6 @@ Module features
 - [ ] in notmuch I searched in a message (mimepart), then enter to choose,
    then 'q' and crash.
 - [ ] A multipart still had an active view.
-- [X] linecount is spinning somewhere.
-      Doc is multipart, chars are garbage. underlying is b64
-      Email has large attachments
-      This might have been because b64 was slow, but I don't really want
-      linecount of these things.
 - [ ] when I unhide an email part which is a single v.long line,
     redraw gets confused and point goes off-screen, which seems
     to leave it confused.
@@ -683,9 +661,6 @@ Module features
 ### lang-python
 
 - [ ] repeated alarm(10)/alarm(0) calls slow things down
-- [X] lang-python should put each module in a separate module
-      Maybe PyImport_ExecCodeModuleEx() after reading and compile()ing
-      the source file.  Or set up path to find edlib modules.
 - [ ] array index should allow two args, second being a mark for
       doc:get-attr etc.
 - [ ] should be able to test if a mark is NULL or Freed
@@ -749,14 +724,6 @@ Module features
 
 ### lib-url
 
-- [X] command to mark-up all URLs in a document
-- [X] handlers for that markup.  xdg-open for links, maybe signal
-      register email client for mailto: links.
-- [X] easy way for K:Enter on a link to do just like mouse-click
-- [X] email: urls should not be followed unless they are visible.
-      Maybe display in the message window, which might be made larger
-      just for this purpose.
-      Maybe "Message-button"
 
 
 New Modules - simple
@@ -779,13 +746,6 @@ Possibly some of these will end up being features in other modules.
       the cursor to the "right" place.  Maybe a markup to say "here is the
       preferred column" ??  Maybe use for make output so I can see current
       match more easily.
-
-- [ ] create a pane-type that just renders a marked-up line and use
-      several of these for render-lines, and one for messageline.
-      side-scrolling will be interesting.
-      pane_clear might want to copy relevant region from underlying pane.
-      Hopefully this will cure my performance problems with gtk on my slowish
-      notebook.
 
 - [ ] tags handling - and easy tag-search without tags. e.g. git-search.
       alt-S looks for TAGS or .git and either does a tags-search or a grep-l and
@@ -1105,6 +1065,9 @@ Interaction with gdb would be nice too - things like
 - view values of variables directly from the code.
 
 ### config
+
+- [ ] C config module that reads an ini-style file to set attributes
+      based on path
 
 What needs to be configured?  How is that done?
 
