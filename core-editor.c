@@ -312,7 +312,7 @@ DEF_CMD(editor_free_panes)
 	return 1;
 }
 
-DEF_CMD(editor_clean_up)
+DEF_CMD(editor_free_marks)
 {
 	struct ed_info *ei = ci->home->data;
 
@@ -321,6 +321,14 @@ DEF_CMD(editor_clean_up)
 		ei->mark_free_list = (struct mark*)m->all.next;
 		__mark_free(m);
 	}
+
+	return 1;
+}
+
+DEF_CMD(editor_clean_up)
+{
+	struct ed_info *ei = ci->home->data;
+
 	while (ei->store) {
 		struct store *s = ei->store;
 		ei->store = s->next;
@@ -446,14 +454,16 @@ void editor_delayed_free(struct pane *ed safe, struct pane *p safe)
 
 void editor_delayed_mark_free(struct mark *m safe)
 {
-	struct pane *p = pane_root(m->owner);
-	struct ed_info *ei = p ? p->data : NULL;
+	struct pane *ed = pane_root(m->owner);
+	struct ed_info *ei = ed ? ed->data : NULL;
 
 	if (!ei) {
 		__mark_free(m);
 		return;
 	}
 	ASSERT(ei->magic==ED_MAGIC);
+	if (!ei->mark_free_list)
+		call_comm("event:on-idle", ed, &editor_free_marks, 2);
 	m->all.next = (void*)ei->mark_free_list;
 	ei->mark_free_list = m;
 }
