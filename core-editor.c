@@ -293,7 +293,7 @@ DEF_CMD(editor_send_notify)
 				ci->num2, ci->mark2, ci->str2, ci->comm2);
 }
 
-DEF_CMD(editor_clean_up)
+DEF_CMD(editor_free_panes)
 {
 	struct ed_info *ei = ci->home->data;
 
@@ -309,6 +309,13 @@ DEF_CMD(editor_clean_up)
 		attr_free(&p->attrs);
 		pane_put(p);
 	}
+	return 1;
+}
+
+DEF_CMD(editor_clean_up)
+{
+	struct ed_info *ei = ci->home->data;
+
 	while (ei->mark_free_list) {
 		struct mark *m = ei->mark_free_list;
 		ei->mark_free_list = (struct mark*)m->all.next;
@@ -431,6 +438,8 @@ void editor_delayed_free(struct pane *ed safe, struct pane *p safe)
 		return;
 	}
 	ASSERT(ei->magic==ED_MAGIC);
+	if (!ei->freelist)
+		call_comm("event:on-idle", ed, &editor_free_panes, 2);
 	p->focus = ei->freelist;
 	ei->freelist = p;
 }
