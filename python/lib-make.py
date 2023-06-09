@@ -139,7 +139,7 @@ class MakePane(edlib.Pane):
         # there are more matches - we aborted early.
         # set a timer
         if not self.timer_set:
-            self.call("event:timer", 10, self.tick)
+            self.call("event:on-idle", self.tick)
             self.timer_set = True
         return
 

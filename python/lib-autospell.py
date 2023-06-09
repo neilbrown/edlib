@@ -261,7 +261,7 @@ class autospell_view(edlib.Pane):
     def sched(self):
         if not self.scheduled:
             self.scheduled = True
-            self.call("event:timer", 10, self.rescan)
+            self.call("event:on-idle", self.rescan)
 
     def rescan(self, key, focus, **a):
         self.scheduled = False

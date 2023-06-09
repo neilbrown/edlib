@@ -39,7 +39,6 @@ static struct map *linecount_map;
 DEF_LOOKUP_CMD(handle_count_lines, linecount_map);
 
 static const int batch_marks = 1;
-static const int batch_timer = 20;
 static bool testing = False;
 
 struct count_info {
@@ -229,7 +228,7 @@ static void count_calculate(struct pane *p safe,
 		call("doc:set-ref", p, 1, m);
 		do_count(p, owner, m, vmark_next(m), &l, &w, &c, sync ? -1 : batch_marks);
 		if (!sync) {
-			call_comm("event:timer", p, &linecount_restart, batch_timer, end);
+			call_comm("event:on-idle", p, &linecount_restart);
 			return;
 		}
 	}
@@ -238,7 +237,7 @@ static void count_calculate(struct pane *p safe,
 		/* need to update this one */
 		do_count(p, owner, m, vmark_next(m), &l, &w, &c, sync ? -1 : batch_marks);
 		if (!sync) {
-			call_comm("event:timer", p, &linecount_restart, batch_timer, end);
+			call_comm("event:on-idle", p, &linecount_restart);
 			return;
 		}
 	}
@@ -256,7 +255,7 @@ static void count_calculate(struct pane *p safe,
 			continue;
 		do_count(p, owner, m, vmark_next(m), &l, &w, &c, sync ? -1 : batch_marks);
 		if (!sync) {
-			call_comm("event:timer", p, &linecount_restart, batch_timer, end);
+			call_comm("event:on-idle", p, &linecount_restart);
 			return;
 		}
 	}

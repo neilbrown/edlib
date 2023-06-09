@@ -136,7 +136,7 @@ class MergePane(edlib.Pane):
         if ((mark and mark >= self.marks[0] and mark <= self.marks[3]) or
             (mark2 and mark2 >= self.marks[0] and mark2 <= self.marks[3])):
             # Update the highlight
-            self.call("event:timer", 10, self.remark)
+            self.call("event:on-idle", self.remark)
             return 0
 
     def handle_highlight(self, key, focus, str, str2, mark, comm2, **a):
