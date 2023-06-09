@@ -43,6 +43,20 @@ The messages that the event subsystem listens for are:
   source of events doesn't always trigger event:read.  An example might
   be a stream that supports "unget".  In such a case there may be
   content to get, but not from the file descriptor.
+  comm2 should return a positive number if it did anything, and 0 if
+  if there was nothing to do this time.
+
+- event:on-idle - The comm2 command will be called soon after the
+  current event completes.  The command will only be called once and
+  must be explicitly rescheduled if it is wanted again.
+  'num' is a priority level.
+
+  0/ is for background tasks.  Only one of these is run before checking
+     for regular events.
+  1/ is for pane_refresh(), and maybe similar tasks.  It is probably
+     needed every time around the loop, and does non-trivial work
+  2/ is for simple high priority tasks like freeing memory that was in
+     using during the previous event.
 
 - event:free - Any register event from the focus pane which is supposed
   to call the given comm2 will be deactivated.  If no comm2 command is

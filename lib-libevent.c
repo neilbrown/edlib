@@ -28,6 +28,9 @@ DEF_LOOKUP_CMD(libevent_handle, libevent_map);
 enum {
 	EV_LIST,	/* Events handled by libevent */
 	POLL_LIST,	/* Events to poll before calling event_base_loop */
+	PRIO_0_LIST,	/* background task - run one per loop */
+	PRIO_1_LIST,	/* non-trivial follow-up tasks, line pane_refresh() */
+	PRIO_2_LIST,	/* fast follow-up tasks like freeing memory */
 	NR_LISTS
 };
 
@@ -37,8 +40,8 @@ struct event_info {
 	struct pane *home safe;
 	int dont_block;
 	int deactivated;
-	struct command read, write, signal, timer, poll, run, deactivate,
-		free, refresh, noblock;
+	struct command read, write, signal, timer, poll, on_idle,
+		run, deactivate, free, refresh, noblock;
 };
 
 struct evt {
@@ -249,7 +252,36 @@ DEF_CB(libevent_poll)
 	return 1;
 }
 
-static int run_list(struct event_info *ei safe, int list, char *cb safe)
+DEF_CMD(libevent_on_idle)
+{
+	struct event_info *ei = container_of(ci->comm, struct event_info, on_idle);
+	struct evt *ev;
+	int prio = ci->num;
+
+	if (!ci->comm2)
+		return Enoarg;
+
+	ev = malloc(sizeof(*ev));
+
+	if (!ei->base)
+		ei->base = event_base_new();
+
+	ev->home = ci->focus;
+	pane_add_notify(ei->home, ev->home, "Notify:Close");
+	ev->comm = command_get(ci->comm2);
+	ev->active = 0;
+	ev->event = "event:on-idle";
+	if (prio < 0)
+		prio = 0;
+	if (prio > 2)
+		prio = 2;
+	ev->num = prio;
+	list_add(&ev->lst, &ei->event_list[PRIO_0_LIST + prio]);
+	return 1;
+}
+
+static int run_list(struct event_info *ei safe, int list, char *cb safe,
+		    bool stop_on_first)
 {
 	bool dont_block = False;
 	struct evt *ev;
@@ -258,14 +290,14 @@ static int run_list(struct event_info *ei safe, int list, char *cb safe)
 		ev->active = 1;
 		if (comm_call(ev->comm, cb, ev->home, ev->num) >= 1)
 			dont_block = True;
-		if (ev->active == 2) {
+		if (ev->active == 2 || list >= PRIO_0_LIST) {
 			list_del(&ev->lst);
 			command_put(ev->comm);
 			free(ev);
 			break;
 		} else
 			ev->active = 0;
-		if (dont_block)
+		if (dont_block && stop_on_first)
 			/* Other things might have been removed from list */
 			break;
 	}
@@ -292,14 +324,32 @@ DEF_CB(libevent_run)
 	}
 
 	/* First run any 'poll' events */
-	if (run_list(ei, POLL_LIST, "callback:poll"))
+	if (run_list(ei, POLL_LIST, "callback:poll", True))
 		dont_block = True;
+
+	for (i = PRIO_0_LIST ; i <= PRIO_2_LIST; i++)
+		if (!list_empty(&ei->event_list[i]))
+			dont_block = 1;
 
 	/* Disable any alarm set by python (or other interpreter) */
 	alarm(0);
 	event_base_loop(b, EVLOOP_ONCE | (dont_block ? EVLOOP_NONBLOCK : 0));
+
+	time_start(TIME_IDLE);
+	/* Prio 2 comes first - unconditional */
+	run_list(ei, PRIO_2_LIST, "callback:on-idle", False);
+	/* Now prio1 */
+	run_list(ei, PRIO_1_LIST, "callback:on-idle", False);
+	/* Repeat PRIO_2 just in case */
+	run_list(ei, PRIO_2_LIST, "callback:on-idle", False);
+	/* And do one background task */
+	run_list(ei, PRIO_0_LIST, "callback:on-idle", True);
+	time_stop(TIME_IDLE);
+
+	/* Check if we have been deactivated. */
 	if (ei->base == b)
 		return 1;
+
 	for (i = 0 ; i < NR_LISTS; i++) {
 		while (!list_empty(&ei->event_list[i])) {
 			ev = list_first_entry(&ei->event_list[i], struct evt, lst);
@@ -410,6 +460,7 @@ DEF_CMD(libevent_activate)
 	ei->signal = libevent_signal;
 	ei->timer = libevent_timer;
 	ei->poll = libevent_poll;
+	ei->on_idle = libevent_on_idle;
 	ei->run = libevent_run;
 	ei->deactivate = libevent_deactivate;
 	ei->free = libevent_free;
@@ -431,6 +482,8 @@ DEF_CMD(libevent_activate)
 		  0, NULL, "event:timer-zz");
 	call_comm("global-set-command", ci->focus, &ei->poll,
 		  0, NULL, "event:poll-zz");
+	call_comm("global-set-command", ci->focus, &ei->on_idle,
+		  0, NULL, "event:on-idle-zz");
 	call_comm("global-set-command", ci->focus, &ei->run,
 		  0, NULL, "event:run-zz");
 	call_comm("global-set-command", ci->focus, &ei->deactivate,

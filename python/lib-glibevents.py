@@ -20,6 +20,7 @@ class events(edlib.Pane):
         self.events = {}
         self.sigs = {}
         self.poll_list = []
+        self.idle_list = [ [], [], [] ]
         self.ev_num = 0
         self.dont_block = False
         self.maxloops = 10
@@ -102,6 +103,14 @@ class events(edlib.Pane):
         ev = self.add_ev(focus, comm2, 'event:poll', -2)
         self.poll_list.append(ev)
 
+    def on_idle(self, key, focus, num, comm2, **a):
+        if num < 0:
+            num = 0
+        if num > 2:
+            num = 2
+        ev = self.add_ev(focus, comm2, 'event:on-idle', num)
+        self.idle_list[num].append(ev)
+
     def dotimeout(self, comm2, focus, ev):
         if ev not in self.events:
             return False
@@ -119,13 +128,21 @@ class events(edlib.Pane):
     def nonblock(self, key, **a):
         self.dont_block = True
 
+    def run_idle_list(self, prio, just_one):
+        while self.idle_list[prio]:
+            s = self.idle_list[prio].pop()
+            f,c,e,n = self.events[s]
+            if c("callback:on-idle", f, n) > 0:
+                if just_one:
+                    return
+
     def run(self, key, **a):
         if self.active:
             dont_block = self.dont_block
             self.dont_block = False
             for s in self.poll_list:
                 f,c,e,n = self.events[s]
-                if c("callback:poll", f, -1) > 0:
+                if c("callback:poll", f, n) > 0:
                     dont_block = True
             if not dont_block:
                 # Disable any alarm set by python (or other interpreter)
@@ -136,6 +153,12 @@ class events(edlib.Pane):
                 signal.alarm(0)
                 Gtk.main_iteration_do(False)
                 events += 1
+            edlib.time_start(edlib.TIME_IDLE)
+            self.run_idle_list(2, False)
+            self.run_idle_list(1, False)
+            self.run_idle_list(2, False)
+            self.run_idle_list(0, True)
+            edlib.time_stop(edlib.TIME_IDLE)
         if self.active:
             return 1
         else:
@@ -171,6 +194,9 @@ class events(edlib.Pane):
                         pass
                 if source in self.poll_list:
                     self.poll_list.remove(source)
+                for i in range(0,3):
+                    if source in self.idle_list[i]:
+                        self.idle_list[i].remove(source)
                 try_again = True
                 break
 
@@ -202,6 +228,7 @@ def events_activate(focus):
     focus.call("global-set-command", "event:signal-python", ev.signal)
     focus.call("global-set-command", "event:timer-python", ev.timer)
     focus.call("global-set-command", "event:poll-python", ev.poll)
+    focus.call("global-set-command", "event:on-idle-python", ev.on_idle)
     focus.call("global-set-command", "event:run-python", ev.run)
     focus.call("global-set-command", "event:deactivate-python", ev.deactivate)
     focus.call("global-set-command", "event:free-python", ev.free)
