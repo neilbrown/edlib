@@ -1840,8 +1840,11 @@ REDEF_CMD(render_lines_attach)
 	rl->target_y = -1;
 	rl->do_wrap = 1;
 	p = ci->focus;
-	if (strcmp(ci->key, "attach-render-text") == 0)
+	if (strcmp(ci->key, "attach-render-text") == 0) {
 		p = call_ret(pane, "attach-markup", p);
+		if (!p)
+			p = ci->focus;
+	}
 	p = pane_register(p, 0, &render_lines_handle.c, rl);
 	if (!p) {
 		free(rl);

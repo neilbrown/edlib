@@ -41,7 +41,7 @@ enum {
 
 static struct map *view_map safe;
 DEF_LOOKUP_CMD(view_handle, view_map);
-static struct pane *do_view_attach(struct pane *par, int border);
+static struct pane *do_view_attach(struct pane *par safe, int border);
 static int calc_border(struct pane *p safe);
 
 static const char default_status[] =
@@ -392,7 +392,7 @@ DEF_CMD(view_reposition)
 	return Efallthrough;
 }
 
-static struct pane *do_view_attach(struct pane *par, int border)
+static struct pane *do_view_attach(struct pane *par safe, int border)
 {
 	struct view_data *vd;
 	struct pane *p;

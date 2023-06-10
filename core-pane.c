@@ -144,9 +144,9 @@ void pane_damaged(struct pane *p, int type)
 	}
 }
 
-struct pane *__pane_register(struct pane *parent, short z,
-			     struct command *handle safe,
-			     void *data, short data_size)
+static struct pane *__do_pane_register(struct pane *parent, short z,
+				       struct command *handle safe,
+				       void *data, short data_size)
 {
 	struct pane *p;
 
@@ -178,6 +178,19 @@ struct pane *__pane_register(struct pane *parent, short z,
 			pane_damaged(parent, DAMAGED_SIZE);
 	}
 	return p;
+}
+
+struct pane *__pane_register(struct pane *parent safe, short z,
+			     struct command *handle safe,
+			     void *data, short data_size)
+{
+	return __do_pane_register(parent, z, handle, data, data_size);
+}
+
+struct pane *pane_register_root(struct command *handle safe,
+				void *data, short data_size)
+{
+	return __do_pane_register(NULL, 0, handle, data, data_size);
 }
 
 /* 'abs_z' is a global z-depth number (->z is relative to parent)

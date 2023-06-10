@@ -25,7 +25,7 @@ struct viewer_data {
 	bool active;
 };
 
-static struct pane *safe do_viewer_attach(struct pane *par)
+static struct pane *safe do_viewer_attach(struct pane *par safe)
 {
 	struct viewer_data *vd;
 

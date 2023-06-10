@@ -1797,7 +1797,8 @@ DEF_CMD(emacs_shell)
 		call("doc:set-name", p, 0, NULL, "Shell Command", -1);
 		p = call_ret(pane, "attach-history", p, 0, NULL, "*Shell History*",
 			     0, NULL, "popup:close");
-		p = pane_register(p, 0, &find_handle.c, "shellcmd");
+		if (p)
+			p = pane_register(p, 0, &find_handle.c, "shellcmd");
 		if (p && ci->comm2)
 			comm_call(ci->comm2, "cb", p);
 		return 1;
@@ -2030,7 +2031,8 @@ DEF_CMD(emacs_command)
 	call("doc:set-name", p, 0, NULL, "K:Ax command", -1);
 	p = call_ret(pane, "attach-history", p, 0, NULL, "*Command History*",
 		     0, NULL, "popup:close");
-	pane_register(p, 0, &find_handle.c, "cmd");
+	if (p)
+		pane_register(p, 0, &find_handle.c, "cmd");
 	return 1;
 }
 

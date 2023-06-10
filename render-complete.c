@@ -164,7 +164,7 @@ DEF_CMD(complete_free)
 	return 1;
 }
 
-static struct pane *complete_pane(struct pane *focus)
+static struct pane *complete_pane(struct pane *focus safe)
 {
 	struct pane *complete;
 	struct complete_data *cd;

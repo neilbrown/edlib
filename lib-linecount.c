@@ -391,7 +391,8 @@ DEF_CMD(count_lines)
 		struct pane *p;
 
 		alloc(cli, pane);
-		p = pane_register(NULL, 0, &handle_count_lines.c, cli);
+		p = pane_register(pane_root(ci->focus), 0,
+				  &handle_count_lines.c, cli);
 		if (!p)
 			return Efail;
 		cli->view_num = home_call(ci->focus, "doc:add-view", p) - 1;

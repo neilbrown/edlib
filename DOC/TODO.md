@@ -11,7 +11,7 @@ the file.
 
 - [X] give every pane a link to root/editor main and use that
       instead of statics.  Then maybe times_up() can use pane_too_long()
-- [ ] mark DEF_CMD structs as const
+- [X] mark DEF_CMD structs as const- NO, ->refcnt is not constant.
 - [X] rexel: don't abort if something looks wrong, just fail.
 
 ### Small
@@ -26,6 +26,8 @@ the file.
 - [ ] emacs: :C-q to recognise names of Unicode chars: e.g. WASTEBASKET
        Possibly matches a list which continued :C-q cycles through
 - [ ] linecount 'view' mode improvements
+- [ ] allocate pane->data together with pane.  A single allocation so
+      that we can avoid the cost of a dereference.
 
 ### Medium
 
@@ -76,7 +78,9 @@ Core features
 - [ ] LOG_BT() doesn't see TYPE_pane and TYPE_comm calls.
 - [ ] give every pane a link to root/editor main and use that
       instead of statics.  Then maybe times_up() can use pane_too_long()
-- [ ] mark DEF_CMD structs as const
+- [ ] allocate pane->data together with pane.  A single allocation so
+      that we can avoid the cost of a dereference.
+- [X] mark DEF_CMD structs as const - doesn't work due to refcount
 - [ ] teach input to allow a repeat command to be registered so that e.g.
       search/replace and do a bit of work, then ask to be called again.
       input can cancel this on suitable input.

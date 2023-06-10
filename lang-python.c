@@ -700,7 +700,6 @@ static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds,
 		       Pane **parentp safe,
 		       int *zp safe)
 {
-	Pane *parent = NULL;
 	int ret;
 	static const char *keywords[] = {"parent", "z", NULL};
 
@@ -715,20 +714,10 @@ static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds,
 		return 0;
 
 	/* Pane(parent=None, z=0) */
-	ret = PyArg_ParseTupleAndKeywords(args, kwds, "|Oi", (char**)keywords,
-					  &parent, zp);
+	ret = PyArg_ParseTupleAndKeywords(args, kwds, "O!|i", (char**)keywords,
+					  &PaneType, parentp, zp);
 	if (ret <= 0)
 		return -1;
-
-	if ((PyObject*)parent == Py_None)
-		parent = NULL;
-
-	if (parent && !PyObject_TypeCheck(parent, &PaneType)) {
-		PyErr_SetString(PyExc_TypeError, "First arg must be edlib.Pane or None");
-		return -1;
-	}
-
-	*parentp = parent;
 
 	self->map = key_alloc();
 	key_add(self->map, "Close:mark", &python_close_mark);
@@ -748,13 +737,14 @@ static int Pane_init(Pane *self safe, PyObject *args, PyObject *kwds)
 
 	if (ret <= 0)
 		return ret;
+	if (!parent || !parent->pane)
+		return -1;
 
 	/* The pane holds a reference to the Pane through the ->handle
 	 * function
 	 */
 	Py_INCREF(self);
-	self->pane = pane_register(parent ? parent->pane : NULL,
-				   z, &self->cmd, self);
+	self->pane = pane_register(parent->pane, z, &self->cmd, self);
 	if (self->pane)
 		pane_get(self->pane);
 	return 0;
@@ -766,12 +756,13 @@ static int Doc_init(Doc *self, PyObject *args, PyObject *kwds)
 	int z = 0;
 	int ret = __Pane_init((Pane*safe)self, args, kwds, &parent, &z);
 
-	if (ret <= 0 || !self)
+	if (ret <= 0)
 		return ret;
+	if (!self || !parent || !parent->pane)
+		return -1;
 
 	self->cmd.func = python_doc_call_func;
-	self->pane = __doc_register(parent ? parent->pane : NULL,
-				    &self->cmd, &self->doc, self, 0);
+	self->pane = __doc_register(parent->pane, &self->cmd, &self->doc, self, 0);
 	if (self->pane)
 		pane_get(self->pane);
 	self->doc.refcnt = mark_refcnt;

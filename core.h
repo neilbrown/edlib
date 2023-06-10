@@ -483,14 +483,14 @@ enum {
 #define DAMAGED_NEED_CALL (DAMAGED_SIZE | DAMAGED_REFRESH)
 
 struct xy {short x,y;};
-struct pane * __pane_register(struct pane *parent, short z,
+struct pane * __pane_register(struct pane *parent safe, short z,
 			      struct command *handle safe, void *data,
 			      short data_size);
 #define pane_register(...) VFUNC(pane_register, __VA_ARGS__)
 #define pane_register4(p,z,h,d) __pane_register(p,z,h,d,sizeof((d)[0]))
 #define pane_register3(p,z,h) __pane_register(p,z,h,NULL, 0)
 
-struct pane *__doc_register(struct pane *parent,
+struct pane *__doc_register(struct pane *parent safe,
 			    struct command *handle safe,
 			    struct doc *doc safe,
 			    void *data safe,

@@ -1338,7 +1338,7 @@ static void ncurses_start(struct pane *p safe)
 	pane_resize(p, 0, 0, cols, rows);
 }
 
-static struct pane *ncurses_init(struct pane *ed,
+static struct pane *ncurses_init(struct pane *ed safe,
 				 const char *tty, const char *term)
 {
 	SCREEN *scr;

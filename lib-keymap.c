@@ -17,7 +17,7 @@ struct key_data {
 	struct command	*globalcmd;
 };
 
-static struct pane *safe do_keymap_attach(struct pane *p);
+static struct pane *safe do_keymap_attach(struct pane *p safe);
 
 DEF_CMD(keymap_handle)
 {
@@ -65,7 +65,7 @@ DEF_CMD(keymap_handle)
 	return Efallthrough;
 }
 
-static struct pane *safe do_keymap_attach(struct pane *p)
+static struct pane *safe do_keymap_attach(struct pane *p safe)
 {
 	struct key_data *kd = malloc(sizeof(*kd));
 

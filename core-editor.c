@@ -514,7 +514,7 @@ struct pane *editor_new(void)
 	key_add_chain(ei->map, ed_map);
 	ei->cmd = ed_handle;
 	ei->cmd.m = &ei->map;
-	ed = pane_register(NULL, 0, &ei->cmd.c, ei);
+	ed = pane_register_root(&ei->cmd.c, ei, sizeof(ei));
 
 	if (ed) {
 		doc_setup(ed);
