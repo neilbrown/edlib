@@ -20,6 +20,7 @@ class MergePane(edlib.Pane):
         self.marks = None
         self.wig = None
         self.conflicts = 0
+        self.space_conflicts = 0
         self.call("doc:request:doc:replaced")
 
     def fore(self, m, end, ptn):
@@ -63,12 +64,12 @@ class MergePane(edlib.Pane):
         self.call("doc:EOL", 1, t, 1)
         cmd("after", self, t, m3)
 
-        ret = cmd("set-wiggle", self, "render:merge-same", ret='str')
-        if type(ret) == str:
-            self.wig = ret
-            self.conflicts = 0
-        else:
-            self.conflicts = 1
+        ret = cmd("set-wiggle", self, "render:merge-same")
+        self.conflicts = ret-1
+        self.space_conflicts = cmd("get-result", self, "space-conflicts") - 1
+        if self.conflicts == self.space_conflicts:
+            self.wig = cmd("get-result", self, "wiggle", ret='str')
+
         del cmd
 
         self.marks = [start, m1, m2, m3]
@@ -96,7 +97,7 @@ class MergePane(edlib.Pane):
                 return 1
             if num == 0:
                 # if no conflicts remain, wiggle the merge
-                if self.conflicts or self.wig is None:
+                if self.wig is None:
                     focus.call("Message", "Cannot complete merge while conflicts remain")
                     return 1
                 focus.call("doc:set-attr", "render:merge-same",
@@ -241,34 +242,40 @@ class MergePane(edlib.Pane):
 
         if str == "start-of-line":
             if mark == o or mark == b or mark == a or mark == e:
-                if self.conflicts:
+                if self.conflicts > self.space_conflicts:
                     comm2("attr:cb", focus, mark, "fg:red-40",
                           0, 102)
+                elif self.conflicts:
+                    comm2("attr:cb", focus, mark, "fg:blue-80",
+                          0, 102)
                 else:
-                    comm2("attr:cb", focus, mark, "fg:green-40",
+                    comm2("attr:cb", focus, mark, "fg:green-60,bold",
                           0, 102)
             return edlib.Efallthrough
 
         if str == "render:merge-same":
             w = str2.split()
-            len = int(w[0])
+            alen = int(w[0])
             if w[1] == "Unmatched":
-                comm2("attr:cb", focus, mark, "fg:blue-80,bg:cyan+20", len, 103)
+                comm2("attr:cb", focus, mark, "fg:blue-80,bg:cyan+20", alen, 103)
             if w[1] == "Extraneous":
-                comm2("attr:cb", focus, mark, "fg:cyan-60,bg:yellow", len, 103)
+                comm2("attr:cb", focus, mark, "fg:cyan-60,bg:yellow", alen, 103)
             if w[1] == "Changed":
                 if mark < a:
-                    comm2("attr:cb", focus, mark, "fg:red-60", len, 103)
+                    comm2("attr:cb", focus, mark, "fg:red-60", alen, 103)
                 else:
-                    comm2("attr:cb", focus, mark, "fg:green-60", len, 103)
+                    comm2("attr:cb", focus, mark, "fg:green-60", alen, 103)
             if w[1] == "Conflict":
-                comm2("attr:cb", focus, mark, "fg:red-60,inverse", len, 103)
+                if len(w) >= 3 and w[2] == "spaces":
+                    comm2("attr:cb", focus, mark, "fg:red-60,underline", alen, 103)
+                else:
+                    comm2("attr:cb", focus, mark, "fg:red-60,inverse", alen, 103)
             if w[1] == "AlreadyApplied":
                 if mark > b and mark < a:
                     # This part is 'before' - mosly irrelevant
-                    comm2("attr:cb", focus, mark, "fg:cyan-60", len, 103)
+                    comm2("attr:cb", focus, mark, "fg:cyan-60", alen, 103)
                 else:
-                    comm2("attr:cb", focus, mark, "fg:cyan-60,inverse", len, 103)
+                    comm2("attr:cb", focus, mark, "fg:cyan-60,inverse", alen, 103)
 
             return edlib.Efallthrough
 

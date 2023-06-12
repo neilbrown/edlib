@@ -195,6 +195,11 @@ Module features
 
 ### popup
 
+### lib-wiggle
+
+- [ ] maybe find matches considering only alphanum first, then
+      refine the gaps considering punctuation.
+
 ### lib-diff
 
 - [ ] When viewing diff or merge can get into infinite loop.  Possibly due
@@ -221,7 +226,7 @@ Module features
          if there is a selection, paste in patch with selection as
          "orig"
          if no selection - just paste it in with empty orig
-- [ ] merge-mode to highlight markers with "space-only" or "no-diff" state
+- [X] merge-mode to highlight markers with "space-only" or "no-diff" state
       Also have green for "no conflicts", but it doesn't stand out.
       It would be nice if space-only differences didn't stand out so much.
       That would require different mark-up, or moving a mark around while

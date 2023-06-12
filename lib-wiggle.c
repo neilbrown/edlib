@@ -195,6 +195,9 @@ struct wiggle_data {
 				 */
 	} texts[3];
 	struct command c;
+	/* After set-wiggle is called, these are set */
+	int space_conflicts, conflicts, wiggles;
+	char *wiggle;
 };
 
 DEF_CMD(notify_close)
@@ -227,6 +230,7 @@ DEF_CMD(wiggle_close)
 		wd->texts[i].end = NULL;
 		wd->texts[i].text = NULL;
 	}
+	free(wd->wiggle);
 	return 1;
 }
 
@@ -378,6 +382,38 @@ static const char *typenames[] = {
 	[AlreadyApplied] = "AlreadyApplied",
 };
 
+static bool merge_has_nonspace(struct file f, int pos, int len)
+{
+	char *cp;
+	char *endcp;
+
+	if (len == 0)
+		return False;
+	if (!f.list)
+		return True;
+	endcp = f.list[pos+len-1].start + f.list[pos+len-1].len;
+	cp = f.list[pos].start;
+	return has_nonspace(cp, endcp-cp);
+}
+
+static int count_space_conflicts(struct merge *merge safe,
+				 struct file a, struct file b, struct file c)
+{
+	int cnt = 0;
+	struct merge *m;
+
+	for (m = merge; m->type != End; m++) {
+
+		if (m->type != Conflict)
+			continue;
+		if (!merge_has_nonspace(a, m->a, m->al) &&
+		    !merge_has_nonspace(b, m->b, m->bl) &&
+		    !merge_has_nonspace(c, m->c, m->cl))
+			cnt += 1;
+	}
+	return cnt;
+}
+
 static void add_merge_markup(struct pane *p safe,
 			     struct mark *st,
 			     int skip, int choose,
@@ -395,7 +431,10 @@ static void add_merge_markup(struct pane *p safe,
 	for (m = merge; m->type != End; m++) {
 		int len;
 		const char *cp, *endcp;
+		wint_t wch;
+		bool non_space;
 		int chars;
+		char *suffix = "";
 		char buf[30];
 
 		switch (which) {
@@ -425,10 +464,17 @@ static void add_merge_markup(struct pane *p safe,
 		endcp = f.list[pos+len-1].start + f.list[pos+len-1].len;
 		pos += len;
 		chars = 0;
-		while (get_utf8(&cp, endcp) < WERR)
+		non_space = False;
+		while ((wch = get_utf8(&cp, endcp)) < WERR) {
 			chars += 1;
+			if (!iswspace(wch))
+				non_space = True;
+		}
 
-		snprintf(buf, sizeof(buf), "%d %s", chars, typenames[m->type]);
+		if (m->type == Conflict && !non_space)
+			suffix = " spaces";
+		snprintf(buf, sizeof(buf), "%d %s%s",
+			 chars, typenames[m->type], suffix);
 		call("doc:set-attr", p, 0, st, attr, 0, NULL, buf);
 		while (chars > 0) {
 			wint_t ch = doc_next(p, st);
@@ -439,8 +485,8 @@ static void add_merge_markup(struct pane *p safe,
 				doskip(p, st, NULL, skip, choose);
 			chars -= 1;
 			if (is_eol(ch) && chars > 0) {
-				snprintf(buf, sizeof(buf), "%d %s", chars,
-					 typenames[m->type]);
+				snprintf(buf, sizeof(buf), "%d %s%s", chars,
+					 typenames[m->type], suffix);
 				call("doc:set-attr", p, 0, st, attr,
 				     0, NULL, buf);
 			}
@@ -481,6 +527,7 @@ static char *collect_merge(struct merge *merge safe,
 	for (m = merge; m->type != End; m++) {
 		if (m->type == Unmatched ||
 		    m->type == AlreadyApplied ||
+		    m->type == Conflict ||
 		    m->type == Unchanged)
 			l += copy_words(NULL, &of, m->a, m->al);
 		else if (m->type == Changed)
@@ -492,6 +539,7 @@ static char *collect_merge(struct merge *merge safe,
 	for (m = merge; m->type != End; m++) {
 		if (m->type == Unmatched ||
 		    m->type == AlreadyApplied ||
+		    m->type == Conflict ||
 		    m->type == Unchanged)
 			l += copy_words(str+l, &of, m->a, m->al);
 		else if (m->type == Changed)
@@ -532,12 +580,14 @@ DEF_CMD(wiggle_set_wiggle)
 	csl2 = wiggle_diff(bf, af, 1);
 	info = wiggle_make_merger(of, bf, af, csl1, csl2, 1, 1, 0);
 	if (info.merger) {
-		if (ci->comm2 && info.conflicts == 0) {
-			char *str = collect_merge(info.merger, of, bf, af);
-			if (str)
-				comm_call(ci->comm2, "cb", ci->focus, 0, NULL, str);
-			free(str);
-		}
+		free(wd->wiggle);
+		wd->wiggle = NULL;
+		wd->conflicts = info.conflicts;
+		wd->wiggles = info.wiggles;
+		wd->space_conflicts = count_space_conflicts(info.merger,
+							    of, bf, af);
+		if (info.conflicts == wd->space_conflicts)
+			wd->wiggle = collect_merge(info.merger, of, bf, af);
 		if (*attr) {
 			add_merge_markup(ci->focus,
 					 wd->texts[0].start,
@@ -668,6 +718,30 @@ DEF_CMD(wiggle_find)
 	return ret > 0 ? fuzz + 1 : Efail;
 }
 
+DEF_CMD(wiggle_get)
+{
+	struct wiggle_data *wd = ci->home->data;
+
+	if (wd->conflicts < 0)
+		return Einval;
+	if (!ci->str)
+		return Enoarg;
+	if (strcmp(ci->str, "wiggle") == 0) {
+		if (wd->wiggle)
+			return comm_call(ci->comm2, "cb", ci->focus, 0, NULL,
+					 wd->wiggle);
+		else
+			return Efalse;
+	}
+	if (strcmp(ci->str, "space-conflicts") == 0)
+		return wd->space_conflicts + 1;
+	if (strcmp(ci->str, "conflicts") == 0)
+		return wd->conflicts + 1;
+	if (strcmp(ci->str, "wiggles") == 0)
+		return wd->wiggles + 1;
+	return Einval;
+}
+
 DEF_CMD(wiggle_find_best) { return 0; }
 
 static struct map *wiggle_map;
@@ -690,11 +764,13 @@ DEF_CMD(make_wiggle)
 		key_add(wiggle_map, "set-wiggle", &wiggle_set_wiggle);
 		key_add(wiggle_map, "find", &wiggle_find);
 		key_add(wiggle_map, "find-best", &wiggle_find_best);
+		key_add(wiggle_map, "get-result", &wiggle_get);
 	}
 
 	alloc(wd, pane);
 	wd->c = do_wiggle;
 	wd->c.free = wiggle_free;
+	wd->conflicts = -1;
 	p = pane_register(pane_root(ci->focus), 0,
 			  &wiggle_pane.c, wd);
 	if (!p) {
