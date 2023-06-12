@@ -16,7 +16,7 @@ the file.
 
 ### Small
 
-- [ ] detect and limit recursion.
+- [X] detect and limit recursion.
 - [ ] message-line: use lib-renderline for the one line, so we have
       markup support.
 - [ ] history: Make it possible to search through history. Maybe Alt-p only shows
@@ -69,6 +69,7 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] LOG_BT() doesn't see TYPE_pane and TYPE_comm calls.
 - [ ] give every pane a link to root/editor main and use that
       instead of statics.  Then maybe times_up() can use pane_too_long()
 - [ ] mark DEF_CMD structs as const
@@ -94,7 +95,7 @@ Core features
       Efalse probably becomes 0.
 - [ ] send warning message when recursive notification is prohibited.
        editor:notify:Message:broadcast
-- [ ] detect and limit recursion.
+- [X] detect and limit recursion.
       Each call creates a frame, and each pane has a link to recent frame
       If a call happens on a frame with a link, we check that the same
       'key' isn't already active.

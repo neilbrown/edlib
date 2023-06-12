@@ -382,6 +382,7 @@ static struct backtrace {
 	const struct cmd_info *ci safe;
 	struct backtrace *prev;
 } *backtrace;
+static int backtrace_depth;
 
 static char *mark_info(struct mark *m)
 {
@@ -435,12 +436,24 @@ static int do_comm_call(struct command *comm safe,
 	struct backtrace bt;
 	int ret;
 
+	if (edlib_timing == 1)
+		return Efail;
+	if (backtrace_depth > 100) {
+		backtrace_depth = 0;
+		LOG("Recursion limit of 100 reached");
+		LOG_BT();
+		backtrace_depth = 100;
+		edlib_timing = 1;
+		return Efail;
+	}
 	bt.comm = comm;
 	bt.ci = ci;
 	bt.prev = backtrace;
 	backtrace = &bt;
+	backtrace_depth += 1;
 	ret = comm->func(ci);
 	backtrace = bt.prev;
+	backtrace_depth -= 1;
 	return ret;
 }
 
