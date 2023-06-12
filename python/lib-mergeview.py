@@ -18,6 +18,7 @@ class MergePane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
         self.marks = None
+        self.wig = None
         self.conflicts = 0
         self.call("doc:request:doc:replaced")
 
@@ -40,6 +41,7 @@ class MergePane(edlib.Pane):
             self.call("doc:set-attr", "render:merge-same",
                       self.marks[0], self.marks[3])
             self.marks = None
+        self.wig = None
         start = self.fore(start, end, "<<<<")
         m1 = self.fore(start, end, "||||")
         m2 = self.fore(m1, end, "====")
@@ -61,16 +63,105 @@ class MergePane(edlib.Pane):
         self.call("doc:EOL", 1, t, 1)
         cmd("after", self, t, m3)
 
-        ret = cmd("set-wiggle", self, "render:merge-same")
+        ret = cmd("set-wiggle", self, "render:merge-same", ret='str')
+        if type(ret) == str:
+            self.wig = ret
+            self.conflicts = 0
+        else:
+            self.conflicts = 1
         del cmd
 
         self.marks = [start, m1, m2, m3]
-        self.conflicts = ret - 1
         self.call("view:changed", start, m3)
         return 1
 
-    def handle_alt_m(self, key, focus, mark, **a):
+    def handle_alt_m(self, key, focus, num, mark, **a):
         "handle:K:A-m"
+
+        if num != edlib.NO_NUMERIC and self.marks:
+            # we have a numeric arg - act on current merge
+            if num == -edlib.NO_NUMERIC:
+                focus.call("doc:set-attr", "render:merge-same",
+                           self.marks[0], self.marks[3])
+                # Simple -ve prefix - keep original.
+                m = self.marks[0].dup()
+                focus.call("doc:EOL", 1, 1, m)
+                # Remove first marker
+                focus.call("doc:replace", self.marks[0], m)
+                m = self.marks[3].dup()
+                focus.call("doc:EOL", 1, 1, m)
+                # Remove before/after section with markers
+                focus.call("doc:replace", 0, 1, self.marks[1], m)
+                self.marks = None
+                return 1
+            if num == 0:
+                # if no conflicts remain, wiggle the merge
+                if self.conflicts or self.wig is None:
+                    focus.call("Message", "Cannot complete merge while conflicts remain")
+                    return 1
+                focus.call("doc:set-attr", "render:merge-same",
+                           self.marks[0], self.marks[3])
+
+                m = self.marks[3].dup()
+                focus.call("doc:EOL", 1, 1, m)
+                focus.call("doc:replace", self.marks[0], m, self.wig)
+                self.marks = None
+                return 1
+            if num == 1:
+                focus.call("doc:set-attr", "render:merge-same",
+                           self.marks[0], self.marks[3])
+                # Ignore conflucts, keep replacement
+                m = self.marks[2].dup()
+                focus.call("doc:EOL", 1, 1, m)
+                # Remove first orig/before and markers
+                focus.call("doc:replace", self.marks[0], m)
+                m = self.marks[3].dup()
+                focus.call("doc:EOL", 1, 1, m)
+                # Remove final marker
+                focus.call("doc:replace", 0, 1, self.marks[3], m)
+                self.marks = None
+                return 1
+            if num == 9:
+                focus.call("doc:set-attr", "render:merge-same",
+                           self.marks[0], self.marks[3])
+                # Cut the before/after into the copy buffer.
+                m = self.marks[0].dup()
+                focus.call("doc:EOL", 1, 1, m)
+                # Remove first marker
+                focus.call("doc:replace", self.marks[0], m)
+                m = self.marks[3].dup()
+                focus.call("doc:EOL", 1, 1, m)
+                # Now cut Remove before/after section with markers
+                diff = focus.call("doc:get-str", self.marks[1], m, ret='str')
+                focus.call("copy:save", diff)
+                focus.call("doc:replace", 0, 1, self.marks[1], m)
+                self.marks = None
+
+            return 1
+
+        if num == 9:
+            # paste from copy-buf if it is a diff
+            pt = focus.call("doc:point", ret='mark')
+            if pt and pt['selection:active'] == "1":
+                mk = focus.call("doc:point", ret='mark2')
+            else:
+                mk = None
+            if mk:
+                strt,end = pt.dup(),mk.dup()
+                if strt > end:
+                    strt,end = end,strt
+                focus.call("select:commit")
+                diff = focus.call("copy:get", ret='str')
+                if diff and diff.startswith("|||||||"):
+                    # move strt before region
+                    strt.step(0)
+                    focus.call("doc:replace", strt, strt, "<<<<<<< found\n")
+                    # move end after region
+                    end.step(1)
+                    focus.call("doc:replace", end, end, diff, 0, 1)
+                    # Leave pt,mk - use 'strt' to find merge
+                    mark = strt
+                # fall through to "Find" the merge
 
         if self.marks:
             focus.call("doc:set-attr", "render:merge-same",

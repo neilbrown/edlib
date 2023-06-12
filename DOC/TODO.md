@@ -213,14 +213,14 @@ Module features
 
 ### lib-mergeview
 
-- [ ] commands to resolve a conflict with numeric args to :A-m
+- [X] commands to resolve a conflict with numeric args to :A-m
       negative: discard change, keep original
       0: if no conflicts remain, wiggle change into place
       1: ignore conflicts, keep replacement
       9: if in merge cut patch to copy-buffer
          if there is a selection, paste in patch with selection as
          "orig"
-         if no selection - just paste it in with empty orih
+         if no selection - just paste it in with empty orig
 - [ ] merge-mode to highlight markers with "space-only" or "no-diff" state
       Also have green for "no conflicts", but it doesn't stand out.
       It would be nice if space-only differences didn't stand out so much.
