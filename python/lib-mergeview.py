@@ -213,6 +213,87 @@ class MergePane(edlib.Pane):
             mark.to_mark(m3)
         return 1
 
+    def handle_shift(self, key, focus, num, mark, **a):
+        "handle-list/K-</K->"
+        if not self.marks:
+            return edlib.Efallthrough
+        m = mark.dup()
+        focus.call("doc:EOL", m, -1)
+        if m == self.marks[0]:
+            if key[-1] == '<':
+                # Move one line from before the header to after.
+                m2 = m.dup()
+                focus.call("doc:EOL", m2, -2)
+                if m2 == m:
+                    # Nothing to move
+                    return 1
+                txt = focus.call("doc:get-str", m2, m, ret='str')
+                if txt.startswith(">>>>>>>"):
+                    # We've run into another chunk - stop
+                    return 1
+                m3 = mark.dup()
+                focus.call("doc:EOL", m3, 1, 1)
+                focus.call("doc:replace", m3, m3, txt)
+                focus.call("doc:replace", m2, m, 0, 1)
+                return 1
+            else:
+                # Move one line from after the header to before
+                m2 = mark.dup()
+                focus.call("doc:EOL", m2, 1, 1)
+                m3 = m2.dup()
+                focus.call("doc:EOL", m3, 1, 1)
+                if m3 == m2:
+                    return 1
+                txt = focus.call("doc:get-str", m2, m3, ret='str')
+                if txt.startswith("|||||||"):
+                    # Nothing here
+                    return 1
+                m.step(0)
+                focus.call("doc:replace", m, m, txt)
+                focus.call("doc:replace", m2, m3, 0, 1)
+                return 1
+            return 1;
+        if m == self.marks[1]:
+            if key[-1] == '<':
+                # Move one line from before marker to after end
+                m2 = m.dup()
+                focus.call("doc:EOL", m2, -2)
+                if m2 == m:
+                    # Nothing to move
+                    return 1
+                txt = focus.call("doc:get-str", m2, m, ret='str')
+                if txt.startswith("<<<<<<<"):
+                    # We've run out of orig
+                    return 1
+                m3 = self.marks[3].dup()
+                focus.call("doc:EOL", m3, 1, 1)
+                focus.call("doc:replace", m3, m3, txt)
+                focus.call("doc:replace", m2, m, 0, 1)
+                return 1
+            else:
+                # Move one line from after end marker to before
+                m2 = self.marks[3].dup()
+                focus.call("doc:EOL", m2, 1, 1)
+                m3 = m2.dup()
+                focus.call("doc:EOL", m3, 1, 1)
+                if m3 == m2:
+                    return 1
+                txt = focus.call("doc:get-str", m2, m3, ret='str')
+                if txt.startswith("<<<<<<<"):
+                    # Run into next chunk
+                    return 1
+                m.step(0)
+                focus.call("doc:replace", m, m, txt)
+                focus.call("doc:replace", m2, m3, 0, 1)
+                return 1
+            return 1;
+        if m == self.marks[2]:
+            # I don't know what, if anything, I want here.
+            return 1;
+        if m == self.marks[3]:
+            return 1;
+        return edlib.Efallthrough
+
     def remark(self, key, **a):
         if self.marks:
             m = self.marks[3].dup()
