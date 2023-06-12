@@ -642,7 +642,8 @@ static int advance_one(struct match_state *st safe, int i,
 		advance = -2;
 	} else
 		/* Nothing else is possible here */
-		abort();
+		/* abort(); */
+		advance = -2;
 	if (advance < 0)
 		/* no match on this path */
 		;
@@ -1125,7 +1126,7 @@ static wint_t cvt_hex(const char *s safe, int len)
 		else if (*s <= 'f')
 			rv += *s - 'a' + 10;
 		else
-			abort();
+			return WERR;
 		s++;
 		len--;
 	}
@@ -1774,8 +1775,13 @@ static bool parse_piece(struct parse_state *st safe)
 				start = newstart;
 				max -= 1;
 			}
-			if (last != st->next)
+			if (last != st->next) {
+				#ifdef DEBUG
 				abort();
+				#else
+				return False;
+				#endif
+			}
 		}
 		return True;
 	}
@@ -2062,8 +2068,14 @@ unsigned short *rxl_parse(const char *patn safe, int *lenp, int nocase)
 	st.capture = 0;
 	if (nocase)
 		add_cmd(&st, REC_IGNCASE);
-	if (!parse_re(&st, DoCapture))
+	if (!parse_re(&st, DoCapture)) {
+		#ifdef DEBUG
 		abort();
+		#else
+		free(st.rxl);
+		return NULL;
+		#endif
+	}
 	add_cmd(&st, REC_MATCH);
 	return st.rxl;
 }

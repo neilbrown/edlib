@@ -9,10 +9,10 @@ the file.
 
 ### Trivial
 
-- [ ] give every pane a link to root/editor main and use that
+- [X] give every pane a link to root/editor main and use that
       instead of statics.  Then maybe times_up() can use pane_too_long()
 - [ ] mark DEF_CMD structs as const
-- [ ] rexel: don't abort if something looks wrong, just fail.
+- [X] rexel: don't abort if something looks wrong, just fail.
 
 ### Small
 
@@ -186,7 +186,7 @@ Module features
 
 ### rexel
 
-- [ ] don't abort if something looks wrong, just fail.
+- [X] don't abort if something looks wrong, just fail.
 - [ ] move to separate git repo and document well.
 - [ ] review return code of rxl_advance().  What should be
       returned if a flag allowed a match, but the char didn't.
