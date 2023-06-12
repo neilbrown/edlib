@@ -42,9 +42,11 @@ static void pane_init(struct pane *p safe, struct pane *par)
 	if (par) {
 		p->parent = par;
 		list_add(&p->siblings, &par->children);
+		p->root = par->root;
 	} else {
 		p->parent = p;
 		INIT_LIST_HEAD(&p->siblings);
+		p->root = p;
 	}
 	INIT_LIST_HEAD(&p->children);
 	INIT_LIST_HEAD(&p->notifiers);

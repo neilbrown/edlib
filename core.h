@@ -83,6 +83,7 @@ struct pane {
 	 */
 	unsigned int		timestamp;
 
+	struct pane		*root;
 	struct command		*handle;
 	void			*data safe;
 	struct attrset		*attrs;
@@ -499,9 +500,7 @@ struct pane *__doc_register(struct pane *parent safe,
 
 static inline struct pane * safe pane_root(struct pane *p safe)
 {
-	while (p->parent != p)
-		p = p->parent;
-	return p;
+	return p->root;
 }
 
 static inline struct pane *safe pane_leaf(struct pane *p safe)
