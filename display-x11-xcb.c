@@ -156,7 +156,7 @@ enum my_atoms {
 	a_UTF8_STRING,
 	NR_ATOMS
 };
-static char *atom_names[NR_ATOMS] = {
+static const char *atom_names[NR_ATOMS] = {
 	[a_NONE]		= "NONE",
 	[a_WM_STATE]		= "_NET_WM_STATE",
 	[a_STATE_FULLSCREEN]	= "_NET_WM_STATE_FULLSCREEN",
@@ -1786,7 +1786,7 @@ static struct pane *xcb_display_init(const char *d safe,
 	xd->visual = xcb_depth_visuals(di.data);
 
 	for (i = 0; i < NR_ATOMS; i++) {
-		char *n = atom_names[i];
+		const char *n = atom_names[i];
 		if (!n)
 			continue;
 		cookies[i] = xcb_intern_atom(conn, 0, strlen(n), n);

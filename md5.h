@@ -198,7 +198,7 @@ static void md5_final(struct md5_state *mctx safe, uint8_t out[MD5_DIGEST_SIZE])
 	memset(mctx, 0, sizeof(*mctx));
 }
 
-static char _md5_hex[] = "0123456789ABCDEF";
+static const char _md5_hex[] = "0123456789ABCDEF";
 static void md5_final_txt(struct md5_state *mctx safe, char out[MD5_DIGEST_SIZE*2+1])
 {
 	uint8_t outb[MD5_DIGEST_SIZE];

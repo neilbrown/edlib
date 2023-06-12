@@ -81,7 +81,7 @@ static void dump_count_hash(void);
 static void stat_dump(void);
 static void dump_mem(void);
 
-static char *tnames[] = {
+static const char *tnames[] = {
 	[TIME_KEY]     = "KEY",
 	[TIME_WINDOW]  = "WINDOW",
 	[TIME_READ]    = "READ",

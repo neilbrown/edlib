@@ -44,12 +44,12 @@ DEF_LOOKUP_CMD(view_handle, view_map);
 static struct pane *do_view_attach(struct pane *par, int border);
 static int calc_border(struct pane *p safe);
 
-static char default_status[] =
+static const char default_status[] =
 	"{!CountLinesAsync}M:{doc-modified?,*,-}{doc-readonly?,%%,  } D:{doc-file-changed?,CHANGED:,}{doc-name%-15} L{^line}/{lines} {display-context}{render-default}/{view-default} {doc-status}";
-static char default_title[] =
+static const char default_title[] =
 	"{doc-name}";
 
-static char *format_status(char *status safe,
+static char *format_status(const char *status safe,
 			   struct pane *focus safe,
 			   struct mark *pm)
 {
@@ -152,7 +152,7 @@ static char *format_status(char *status safe,
 	return buf_final(&b);
 }
 
-static void one_char(struct pane *p safe, char *s, char *attr, int x, int y)
+static void one_char(struct pane *p safe, const char *s, char *attr, int x, int y)
 {
 	call("Draw:text", p, -1, NULL, s, 0, NULL, attr, x, y);
 }
@@ -163,8 +163,8 @@ DEF_CMD(view_refresh)
 	struct view_data *vd = p->data;
 	int i;
 	struct mark *pm;
-	char *status;
-	char *title;
+	const char *status;
+	const char *title;
 
 	if (vd->border <= 0)
 		return 1;
@@ -251,9 +251,6 @@ DEF_CMD(view_refresh)
 		one_char(p, "┏", "inverse", 0, vd->ascent);
 	if (!(~vd->border & (BORDER_RIGHT|BORDER_BOT)))
 		one_char(p, "┛", "inverse", p->w-vd->border_width, p->h-vd->border_height+vd->ascent);
-
-	free(status);
-	free(title);
 
 	return 1;
 }

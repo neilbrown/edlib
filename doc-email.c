@@ -353,7 +353,7 @@ static struct map *email_view_map safe;
 
 DEF_LOOKUP_CMD(email_view_handle, email_view_map);
 
-static char tspecials[] = "()<>@,;:\\\"/[]?=";
+static const char tspecials[] = "()<>@,;:\\\"/[]?=";
 
 static int lws(char c) {
 	return c == ' '  || c == '\t' || c == '\r' || c == '\n';

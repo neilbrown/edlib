@@ -117,7 +117,7 @@ enum my_atoms {
 	NR_ATOMS,
 	NR_TARGETS = a_NULL,
 };
-static char *atom_names[NR_ATOMS] = {
+static const char *atom_names[NR_ATOMS] = {
 	[a_TIMESTAMP]		= "TIMESTAMP",
 	[a_TARGETS]		= "TARGETS",
 	[a_MULTIPLE]		= "MULTIPLE",
@@ -1007,7 +1007,7 @@ static struct command *xcb_register(struct pane *p safe, char *display safe)
 	xci->screen = safe_cast iter.data;
 
 	for (i = 0; i < NR_ATOMS; i++) {
-		char *n = atom_names[i];
+		const char *n = atom_names[i];
 		if (!n)
 			continue;
 		cookies[i] = xcb_intern_atom(conn, 0, strlen(n), n);

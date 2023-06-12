@@ -1109,7 +1109,7 @@ DEF_CMD(nc_draw_image)
 		cy = y + ci->focus->cy;
 	}
 	for (i = 0; i < h; i+= 2) {
-		static wint_t hilo = 0x2580; /* L'▀' */
+		static const wint_t hilo = 0x2580; /* L'▀' */
 		for (j = 0; j < w ; j+= 1) {
 			unsigned char *p1 = buf + i*w*4 + j*4;
 			unsigned char *p2 = buf + (i+1)*w*4 + j*4;

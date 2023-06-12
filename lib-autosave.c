@@ -23,7 +23,7 @@
  * 'n' or 'q' discard the diff.
  */
 
-static char mesg[] =
+static const char mesg[] =
 	"\nAutosave file has these differences, type:\n"
 	"'y' to restore,\n"
 	"'n' to ignore,\n"

@@ -702,7 +702,7 @@ static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds,
 {
 	Pane *parent = NULL;
 	int ret;
-	static char *keywords[] = {"parent", "z", NULL};
+	static const char *keywords[] = {"parent", "z", NULL};
 
 	if (self->pane) {
 		PyErr_SetString(PyExc_TypeError, "Pane already initialised");
@@ -715,7 +715,7 @@ static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds,
 		return 0;
 
 	/* Pane(parent=None, z=0) */
-	ret = PyArg_ParseTupleAndKeywords(args, kwds, "|Oi", keywords,
+	ret = PyArg_ParseTupleAndKeywords(args, kwds, "|Oi", (char**)keywords,
 					  &parent, zp);
 	if (ret <= 0)
 		return -1;
@@ -1497,7 +1497,7 @@ static PyObject *Pane_vmark_at_or_before(Pane *self safe, PyObject *args)
 	return Py_None;
 }
 
-static PyMethodDef pane_methods[] = {
+static const PyMethodDef pane_methods[] = {
 	{"close", (PyCFunction)Pane_close, METH_NOARGS,
 	 "close the pane"},
 	{"children", (PyCFunction)pane_children, METH_NOARGS,
@@ -1672,7 +1672,7 @@ static PyObject *pane_cmp(Pane *p1 safe, Pane *p2 safe, int op)
 	Py_RETURN_RICHCOMPARE(p1->pane, p2->pane, op);
 }
 
-static PyGetSetDef pane_getseters[] = {
+static const PyGetSetDef pane_getseters[] = {
 	{"x",
 	 (getter)pane_getnum, (setter)pane_setnum,
 	 "X offset in parent", "x" },
@@ -1758,7 +1758,7 @@ static int Pane_set_item(Pane *self safe, PyObject *key, PyObject *val)
 	return 0;
 }
 
-static PyMappingMethods pane_mapping = {
+static const PyMappingMethods pane_mapping = {
 	.mp_length = NULL,
 	.mp_subscript = (binaryfunc)Pane_get_item,
 	.mp_ass_subscript = (objobjargproc)Pane_set_item,
@@ -1771,13 +1771,13 @@ static PyTypeObject PaneType = {
 	.tp_dealloc	= (destructor)pane_dealloc,
 	.tp_richcompare	= (richcmpfunc)pane_cmp,
 	.tp_repr	= (reprfunc)pane_repr,
-	.tp_as_mapping	= &pane_mapping,
+	.tp_as_mapping	= (PyMappingMethods*)&pane_mapping,
 	.tp_hash	= (hashfunc)pane_hash,
 	.tp_call	= (ternaryfunc)pane_direct_call,
 	.tp_flags	= Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 	.tp_doc		= "edlib panes",
-	.tp_methods	= pane_methods,
-	.tp_getset	= pane_getseters,
+	.tp_methods	= (PyMethodDef*)pane_methods,
+	.tp_getset	= (PyGetSetDef*)pane_getseters,
 	.tp_init	= (initproc)Pane_init,
 	.tp_new		= (newfunc)pane_new,
 };
@@ -1829,7 +1829,7 @@ static PyObject *to_end(Doc *self safe, PyObject *args)
 	return Py_None;
 }
 
-static PyMethodDef doc_methods[] = {
+static const PyMethodDef doc_methods[] = {
 	{"first_mark", (PyCFunction)first_mark, METH_NOARGS,
 	 "first mark of document"},
 	{"to_end", (PyCFunction)to_end, METH_VARARGS,
@@ -1845,7 +1845,7 @@ static PyTypeObject DocType = {
 	.tp_repr	= (reprfunc)doc_repr,
 	.tp_flags	= Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 	.tp_doc		= "edlib document",
-	.tp_methods	= doc_methods,
+	.tp_methods	= (PyMethodDef*)doc_methods,
 	.tp_base	= &PaneType,
 	.tp_init	= (initproc)Doc_init,
 	.tp_new		= (newfunc)Doc_new,
@@ -2003,7 +2003,7 @@ static PyObject *mark_compare(Mark *a safe, Mark *b safe, int op)
 	}
 }
 
-static PyGetSetDef mark_getseters[] = {
+static const PyGetSetDef mark_getseters[] = {
 	{"pos",
 	 (getter)mark_getpos, (setter)mark_setpos,
 	 "Position ref", NULL},
@@ -2036,7 +2036,7 @@ static int Mark_init(Mark *self safe, PyObject *args safe, PyObject *kwds)
 	Pane *owner = NULL;
 	int view = MARK_UNGROUPED;
 	Mark *orig = NULL;
-	static char *keywords[] = {"pane","view","orig", "owner", NULL};
+	static const char *keywords[] = {"pane","view","orig", "owner", NULL};
 	int ret;
 
 	if (!PyTuple_Check(args) ||
@@ -2044,7 +2044,7 @@ static int Mark_init(Mark *self safe, PyObject *args safe, PyObject *kwds)
 		/* Internal Mark_Frommark call */
 		return 1;
 
-	ret = PyArg_ParseTupleAndKeywords(args, kwds, "|O!iO!O!", keywords,
+	ret = PyArg_ParseTupleAndKeywords(args, kwds, "|O!iO!O!", (char**)keywords,
 					  &PaneType, &doc,
 					  &view,
 					  &MarkType, &orig,
@@ -2297,7 +2297,7 @@ static PyObject *Mark_watch(Mark *self safe, PyObject *args)
 	return Py_None;
 }
 
-static PyMethodDef mark_methods[] = {
+static const PyMethodDef mark_methods[] = {
 	{"to_mark", (PyCFunction)Mark_to_mark, METH_VARARGS,
 	 "Move one mark to another"},
 	{"to_mark_noref", (PyCFunction)Mark_to_mark_noref, METH_VARARGS,
@@ -2396,7 +2396,7 @@ static PyObject *mark_repr(Mark *self safe)
 	return ret;
 }
 
-static PyMappingMethods mark_mapping = {
+static const PyMappingMethods mark_mapping = {
 	.mp_length = NULL,
 	.mp_subscript = (binaryfunc)mark_get_item,
 	.mp_ass_subscript = (objobjargproc)mark_set_item,
@@ -2407,7 +2407,7 @@ static int mark_bool(Mark *self safe)
 	return mark_valid(self->mark);
 }
 
-static PyNumberMethods mark_as_num = {
+static const PyNumberMethods mark_as_num = {
 	.nb_bool	= (inquiry) mark_bool,
 };
 
@@ -2416,16 +2416,16 @@ static PyTypeObject MarkType = {
 	.tp_name	= "edlib.Mark",
 	.tp_basicsize	= sizeof(Mark),
 	.tp_dealloc	= (destructor)mark_dealloc,
-	.tp_as_mapping	= &mark_mapping,
+	.tp_as_mapping	= (PyMappingMethods*)&mark_mapping,
 	.tp_flags	= Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 	.tp_doc		= "edlib marks",
 	.tp_richcompare	= (richcmpfunc)mark_compare,
-	.tp_methods	= mark_methods,
-	.tp_getset	= mark_getseters,
+	.tp_methods	= (PyMethodDef*)mark_methods,
+	.tp_getset	= (PyGetSetDef*)mark_getseters,
 	.tp_init	= (initproc)Mark_init,
 	.tp_new		= (newfunc)mark_new,
 	.tp_repr	= (reprfunc)mark_repr,
-	.tp_as_number	= &mark_as_num,
+	.tp_as_number	= (PyNumberMethods*)&mark_as_num,
 };
 
 static void comm_dealloc(Comm *self safe)
@@ -2887,7 +2887,7 @@ static PyObject *py_LOG_BT(PyObject *self, PyObject *args)
 	return Py_None;
 }
 
-static PyMethodDef edlib_methods[] = {
+static const PyMethodDef edlib_methods[] = {
 	{"time_start", py_time_start, METH_VARARGS,
 	 "Record start time"},
 	{"time_stop", py_time_stop, METH_VARARGS,
@@ -2943,7 +2943,7 @@ void edlib_init(struct pane *ed safe)
 
 	PyModule_SetDocString(m , "edlib - one more editor is never enough");
 
-	PyModule_AddFunctions(m, edlib_methods);
+	PyModule_AddFunctions(m, (PyMethodDef*)edlib_methods);
 	PyModule_AddObject(m, "editor", Pane_Frompane(ed));
 	PyModule_AddObject(m, "Pane", (PyObject *)&PaneType);
 	PyModule_AddObject(m, "PaneIter", (PyObject *)&PaneIterType);

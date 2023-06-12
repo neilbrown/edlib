@@ -368,7 +368,7 @@ DEF_CMD(wiggle_set_common)
 	return ret;
 }
 
-static char *typenames[] = {
+static const char *typenames[] = {
 	[End] = "End",
 	[Unmatched] = "Unmatched",
 	[Unchanged] = "Unchanged",

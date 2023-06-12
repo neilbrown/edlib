@@ -17,7 +17,7 @@
 #include "core.h"
 #include "misc.h"
 
-static char WelcomeText[] =
+static const char WelcomeText[] =
 	"\n"
 	"Welcome to 'edlib' - a document editor that comes in well defined pieces.\n"
 	"\n"
@@ -45,7 +45,7 @@ static char WelcomeText[] =
 	"Mouse clicks move the cursor, and clicking on the scroll bar scrolls\n"
 	;
 
-static char shortopt[] = "gtx";
+static const char shortopt[] = "gtx";
 
 int main(int argc, char *argv[])
 {
