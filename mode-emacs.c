@@ -541,6 +541,7 @@ static struct simple_command {
 	{CMD(emacs_simple), "Display:new", "K:CX5-2"},
 	{CMD(emacs_simple), "Display:close", "K:CX5-0"},
 	{CMD(emacs_simple), "lib-server:done", "K:CX-#"},
+	{CMD(emacs_simple), "mode-swap-mark", "K:CX:C-X"},
 	{CMD(emacs_simple), "Abort", "K:C-G"},
 	{CMD(emacs_simple), "NOP", "K:A-G"},
 	{CMD(emacs_simple), "NOP", "K:CX:C-G"},
@@ -3238,7 +3239,6 @@ static void emacs_init(void)
 	key_add(m, "K:C--", &emacs_neg);
 	key_add(m, "K:C- ", &emacs_mark);
 	key_add(m, "mode-set-mark", &emacs_mark);
-	key_add(m, "K:CX:C-X", &emacs_swap_mark);
 	key_add(m, "mode-swap-mark", &emacs_swap_mark);
 	key_add(m, "Abort", &emacs_abort);
 	key_add(m, "K:C-W", &emacs_wipe);
