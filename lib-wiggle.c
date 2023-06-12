@@ -389,6 +389,7 @@ static void add_merge_markup(struct pane *p safe,
 
 	if (!f.list || !st)
 		return;
+	st = mark_dup(st);
 
 	doskip(p, st, NULL, skip, choose);
 	for (m = merge; m->type != End; m++) {
@@ -445,6 +446,58 @@ static void add_merge_markup(struct pane *p safe,
 			}
 		}
 	}
+	mark_free(st);
+}
+
+static int copy_words(char *str, struct file *f safe, int start, int len)
+{
+	int ret = 0;
+	if (!f->list)
+		return 0;
+	while (len > 0 && start < f->elcnt) {
+		struct elmnt e = f->list[start];
+		if (str) {
+			memcpy(str, e.start - e.prefix, e.plen + e.prefix);
+			str += e.plen + e.prefix;
+		}
+		ret += e.plen + e.prefix;
+		start += 1;
+		len -= 1;
+	}
+	return ret;
+}
+
+static char *collect_merge(struct merge *merge safe,
+			   struct file of, struct file bf, struct file af)
+{
+	struct merge *m;
+	char *str;
+	int l;
+
+	if (!of.list || !bf.list || !af.list)
+		return NULL;
+	/* First determine size */
+	l = 0;
+	for (m = merge; m->type != End; m++) {
+		if (m->type == Unmatched ||
+		    m->type == AlreadyApplied ||
+		    m->type == Unchanged)
+			l += copy_words(NULL, &of, m->a, m->al);
+		else if (m->type == Changed)
+			l += copy_words(NULL, &af, m->c, m->cl);
+	}
+	str = malloc(l+1);
+	/* Now copy content in */
+	l = 0;
+	for (m = merge; m->type != End; m++) {
+		if (m->type == Unmatched ||
+		    m->type == AlreadyApplied ||
+		    m->type == Unchanged)
+			l += copy_words(str+l, &of, m->a, m->al);
+		else if (m->type == Changed)
+			l += copy_words(str+l, &af, m->c, m->cl);
+	}
+	return str;
 }
 
 DEF_CMD(wiggle_set_wiggle)
@@ -479,18 +532,26 @@ DEF_CMD(wiggle_set_wiggle)
 	csl2 = wiggle_diff(bf, af, 1);
 	info = wiggle_make_merger(of, bf, af, csl1, csl2, 1, 1, 0);
 	if (info.merger) {
-		add_merge_markup(ci->focus,
-				 wd->texts[0].start,
-				 wd->texts[0].skip, wd->texts[0].choose,
-				 of, info.merger, attr, 0);
-		add_merge_markup(ci->focus,
-				 wd->texts[1].start,
-				 wd->texts[1].skip, wd->texts[1].choose,
-				 bf, info.merger, attr, 1);
-		add_merge_markup(ci->focus,
-				 wd->texts[2].start,
-				 wd->texts[2].skip, wd->texts[2].choose,
-				 af, info.merger, attr, 2);
+		if (ci->comm2 && info.conflicts == 0) {
+			char *str = collect_merge(info.merger, of, bf, af);
+			if (str)
+				comm_call(ci->comm2, "cb", ci->focus, 0, NULL, str);
+			free(str);
+		}
+		if (*attr) {
+			add_merge_markup(ci->focus,
+					 wd->texts[0].start,
+					 wd->texts[0].skip, wd->texts[0].choose,
+					 of, info.merger, attr, 0);
+			add_merge_markup(ci->focus,
+					 wd->texts[1].start,
+					 wd->texts[1].skip, wd->texts[1].choose,
+					 bf, info.merger, attr, 1);
+			add_merge_markup(ci->focus,
+					 wd->texts[2].start,
+					 wd->texts[2].skip, wd->texts[2].choose,
+					 af, info.merger, attr, 2);
+		}
 	}
 
 	free(csl1);
@@ -608,7 +669,6 @@ DEF_CMD(wiggle_find)
 }
 
 DEF_CMD(wiggle_find_best) { return 0; }
-DEF_CMD(wiggle_wiggle) { return 0; }
 
 static struct map *wiggle_map;
 DEF_LOOKUP_CMD(wiggle_pane, wiggle_map);
@@ -630,7 +690,6 @@ DEF_CMD(make_wiggle)
 		key_add(wiggle_map, "set-wiggle", &wiggle_set_wiggle);
 		key_add(wiggle_map, "find", &wiggle_find);
 		key_add(wiggle_map, "find-best", &wiggle_find_best);
-		key_add(wiggle_map, "wiggle", &wiggle_wiggle);
 	}
 
 	alloc(wd, pane);
