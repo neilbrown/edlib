@@ -335,23 +335,26 @@ class MergePane(edlib.Pane):
             return edlib.Efallthrough
 
         if str == "render:merge-same":
+            # [ML] len type num {spaces}
             w = str2.split()
-            alen = int(w[0])
-            if w[1] == "Unmatched":
+            alen = int(w[1])
+            type = w[2]
+            spaces = w[4] if len(w) >=5 else ""
+            if type == "Unmatched":
                 comm2("attr:cb", focus, mark, "fg:blue-80,bg:cyan+20", alen, 103)
-            if w[1] == "Extraneous":
+            if type == "Extraneous":
                 comm2("attr:cb", focus, mark, "fg:cyan-60,bg:yellow", alen, 103)
-            if w[1] == "Changed":
+            if type == "Changed":
                 if mark < a:
                     comm2("attr:cb", focus, mark, "fg:red-60", alen, 103)
                 else:
                     comm2("attr:cb", focus, mark, "fg:green-60", alen, 103)
-            if w[1] == "Conflict":
-                if len(w) >= 3 and w[2] == "spaces":
+            if type == "Conflict":
+                if spaces == "spaces":
                     comm2("attr:cb", focus, mark, "fg:red-60,underline", alen, 103)
                 else:
                     comm2("attr:cb", focus, mark, "fg:red-60,inverse", alen, 103)
-            if w[1] == "AlreadyApplied":
+            if type == "AlreadyApplied":
                 if mark > b and mark < a:
                     # This part is 'before' - mosly irrelevant
                     comm2("attr:cb", focus, mark, "fg:cyan-60", alen, 103)

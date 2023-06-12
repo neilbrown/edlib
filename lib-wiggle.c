@@ -421,6 +421,7 @@ static void add_merge_markup(struct pane *p safe,
 			     const char *attr safe, int which)
 {
 	struct merge *m;
+	int mergenum;
 	int pos = 0;
 
 	if (!f.list || !st)
@@ -428,14 +429,14 @@ static void add_merge_markup(struct pane *p safe,
 	st = mark_dup(st);
 
 	doskip(p, st, NULL, skip, choose);
-	for (m = merge; m->type != End; m++) {
+	for (m = merge, mergenum=0; m->type != End; m++, mergenum++) {
 		int len;
 		const char *cp, *endcp;
 		wint_t wch;
 		bool non_space;
 		int chars;
 		char *suffix = "";
-		char buf[30];
+		char buf[128];
 
 		switch (which) {
 		case 0: /* orig - no Extraneous */
@@ -473,8 +474,8 @@ static void add_merge_markup(struct pane *p safe,
 
 		if (m->type == Conflict && !non_space)
 			suffix = " spaces";
-		snprintf(buf, sizeof(buf), "%d %s%s",
-			 chars, typenames[m->type], suffix);
+		snprintf(buf, sizeof(buf), "M %d %s %d%s",
+			 chars, typenames[m->type], mergenum, suffix);
 		call("doc:set-attr", p, 0, st, attr, 0, NULL, buf);
 		while (chars > 0) {
 			wint_t ch = doc_next(p, st);
@@ -485,8 +486,8 @@ static void add_merge_markup(struct pane *p safe,
 				doskip(p, st, NULL, skip, choose);
 			chars -= 1;
 			if (is_eol(ch) && chars > 0) {
-				snprintf(buf, sizeof(buf), "%d %s%s", chars,
-					 typenames[m->type], suffix);
+				snprintf(buf, sizeof(buf), "L %d %s %d%s", chars,
+					 typenames[m->type], mergenum, suffix);
 				call("doc:set-attr", p, 0, st, attr,
 				     0, NULL, buf);
 			}
