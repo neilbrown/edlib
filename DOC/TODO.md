@@ -29,7 +29,7 @@ the file.
 
 ### Medium
 
-- [ ] lib-mergeview improvements
+- [X] lib-mergeview improvements
 - [ ] lib-diff slowness with large diff
 - [ ] linecount :when used in 'view' mode, stack the counting pane with all the
       others so it can easily catch view-changed.
@@ -243,7 +243,7 @@ Module features
 - [ ] Consider what else can be done with < and > on other markers.
 - [X] Capture :CX:C-x command to cycle through matching places in the
       three branches.
-- [ ] merge-mode automatic detect, enable, goto-first
+- [X] merge-mode automatic detect, enable, goto-first
        I'm not sure I want this, but probably try it and see
       Maybe time-limit on search
 

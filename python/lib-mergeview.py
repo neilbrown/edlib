@@ -25,6 +25,10 @@ class MergePane(edlib.Pane):
         self.merge_char = None
         self.call("doc:request:doc:replaced")
         self.call("doc:request:mark:moving")
+        if focus["mergeview-autofind"] == "true":
+            focus.call("doc:set:mergeview-autofind")
+            m = self.call("doc:point", ret='mark')
+            self.call("K:A-m", self, m)
 
     def fore(self, m, end, ptn):
         if not m:
@@ -438,6 +442,18 @@ class MergePane(edlib.Pane):
 
             return edlib.Efallthrough
 
+def merge_appeared(key, focus, **a):
+    t = focus["doc-type"]
+    if t != "text":
+        return 1
+    m = edlib.Mark(focus)
+    try:
+        focus.call("text-search", m, "^<<<<<<<")
+        focus.call("doc:append:view-default", ",merge")
+        focus.call("doc:set:mergeview-autofind", "true")
+    except:
+        pass
+
 def merge_view_attach(key, focus, comm2, **a):
     p = MergePane(focus)
     if not p:
@@ -459,3 +475,4 @@ def add_merge(key, focus, mark, **a):
 edlib.editor.call("global-set-command", "attach-merge", merge_view_attach)
 edlib.editor.call("global-set-command", "interactive-cmd-merge-mode", add_merge)
 edlib.editor.call("global-load-module", "lib-wiggle")
+edlib.editor.call("global-set-command", "doc:appeared-mergeview", merge_appeared)
