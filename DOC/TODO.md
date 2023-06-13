@@ -241,7 +241,7 @@ Module features
 - [X] Capture '-<' and '->' on the marker lines to move the orig section
       w.r.t surrounding text, or to prune the before and after sections.
 - [ ] Consider what else can be done with < and > on other markers.
-- [ ] Capture :CX:C-x command to cycle through matching places in the
+- [X] Capture :CX:C-x command to cycle through matching places in the
       three branches.
 - [ ] merge-mode automatic detect, enable, goto-first
        I'm not sure I want this, but probably try it and see

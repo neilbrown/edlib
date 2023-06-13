@@ -21,7 +21,10 @@ class MergePane(edlib.Pane):
         self.wig = None
         self.conflicts = 0
         self.space_conflicts = 0
+        self.merge_num = None
+        self.merge_char = None
         self.call("doc:request:doc:replaced")
+        self.call("doc:request:mark:moving")
 
     def fore(self, m, end, ptn):
         if not m:
@@ -293,6 +296,78 @@ class MergePane(edlib.Pane):
         if m == self.marks[3]:
             return 1;
         return edlib.Efallthrough
+
+    def handle_swap(self, key, focus, mark, **a):
+        "handle:mode-swap-mark"
+        # redefine mode-swap-mark while in merge to cycle among the branches.
+        if not self.marks:
+            return edlib.Efallthrough
+        m = mark.dup()
+        focus.call("doc:EOL", m, -1)
+        if m <= self.marks[0]:
+            mark.to_mark(self.marks[1])
+            return 1
+        if m == self.marks[1]:
+            mark.to_mark(self.marks[2])
+            return 1
+        if m == self.marks[2]:
+            mark.to_mark(self.marks[3])
+            return 1
+        if m >= self.marks[3]:
+            mark.to_mark(self.marks[0])
+            return 1
+
+        # Must be in the merge - find the location and cycle
+        if m < self.marks[1]:
+            which = 0
+        elif m < self.marks[2]:
+            which = 1
+        else:
+            which = 2
+        if self.merge_num is None:
+            m.to_mark(mark)
+            a = focus.call("doc:get-attr", m, "render:merge-same", ret='str')
+            c = 0
+            while (not a or a[0] != 'M') and m > self.marks[which]:
+                focus.prev(m)
+                c += 1
+                a = focus.call("doc:get-attr", m, "render:merge-same", ret='str')
+            if not a:
+                return 1
+            self.merge_num = int(a.split()[3])
+            self.merge_char = c
+        which = (which + 1) % 3
+        m.to_mark(self.marks[which])
+        focus.call("doc:EOL", m, 1, 1)
+        a = focus.call("doc:get-attr", m, "render:merge-same", ret='str')
+        while (m < self.marks[which+1] and
+               (not a or a[0] != 'M' or int(a.split()[3]) < self.merge_num)):
+            focus.next(m)
+            a = focus.call("doc:get-attr", m, "render:merge-same", ret='str')
+        if not a:
+            return 1
+        if int(a.split()[3]) == self.merge_num:
+            # target merge exists - find the char
+            c = 0
+            a = None
+            while (m < self.marks[which+1] and
+                   c < self.merge_char and
+                   (not a or a[0] != 'M')):
+                focus.next(m)
+                c += 1
+                a = focus.call("doc:get-attr", m, "render:merge-same", ret='str')
+        # when we move, merge_num will be cleared!
+        mn = self.merge_num
+        focus.call("Move-to", m)
+        self.merge_num = mn
+        return 1
+
+    def handle_mark_moving(self, key, focus, mark, **a):
+        "handle:mark:moving"
+        pt = self.call("doc:point", ret='mark')
+        if pt == mark:
+            self.merge_num = None
+        return 1
 
     def remark(self, key, **a):
         if self.marks:
