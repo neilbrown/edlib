@@ -3330,9 +3330,4 @@ void edlib_init(struct pane *ed safe)
 	call_comm("global-set-command", ed, &attach_mode_emacs, 0, NULL, "attach-mode-emacs");
 	call_comm("global-set-command", ed, &attach_file_entry, 0, NULL, "attach-file-entry");
 	call_comm("global-set-command", ed, &emacs_shell, 0, NULL, "attach-shell-prompt");
-
-	call("global-load-module", ed, 0, NULL, "emacs-search");
-	call("global-load-module", ed, 0, NULL, "lib-macro");
-	call("global-load-module", ed, 0, NULL, "lib-aspell");
-	call("global-load-module", ed, 0, NULL, "lib-calc");
 }

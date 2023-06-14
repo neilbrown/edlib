@@ -1302,11 +1302,4 @@ void edlib_init(struct pane *ed safe)
 		  "open-doc-email");
 	call_comm("global-set-command", ed, &attach_email_view, 0, NULL,
 		  "attach-email-view");
-
-	call("global-load-module", ed, 0, NULL, "lib-html-to-text");
-	call("global-load-module", ed, 0, NULL, "lib-html-w3m");
-
-	call("global-load-module", ed, 0, NULL, "lib-pdf-to-text");
-	call("global-load-module", ed, 0, NULL, "lib-doc-to-text");
-	call("global-load-module", ed, 0, NULL, "lib-ical-to-text");
 }

@@ -175,6 +175,5 @@ def calc_appeared(key, focus, **a):
     return edlib.Efallthrough
 
 edlib.editor.call("global-set-command", "attach-view-calc", calc_view_attach)
-edlib.editor.call("global-load-module", "lib-calc")
 edlib.editor.call("global-set-command", "interactive-cmd-calc", add_calc)
 edlib.editor.call("global-set-command", "doc:appeared-calc", calc_appeared)

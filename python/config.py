@@ -38,23 +38,3 @@ def config_appeared(key, focus, **a):
                                   " *[0-9]*\\.)")      # Numbered list
 
 editor.call("global-set-command", "doc:appeared-config", config_appeared)
-
-# Some modules I want auto-loaded.
-editor.call("global-load-module", "lib-mergeview")
-editor.call("global-load-module", "render-calc")
-editor.call("global-load-module", "lib-compose-email")
-editor.call("global-load-module", "lib-autospell")
-editor.call("global-load-module", "lib-whitespace")
-editor.call("global-load-module", "display-pygtk")
-editor.call("global-load-module", "display-x11-xcb")
-editor.call("global-load-module", "lib-x11selection-xcb")
-editor.call("global-load-module", "lib-url")
-
-if 'HOME' in os.environ:
-    path = os.environ['HOME'] + "/.config/edlib/config.py"
-try:
-    with open(path, 'r') as fp:
-        out = fp.read()
-        exec(out)
-except:
-    pass

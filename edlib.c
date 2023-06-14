@@ -77,33 +77,10 @@ int main(int argc, char *argv[])
 	setlocale(LC_ALL, "");
 	setlocale(LC_CTYPE, "enUS.UTF-8");
 
+	call("global-load-module", ed, 0, NULL, "lib-config");
+	call("config-load", ed, 0, NULL, "edlib.ini", 0, NULL, argv[0]);
+
 	call("attach-doc-docs", ed);
-	call("global-load-module", ed, 0, NULL, "lib-linecount");
-	call("global-load-module", ed, 0, NULL, "lib-search");
-	call("global-load-module", ed, 0, NULL, "lib-popup");
-	call("global-load-module", ed, 0, NULL, "lang-python");
-	call("global-load-module", ed, 0, NULL, "doc-text");
-	call("global-load-module", ed, 0, NULL, "doc-dir");
-	call("global-load-module", ed, 0, NULL, "render-hex");
-	call("global-load-module", ed, 0, NULL, "render-present");
-	call("global-load-module", ed, 0, NULL, "render-lines");
-	call("global-load-module", ed, 0, NULL, "module-notmuch");
-	call("global-load-module", ed, 0, NULL, "doc-email");
-	call("global-load-module", ed, 0, NULL, "lib-viewer");
-	call("global-load-module", ed, 0, NULL, "lib-qprint");
-	call("global-load-module", ed, 0, NULL, "lib-copybuf");
-	call("global-load-module", ed, 0, NULL, "lib-colourmap");
-	call("global-load-module", ed, 0, NULL, "lib-textfill");
-	call("global-load-module", ed, 0, NULL, "lib-autosave");
-	call("global-load-module", ed, 0, NULL, "render-format");
-
-	call("global-load-module", ed, 0, NULL, "render-c-mode");
-	call("global-load-module", ed, 0, NULL, "lib-make");
-	call("global-load-module", ed, 0, NULL, "lib-server");
-	call("global-load-module", ed, 0, NULL, "lib-utf8");
-	call("global-load-module", ed, 0, NULL, "lib-charset");
-
-	call("global-load-module", ed, 0, NULL, "config");
 
 	while (optind < argc) {
 		char *file = argv[optind++];

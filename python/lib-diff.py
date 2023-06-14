@@ -336,4 +336,3 @@ def add_diff(key, focus, **a):
 
 edlib.editor.call("global-set-command", "attach-diff", diff_view_attach)
 edlib.editor.call("global-set-command", "interactive-cmd-diff-mode", add_diff)
-edlib.editor.call("global-load-module", "lib-wiggle")

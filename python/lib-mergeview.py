@@ -474,5 +474,4 @@ def add_merge(key, focus, mark, **a):
 
 edlib.editor.call("global-set-command", "attach-merge", merge_view_attach)
 edlib.editor.call("global-set-command", "interactive-cmd-merge-mode", add_merge)
-edlib.editor.call("global-load-module", "lib-wiggle")
 edlib.editor.call("global-set-command", "doc:appeared-mergeview", merge_appeared)
