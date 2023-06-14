@@ -483,23 +483,29 @@ int key_lookup(struct map *m safe, const struct cmd_info *ci safe)
 
 int key_lookup_prefix(struct map *m safe, const struct cmd_info *ci safe)
 {
-	int pos = key_find(m, ci->key);
-	struct command *comm, *prev = NULL;
-	int len = strlen(ci->key);
 	const char *k = ci->key;
-	int ret = 0;
+	int len = strlen(k);
+	int pos = key_find(m, k);
+	struct command *comm, *prev = NULL;
+	int ret = Efallthrough;
+	int i;
 
-	while (ret == 0 && pos < m->size &&
-	       strncmp(m->keys[pos], k, len) == 0) {
-		comm = GETCOMM(m->comms[pos]);
+	for (i = 0;
+	     ret == Efallthrough && pos+i < m->size &&
+	     strncmp(m->keys[pos+i], k, len) == 0;
+	     i++) {
+		comm = GETCOMM(m->comms[pos+i]);
 		if (comm && comm != prev) {
 			((struct cmd_info*)ci)->comm = comm;
-			((struct cmd_info*)ci)->key = m->keys[pos];
+			((struct cmd_info*)ci)->key = m->keys[pos+i];
 			ret = do_comm_call(comm, ci);
-			ASSERT(ret >= 0 || ret < Eunused);
+			ASSERT(ret >= Efallthrough || ret < Eunused);
 			prev = comm;
+			/* something might have been added, recalc
+			 * start pos.
+			 */
+			pos = key_find(m, k);
 		}
-		pos += 1;
 	}
 	((struct cmd_info*)ci)->key = k;
 	return ret;
