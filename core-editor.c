@@ -34,9 +34,23 @@ DEF_LOOKUP_CMD(ed_handle, ed_map);
 
 DEF_CMD(global_set_attr)
 {
+	char *v;
 	if (!ci->str)
 		return Enoarg;
-	attr_set_str(&ci->home->attrs, ci->str, ci->str2);
+	if (!ci->num) {
+		attr_set_str(&ci->home->attrs, ci->str, ci->str2);
+		return 1;
+	}
+	/* Append */
+	if (!ci->str2)
+		return 1;
+	v = attr_find(ci->home->attrs, ci->str);
+	if (!v) {
+		attr_set_str(&ci->home->attrs, ci->str, ci->str2);
+		return 1;
+	}
+	v = strconcat(ci->home, v, ci->str2);
+	attr_set_str(&ci->home->attrs, ci->str, v);
 	return 1;
 }
 
