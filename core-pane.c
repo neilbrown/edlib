@@ -644,26 +644,53 @@ void pane_resize(struct pane *p safe, int x, int y, int w, int h)
 
 void pane_reparent(struct pane *p safe, struct pane *newparent safe)
 {
-	/* detach p from its parent and attach beneath its sibling newparent */
+	/* Change the parent of 'p' to be 'newparent.
+	 * An important consideration is that a pane must never move up the
+	 * hierarchy (towards the root), but only sideways or down.  This ensures
+	 * that any mark the pane (or a descendant thereof) might hold still gets
+	 * delivered to the correct document.  There is one exception that a pane
+	 * that was newly created may be re-attached above some ancestors.
+	 * There is not currently any test for "newness" though that may be added
+	 * later (FIXME)
+	 *
+	 * 'newparent' must be a descendant of p->parent.
+	 * If it is a sibling of p or descentant thereof, p is simply detached from
+	 * its parent and reattached below newparent.
+	 * If it is a descendant of p (it cannot be p itself), then as well as p
+	 * being detached from it parent and attached to newparent, newparent is detached
+	 * and attached between p and p->parent, thus ensuring no loop is created.
+	 */
 	int replaced = 0;
-	// FIXME this should be a failure, possibly with warning, not an
-	// assert.  I'm not sure just now how best to do warnings.
-	ASSERT(newparent->parent == p->parent || newparent->parent == newparent);
-	list_del(&p->siblings);
+	struct pane *pc = pane_my_child(p->parent, newparent);
+	if (pc == NULL || newparent == p) {
+		LOG("Cannot reparent %s to %s, new parent must be a sibling or their descendant",
+		    p->name, newparent->name);
+		LOG_BT();
+		return;
+	}
+	/* Detatch p */
+	list_del_init(&p->siblings);
 	if (p->parent->focus == p)
-		p->parent->focus = newparent;
-	if (newparent->parent == newparent) {
+		p->parent->focus = pc;
+	if (pc == p) {
+		p->parent->focus = NULL;
+		/* newparent is below p, need to detach and reattach it */
+		if (newparent->parent->focus == newparent)
+			newparent->parent->focus = NULL;
+		pane_call(newparent->parent, "Child-Notify", newparent, -2);
 		newparent->parent = p->parent;
-		list_add(&newparent->siblings, &p->parent->children);
+		list_move(&newparent->siblings, &p->parent->children);
 		pane_resize(newparent, 0, 0, p->parent->w, p->parent->h);
 		replaced = 1;
 	}
+	pane_call(p->parent, "Child-Notify", p, -2);
+	/* Reattach p under newparent */
 	p->parent = newparent;
 	newparent->damaged |= p->damaged;
 	if (newparent->focus == NULL)
 		newparent->focus = p;
 	list_add(&p->siblings, &newparent->children);
-	pane_call(newparent->parent, "Child-Notify", p, -2);
+	pane_call(p->parent, "Child-Notify", p, 2);
 	if (replaced)
 		pane_call(newparent->parent, "Child-Notify", newparent, 2);
 }

@@ -1080,6 +1080,8 @@ Interaction with gdb would be nice too - things like
 
 - [ ] C config module that reads an ini-style file to set attributes
       based on path
+- [ ] configure "initial_panes"
+- [ ] discard old auto-load??
 
 What needs to be configured?  How is that done?
 

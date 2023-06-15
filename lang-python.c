@@ -1379,8 +1379,13 @@ static PyObject *Pane_reparent(Pane *self safe, PyObject *args)
 	Pane *newparent = NULL;
 	int ret = PyArg_ParseTuple(args, "O!", &PaneType, &newparent);
 
-	if (ret > 0 && newparent && self->pane && newparent->pane)
+	if (ret > 0 && newparent && self->pane && newparent->pane) {
 		pane_reparent(self->pane, newparent->pane);
+		if (self->pane->parent != newparent->pane) {
+			PyErr_SetString(PyExc_TypeError, "reparent failed");
+			return NULL;
+		}
+	}
 	Py_INCREF(Py_None);
 	return Py_None;
 }

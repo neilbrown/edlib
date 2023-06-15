@@ -3617,12 +3617,21 @@ def render_master_view_attach(key, focus, comm2, **a):
     # The tile which displays the search list does not have a document, as it
     # refers down the main document.  So it doesn't automatically get borders
     # from a 'view', so we must add one explicitly.
+    # We assume 'focus' is a 'view' pane on a "doc" pane for the notmuch primary doc,
+    # which is (probably) on a "tile" pane.
+    # The master view needs to be below the "doc" pane, above the tile.
+    # We attach it on focus and use Pane.reparent to rotate
+    # from:  master_view -> view -> doc -> tile
+    #   to:  view -> doc -> master_view -> tile
 
     doc = focus.parent
-    main = notmuch_master_view()
+    main = notmuch_master_view(focus)
     doc.reparent(main)
     p = main.call("attach-tile", "notmuch", "main", ret='pane')
+    # Now we have tile(main) -> view -> doc -> master_view -> tile
+    # and want tile(main) above doc
     doc.reparent(p)
+    # Now 'view' doesn't have a child -we give it 'list_view'
     p = notmuch_list_view(focus)
     p = p.call("attach-render-format", ret='pane')
     main.list_pane = p
