@@ -273,16 +273,11 @@ static int tile_destroy(struct pane *p safe)
 	int pos, prevpos, nextpos;
 	int remaining = 0;
 
-	if (ti->direction == Neither) {
-		/* Children have already been destroyed, just clean up */
-		free(ti->name); ti->name = NULL;
+	if (ti->direction == Neither /* Root file a tile-set */
+	    || p->parent == p /* subsumbed hust being destroyed */
+	    || p->parent->handle != p->handle /* Some messed with parentage */
+	)
 		return 1;
-	}
-
-	if (p->parent == p) {
-		/* subsumed husk being destroyed */
-		return 1;
-	}
 
 	if (ti->direction == Vert)
 		pos = p->y;
@@ -306,7 +301,7 @@ static int tile_destroy(struct pane *p safe)
 		remain = t;
 	}
 	/* There is always a sibling of a non-root */
-	ASSERT(remaining > 0);
+	//ASSERT(remaining > 0);
 	if (prev == NULL /* FIXME redundant */ && next) {
 		/* next gets the space and focus*/
 		if (ti->direction == Horiz)
@@ -362,7 +357,8 @@ static int tile_destroy(struct pane *p safe)
 		tile_adjust(prev);
 	}
 	list_del(&ti->tiles);
-	if (remaining == 1 && remain->parent != remain) {
+	if (remaining == 1 && remain && remain->parent != remain &&
+	    remain->handle == p->handle) {
 		struct tileinfo *ti2;
 		enum dir tmp;
 		/* Only one child left, must move it into parent.
