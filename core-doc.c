@@ -36,8 +36,7 @@ struct doc_ref {
 #include "misc.h"
 #include "internal.h"
 
-static int do_doc_assign(struct pane *p safe, struct pane *doc safe);
-static struct pane *doc_attach(struct pane *parent);
+static struct pane *doc_attach_assign(struct pane *parent safe, struct pane *doc safe);
 
 /* this is ->data for a document reference pane.
  */
@@ -1022,14 +1021,10 @@ DEF_CMD(doc_notify_close)
 DEF_CMD(doc_clone)
 {
 	struct doc_data *dd = ci->home->data;
-	struct pane *p = doc_attach(ci->focus);
+	struct pane *p = doc_attach_assign(ci->focus, dd->doc);
 
 	if (!p)
 		return Efail;
-	if (do_doc_assign(p, dd->doc) < 0) {
-		pane_close(p);
-		return Efail;
-	}
 	call("Move-to", p, 0, dd->point);
 	pane_clone_children(ci->home, p);
 	return 1;
@@ -1205,13 +1200,9 @@ DEF_CMD(doc_attach_view)
 			return Einval;
 	}
 
-	p = doc_attach(focus);
+	p = doc_attach_assign(focus, doc);
 	if (!p)
 		return Efail;
-	if (do_doc_assign(p, doc) < 0) {
-		pane_free(p);
-		return Efail;
-	}
 
 	call("doc:notify:doc:revisit", p, ci->num);
 	if (strcmp(type, "invisible") != 0) {
@@ -1347,14 +1338,23 @@ static void init_doc_cmds(void)
 	key_add_prefix(doc_default_cmd, "doc:append:", &doc_append);
 }
 
-static int do_doc_assign(struct pane *p safe, struct pane *doc safe)
+static struct pane *doc_attach_assign(struct pane *parent safe, struct pane *doc safe)
 {
-	struct doc_data *dd = p->data;
+	struct pane *p;
+	struct doc_data *dd;
 	struct mark *m;
 
+	alloc(dd, pane);
+	p = pane_register(parent, 0, &doc_handle.c, dd);
+	pane_damaged(p, DAMAGED_VIEW);
+	if (!p)
+		return NULL;
+
 	m = vmark_new(doc, MARK_POINT, NULL);
-	if (!m)
-		return Efail;
+	if (!m) {
+		pane_close(p);
+		return NULL;
+	}
 	if (call("doc:pop-point", doc, 0, m) <= 0)
 		pane_notify("doc:notify-viewers", doc, 0, m);
 	dd->doc = doc;
@@ -1366,17 +1366,6 @@ static int do_doc_assign(struct pane *p safe, struct pane *doc safe)
 	pane_add_notify(p, doc, "mark:moving");
 	call("doc:notify:doc:revisit", doc, 0);
 	mark_watch(m);
-	return 1;
-}
-
-static struct pane *doc_attach(struct pane *parent)
-{
-	struct doc_data *dd;
-	struct pane *p;
-
-	alloc(dd, pane);
-	p = pane_register(parent, 0, &doc_handle.c, dd);
-	pane_damaged(p, DAMAGED_VIEW);
 	return p;
 }
 
