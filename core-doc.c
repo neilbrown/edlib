@@ -36,7 +36,7 @@ struct doc_ref {
 #include "misc.h"
 #include "internal.h"
 
-static void do_doc_assign(struct pane *p safe, struct pane *doc safe);
+static int do_doc_assign(struct pane *p safe, struct pane *doc safe);
 static struct pane *doc_attach(struct pane *parent);
 
 /* this is ->data for a document reference pane.
@@ -1026,7 +1026,10 @@ DEF_CMD(doc_clone)
 
 	if (!p)
 		return Efail;
-	do_doc_assign(p, dd->doc);
+	if (do_doc_assign(p, dd->doc) < 0) {
+		pane_close(p);
+		return Efail;
+	}
 	call("Move-to", p, 0, dd->point);
 	pane_clone_children(ci->home, p);
 	return 1;
@@ -1205,7 +1208,10 @@ DEF_CMD(doc_attach_view)
 	p = doc_attach(focus);
 	if (!p)
 		return Efail;
-	do_doc_assign(p, doc);
+	if (do_doc_assign(p, doc) < 0) {
+		pane_free(p);
+		return Efail;
+	}
 
 	call("doc:notify:doc:revisit", p, ci->num);
 	if (strcmp(type, "invisible") != 0) {
@@ -1341,14 +1347,14 @@ static void init_doc_cmds(void)
 	key_add_prefix(doc_default_cmd, "doc:append:", &doc_append);
 }
 
-static void do_doc_assign(struct pane *p safe, struct pane *doc safe)
+static int do_doc_assign(struct pane *p safe, struct pane *doc safe)
 {
 	struct doc_data *dd = p->data;
 	struct mark *m;
 
 	m = vmark_new(doc, MARK_POINT, NULL);
 	if (!m)
-		return;
+		return Efail;
 	if (call("doc:pop-point", doc, 0, m) <= 0)
 		pane_notify("doc:notify-viewers", doc, 0, m);
 	dd->doc = doc;
@@ -1360,6 +1366,7 @@ static void do_doc_assign(struct pane *p safe, struct pane *doc safe)
 	pane_add_notify(p, doc, "mark:moving");
 	call("doc:notify:doc:revisit", doc, 0);
 	mark_watch(m);
+	return 1;
 }
 
 static struct pane *doc_attach(struct pane *parent)
