@@ -741,7 +741,8 @@ DEF_CMD(docs_child_closed)
 {
 	struct pane *pd = ci->home->data;
 
-	docs_demark(pd, ci->focus);
+	if (ci->num < 0)
+	    docs_demark(pd, ci->focus);
 	return 1;
 }
 
@@ -874,7 +875,7 @@ static void docs_init_map(void)
 
 	key_add(docs_aux_map, "doc:revisit", &doc_revisit);
 	key_add(docs_aux_map, "doc:status-changed", &doc_damage);
-	key_add(docs_aux_map, "ChildClosed", &docs_child_closed);
+	key_add(docs_aux_map, "Child-Notify", &docs_child_closed);
 
 	key_add_prefix(docs_modified_map, "doc:cmd-", &docs_mod_noop);
 	key_add_prefix(docs_modified_map, "doc:cmd:", &docs_mod_noop);

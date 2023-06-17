@@ -1030,26 +1030,7 @@ DEF_CMD(tile_root)
 	return comm_call(ci->comm2, "callback:pane", p);
 }
 
-DEF_CMD(tile_child_closed)
-{
-	struct pane *p = ci->home;
-	struct tileinfo *ti = p->data;
-	struct pane *c;
-
-	if (ti->leaf != 1)
-		return 1;
-	if (ci->focus->z != 0)
-		return 1;
-	/* Child closed, but we weren't, so find something else to display */
-	c = call_ret(pane, "docs:choose", p);
-	if (c)
-		home_call(c, "doc:attach-view", p);
-	else if (ti->direction != Neither)
-		pane_close(p);
-	return 1;
-}
-
-DEF_CMD(tile_child_registered)
+DEF_CMD(tile_child_notify)
 {
 	struct pane *p = ci->home;
 	struct tileinfo *ti = p->data;
@@ -1057,32 +1038,46 @@ DEF_CMD(tile_child_registered)
 
 	if (c->z)
 		return 1;
-	if (mine(c))
+	if (ci->num > 0 && mine(c))
 		/* always accept my own children */
 		return 1;
 
-	if (!ti->leaf)
-		/* Sorry, new children not permitted */
-		return Efalse;
-
-	p->focus = c;
-	if (ti->content) {
-		ti->leaf = 2;
-		pane_close(ti->content);
-		ti->leaf = 1;
+	if (ti->leaf != 1) {
+		if (ci->num > 0)
+			/* Sorry, new children not permitted */
+			return Efalse;
+		return 1;
 	}
-	ti->content = c;
-	return 1;
-}
 
-DEF_CMD(tile_child_replaced)
-{
-	struct pane *p = ci->home;
-	struct tileinfo *ti = p->data;
-	struct pane *c = ci->focus;
-
-	if (ti->leaf && c->z == 0)
+	switch (ci->num) {
+	case -1:
+		/* Child closed, but we weren't, so find something else to display */
+		ti->content = NULL;
+		c = call_ret(pane, "docs:choose", p);
+		if (c)
+			home_call(c, "doc:attach-view", p);
+		else if (ti->direction != Neither)
+			pane_close(p);
+		break;
+	case 1:
+		/* New pane, discard the old */
+		p->focus = c;
+		if (ti->content) {
+			ti->leaf = 2;
+			pane_close(ti->content);
+			ti->leaf = 1;
+		}
 		ti->content = c;
+		break;
+	case -2:
+		/* Child moved away - hopefully to be replaced */
+		ti->content = NULL;
+		break;
+	case 2:
+		/* Simple replacement */
+		ti->content = c;
+		break;
+	}
 	return 1;
 }
 
@@ -1109,9 +1104,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(tile_map, "DocLeaf", &tile_doc);
 	key_add(tile_map, "RootPane", &tile_root);
 	key_add(tile_map, "Clone", &tile_clone);
-	key_add(tile_map, "ChildClosed", &tile_child_closed);
-	key_add(tile_map, "ChildRegistered", &tile_child_registered);
-	key_add(tile_map, "ChildReplaced", &tile_child_replaced);
+	key_add(tile_map, "Child-Notify", &tile_child_notify);
 	key_add(tile_map, "Close", &tile_close);
 	key_add(tile_map, "Free", &tile_free);
 	key_add(tile_map, "Refresh:size", &tile_refresh_size);

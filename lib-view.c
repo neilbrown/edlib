@@ -276,17 +276,20 @@ DEF_CMD(view_clone)
 	return 1;
 }
 
-DEF_CMD(view_child_registered)
+DEF_CMD(view_child_notify)
 {
 	struct pane *p = ci->home;
 	struct view_data *vd = p->data;
 
 	if (ci->focus->z)
 		return 1;
-	if (vd->child)
+	if (vd->child && ci->num > 0)
 		pane_close(vd->child);
-	vd->child = ci->focus;
-	p->focus = ci->focus;
+	if (ci->num > 0)
+		vd->child = ci->focus;
+	else if (vd->child == ci->focus)
+		vd->child = NULL;
+	p->focus = vd->child;
 	return 1;
 }
 
@@ -532,7 +535,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(view_map, "Close", &view_close);
 	key_add(view_map, "Free", &edlib_do_free);
 	key_add(view_map, "Clone", &view_clone);
-	key_add(view_map, "ChildRegistered", &view_child_registered);
+	key_add(view_map, "Child-Notify", &view_child_notify);
 	key_add(view_map, "Refresh:size", &view_refresh_size);
 	key_add(view_map, "Refresh", &view_refresh);
 	key_add(view_map, "doc:status-changed", &view_status_changed);

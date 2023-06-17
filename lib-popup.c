@@ -194,22 +194,6 @@ DEF_CMD(popup_abort)
 	return 1;
 }
 
-DEF_CMD(popup_child_closed)
-{
-	/* When the child is closed, we have to disappear too, but
-	 * not if there are remaining children.
-	 */
-	struct pane *c;
-
-	list_for_each_entry(c, &ci->home->children, siblings)
-		if (!(c->damaged & DAMAGED_CLOSED) && c->z == 0 &&
-		    c != ci->focus)
-			/* Still have a child */
-			return 1;
-	pane_close(ci->home);
-	return 1;
-}
-
 static bool popup_set_style(struct pane *p safe)
 {
 	struct popup_info *ppi = p->data;
@@ -412,10 +396,11 @@ DEF_CMD(popup_other)
 			 ci->comm2);
 }
 
-DEF_CMD(popup_child_registered)
+DEF_CMD(popup_child_notify)
 {
 	/* Anything that reponds to ThisPane needs to discard
 	 * any children when new are registered.
+	 * If none are left, we need to go ourselves.
 	 */
 	struct pane *p = ci->home;
 	struct pane *c = ci->focus;
@@ -423,13 +408,37 @@ DEF_CMD(popup_child_registered)
 
 	if (c->z != 0)
 		return 1;
+	if (ci->num == -2)
+		/* When a pane is moved away, not closed, we assume someone will
+		 * move something better in.
+		 */
+		return 1;
 restart:
-	list_for_each_entry(old, &p->children, siblings)
-		if (c->z == 0 && old != c) {
+	list_for_each_entry(old, &p->children, siblings) {
+		if (c->z == 0)
+			/* Ignore */
+			continue;
+		if (old == c)
+			/* This pane is under control... */
+			continue;
+		if (c->damaged & DAMAGED_CLOSED)
+			continue;
+		if (ci->num > 0) {
+			/* Not the pane we just added, so close it */
 			pane_close(old);
 			goto restart;
 		}
-	p->focus = c;
+		if (ci->num < 0)
+			/* Not the pane we removed, so not empty yet,
+			 * so nothing to do
+			 */
+			return 1;
+	}
+	if (ci->num >= 0)
+		p->focus = c;
+	else
+		/* Completely empty, so close */
+		pane_close(p);
 	return 1;
 }
 
@@ -585,11 +594,10 @@ void edlib_init(struct pane *ed safe)
 	key_add(popup_map, "popup:get-target", &popup_get_target);
 	key_add(popup_map, "popup:close", &popup_do_close);
 	key_add(popup_map, "popup:set-callback", &popup_set_callback);
-	key_add(popup_map, "ChildClosed", &popup_child_closed);
+	key_add(popup_map, "Child-Notify", &popup_child_notify);
 	key_add(popup_map, "ThisPane", &popup_this);
 	key_add(popup_map, "OtherPane", &popup_other);
 	key_add(popup_map, "ThisPopup", &popup_this);
-	key_add(popup_map, "ChildRegistered", &popup_child_registered);
 
 	key_add(popup_map, "Window:bury", &popup_do_close);
 	key_add(popup_map, "Window:close", &popup_abort);

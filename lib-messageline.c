@@ -146,16 +146,22 @@ DEF_CMD(messageline_refresh_size)
 	return 1;
 }
 
-DEF_CMD(messageline_child_registered)
+DEF_CMD(messageline_child_notify)
 {
 	struct mlinfo *mli = ci->home->data;
 	if (ci->focus->z)
 		/* Ignore */
 		return 1;
-	if (mli->child)
-		pane_close(mli->child);
-	mli->child = ci->focus;
-	ci->home->focus = ci->focus;
+	if (ci->num < 0) {
+		if (ci->home->focus == ci->focus)
+			ci->home->focus = NULL;
+		mli->child = NULL;
+	} else {
+		if (mli->child)
+			pane_close(mli->child);
+		mli->child = ci->focus;
+		ci->home->focus = ci->focus;
+	}
 	return 1;
 }
 
@@ -288,8 +294,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(messageline_map, "Message:broadcast", &messageline_msg);
 	key_add(messageline_map, "Abort", &messageline_abort);
 	key_add(messageline_map, "Refresh:size", &messageline_refresh_size);
-	key_add(messageline_map, "ChildRegistered",
-		&messageline_child_registered);
+	key_add(messageline_map, "Child-Notify",&messageline_child_notify);
 	key_add(messageline_map, "Keystroke-notify", &messageline_notify);
 	key_add(messageline_map, "Mouse-event-notify", &messageline_notify);
 

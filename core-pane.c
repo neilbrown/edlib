@@ -168,7 +168,7 @@ struct pane *__pane_register(struct pane *parent, short z,
 	if (z >= 0) {
 		if (parent && parent->focus == NULL)
 			parent->focus = p;
-		if (pane_call(parent, "ChildRegistered", p) < 0 ||
+		if (pane_call(parent, "Child-Notify", p, 1) < 0 ||
 		    p->damaged & DAMAGED_CLOSED) {
 			/* ChildRegistered objected */
 			pane_close(p);
@@ -566,7 +566,7 @@ void pane_close(struct pane *p safe)
 	pane_notify_close(p);
 
 	if (!(p->parent->damaged & DAMAGED_CLOSED))
-		pane_call(p->parent, "ChildClosed", p);
+		pane_call(p->parent, "Child-Notify", p, -1);
 	list_del_init(&p->siblings);
 
 	do {
@@ -663,9 +663,9 @@ void pane_reparent(struct pane *p safe, struct pane *newparent safe)
 	if (newparent->focus == NULL)
 		newparent->focus = p;
 	list_add(&p->siblings, &newparent->children);
-	pane_call(newparent->parent, "ChildMoved", p);
+	pane_call(newparent->parent, "Child-Notify", p, -2);
 	if (replaced)
-		pane_call(newparent->parent, "ChildReplaced", newparent);
+		pane_call(newparent->parent, "Child-Notify", newparent, 2);
 }
 
 void pane_move_after(struct pane *p safe, struct pane *after)

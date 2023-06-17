@@ -69,6 +69,10 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] if a view creation fails - like render_master_view_attach
+      hitting a python error - there will be no active view so the
+      screen will be meaningless.  I need to properly abort and
+      auto-choose a new pane.
 - [ ] LOG_BT() doesn't see TYPE_pane and TYPE_comm calls.
 - [ ] give every pane a link to root/editor main and use that
       instead of statics.  Then maybe times_up() can use pane_too_long()
@@ -687,6 +691,7 @@ Module features
 
 ### test suite
 
+- [ ] always run with timezone of Australia/Sydney
 - [ ] add test infrastructure to display-x11
 - [ ] tests for double-click and drag.
 - [ ] test for recent search improvements
