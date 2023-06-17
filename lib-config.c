@@ -36,7 +36,7 @@ typedef void (*ini_handle)(void *data, char *section safe,
 			   char *name safe, char *value safe,
 			   const char *path safe,
 			   int append);
-static void load_config(const char *path safe, struct pane *ed, const char *base);
+static void load_config(const char *path safe, void *data, const char *base);
 
 static void parse_ini(const char *path safe, ini_handle handle, void *data)
 {
@@ -125,6 +125,11 @@ static void parse_ini(const char *path safe, ini_handle handle, void *data)
 	fclose(f);
 }
 
+struct config_data {
+	struct command c;
+	struct pane *root safe;
+};
+
 struct mod_cmd {
 	char *module;
 	int tried;
@@ -158,21 +163,22 @@ static void al_free(struct command *c safe)
 static void handle(void *data, char *section safe, char *name safe, char *value safe,
 		   const char *path safe, int append)
 {
-	struct pane *p = data;
+	struct config_data *cd;
 
-	if (!p)
+	if (!data)
 		return;
+	cd = data;
 
 	if (strcmp(section, "") == 0) {
 		if (strcmp(name, "include") == 0) {
-			load_config(value, p, path);
+			load_config(value, data, path);
 			return;
 		}
 		return;
 	}
 
 	if (strcmp(section, "global") == 0) {
-		call("global-set-attr", p, append, NULL, name,
+		call("global-set-attr", cd->root, append, NULL, name,
 		     0, NULL, value);
 		return;
 	}
@@ -180,7 +186,7 @@ static void handle(void *data, char *section safe, char *name safe, char *value 
 	if (strcmp(section, "module") == 0 && value[0]) {
 		struct mod_cmd *mc;
 		if (strcmp(value, "ALWAYS") == 0) {
-			call("global-load-module", p, 0, NULL, name);
+			call("global-load-module", cd->root, 0, NULL, name);
 			return;
 		}
 		mc = malloc(sizeof(*mc));
@@ -188,23 +194,23 @@ static void handle(void *data, char *section safe, char *name safe, char *value 
 		mc->tried = 0;
 		mc->c = autoload;
 		mc->c.free = al_free;
-		call_comm("global-set-command", p, &mc->c, 0, NULL,
+		call_comm("global-set-command", cd->root, &mc->c, 0, NULL,
 			  value);
 		return;
 	}
 
 	if (strstarts(section, "file:")) {
 		char *k = strconcat(NULL, "global-file-attr:", section+5);
-		call(k, p, append, NULL, name, 0, NULL, value);
+		call(k, cd->root, append, NULL, name, 0, NULL, value);
 		return;
 	}
 }
 
-static void load_config(const char *path safe, struct pane *ed, const char *base)
+static void load_config(const char *path safe, void *data, const char *base)
 {
 	char *sl, *p, *h;
 	if (*path == '/') {
-		parse_ini(path, handle, ed);
+		parse_ini(path, handle, data);
 		return;
 	}
 	/*
@@ -219,7 +225,7 @@ static void load_config(const char *path safe, struct pane *ed, const char *base
 		memcpy(p, base, sl - base);
 		strcpy(p + (sl - base), path);
 		if (access(p, F_OK) == 0) {
-			parse_ini(p, handle, ed);
+			parse_ini(p, handle, data);
 			free(p);
 			return;
 		}
@@ -227,7 +233,7 @@ static void load_config(const char *path safe, struct pane *ed, const char *base
 	}
 	p = strconcat(NULL, "/usr/share/edlib/", path);
 	if (access(p, F_OK) == 0) {
-		parse_ini(p, handle, ed);
+		parse_ini(p, handle, data);
 		free(p);
 		return;
 	}
@@ -238,17 +244,36 @@ static void load_config(const char *path safe, struct pane *ed, const char *base
 		return;
 	p = strconcat(NULL, h, "/.config/edlib/", path);
 	if (access(p, F_OK) == 0) {
-		parse_ini(p, handle, ed);
+		parse_ini(p, handle, data);
 		free(p);
 		return;
 	}
 	free(p);
 }
 
+static void config_free(struct command *c safe)
+{
+	struct config_data *cd = container_of(c, struct config_data, c);
+	free(cd);
+}
+
 DEF_CMD(config_load)
 {
+	struct config_data *cd;
+	if (ci->comm == &config_load) {
+		/* This is the first call - need to allocate storage
+		 * and register a new command.
+		 */
+		alloc(cd, pane);
+		cd->c = config_load;
+		cd->c.free = config_free;
+		cd->root = ci->home;
+		call_comm("global-set-command", ci->home, &cd->c, 0, NULL, "config-load");
+	} else {
+		cd = container_of(ci->comm, struct config_data, c);
+	}
 	if (ci->str)
-		load_config(ci->str, ci->home, ci->str2);
+		load_config(ci->str, cd, ci->str2);
 	return 1;
 }
 
