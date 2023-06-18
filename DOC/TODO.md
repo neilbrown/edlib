@@ -32,7 +32,7 @@ the file.
 ### Medium
 
 - [X] lib-mergeview improvements
-- [ ] lib-diff slowness with large diff
+- [X] lib-diff slowness with large diff
 - [ ] linecount :when used in 'view' mode, stack the counting pane with all the
       others so it can easily catch view-changed.
 - [X] C config module that reads an ini-style file to set attributes
@@ -215,9 +215,9 @@ Module features
 
 ### lib-diff
 
-- [ ] When viewing diff or merge can get into infinite loop.  Possibly due
+- [X] When viewing diff or merge can get into infinite loop.  Possibly due
       to edit at end-of-file
-- [ ] slowness with large diff - particularly lots of "+" lines at end
+- [X] slowness with large diff - particularly lots of "+" lines at end
 - [ ] highlight white-space errors.
 - [ ] command to apply a hunk to a given document - or to reverse it.
       How much of a hunk?  Selection?  How to record which hunks are done?

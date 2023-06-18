@@ -159,11 +159,17 @@ class DiffPane(edlib.Pane):
                 break
             ch = focus.following(mark)
 
+        # delete any old marks in this range.
+        m = focus.vmark_at_or_before(self.viewnum, mark, self)
+        while m and m >= starta:
+            m.release()
+            m = focus.vmark_at_or_before(self.viewnum, mark, self)
+
         alen = measure(focus, starta, startb)
         blen = measure(focus, startb, mark)
         if alen == 0 or blen == 0 or not is_hunk:
-                msg = "Nothing to compare here!"
-                ret = 4
+            msg = "Nothing to compare here!"
+            ret = 4
         else:
             cmd = focus.call("MakeWiggle", ret='comm')
             if not cmd:
