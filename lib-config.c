@@ -9,7 +9,8 @@
  *   file:pattern - set attributes when matching file visited
  *         (not implemented fully yet)
  *
- * When not in a section, include= will load another file.
+ * When not in a section, or in the "include" section, include= will
+ * load another file.
  *
  * Syntax for ini file
  * - individual lines must not exceed 256 chars.  Longer lines are
@@ -182,13 +183,13 @@ struct config_data {
 		char *path safe;
 		struct attrset *attrs;
 		struct trigger *next;
-	} *triggers;
+	} *triggers, *last_trigger;
 };
 
 static void add_trigger(struct config_data *cd safe, char *path safe,
 			char *name safe, char *val safe, int append)
 {
-	struct trigger *t = cd->triggers;
+	struct trigger *t = cd->last_trigger;
 
 	if (strstarts(name, "TESTING ")) {
 		if (getenv("EDLIB_TESTING") == NULL)
@@ -202,9 +203,13 @@ static void add_trigger(struct config_data *cd safe, char *path safe,
 	}
 	if (!t || strcmp(t->path, path) != 0) {
 		alloc(t, pane);
-		t->next = cd->triggers;
-		cd->triggers = t;
 		t->path = strdup(path);
+		t->next = NULL;
+		if (cd->last_trigger)
+			cd->last_trigger->next = t;
+		else
+			cd->triggers = t;
+		cd->last_trigger = t;
 	}
 	if (append) {
 		const char *old = attr_find(t->attrs, name);
@@ -277,7 +282,7 @@ static void handle(void *data, char *section safe, char *name safe, char *value 
 		return;
 	cd = data;
 
-	if (strcmp(section, "") == 0) {
+	if (strcmp(section, "") == 0 || strcmp(section,"include") == 0) {
 		if (strcmp(name, "include") == 0) {
 			load_config(value, data, path);
 			return;

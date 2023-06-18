@@ -1023,6 +1023,11 @@ At the very least I want a calendar pop-up.
 Info is widely used... rendering it like markdown and allowing
 browsing would be nice.
 
+### man page viewer
+
+- [ ] MANWIDTH=72 MAN_KEEP_FORMATTING=yes man page and process X\bX
+      and _\bX for bold and underline.
+
 ### A suite of tools making use of some sort of "mark-down" like language
 
 Restructured text? Markdown?  Commonmark?  Markright?
