@@ -366,6 +366,14 @@ static void load_config(const char *path safe, void *data, const char *base)
 static void config_free(struct command *c safe)
 {
 	struct config_data *cd = container_of(c, struct config_data, c);
+	struct trigger *t;
+
+	while ((t = cd->triggers) != NULL) {
+		cd->triggers = t->next;
+		free(t->path);
+		attr_free(&t->attrs);
+		free(t);
+	}
 	free(cd);
 }
 
