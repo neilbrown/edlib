@@ -280,11 +280,6 @@ static void record_screen(struct pane *p safe)
 	}
 }
 
-static inline int match(char *line safe, char *w safe)
-{
-	return strncmp(line, w, strlen(w)) == 0;
-}
-
 static char *copy_quote(char *line safe, char *buf safe)
 {
 	char q;
@@ -342,11 +337,11 @@ static bool parse_event(struct pane *p safe)
 	if (!dd->input ||
 	    fgets(line, sizeof(line)-1, dd->input) == NULL)
 		line[0]=0;
-	else if (match(line, "Key ")) {
+	else if (strstarts(line, "Key ")) {
 		if (!copy_quote(line+4, dd->event_info))
 			return False;
 		dd->next_event = DoKey;
-	} else if (match(line, "Mouse ")) {
+	} else if (strstarts(line, "Mouse ")) {
 		char *f = copy_quote(line+6, dd->event_info);
 		if (!f)
 			return False;
@@ -354,13 +349,13 @@ static bool parse_event(struct pane *p safe)
 		if (!f)
 			return False;
 		dd->next_event = DoMouse;
-	} else if (match(line, "Display ")) {
+	} else if (strstarts(line, "Display ")) {
 		char *f = get_coord(line+8, &dd->event_pos);
 		if (!f)
 			return False;
 		f = get_hash(f, dd->next_screen);
 		dd->next_event = DoCheck;
-	} else if (match(line, "Close")) {
+	} else if (strstarts(line, "Close")) {
 		dd->next_event = DoClose;
 	}
 	LOG("parse %s", line);
@@ -846,13 +841,13 @@ static int cvt_attrs(struct pane *p safe, struct pane *home safe,
 		else if (strcmp(tmp, "nobold")==0) attr &= ~A_BOLD;
 		else if (strcmp(tmp, "underline")==0) attr |= A_UNDERLINE;
 		else if (strcmp(tmp, "nounderline")==0) attr &= ~A_UNDERLINE;
-		else if (strncmp(tmp, "fg:", 3) == 0) {
+		else if (strstarts(tmp, "fg:")) {
 			struct call_return cr =
 				call_ret(all, "colour:map", home,
 					 0, NULL, tmp+3);
 			int rgb[3] = {cr.i, cr.i2, cr.x};
 			fg = find_col(dd, rgb);
-		} else if (strncmp(tmp, "bg:", 3) == 0) {
+		} else if (strstarts(tmp, "bg:")) {
 			struct call_return cr =
 				call_ret(all, "colour:map", home,
 					 0, NULL, tmp+3);
@@ -1043,14 +1038,14 @@ DEF_CMD(nc_draw_image)
 
 	if (!ci->str)
 		return Enoarg;
-	if (strncmp(ci->str, "file:", 5) == 0) {
+	if (strstarts(ci->str, "file:")) {
 		wd = NewMagickWand();
 		status = MagickReadImage(wd, ci->str + 5);
 		if (status == MagickFalse) {
 			DestroyMagickWand(wd);
 			return Efail;
 		}
-	} else if (strncmp(ci->str, "comm:", 5) == 0) {
+	} else if (strstarts(ci->str, "comm:")) {
 		struct call_return cr;
 		wd = NewMagickWand();
 		cr = call_ret(bytes, ci->str+5, ci->focus, 0, NULL, ci->str2);
@@ -1177,14 +1172,14 @@ DEF_CMD(nc_image_size)
 
 	if (!ci->str)
 		return Enoarg;
-	if (strncmp(ci->str, "file:", 5) == 0) {
+	if (strstarts(ci->str, "file:")) {
 		wd = NewMagickWand();
 		status = MagickReadImage(wd, ci->str + 5);
 		if (status == MagickFalse) {
 			DestroyMagickWand(wd);
 			return Efail;
 		}
-	} else if (strncmp(ci->str, "comm:", 5) == 0) {
+	} else if (strstarts(ci->str, "comm:")) {
 		struct call_return cr;
 		wd = NewMagickWand();
 		cr = call_ret(bytes, ci->str+5, ci->focus, 0, NULL, ci->str2);
@@ -1361,7 +1356,7 @@ static struct pane *ncurses_init(struct pane *ed safe,
 	alloc(dd, pane);
 	dd->scr = scr;
 	dd->scr_file = f;
-	dd->is_xterm = (term && strncmp(term, "xterm", 5) == 0);
+	dd->is_xterm = (term && strstarts(term, "xterm"));
 
 	p = pane_register(ed, 1, &ncurses_handle.c, dd);
 	if (!p) {

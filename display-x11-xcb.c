@@ -346,7 +346,7 @@ static void parse_attrs(
 	}
 
 	while ((word = strsep(&ap, ",")) != NULL) {
-		if (fd && strncmp(word, "family:", 7) == 0)
+		if (fd && strstarts(word, "family:"))
 			pango_font_description_set_family(fd, word+7);
 		if (strcmp(word, "large") == 0)
 			size = 14 * 1000;
@@ -374,9 +374,9 @@ static void parse_attrs(
 		if (strcmp(word, "nobold") == 0)
 			weight = PANGO_WEIGHT_NORMAL;
 
-		if (strncmp(word, "fg:", 3) == 0)
+		if (strstarts(word, "fg:"))
 			fg = word + 3;
-		if (strncmp(word, "bg:", 3) == 0)
+		if (strstarts(word, "bg:"))
 			bg = word + 3;
 		if (strcmp(word, "inverse") == 0)
 			inv = True;
@@ -846,14 +846,14 @@ DEF_CMD(xcb_draw_image)
 	ps->bg.g = -1;
 	if (!ps->ctx)
 		return Efail;
-	if (strncmp(ci->str, "file:", 5) == 0) {
+	if (strstarts(ci->str, "file:")) {
 		wd = NewMagickWand();
 		status = MagickReadImage(wd, ci->str + 5);
 		if (status == MagickFalse) {
 			DestroyMagickWand(wd);
 			return Efail;
 		}
-	} else if (strncmp(ci->str, "comm:", 5) == 0) {
+	} else if (strstarts(ci->str, "comm:")) {
 		struct call_return cr;
 		wd = NewMagickWand();
 		cr = call_ret(bytes, ci->str+5, ci->focus, 0, NULL, ci->str2);
@@ -941,14 +941,14 @@ DEF_CMD(xcb_image_size)
 
 	if (!ci->str)
 		return Enoarg;
-	if (strncmp(ci->str, "file:", 5) == 0) {
+	if (strstarts(ci->str, "file:")) {
 		wd = NewMagickWand();
 		status = MagickReadImage(wd, ci->str + 5);
 		if (status == MagickFalse) {
 			DestroyMagickWand(wd);
 			return Efail;
 		}
-	} else if (strncmp(ci->str, "comm:", 5) == 0) {
+	} else if (strstarts(ci->str, "comm:")) {
 		struct call_return cr;
 		wd = NewMagickWand();
 		cr = call_ret(bytes, ci->str+5, ci->focus, 0, NULL, ci->str2);

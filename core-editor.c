@@ -200,10 +200,10 @@ DEF_CMD(editor_auto_load)
 	if (key_lookup_cmd(map, ci->key))
 		return Efallthrough;
 
-	if (strncmp(mod, "doc-", 4) == 0 ||
-	    strncmp(mod, "render-", 7) == 0 ||
-	    strncmp(mod, "mode-", 5) == 0 ||
-	    strncmp(mod, "display-", 8) == 0)
+	if (strstarts(mod, "doc-") ||
+	    strstarts(mod, "render-") ||
+	    strstarts(mod, "mode-") ||
+	    strstarts(mod, "display-"))
 		;
 	else {
 		const char *m = strrchr(ci->key, '-');

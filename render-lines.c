@@ -750,7 +750,7 @@ static int render(struct mark *pm, struct pane *p safe,
 		rl->background_uniform = True;
 	}
 	s = pane_attr_get(focus, "background");
-	if (s && strncmp(s, "call:", 5) == 0) {
+	if (s && strstarts(s, "call:")) {
 		home_call(focus, "Draw:clear", p, 0, NULL, "");
 		home_call(focus, s+5, p, 0, m);
 		refresh_all = True;
@@ -759,13 +759,13 @@ static int render(struct mark *pm, struct pane *p safe,
 		;
 	else if (!s)
 		home_call(focus, "Draw:clear", p, 0, NULL, "");
-	else if (strncmp(s, "color:", 6) == 0) {
+	else if (strstarts(s, "color:")) {
 		char *a = strdup(s);
 		strcpy(a, "bg:");
 		strcpy(a+3, s+6);
 		home_call(focus, "Draw:clear", p, 0, NULL, a);
 		free(a);
-	} else if (strncmp(s, "image:", 6) == 0) {
+	} else if (strstarts(s, "image:")) {
 		home_call(focus, "Draw:clear", p);
 		home_call(focus, "Draw:image", p, 16, NULL, s+6);
 		rl->background_uniform = False;

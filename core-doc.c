@@ -1396,10 +1396,10 @@ static void simplify_path(const char *path safe, char *buf safe)
 		if (len == 1)
 			/* Extra '/' at end or in the middle, ignore */
 			continue;
-		if (len == 2 && strncmp(p, "/.", 2) == 0 )
+		if (len == 2 && strstarts(p, "/.") )
 			/* Ignore the dot */
 			continue;
-		if (len == 3 && strncmp(p, "/..", 3) == 0) {
+		if (len == 3 && strstarts(p, "/..")) {
 			/* strip last component of buf */
 			while (b > buf && b[-1] != '/')
 				b -= 1;

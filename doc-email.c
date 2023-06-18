@@ -887,8 +887,7 @@ DEF_CMD(open_email)
 	struct pane *p;
 	struct mark *point;
 
-	if (ci->str == NULL ||
-	    strncmp(ci->str, "email:", 6) != 0)
+	if (ci->str == NULL || !strstarts(ci->str, "email:"))
 		return Efallthrough;
 	fd = open(ci->str+6, O_RDONLY);
 	if (fd < 0)

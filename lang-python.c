@@ -547,7 +547,7 @@ static void do_map_init(Pane *self safe)
 				PyObject *tofree = NULL;
 				char *docs = python_as_string(doc, &tofree);
 				if (docs &&
-				    strncmp(docs, "handle-range", 12) == 0 &&
+				    strstarts(docs, "handle-range") &&
 				    docs[12]) {
 					char sep = docs[12];
 					char *s1 = strchr(docs+13, sep);
@@ -565,7 +565,7 @@ static void do_map_init(Pane *self safe)
 					}
 				}
 				if (docs &&
-				    strncmp(docs, "handle-prefix:", 14) == 0) {
+				    strstarts(docs, "handle-prefix:")) {
 					char *a = strconcat(self->pane, docs+14);
 					char *b = strconcat(self->pane,
 							    a, "\xFF\xFF\xFF\xFF");
@@ -592,14 +592,14 @@ static void do_map_init(Pane *self safe)
 				PyObject *tofree = NULL;
 				char *docs = python_as_string(doc, &tofree);
 				if (docs &&
-				    strncmp(docs, "handle:", 7) == 0) {
+				    strstarts(docs, "handle:")) {
 					struct python_command *comm =
 						export_callable(m);
 					key_add(self->map, docs+7, &comm->c);
 					command_put(&comm->c);
 				}
 				if (docs &&
-				    strncmp(docs, "handle-list", 11) == 0 &&
+				    strstarts(docs, "handle-list") &&
 				    docs[11]) {
 					char sep = docs[11];
 					char *s1 = docs + 12;

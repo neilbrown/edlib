@@ -193,7 +193,7 @@ static void handle(void *data, char *section safe, char *name safe, char *value 
 		return;
 	}
 
-	if (strncmp(section, "file:", 5) == 0) {
+	if (strstarts(section, "file:")) {
 		char *k = strconcat(NULL, "global-file-attr:", section+5);
 		call(k, p, append, NULL, name, 0, NULL, value);
 		return;

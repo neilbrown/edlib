@@ -2583,7 +2583,7 @@ static void run_tests(bool trace)
 				flags |= RXL_SOW;
 			else
 				flags |= RXL_NOWBRK;
-			if (wc == 'P' && strncmp(target, "oint", 4) == 0)
+			if (wc == 'P' && strstarts(target, "oint"))
 				flags |= RXL_POINT;
 			prev =  wc;
 			r = rxl_advance(st, wc | flags);

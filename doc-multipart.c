@@ -555,17 +555,17 @@ DEF_CMD(mp_attr)
 		/* at the wrong end of a part */
 		d += 1;
 
-	if (strncmp(attr, "multipart-next:", 15) == 0) {
+	if (strstarts(attr, "multipart-next:")) {
 		d += 1;
 		attr += 15;
 		if (d >= mpi->nparts)
 			return 1;
-	} else if (strncmp(attr, "multipart-prev:", 15) == 0) {
+	} else if (strstarts(attr, "multipart-prev:")) {
 		d -= 1;
 		attr += 15;
 		if (d < 0)
 			return 1;
-	} else if (strncmp(attr, "multipart-this:", 15) == 0)
+	} else if (strstarts(attr, "multipart-this:"))
 		attr += 15;
 
 	if (strcmp(attr, "multipart:part-num") == 0) {
@@ -620,17 +620,17 @@ DEF_CMD(mp_set_attr)
 	dn = m->ref.docnum;
 	m1 = m->ref.m;
 
-	if (strncmp(attr, "multipart-", 10) == 0) {
+	if (strstarts(attr, "multipart-")) {
 		/* Set an attribute on a part */
-		if (strncmp(attr, "multipart-prev:", 15) == 0 &&
+		if (strstarts(attr, "multipart-prev:") &&
 		    dn > 0 && (p = &mpi->parts[dn-1]) && p->pane)
 			attr_set_str(&p->pane->attrs,
 				     attr+15, ci->str2);
-		else if (strncmp(attr, "multipart-next:", 15) == 0 &&
+		else if (strstarts(attr, "multipart-next:") &&
 			 dn < mpi->nparts && (p = &mpi->parts[dn+1]) && p->pane)
 			attr_set_str(&p->pane->attrs,
 				     attr+15, ci->str2);
-		else if (strncmp(attr, "multipart-this:", 15) == 0 &&
+		else if (strstarts(attr, "multipart-this:") &&
 			 (p = &mpi->parts[dn]) && p->pane)
 			attr_set_str(&p->pane->attrs,
 				     attr+15, ci->str2);

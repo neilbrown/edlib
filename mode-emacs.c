@@ -831,7 +831,7 @@ DEF_CMD(find_complete)
 {
 	char *type = ci->home->data;
 
-	if (strncmp(type, "file", 4) == 0)
+	if (strstarts(type, "file"))
 		return emacs_file_complete_func(ci);
 	if (strcmp(type, "shellcmd") == 0)
 		return emacs_file_complete_func(ci);
@@ -858,7 +858,7 @@ DEF_CMD(find_done)
 		call("Message:modal", ci->focus, 0, NULL, "Document not found");
 		return 1;
 	}
-	if (strncmp(type, "file", 4) == 0) {
+	if (strstarts(type, "file")) {
 		char *sl;
 		bool can_create = True;
 		bool can_create_dir = True;

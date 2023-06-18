@@ -501,7 +501,7 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 	while (*line && *line != '>') {
 		int len = strcspn(line, ",>");
 
-		if (strncmp(line, "image:", 6) == 0) {
+		if (strstarts(line, "image:")) {
 			fname = strndup(line+6, len-6);
 			if (!ssize ||
 			    sscanf(ssize, "%hdx%hd", &size.x, &size.y) != 2) {
@@ -518,20 +518,20 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 						     "cached-size", ssize);
 				}
 			}
-		} else if (strncmp(line, "width:", 6) == 0) {
+		} else if (strstarts(line, "width:")) {
 			width = atoi(line + 6);
 			width = width * scale / 1000;
-		} else if (strncmp(line, "height:", 7) == 0) {
+		} else if (strstarts(line, "height:")) {
 			height = atoi(line + 7);
 			height = height * scale / 1000;
-		} else if (strncmp(line, "noupscale", 9) == 0 &&
+		} else if (strstarts(line, "noupscale") &&
 			   fname && size.x > 0) {
 			if (size.x < p->parent->w)
 				width = size.x;
 			if (size.y < p->parent->h)
 				height = size.y;
 		} else if ((offset >= 0 || want_xypos) &&
-			   strncmp(line, "map:", 4) == 0) {
+			   strstarts(line, "map:")) {
 			/*
 			 * A map is map:LxxxLxxxLxxxLxxx or similar
 			 * Where each "Lxxx" recognised by a CAP followed
@@ -689,7 +689,7 @@ DEF_CMD(renderline)
 	if (dodraw)
 		home_call(focus, "Draw:clear", p);
 
-	if (strncmp(line, "<image:",7) == 0)
+	if (strstarts(line, "<image:"))
 		/* For now an <image> must be on a line by itself.
 		 * Maybe this can be changed later if I decide on
 		 * something that makes sense.
