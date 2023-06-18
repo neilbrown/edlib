@@ -125,10 +125,118 @@ static void parse_ini(const char *path safe, ini_handle handle, void *data)
 	fclose(f);
 }
 
+static bool __glob_match(const char *patn safe, const char *path safe)
+{
+	while(1) {
+		switch (*patn) {
+		case '\0':
+			return *path == '\0';
+		case '?':
+			if (!*path || *path == '/')
+				return False;
+			patn += 1;
+			path += 1;
+			break;
+		case '*':
+			if (patn[1] == '*') {
+				if (__glob_match(patn+2, path))
+					return True;
+			} else {
+				if (__glob_match(patn+1, path))
+					return True;
+				if (*path == '/')
+					return False;
+			}
+			if (!*path)
+				return False;
+			path += 1;
+			break;
+		default:
+			if (*patn != *path)
+				return False;
+			patn += 1;
+			path += 1;
+			break;
+		}
+	}
+}
+
+static bool glob_match(const char *patn safe, const char *path safe)
+{
+	int ret;
+	if (patn[0] != '/' && !strstarts(patn, "**")) {
+		/* must match basename */
+		const char *sl = strrchr(path, '/');
+		if (sl)
+			path = sl + 1;
+	}
+	ret = __glob_match(patn, path);
+	return ret;
+}
+
 struct config_data {
 	struct command c;
+	struct command appeared;
 	struct pane *root safe;
+	struct trigger {
+		char *path safe;
+		struct attrset *attrs;
+		struct trigger *next;
+	} *triggers;
 };
+
+static void add_trigger(struct config_data *cd safe, char *path safe,
+			char *name safe, char *val safe, int append)
+{
+	struct trigger *t = cd->triggers;
+
+	if (strstarts(name, "TESTING ")) {
+		if (getenv("EDLIB_TESTING") == NULL)
+			return;
+		name += 8;
+	}
+	if (strstarts(name, "NOTESTING ")) {
+		if (getenv("EDLIB_TESTING") != NULL)
+			return;
+		name += 10;
+	}
+	if (!t || strcmp(t->path, path) != 0) {
+		alloc(t, pane);
+		t->next = cd->triggers;
+		cd->triggers = t;
+		t->path = strdup(path);
+	}
+	if (append) {
+		const char *old = attr_find(t->attrs, name);
+		if (old) {
+			val = strconcat(NULL, old, val);
+			attr_set_str(&t->attrs, name, val);
+			free(val);
+		} else
+			attr_set_str(&t->attrs, name, val);
+	} else
+		attr_set_str(&t->attrs, name, val);
+}
+
+static void config_file(char *path safe, struct pane *doc safe,
+			struct config_data *cd safe)
+{
+	struct trigger *t;
+
+	for (t = cd->triggers; t; t = t->next)
+		if (glob_match(t->path, path)) {
+			const char *val;
+			const char *k = "";
+			while ((k = attr_get_next_key(t->attrs, k, -1, &val)) != NULL) {
+				if (strstarts(k, "APPEND "))
+					call("doc:append:", doc, 0, NULL, val,
+					     0, NULL, k + 7);
+				else
+					call("doc:set:", doc, 0, NULL, val,
+					     0, NULL, k);
+			}
+		}
+}
 
 struct mod_cmd {
 	char *module;
@@ -200,8 +308,7 @@ static void handle(void *data, char *section safe, char *name safe, char *value 
 	}
 
 	if (strstarts(section, "file:")) {
-		char *k = strconcat(NULL, "global-file-attr:", section+5);
-		call(k, cd->root, append, NULL, name, 0, NULL, value);
+		add_trigger(cd, section+5, name, value, append);
 		return;
 	}
 }
@@ -257,6 +364,16 @@ static void config_free(struct command *c safe)
 	free(cd);
 }
 
+DEF_CMD(config_appeared)
+{
+	struct config_data *cd = container_of(ci->comm, struct config_data, appeared);
+	char *path = pane_attr_get(ci->focus, "filename");
+	if (!path)
+		return Efallthrough;
+	config_file(path, ci->focus, cd);
+	return Efallthrough;
+}
+
 DEF_CMD(config_load)
 {
 	struct config_data *cd;
@@ -267,8 +384,11 @@ DEF_CMD(config_load)
 		alloc(cd, pane);
 		cd->c = config_load;
 		cd->c.free = config_free;
+		cd->appeared = config_appeared;
 		cd->root = ci->home;
 		call_comm("global-set-command", ci->home, &cd->c, 0, NULL, "config-load");
+		call_comm("global-set-command", ci->home, &cd->appeared,
+			  0, NULL, "doc:appeared-config");
 	} else {
 		cd = container_of(ci->comm, struct config_data, c);
 	}

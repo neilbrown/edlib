@@ -35,7 +35,7 @@ the file.
 - [ ] lib-diff slowness with large diff
 - [ ] linecount :when used in 'view' mode, stack the counting pane with all the
       others so it can easily catch view-changed.
-- [ ] C config module that reads an ini-style file to set attributes
+- [X] C config module that reads an ini-style file to set attributes
       based on path
 - [ ] review all doc:char implementations for simplification.
 - [ ] make it easy for a make-search command to search backwards
@@ -71,6 +71,10 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] Do I really need global-multicall- or can I just use
+      notifications.
+      It would mean more modules would need a private pane, but might
+      I want that to support module unload anyway?
 - [ ] if a view creation fails - like render_master_view_attach
       hitting a python error - there will be no active view so the
       screen will be meaningless.  I need to properly abort and
@@ -1082,7 +1086,7 @@ Interaction with gdb would be nice too - things like
 
 ### config
 
-- [ ] C config module that reads an ini-style file to set attributes
+- [X] C config module that reads an ini-style file to set attributes
       based on path
 - [ ] configure "initial_panes"
 - [ ] discard old auto-load??
