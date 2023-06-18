@@ -298,17 +298,18 @@ static void handle(void *data, char *section safe, char *name safe, char *value 
 
 	if (strcmp(section, "module") == 0 && value[0]) {
 		struct mod_cmd *mc;
-		if (strcmp(value, "ALWAYS") == 0) {
-			call("global-load-module", cd->root, 0, NULL, name);
-			return;
-		}
+
 		mc = malloc(sizeof(*mc));
 		mc->module = strdup(name);
 		mc->tried = 0;
 		mc->c = autoload;
 		mc->c.free = al_free;
-		call_comm("global-set-command", cd->root, &mc->c, 0, NULL,
-			  value);
+		if (strstarts(value, "PREFIX "))
+			call_comm("global-set-command-prefix", cd->root, &mc->c, 0, NULL,
+				  value + 7);
+		else
+			call_comm("global-set-command", cd->root, &mc->c, 0, NULL,
+				  value);
 		return;
 	}
 
