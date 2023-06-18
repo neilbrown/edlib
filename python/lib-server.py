@@ -373,11 +373,16 @@ else:
     def server_rebind(key, focus, **a):
         global server_sock
 
+        msg = ""
+        if key.startswith("interactive-cmd"):
+            msg = "Server started"
         if server_sock:
             # stop reading this file
             focus.call("event:free", server_accept)
             server_sock.close()
             server_sock = None
+            msg="Server restarted"
+
         try:
             os.unlink(sockpath)
         except OSError:
@@ -394,9 +399,12 @@ else:
         focus.root.call("event:read", s.fileno(), server_accept)
         server_sock = s
         if key != "key":
-            focus.call("Message", "Server restarted")
+            focus.call("Message", msg)
         return 1
-    server_rebind("key", edlib.editor)
+    def server_autostart(key, focus, **a):
+        if focus["server:autostart"] == 'yes':
+            server_rebind(key, focus)
+    edlib.editor.call("global-set-command", "startup-server", server_autostart)
     edlib.editor.call("global-set-command", "lib-server:done", server_done)
     edlib.editor.call("global-set-command", "interactive-cmd-server-start",
                 server_rebind)

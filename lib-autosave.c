@@ -330,7 +330,7 @@ DEF_CMD(check_autosave_dir)
 		dirname = strconcat(ci->focus, home ?: "", "/.edlib_autosave");
 	dir = opendir(dirname);
 	if (!dir)
-		return 1;
+		return Efallthrough;
 	while ((de = readdir(dir)) != NULL) {
 		if (de->d_name[0] == '.')
 			continue;
@@ -345,7 +345,7 @@ DEF_CMD(check_autosave_dir)
 	if (de)
 		call("editor:notify:Message:broadcast", ci->focus, 0, NULL,
 		     "Autosave files exist - use \"recover\" command to view them.");
-	return 1;
+	return Efallthrough;
 }
 
 void edlib_init(struct pane *ed safe)
