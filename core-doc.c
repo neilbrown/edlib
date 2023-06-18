@@ -480,6 +480,11 @@ DEF_CMD(doc_set)
 	struct doc *d = ci->home->data;
 	const char *val = ksuffix(ci, "doc:set:");
 
+	if (!*val)
+		val = ci->str2;
+	if (!val)
+		return Enoarg;
+
 	if (strcmp(val, "autoclose") == 0) {
 		d->autoclose = ci->num;
 		return 1;
@@ -501,6 +506,11 @@ DEF_CMD(doc_append)
 	const char *attr = ksuffix(ci, "doc:append:");
 	const char *val = ci->str;
 	const char *old;
+
+	if (!*attr)
+		attr = ci->str2;
+	if (!attr)
+		return Enoarg;
 
 	if (!val || !val[0])
 		return Enoarg;
