@@ -333,9 +333,8 @@ void edlib_init(struct pane *ed safe)
 	call_comm("global-set-command", ed, &spell_save,
 		  0, NULL, "Spell:Save");
 
-	call_comm("global-set-command", ed, &spell_dict,
-		  0, NULL, "interactive-cmd-dict-",
-		  0, NULL, "interactive-cmd-dict-~");
+	call_comm("global-set-command-prefix", ed, &spell_dict,
+		  0, NULL, "interactive-cmd-dict-");
 
 	aspell_map = key_alloc();
 	key_add(aspell_map, "Close", &aspell_close);

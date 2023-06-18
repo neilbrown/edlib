@@ -136,6 +136,7 @@ DEF_CMD(colour_map)
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &colour_map,
-		  0, NULL, "colour:map",
-		  0, NULL, "colour:map;");
+		  0, NULL, "colour:map");
+	call_comm("global-set-command-prefix", ed, &colour_map,
+		  0, NULL, "colour:map:");
 }

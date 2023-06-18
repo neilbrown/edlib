@@ -58,10 +58,15 @@ DEF_CMD(global_set_command)
 {
 	struct ed_info *ei = ci->home->data;
 	struct map *map = ei->map;
+	bool prefix = strcmp(ci->key, "global-set-command-prefix") == 0;
 
 	if (!ci->str)
 		return Enoarg;
-	if (ci->str2)
+	if (prefix) {
+		char *e = strconcat(NULL, ci->str, "\xFF\xFF\xFF\xFF");
+		key_add_range(map, ci->str, e, ci->comm2);
+		free(e);
+	} else if (ci->str2)
 		key_add_range(map, ci->str, ci->str2, ci->comm2);
 	else
 		key_add(map, ci->str, ci->comm2);
@@ -495,6 +500,7 @@ struct pane *editor_new(void)
 		ed_map = key_alloc();
 		key_add(ed_map, "global-set-attr", &global_set_attr);
 		key_add(ed_map, "global-set-command", &global_set_command);
+		key_add(ed_map, "global-set-command-prefix", &global_set_command);
 		key_add(ed_map, "global-get-command", &global_get_command);
 		key_add(ed_map, "global-load-module", &editor_load_module);
 		key_add(ed_map, "global-config-dir", &global_config_dir);

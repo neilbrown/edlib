@@ -833,9 +833,8 @@ DEF_CMD(docs_close)
 {
 	struct docs *docs = ci->home->data;
 
-	call_comm("global-set-command", ci->home, &edlib_noop,
-		  0, NULL, "docs:",
-		  0, NULL, "docs;");
+	call_comm("global-set-command-prefix", ci->home, &edlib_noop,
+		  0, NULL, "docs:");
 	call_comm("global-set-command", ci->home, &edlib_noop,
 		  0, NULL, "doc:appeared-docs-register");
 	pane_close(docs->collection);
@@ -937,9 +936,8 @@ DEF_CMD(attach_docs)
 	doc->collection = paux;
 
 	doc->callback = docs_callback_lookup;
-	call_comm("global-set-command", ci->home, &doc->callback,
-		  0, NULL, "docs:",
-		  0, NULL, "docs;");
+	call_comm("global-set-command-prefix", ci->home, &doc->callback,
+		  0, NULL, "docs:");
 	call_comm("global-set-command", ci->home, &doc->callback,
 		  0, NULL, "doc:appeared-docs-register");
 
