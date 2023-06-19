@@ -431,6 +431,12 @@ Module features
 
 ### shell mode
 
+- [ ] allow input.  Can I use SIGTTIN?  Need to ignore SIGTTOU, attach
+      task to pty and catch when SIGTTIN is received.  Then switch back
+      pgrp, restart, and feed content.
+      Any chars from ' ' to '~' are queued in a separate buffer shown at
+      bottom.  It can be edited and :Enter will submit it.
+      Could just use pipes and FIONREAD to detect when content is slurped.
 - [ ] non-utf8 in output makes python spit the dummy
 - [ ]  Use pattern-match on command to optionally choose an overlay
        which can highlight output and allow actions.
@@ -744,10 +750,94 @@ Module features
 
 ### lib-url
 
+### config
+
+- [X] C config module that reads an ini-style file to set attributes
+      based on path
+- [ ] configure "initial_panes"
+- [ ] discard old auto-load??
+- [ ] file patterns for "complete" to (optionally) ignore
+- [ ] read .gitignore and add to "ignore" list
+- [ ] top/bottom margin  - "render-vmargin" set on view or doc??
+      vmargin should be relative or absolute
+- [ ] c-mode to use tabs or spaces for indent
+- [ ] c-mode: use only spaces for bracket-alignment, or tabs as well
+- [ ] shell command regex to choose parsing: diff, git-log, grep/make
+
+- [ ] colours of whitespace: tab, at-eol, tab-after-space, past-col ....
+- [ ] whitespace max-col (per-line??)
+- [ ] white-space blanklines at sof, eof, multiple-together
+- [ ] colours for notmuch summary lines
+- [ ] colours for urls
+- [ ] colours: dir: flag/metadata/name/link
+- [ ] colours: dir: header
+- [ ] colours: email spacer
+- [ ] colours: search: this, other, replaced
+- [ ] colours: markup control
+- [ ] colours: message-line
+- [ ] colours: renderline wrap/truncate markers - char also
+- [ ] colours: emacs: file-name open: ignored, Ok-dir, missing-dir,
+      non-dir
+- [ ] colours: emacs: selection: active, transient, replacable...
+- [ ] colours: abbrev - prefix and completed
+- [ ] colours: spell - errors
+- [ ] colours: compose: headers, unknown, bad, header-marker,
+      section-marker
+- [ ] colours: compose: interpolated text, interpolation character.
+- [ ] compose: known headers
+- [ ] colours: diff: added, removed, '@@', diff-same
+- [ ] colours: make: current-match, subordinate matches
+- [ ] colours: mergeview: markers: conflict, space-only, good
+- [ ] colours: mergeview: Unmatches, Extraneous, Changed, Conflict,
+      Conflict-spaces, Already
+- [ ] colours: notmuch - LOTS
+- [ ] colours: c-mode: paren-same, paren-different
+- [ ] colours: hex ....
+- [ ] colours: complete: matching section
+
+- [ ] config alternate key-strokes???
 
 
-New Modules - simple
---------------------
+New Modules
+-----------
+
+- [ ] separate out from mode-emacs:
+
+     - selection management
+     - mouse management
+     - arrows - shift for selection, control for word
+     - BS Del
+     - Next Prior Home End
+    - home/end - start/end of line
+    - Shift-home/end - start/end of file
+    - C-up/down start/end para
+    - C-bs C-del delete word
+
+- [ ] vi mode
+
+    - two mode: command and entry
+    - h,j,k,l w,e,W
+    - d* c* s  a A i I ^ $ / ? . fX
+    - numeric prefix
+    - much more
+
+- [ ] "office" mode
+
+    - C-c for copy, C-x for cut, C-v for paste,
+    - C-a select all
+    - C-f find/replace C-S-f - search again
+    - C-z undo C-y redo
+    - A-x for menu x
+
+- [ ] info browser
+
+      Content is (mostly) ready-formatted.  Need to parse and handle navigation.
+
+- [ ] man page viewer
+
+      - MANWIDTH=72 MAN_KEEP_FORMATTING=yes man page and process X\bX
+        and _\bX for bold and underline.
+
 
 - [ ] more charset support? Next in my popularity list from my email database
      are: is0-8859-15  gb2312 iso-8859-2 iso-2022-jp gbk ansi_x3
@@ -756,6 +846,24 @@ New Modules - simple
      windows-1250 is needed - or at least a reliable fall-back
         AM6PR04MB6328CFDD9A91D3F0125D1A1491809@AM6PR04MB6328.eurprd04.prod.outlook.com
 - [ ] use iconv(3) for char-set conversion
+
+- [ ] generic syntax highlighting:
+      strings, comments, keywords, type/function/const/var distinction
+      urls, email address
+      Possibly oversee diff/wiggle highlighting
+      markdown bold/ital/code bullet, counter. heading.
+
+      Call-out or regex to find para.
+      Another to find words
+      Maybe another to classify words
+
+      Classify some content as "section" for outlining
+
+- [ ] gdb integration.
+
+       - break at line in code
+       - show code from reported line
+       - continue to code location
 
 Possibly some of these will end up being features in other modules.
 
@@ -981,27 +1089,6 @@ This could collect but hide the commit message, and allow them to be seen later.
 The commit-ids could be marked edit, reword, etc and then rebase run.
 Would be useful to limit to certain files.
 
-### vi mode
-
-I currently support emacs-like editing, but that is mostly kept local to one module.
-I'd like to add a comparable vi module, partly because some people like vi
-and partly because it would encourage me to keep the key-bindings cleanly
-separate from the functionality.
-
-### office mode
-
-- C-c for copy, C-x for cut, C-v for paste,
-- Shift-arrows to select C-arrows for word-movement
-- C-bs C-del delete word
-- C-a select all
-- C-f find/replace C-S-f - search again
-- home/end - start/end of line
-- Shift-home/end - start/end of file
-- C-up/down start/end para
-- C-z undo C-y redo
-
-Commands that are 'C-x' or 'C-c' in emacs would be 'alt-f' (For file) etc
-and could pop-down menus from a menu bar.
 
 ### a “reflection” document so I can view the internal data structures.
 
@@ -1017,16 +1104,6 @@ This probably needs to be recorded, then played back for me.
 I don't keep a diary or use a planner much, so this seems like an odd thing to include.
 But dates are cool, and this is a highly structured concept and I like structure.
 At the very least I want a calendar pop-up.
-
-### info browser
-
-Info is widely used... rendering it like markdown and allowing
-browsing would be nice.
-
-### man page viewer
-
-- [ ] MANWIDTH=72 MAN_KEEP_FORMATTING=yes man page and process X\bX
-      and _\bX for bold and underline.
 
 ### A suite of tools making use of some sort of "mark-down" like language
 
@@ -1049,6 +1126,7 @@ I want:
 
 Non-module functionality
 ------------------------
+
 
 ### Documentation
 
@@ -1089,24 +1167,3 @@ Interaction with gdb would be nice too - things like
 - step up and down stack and jump around code at same time.
 - view values of variables directly from the code.
 
-### config
-
-- [X] C config module that reads an ini-style file to set attributes
-      based on path
-- [ ] configure "initial_panes"
-- [ ] discard old auto-load??
-
-What needs to be configured?  How is that done?
-
-- fill mode and width
-- default make command, and dir to run in
-- preferred white-space options, and width
-- uninteresting file names for find-file. .git-ignore??
-
-I want different configs in different trees.
-Either the single config file identifies path, or we put
-one in the tree root.  Or both.
-
-So config must be based on path, and on file type.
-Maybe the config is processed whenever a file is loaded, and attributes
-are attached to the document.  Though global attrs should go on root.
