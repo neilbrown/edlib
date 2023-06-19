@@ -83,7 +83,7 @@ struct pane {
 	 */
 	unsigned int		timestamp;
 
-	struct pane		*root;
+	struct pane		*root safe;
 	struct command		*handle;
 	void			*data safe;
 	struct attrset		*attrs;
@@ -168,6 +168,7 @@ char *strsave(struct pane *p safe, const char *buf);
 char *strnsave(struct pane *p safe, const char *buf, int len);
 char * safe __strconcat(struct pane *p, const char *s1 safe, ...);
 #define strconcat(p, ...) __strconcat(p, __VA_ARGS__, NULL)
+bool edlib_testing(struct pane *p safe);
 
 /* This is declared here so sparse knows it is global */
 void edlib_init(struct pane *ed safe);

@@ -506,13 +506,12 @@ static char *save_str(struct dir_ent *de safe, char *str safe)
 	return de->nbuf;
 }
 
-static char *fmt_date(struct dir_ent *de safe, time_t t)
+static char *fmt_date(struct dir_ent *de safe, time_t t, struct pane *p safe)
 {
 	struct tm tm;
 	time_t now = time(NULL);
-	char *testing = getenv("EDLIB_TESTING");
 
-	if (testing && *testing) {
+	if (edlib_testing(p)) {
 		t = 1581382278;
 		now = t;
 	}
@@ -611,7 +610,7 @@ static const char *__dir_get_attr(struct pane *home safe, struct mark *m safe,
 	} else if (strcmp(attr, "hsize") == 0) {
 		get_stat(dr, de);
 		if (strchr(".:d", de->ch) &&
-		    getenv("EDLIB_TESTING"))
+		    edlib_testing(home))
 			/* Size might not be reliable for testing */
 			return "DIR";
 		return fmt_size(de, de->st.st_size);
@@ -620,19 +619,19 @@ static const char *__dir_get_attr(struct pane *home safe, struct mark *m safe,
 		return fmt_num(de, de->st.st_mtime);
 	} else if (strcmp(attr, "mdate") == 0) {
 		get_stat(dr, de);
-		return fmt_date(de, de->st.st_mtime);
+		return fmt_date(de, de->st.st_mtime, home);
 	} else if (strcmp(attr, "atime") == 0) {
 		get_stat(dr, de);
 		return fmt_num(de, de->st.st_atime);
 	} else if (strcmp(attr, "adate") == 0) {
 		get_stat(dr, de);
-		return fmt_date(de, de->st.st_atime);
+		return fmt_date(de, de->st.st_atime, home);
 	} else if (strcmp(attr, "ctime") == 0) {
 		get_stat(dr, de);
 		return fmt_num(de, de->st.st_ctime);
 	} else if (strcmp(attr, "cdate") == 0) {
 		get_stat(dr, de);
-		return fmt_date(de, de->st.st_ctime);
+		return fmt_date(de, de->st.st_ctime, home);
 	} else if (strcmp(attr, "uid") == 0) {
 		get_stat(dr, de);
 		return fmt_num(de, de->st.st_uid);
@@ -642,7 +641,7 @@ static const char *__dir_get_attr(struct pane *home safe, struct mark *m safe,
 	} else if (strcmp(attr, "user") == 0) {
 		char *n;
 		get_stat(dr, de);
-		if (getenv("EDLIB_TESTING"))
+		if (edlib_testing(home))
 			return "User";
 		n = pwname(de->st.st_uid);
 		if (n)
@@ -652,7 +651,7 @@ static const char *__dir_get_attr(struct pane *home safe, struct mark *m safe,
 	} else if (strcmp(attr, "group") == 0) {
 		char *n;
 		get_stat(dr, de);
-		if (getenv("EDLIB_TESTING"))
+		if (edlib_testing(home))
 			return "Group";
 		n = grname(de->st.st_gid);
 		if (n)
@@ -678,7 +677,7 @@ static const char *__dir_get_attr(struct pane *home safe, struct mark *m safe,
 		case S_IFLNK: *c ++ = 'l'; break;
 		default:      *c ++ = '?'; break;
 		}
-		if (getenv("EDLIB_TESTING") && de->ch == ':')
+		if (edlib_testing(home) && de->ch == ':')
 			/* ".." might not be under control of the test */
 			mode = 0777;
 		for (i = 0; i < 3; i++) {

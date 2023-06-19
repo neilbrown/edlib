@@ -24,7 +24,7 @@ class events(edlib.Pane):
         self.ev_num = 0
         self.dont_block = False
         self.maxloops = 10
-        if 'EDLIB_TESTING' in os.environ:
+        if edlib.testing:
             self.maxloops = -1
 
     def handle_close(self, key, focus, **a):

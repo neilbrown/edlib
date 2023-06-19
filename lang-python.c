@@ -2978,6 +2978,8 @@ void edlib_init(struct pane *ed safe)
 
 	PyModule_AddIntConstant(m, "WEOF", 0x3FFFFF);
 
+	PyModule_AddIntConstant(m, "testing", edlib_testing(ed));
+
 	Edlib_CommandFailed = PyErr_NewException("edlib.commandfailed", NULL, NULL);
 	Py_INCREF(Edlib_CommandFailed);
 	PyModule_AddObject(m, "commandfailed", Edlib_CommandFailed);

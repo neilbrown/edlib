@@ -79,7 +79,7 @@ class ShellPane(edlib.Pane):
         self.call("doc:set:doc-status", "Running")
         self.call("doc:notify:doc:status-changed")
         fd = self.pipe.stdout.fileno()
-        if 'EDLIB_TESTING' not in os.environ:
+        if not edlib.testing:
             fl = fcntl.fcntl(fd, fcntl.F_GETFL)
             fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
             self.call("event:read", fd, self.read)
@@ -94,7 +94,7 @@ class ShellPane(edlib.Pane):
         if not self.pipe:
             return edlib.Efalse
         try:
-            if 'EDLIB_TESTING' not in os.environ:
+            if not edlib.testing:
                 r = os.read(self.pipe.stdout.fileno(), 4096)
             else:
                 r = b''

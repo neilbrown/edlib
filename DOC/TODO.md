@@ -13,6 +13,8 @@ the file.
       instead of statics.  Then maybe times_up() can use pane_too_long()
 - [X] mark DEF_CMD structs as const- NO, ->refcnt is not constant.
 - [X] rexel: don't abort if something looks wrong, just fail.
+- [X] check EDLIB_TESTING just once and set a flag in editor, accessible
+      as pane_testing(): p->root->data(cast)->testing.
 
 ### Small
 

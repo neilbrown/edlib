@@ -278,7 +278,7 @@ class autospell_view(edlib.Pane):
         self.set_time()
         focus = focus.leaf
 
-        if 'EDLIB_TESTING' in os.environ:
+        if edlib.testing:
             remain = 20
         else:
             remain = 200

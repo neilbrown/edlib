@@ -23,12 +23,19 @@ struct ed_info {
 	struct mark *mark_free_list;
 	struct map *map safe;
 	struct lookup_cmd cmd;
+	bool testing;
 	struct store {
 		struct store *next;
 		int size;
 		char space[];
 	} *store;
 };
+
+bool edlib_testing(struct pane *p safe)
+{
+	struct ed_info *ei = pane_root(p)->data;
+	return ei->testing;
+}
 
 DEF_LOOKUP_CMD(ed_handle, ed_map);
 
@@ -496,6 +503,7 @@ struct pane *editor_new(void)
 
 	alloc(ei, pane);
 	ei->magic = ED_MAGIC;
+	ei->testing = (getenv("EDLIB_TESTING") != NULL);
 	if (! (void*) ed_map) {
 		ed_map = key_alloc();
 		key_add(ed_map, "global-set-attr", &global_set_attr);

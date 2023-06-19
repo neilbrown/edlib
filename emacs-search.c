@@ -1004,7 +1004,7 @@ static void queue_highlight_refresh(struct pane *p safe)
 {
 	call_comm("event:free", p, &emacs_search_reposition_delayed);
 	call_comm("event:timer", p, &emacs_search_reposition_delayed,
-		  getenv("EDLIB_TESTING") ? 50 : 500);
+		  edlib_testing(p) ? 50 : 500);
 }
 
 DEF_CMD(emacs_search_reposition)

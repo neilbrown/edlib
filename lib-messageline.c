@@ -171,7 +171,7 @@ DEF_CMD(messageline_notify)
 	struct mlinfo *mli = ci->home->data;
 	int wait_time = 7;
 
-	if (getenv("EDLIB_TESTING"))
+	if (edlib_testing(ci->home))
 		wait_time = 0;
 
 	if (mli->modal) {
@@ -216,9 +216,9 @@ DEF_CMD(messageline_line_refresh)
 		char buf[80];
 		time_t t;
 		struct tm *tm;
-		char *testing = getenv("EDLIB_TESTING");
+
 		t = time(NULL);
-		if (testing && *testing)
+		if (edlib_testing(ci->home))
 			t = 1581382278;
 		tm = localtime(&t);
 		if (tm)
@@ -255,7 +255,7 @@ static struct pane *do_messageline_attach(struct pane *p safe)
 	}
 	mli->line = mlp;
 	pane_focus(ret);
-	if (getenv("EDLIB_TESTING") == NULL)
+	if (!edlib_testing(p))
 		/* This can introduce unwanted variablitiy in tests */
 		call_comm("event:timer", mli->line, &force_refresh, 15000);
 

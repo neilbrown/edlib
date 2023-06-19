@@ -192,12 +192,12 @@ static void add_trigger(struct config_data *cd safe, char *path safe,
 	struct trigger *t = cd->last_trigger;
 
 	if (strstarts(name, "TESTING ")) {
-		if (getenv("EDLIB_TESTING") == NULL)
+		if (!edlib_testing(cd->root))
 			return;
 		name += 8;
 	}
 	if (strstarts(name, "NOTESTING ")) {
-		if (getenv("EDLIB_TESTING") != NULL)
+		if (edlib_testing(cd->root))
 			return;
 		name += 10;
 	}

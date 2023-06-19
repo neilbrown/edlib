@@ -39,7 +39,6 @@ static struct map *linecount_map;
 DEF_LOOKUP_CMD(handle_count_lines, linecount_map);
 
 static const int batch_marks = 10;
-static bool testing = False;
 
 struct count_info {
 	int view_num;
@@ -195,7 +194,7 @@ static void count_calculate(struct pane *p safe,
 	struct mark *m, *m2;
 	char *disable;
 
-	if (testing)
+	if (edlib_testing(p))
 		sync = True;
 
 	disable = pane_attr_get(p, "linecount-disable");
@@ -284,7 +283,7 @@ static void count_calculate(struct pane *p safe,
 		attr_set_int(&p->attrs, "lines", lines);
 		attr_set_int(&p->attrs, "words", words);
 		attr_set_int(&p->attrs, "chars", chars);
-		if (!testing)
+		if (!edlib_testing(p))
 			pane_notify("doc:status-changed", p);
 	}
 }
@@ -421,9 +420,6 @@ void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &count_lines, 0, NULL, "CountLines");
 	call_comm("global-set-command", ed, &count_lines, 0, NULL, "CountLinesAsync");
-
-	if (getenv("EDLIB_TESTING"))
-		testing = True;
 
 	if (linecount_map)
 		return;
