@@ -367,11 +367,8 @@ static void update_line_height(struct pane *p safe, struct pane *focus safe,
 	while (*line) {
 		char c = *line++;
 		const char *st = line;
-		if (c == '<' && *line == '<') {
-			line += 1;
-			continue;
-		}
-		if (c != '<')
+
+		if (c != soh && c != etx && c != ack)
 			continue;
 
 		if (line - 1 > segstart) {
@@ -381,13 +378,15 @@ static void update_line_height(struct pane *p safe, struct pane *focus safe,
 						buf_final(&attr), l, scale);
 			free(l);
 		}
-		while (*line && line[-1] != '>')
-			line += 1;
-		segstart = line;
-		if (st[0] != '/') {
+		if (c == soh) {
 			char *c2;
 			char *b;
 			const char *aend;
+
+			/* move 'line' over the attrs */
+			while (*line && line[-1] != stx)
+				line += 1;
+			segstart = line;
 
 			/* attrs must not contain ",," */
 			aend = strstr(st, ",,");
@@ -397,9 +396,9 @@ static void update_line_height(struct pane *p safe, struct pane *focus safe,
 				aend = line;
 
 			buf_concat_len(&attr, st, aend-st);
-			/* Replace trailing '>' with ',', and append ','
+			/* Replace trailing 'stx' with ',', and append ','
 			 * so ",," marks where to strip back to when we
-			 * find </>.
+			 * find etx
 			 */
 			attr.b[attr.len-1] = ',';
 			buf_append(&attr, ',');
@@ -419,7 +418,8 @@ static void update_line_height(struct pane *p safe, struct pane *focus safe,
 			attr_found = 1;
 			update_line_height_attr(p, focus, h, a, w, b, "",
 						scale);
-		} else {
+		} else if (c == etx) {
+			segstart = line;
 			/* strip back to ",," */
 			if (attr.len >= 2)
 				attr.len -= 2;
@@ -427,6 +427,8 @@ static void update_line_height(struct pane *p safe, struct pane *focus safe,
 			       (attr.b[attr.len] != ',' ||
 				attr.b[attr.len+1] != ','))
 				attr.len -= 1;
+		} else if (c == ack) {
+			segstart = line;
 		}
 	}
 	if (line > segstart && line[-1] == '\n')
@@ -495,11 +497,11 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 	width = p->parent->w/2;
 	height = p->parent->h/2;
 
-	while (*line == '<')
+	while (*line == soh)
 		line += 1;
 
-	while (*line && *line != '>') {
-		int len = strcspn(line, ",>");
+	while (*line && *line != stx && *line != etx) {
+		int len = strcspn(line, "," STX ETX);
 
 		if (strstarts(line, "image:")) {
 			fname = strndup(line+6, len-6);
@@ -689,7 +691,7 @@ DEF_CMD(renderline)
 	if (dodraw)
 		home_call(focus, "Draw:clear", p);
 
-	if (strstarts(line, "<image:"))
+	if (strstarts(line, SOH "image:"))
 		/* For now an <image> must be on a line by itself.
 		 * Maybe this can be changed later if I decide on
 		 * something that makes sense.
@@ -792,7 +794,7 @@ DEF_CMD(renderline)
 		}
 
 		if ((ret == WRAP || x >= p->w - mwidth) &&
-		    (line[0] != '<' || line[1] == '<')) {
+		    line[0] != soh && line[0] != ack) {
 			/* No room for more text */
 			if (wrap && *line && *line != '\n') {
 				int wrap_prefix_size;
@@ -830,7 +832,7 @@ DEF_CMD(renderline)
 		ch = *line;
 		if (line == line_start + offset)
 			rd->curs_width = mwidth;
-		if (ch >= ' ' && ch != '<') {
+		if (ch >= ' ') {
 			bool was_in_lws = in_lws;
 			line += 1;
 			/* Only flush out if string is getting a bit long.
@@ -885,70 +887,63 @@ DEF_CMD(renderline)
 		start = line;
 		if (ret != OK || !ch)
 			continue;
-		if (ch == '<') {
-			line += 1;
-			if (*line == '<') {
-				in_lws = False;
-				ret = draw_some(p, focus, &rlst, &x, start, &line,
-						buf_final(&attr), in_lws,
-						wrap ? mwidth : 0,
-						in_tab ?:offset - (start - line_start),
-						posx, scale);
-				if (ret != OK)
-					continue;
-				start += 2;
-				line = start;
-			} else {
-				const char *a = line;
-
-				while (*line && line[-1] != '>')
-					line += 1;
-
-				if (a[0] != '/') {
-					int ln = attr.len;
-					char *tb;
-					const char *aend;
-
-					/* attrs must not contain ",," */
-					aend = strstr(a, ",,");
-					if (aend)
-						aend += 1;
-					if (!aend || line < aend)
-						aend = line;
-
-					buf_concat_len(&attr, a, aend-a);
-					/* Replace trailing '>' with ',', and
-					 * append ',' so ",," marks where to
-					 * strip back to when we find </>.
-					 */
-					attr.b[attr.len-1] = ',';
-					buf_append(&attr, ',');
-					tb = strstr(buf_final(&attr)+ln,
-						    "tab:");
-					if (tb)
-						x = margin +
-							atoi(tb+4) * scale / 1000;
-				} else {
-					/* strip back to ",," */
-					if (attr.len > 0)
-						attr.len -= 2;
-					while (attr.len >=2 &&
-					       (attr.b[attr.len-1] != ',' ||
-						attr.b[attr.len-2] != ','))
-						attr.len -= 1;
-					if (attr.len == 1)
-						attr.len = 0;
-				}
-				if (offset == start - line_start)
-					offset += line-start;
-				start = line;
-				mwidth = -1;
-			}
-			continue;
-		}
-
 		line += 1;
-		if (ch == '\n') {
+		switch (ch) {
+		case soh: {
+			const char *a = line;
+			char *tb;
+			const char *aend;
+			int ln;
+
+			while (*line && line[-1] != stx)
+				line += 1;
+
+			ln = attr.len;
+
+			/* attrs must not contain ",," */
+			aend = strstr(a, ",,");
+			if (aend)
+				aend += 1;
+			if (!aend || line < aend)
+				aend = line;
+
+			buf_concat_len(&attr, a, aend-a);
+			/* Replace trailing stx with ',', and
+			 * append ',' so ",," marks where to
+			 * strip back to when we find etx.
+			 */
+			attr.b[attr.len-1] = ',';
+			buf_append(&attr, ',');
+			tb = strstr(buf_final(&attr)+ln,
+				    "tab:");
+			if (tb)
+				x = margin +
+					atoi(tb+4) * scale / 1000;
+			if (offset == start - line_start)
+				offset += line-start;
+			start = line;
+			mwidth = -1;
+			break;
+			}
+		case etx:
+			/* strip back to ",," */
+			if (attr.len > 0)
+				attr.len -= 2;
+			while (attr.len >=2 &&
+			       (attr.b[attr.len-1] != ',' ||
+				attr.b[attr.len-2] != ','))
+				attr.len -= 1;
+			if (attr.len == 1)
+				attr.len = 0;
+			if (offset == start - line_start)
+				offset += line-start;
+			start = line;
+			mwidth = -1;
+			break;
+		case ack:
+			start = line;
+			break;
+		case '\n':
 			xypos = line-1;
 			flush_line(p, focus, dodraw, &rlst, y+ascent, scale, 0,
 				   &wrap_margin, NULL, &xypos, &xyattr, &cursattr);
@@ -956,12 +951,14 @@ DEF_CMD(renderline)
 			x = 0;
 			wrap_offset = 0;
 			start = line;
-		} else if (ch == '\f') {
+			break;
+		case '\f':
 			x = 0;
 			start = line;
 			wrap_offset = 0;
 			end_of_page = 1;
-		} else if (ch == '\t') {
+			break;
+		case '\t': {
 			int xc = (wrap_offset + x) / mwidth;
 			/* Note xc might be negative, so "xc % 8" won't work here */
 			int w = 8 - (xc & 7);
@@ -981,7 +978,9 @@ DEF_CMD(renderline)
 			} else
 				in_tab = 0;
 			start = line;
-		} else {
+			break;
+			}
+		default:{
 			char buf[4];
 			const char *b;
 			int l = attr.len;
@@ -998,6 +997,8 @@ DEF_CMD(renderline)
 					posx, scale);
 			attr.len = l;
 			start = line;
+			break;
+			}
 		}
 	}
 	if (!*line && (line > start || offset == start - line_start)) {
@@ -1089,6 +1090,39 @@ DEF_CMD(renderline_get)
 	return 1;
 }
 
+static char *cvt(char *str safe)
+{
+	/* Convert:
+	 *    << to < ack  (ack is a no-op)
+	 *    < stuff > to soh stuff stx
+	 *    </> to ack ack etx
+	 */
+	char *c;
+	for (c = str; *c; c += 1) {
+		if (c[0] == soh || c[0] == ack)
+			break;
+		if (c[0] == '<' && c[1] == '<') {
+			c[1] = ack;
+			c++;
+			continue;
+		}
+		if (c[0] != '<')
+			continue;
+		if (c[1] == '/') {
+			c[0] = ack;
+			c[1] = ack;
+			c[2] = etx;
+			c += 2;
+			continue;
+		}
+		c[0] = soh;
+		while (c[0] && c[1] != '>')
+			c++;
+		c[1] = stx;
+	}
+	return str;
+}
+
 DEF_CMD(renderline_set)
 {
 	struct rline_data *rd = ci->home->data;
@@ -1096,7 +1130,7 @@ DEF_CMD(renderline_set)
 	struct xy xyscale = pane_scale(ci->focus);
 
 	if (ci->str)
-		rd->line = strdup(ci->str);
+		rd->line = cvt(strdup(ci->str));
 	else
 		rd->line = NULL;
 	if (strcmp(rd->line ?:"", old ?:"") != 0 ||

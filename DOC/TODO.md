@@ -58,7 +58,7 @@ Requirements for a v1.0 release
       Maybe a pencil in a window pane
 - [ ] configuration
 - [ ] vi mode
-- [ ] office mode
+- [ ] CUA mode
 - [ ] nano mode(?)
 - [ ] multiple front ends: elvi, elma, elnm, eled?
 - [ ] introspection
@@ -803,7 +803,7 @@ Module features
 New Modules
 -----------
 
-- [ ] separate out from mode-emacs:
+- [ ] separate out CUA-base from mode-emacs:
 
      - selection management
      - mouse management
@@ -823,7 +823,10 @@ New Modules
     - numeric prefix
     - much more
 
-- [ ] "office" mode
+- [ ] "CUA" mode
+
+    - "extra" on CUA-base which might conflict with emacs/vi, including
+      control-letter and function keys.
 
     - C-c for copy, C-x for cut, C-v for paste,
     - C-a select all

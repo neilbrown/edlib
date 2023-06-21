@@ -60,6 +60,24 @@ static inline void buf_reinit(struct buf *b safe)
 	b->len = 0;
 }
 
+/* Formatting can be embedded in text strings in some places using
+ * SOH STX ETX.
+ * SOH format-attributes STX the text ETX
+ * "the text" can contain nested SOH/STX/ETX sequences.
+ * The same can be done with
+ *  < format-attributes> the text </a>
+ * but that is being phased out.
+ */
+#define SOH "\001"
+#define STX "\002"
+#define ETX "\003"
+#define soh '\001'
+#define stx '\002'
+#define etx '\003'
+/* ACK is used as a no-op. */
+#define ack '\006'
+#define ACK "\006"
+
 /* Performance measurements.
  * 1/ timers.
  */
