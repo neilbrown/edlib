@@ -973,7 +973,9 @@ DEF_CMD(renderline)
 					offset == (start - line_start)
 					? in_tab : -1,
 					posx, scale);
-			if (w > 1) {
+			if (ret == WRAP)
+				;
+			else if (w > 1) {
 				line -= 1;
 				in_tab = -1; // suppress extra cursors
 			} else
