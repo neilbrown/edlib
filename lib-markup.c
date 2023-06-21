@@ -427,7 +427,7 @@ DEF_CMD(render_line)
 		}
 		if (ch == '\r' && noret) {
 			/* do nothing */
-		} else if (ch < ' ' && ch != '\t' && is_true_eol) {
+		} else if (ch < ' ' && ch != '\t') {
 			buf_concat(&b, "<fg:red>^");
 			buf_append(&b, '@' + ch);
 			buf_concat(&b, "</>");
