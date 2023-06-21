@@ -988,7 +988,7 @@ DEF_CMD(renderline)
 			buf[1] = ch + '@';
 			buf[2] = 0;
 			b = buf+2;
-			buf_concat(&attr, ",underline,fg:red,");
+			buf_concat(&attr, ",inverse,fg:red,");
 			in_lws = False;
 			ret = draw_some(p, focus, &rlst, &x, buf, &b,
 					buf_final(&attr), in_lws,
