@@ -102,20 +102,25 @@ class PresenterPane(edlib.Pane):
         return self.vmark_at_or_before(self.attrview, m)
 
     def get_line_at(self, m):
-        # call render-line at m
-        try:
-            s = self.parent.call("doc:render-line", self, m, -1, ret = 'str')
-        except:
-            s = ''
-        return s if s else ''
+        # Fetch line at 'm' and quote '<', moving 'm' to next line.
+        s = m.dup()
+        self.call("doc:EOL", 1, 1, m)
+        ret = self.call("doc:get-str", s, m, ret='str')
+        if not ret:
+            ret = ""
+        return "<<".join(ret.split('<'))
 
     def get_line_before(self, m):
+        # Fetch line before m, quoting '<'
         m2 = m.dup()
-        ret = self.parent.call("doc:render-line-prev", self, m2, 1)
-        if ret <= 0:
+        self.call("doc:EOL", -2, m2)
+        if m2 == m:
+            # At start of file
             return None
-        l = self.get_line_at(m2)
-        return l
+        ret = self.call("doc:get-str", m2, m, ret='str')
+        if not ret:
+            ret = ""
+        return "<<".join(ret.split('<'))
 
     def print_line_at(self, m):
         x = m.dup()
@@ -491,7 +496,7 @@ class PresenterPane(edlib.Pane):
         # Go to start of page
         if num == 0:
             # just make sure at start of line
-            return self.parent.call("doc:render-line-prev", mark)
+            return self.call("doc:EOL", mark, -1)
 
         start = self.find_pages(mark)
         if not start:
