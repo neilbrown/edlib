@@ -43,17 +43,44 @@ struct rlcb {
 	int cursor_offset;
 };
 
+static void strip_attrs(char *c safe)
+{
+	char *n = c;
+	if (*c == ack) {
+		for (; *c; c++) {
+			if (*c == ack || *c == etx)
+				continue;
+			if (*c != soh) {
+				*n++ = *c;
+				continue;
+			}
+			while (*c != stx)
+				c++;
+		}
+	} else {
+		for (; *c ; c++) {
+			if (*c == '<' && c[1] == '<') {
+				*n++ = *c++;
+				continue;
+			}
+			if (*c != '<') {
+				*n++ = *c;
+				continue;
+			}
+			while (*c != '>')
+				c++;
+		}
+	}
+	*n = 0;
+}
+
 DEF_CB(rlcb)
 {
 	struct rlcb *cb = container_of(ci->comm, struct rlcb, c);
 	char *c = ci->str ? strdup(ci->str) : NULL;
-	if (c && ci->num2 != -1) {
-		int i;
-		for (i = 0; c[i] ; i++) {
-			if (c[i] == '<')
-				memmove(c+i, c+i+1, strlen(c+i));
-		}
-	}
+	if (c && strcmp(ci->key, "attr") != 0)
+		/* This is a rendered line so we need to strip out attrs. */
+		strip_attrs(c);
 	if (cb->fd == NULL)
 		cb->cmp = 0; /* Don't compare, just save */
 	else if (c == NULL)
@@ -151,10 +178,9 @@ DEF_CMD(render_filter_line)
 		mark_to_mark(ci->mark, m);
 		cb.cmp = 0;
 		if (fd->attr) {
-			comm_call(&cb.c, "", ci->focus,
+			comm_call(&cb.c, "attr", ci->focus,
 				  NO_NUMERIC, NULL,
-				  pane_mark_attr(ci->focus, m, fd->attr),
-				  -1);
+				  pane_mark_attr(ci->focus, m, fd->attr));
 			home_call(ci->home->parent, ci->key, ci->focus,
 				  NO_NUMERIC, m);
 		} else
@@ -187,10 +213,9 @@ DEF_CMD(render_filter_line)
 		mark_to_mark(ci->mark, m);
 		cb.cmp = 0;
 		if (fd->attr) {
-			comm_call(&cb.c, "", ci->focus,
+			comm_call(&cb.c, "attr", ci->focus,
 				  NO_NUMERIC, NULL,
-				  pane_mark_attr(ci->focus, m, fd->attr),
-				  -1);
+				  pane_mark_attr(ci->focus, m, fd->attr));
 			home_call(ci->home->parent, ci->key, ci->focus,
 				  NO_NUMERIC, m);
 		} else
@@ -236,9 +261,9 @@ static int do_filter_line_prev(struct filter_data *fd safe,
 	cb.keep = !!savestr;
 	cb.str = NULL;
 	if (fd->attr) {
-		comm_call(&cb.c, "", focus,
+		comm_call(&cb.c, "attr", focus,
 			  NO_NUMERIC, NULL,
-			  pane_mark_attr(focus, m, fd->attr), -1);
+			  pane_mark_attr(focus, m, fd->attr));
 	} else {
 		struct mark *m2 = mark_dup(m);
 
