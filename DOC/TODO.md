@@ -19,7 +19,7 @@ the file.
 ### Small
 
 - [X] detect and limit recursion.
-- [ ] message-line: use lib-renderline for the one line, so we have
+- [X] message-line: use lib-renderline for the one line, so we have
       markup support.
 - [ ] history: Make it possible to search through history. Maybe Alt-p only shows
       lines containing current content.
@@ -419,8 +419,11 @@ Module features
 
 ### message-line
 
+- [ ] reset timer each time so that message stay an exact period, and
+      timestamp updates on the minute.
+- [ ] allow marked-up messages to be given.
 - [ ] Differentiate warnings from info, and blink-screen for warnings.
-- [ ] use lib-renderline for the one line, so we have markup support.
+- [X] use lib-renderline for the one line, so we have markup support.
 
 ### docs
 

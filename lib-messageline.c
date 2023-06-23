@@ -32,20 +32,12 @@ struct mlinfo {
 			 */
 	struct pane *line safe, *child;
 	struct pane *log;
-	int height; /* height of line */
-	int ascent; /* how far down to baseline */
 	int hidden;
 	time_t last_message; /* message should stay for at least 10 seconds */
 };
 static struct pane *do_messageline_attach(struct pane *p safe);
-static struct map *messageline_map, *messageline_line_map;
+static struct map *messageline_map;
 DEF_LOOKUP_CMD(messageline_handle, messageline_map);
-DEF_LOOKUP_CMD(messageline_line_handle, messageline_line_map);
-
-static void pane_str(struct pane *p safe, char *s, char *attr, int x, int y)
-{
-	call("Draw:text", p, -1, NULL, s, 0, NULL, attr, x, y);
-}
 
 DEF_CMD(messageline_clone)
 {
@@ -97,7 +89,7 @@ DEF_CMD(messageline_msg)
 				     0, NULL, ci->str);
 		}
 		time(&mli->last_message);
-		pane_damaged(mli->line, DAMAGED_REFRESH);
+		pane_damaged(ci->home, DAMAGED_VIEW);
 	}
 	if (strcmp(ci->key, "Message:broadcast") == 0)
 		return 1; /* Acknowledge message */
@@ -118,37 +110,32 @@ DEF_CMD(messageline_abort)
 	free(mli->modal);
 	mli->modal = NULL;
 	time(&mli->last_message);
-	pane_damaged(mli->line, DAMAGED_REFRESH);
+	pane_damaged(ci->home, DAMAGED_VIEW);
 	return Efallthrough;
 }
 
 DEF_CMD(messageline_refresh_size)
 {
 	struct mlinfo *mli = ci->home->data;
-	if (mli->height == 0) {
-		struct call_return cr =
-			call_ret(all, "Draw:text-size", ci->home, -1, NULL, "M",
-				 0, NULL, "bold");
-		mli->height = cr.y;
-		mli->ascent = cr.i2;
-	}
+	struct pane *p = mli->line;
 
 	if (mli->hidden) {
-		pane_resize(mli->line, 0, ci->home->h,
-			    ci->home->w, mli->height);
+		pane_resize(p, 0, ci->home->h,
+			    ci->home->w, ci->home->h / 3);
 		if (mli->child)
 			pane_resize(mli->child, 0, 0,
 				    ci->home->w, ci->home->h);
 	} else {
-		pane_resize(mli->line, 0, ci->home->h - mli->height,
-			    ci->home->w, mli->height);
-		if (mli->child && ci->home->h > mli->height)
+		pane_resize(p, p->x, p->y, ci->home->w, ci->home->h/3);
+		call("render-line:measure", p);
+		pane_resize(p, p->x, ci->home->h - p->h,
+			    ci->home->w, p->h);
+		if (mli->child && ci->home->h > p->h)
 			pane_resize(mli->child, 0, 0,
 				    ci->home->w,
-				    ci->home->h - mli->height);
+				    ci->home->h - p->h);
 	}
-	pane_damaged(ci->home, DAMAGED_REFRESH);
-	pane_damaged(mli->line, DAMAGED_REFRESH);
+	pane_damaged(p, DAMAGED_REFRESH);
 	return 1;
 }
 
@@ -185,13 +172,13 @@ DEF_CMD(messageline_notify)
 		mli->modal = NULL;
 		if (mli->message)
 			mli->last_message = time(NULL);
-		pane_damaged(mli->line, DAMAGED_REFRESH);
+		pane_damaged(ci->home, DAMAGED_VIEW);
 	}
 	if (mli->message &&
 	    time(NULL) >= mli->last_message + wait_time) {
 		free(mli->message);
 		mli->message = NULL;
-		pane_damaged(mli->line, DAMAGED_REFRESH);
+		pane_damaged(ci->home, DAMAGED_VIEW);
 	}
 	if (!mli->message && !mli->modal) {
 		pane_drop_notifiers(ci->home, "Keystroke-notify");
@@ -200,11 +187,27 @@ DEF_CMD(messageline_notify)
 	return 1;
 }
 
-DEF_CMD(messageline_line_refresh)
+static void pane_str(struct pane *p safe, char *s, char *attr)
+{
+	struct mlinfo *mli = p->parent->data;
+	char *l = strconcat(p, SOH, attr, STX, s, ETX);
+	call("render-line:set", p, -1, NULL, l);
+	/* Allow message line to use up to 1/3 of total height */
+	pane_resize(p, p->x, p->y, p->w, p->parent->h/3);
+	call("render-line:measure", p);
+	if (!mli->hidden) {
+		pane_resize(p, p->x, p->parent->h - p->h, p->w, p->h);
+		if (mli->child) {
+			struct pane *c = mli->child;
+			pane_resize(c, 0, 0, c->w, p->parent->h - p->h);
+		}
+	}
+}
+
+DEF_CMD(messageline_refresh)
 {
 	struct mlinfo *mli = ci->home->data;
 
-	call("Draw:clear", mli->line, 0, NULL, "bg:white");
 	if (mli->message && !mli->modal &&
 	    time(NULL) >= mli->last_message + 30) {
 		free(mli->message);
@@ -213,11 +216,9 @@ DEF_CMD(messageline_line_refresh)
 		pane_drop_notifiers(ci->home, "Mouse-event-notify");
 	}
 	if (mli->modal)
-		pane_str(mli->line, mli->modal, "bold,fg:magenta-60,bg:white",
-			 0, 0 + mli->ascent);
+		pane_str(mli->line, mli->modal, "bold,fg:magenta-60,bg:white");
 	else if (mli->message)
-		pane_str(mli->line, mli->message, "bold,fg:red,bg:cyan",
-			 0, 0 + mli->ascent);
+		pane_str(mli->line, mli->message, "bold,fg:red,bg:cyan");
 	else {
 		char buf[80];
 		time_t t;
@@ -231,15 +232,14 @@ DEF_CMD(messageline_line_refresh)
 			strftime(buf, sizeof(buf), "%H:%M %d-%b-%Y", tm);
 		else
 			buf[0] = 0;
-		pane_str(mli->line, buf, "bold,fg:blue",
-			 0, 0 + mli->ascent);
+		pane_str(mli->line, buf, "bold,fg:blue");
 	}
 	return 1;
 }
 
 DEF_CMD(force_refresh)
 {
-	pane_damaged(ci->home, DAMAGED_REFRESH);
+	pane_damaged(ci->home, DAMAGED_VIEW);
 	return 1;
 }
 
@@ -254,20 +254,23 @@ static struct pane *do_messageline_attach(struct pane *p safe)
 		return NULL;
 	call("editor:request:Message:broadcast", ret);
 	/* z=1 to avoid clone_children affecting it */
-	mlp = pane_register(ret, 1, &messageline_line_handle.c, mli);
+	mlp = call_ret(pane, "attach-renderline", ret, 1);
 	if (!mlp) {
 		pane_close(ret);
 		return NULL;
 	}
+	/* Support wrapping */
+	attr_set_int(&mlp->attrs, "shift_left", -1);
+	pane_damaged(ret, DAMAGED_VIEW);
 	mli->line = mlp;
 	pane_focus(ret);
 	if (!edlib_testing(p))
 		/* This can introduce unwanted variablitiy in tests */
-		call_comm("event:timer", mli->line, &force_refresh, 15000);
+		call_comm("event:timer", ret, &force_refresh, 15000);
 
 	mli->log = call_ret(pane, "docs:byname", p, 0, NULL, "*Messages*");
 	if (!mli->log)
-		mli->log = call_ret(pane, "log:create", p, 0, NULL,
+		mli->log = call_ret(pane, "log:create", ret, 0, NULL,
 				    "*Messages*");
 
 	return ret;
@@ -303,7 +306,5 @@ void edlib_init(struct pane *ed safe)
 	key_add(messageline_map, "Child-Notify",&messageline_child_notify);
 	key_add(messageline_map, "Keystroke-notify", &messageline_notify);
 	key_add(messageline_map, "Mouse-event-notify", &messageline_notify);
-
-	messageline_line_map = key_alloc();
-	key_add(messageline_line_map, "Refresh", &messageline_line_refresh);
+	key_add(messageline_map, "Refresh:view", &messageline_refresh);
 }
