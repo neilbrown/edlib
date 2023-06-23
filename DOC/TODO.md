@@ -77,6 +77,14 @@ Core features
       notifications.
       It would mean more modules would need a private pane, but might
       I want that to support module unload anyway?
+      multicall- is currently used for:
+      - open-doc- to find something to open a given file type
+          doc-dir doc-email doc-text
+      - doc:appeared- to configure doc based on name
+          doc-docs hex c-mode viewer autosave calc mergeview config presenter
+      - startup- for initialising editor
+          autosave server
+
 - [ ] if a view creation fails - like render_master_view_attach
       hitting a python error - there will be no active view so the
       screen will be meaningless.  I need to properly abort and
