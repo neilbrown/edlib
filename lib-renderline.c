@@ -47,6 +47,7 @@ struct rline_data {
 	short		curs_width;
 	int		scale;
 	const char	*line;
+	int		curspos;
 };
 
 enum {
@@ -625,9 +626,10 @@ static void set_xypos(struct render_list *rlst,
  * The marked-up text to be processed has already been provided with
  *   render-line:set.  It is in rd->line;
  * ->num is <0, or an index into ->str where the cursor is,
+ *   but is ignored for Refresh. which uses ->curspos for any cursor.
  *   and the x,y co-ords will be stored in p->cx,p->cy
- * If key is "render-line:draw", then send drawing commands, otherwise
- * just perform measurements.
+ * If key is "render-line:draw" or "Refresh" then send drawing commands,
+ * otherwise just perform measurements.
  * If key is "render-line:findxy", then only measure until the position
  *   in x,y is reached, then return an index into ->str of where we reached.
  *   Store the attributes active at the time so they can be fetched later.
@@ -638,9 +640,10 @@ DEF_CMD(renderline)
 	struct rline_data *rd = p->data;
 	struct pane *focus = ci->focus;
 	const char *line = rd->line;
-	int dodraw = strcmp(ci->key, "render-line:draw") == 0;
+	int dodraw = (strcmp(ci->key, "render-line:draw") == 0 ||
+		      strcmp(ci->key, "Refresh") == 0);
 	short posx;
-	short offset = ci->num;
+	short offset = strcmp(ci->key, "Refresh") == 0 ? rd->curspos : ci->num;
 	int x = 0;
 	int y = 0;
 	const char *line_start;
@@ -1133,6 +1136,7 @@ DEF_CMD(renderline_set)
 		rd->line = cvt(strdup(ci->str));
 	else
 		rd->line = NULL;
+	rd->curspos = ci->num;
 	if (strcmp(rd->line ?:"", old ?:"") != 0 ||
 	    (old && xyscale.x != rd->scale)) {
 		pane_damaged(ci->home, DAMAGED_REFRESH);
@@ -1164,6 +1168,7 @@ DEF_CMD(renderline_attach)
 	if (!rl_map) {
 		rl_map = key_alloc();
 		key_add(rl_map, "render-line:draw", &renderline);
+		key_add(rl_map, "Refresh", &renderline);
 		key_add(rl_map, "render-line:measure", &renderline);
 		key_add(rl_map, "render-line:findxy", &renderline);
 		key_add(rl_map, "get-attr", &renderline_get);
