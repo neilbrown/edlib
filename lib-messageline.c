@@ -79,14 +79,20 @@ DEF_CMD(messageline_msg)
 		}
 		if (strcmp(ci->key, "Message:modal") == 0) {
 			free(mli->modal);
-			mli->modal = strdup(ci->str);
+			if (ci->str[0])
+				mli->modal = strdup(ci->str);
+			else
+				mli->modal = NULL;
 		} else {
 			free(mli->message);
-			mli->message = strdup(ci->str);
+			if (ci->str[0])
+				mli->message = strdup(ci->str);
+			else
+				mli->message = NULL;
 			/* x==0 check ensures we only append message once when
 			 * it comes in via a broadcast notification
 			 */
-			if (ci->x == 0 && mli->log)
+			if (ci->x == 0 && mli->log && ci->str[0])
 				call("doc:log:append", mli->log,
 				     0, NULL, ci->str);
 		}
