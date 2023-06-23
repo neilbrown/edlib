@@ -1173,7 +1173,7 @@ DEF_CMD(renderline_attach)
 	}
 
 	alloc(rd, pane);
-	p = pane_register(ci->focus, -10, &renderline_handle.c, rd);
+	p = pane_register(ci->focus, ci->num, &renderline_handle.c, rd);
 	if (!p) {
 		unalloc(rd, pane);
 		return Efail;

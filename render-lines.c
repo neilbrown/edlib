@@ -148,7 +148,7 @@ static void vmark_free(struct mark *m safe)
 static void vmark_set(struct pane *p safe, struct mark *m safe, char *line safe)
 {
 	if (!m->mdata)
-		m->mdata = call_ret(pane, "attach-renderline", p);
+		m->mdata = call_ret(pane, "attach-renderline", p, -1);
 	if (m->mdata)
 		pane_call(m->mdata, "render-line:set", p, 0, NULL, line);
 }
