@@ -46,6 +46,37 @@ struct rlcb {
 	const char *prefix safe, *str;
 };
 
+static void strip_attrs(char *c safe)
+{
+	char *n = c;
+	if (*c == ack) {
+		for (; *c; c++) {
+			if (*c == ack || *c == etx)
+				continue;
+			if (*c != soh) {
+				*n++ = *c;
+				continue;
+			}
+			while (*c != stx)
+				c++;
+		}
+	} else {
+		for (; *c ; c++) {
+			if (*c == '<' && c[1] == '<') {
+				*n++ = *c++;
+				continue;
+			}
+			if (*c != '<') {
+				*n++ = *c;
+				continue;
+			}
+			while (*c != '>')
+				c++;
+		}
+	}
+	*n = 0;
+}
+
 static char *add_highlight_prefix(const char *orig, int start, int plen,
 				  const char *attr safe, int *offset)
 {
@@ -467,7 +498,6 @@ DEF_CMD(complete_return)
 	/* submit the selected entry to the popup */
 	struct call_return cr;
 	int l;
-	char *c1, *c2;
 
 	if (!ci->mark)
 		return Enoarg;
@@ -481,24 +511,10 @@ DEF_CMD(complete_return)
 		  NULL, 0,0, &cr.c);
 	if (!cr.s)
 		return 1;
+	strip_attrs(cr.s);
 	l = strlen(cr.s);
 	if (l && cr.s[l-1] == '\n')
 		cr.s[l-1] = 0;
-	c1 = c2 = cr.s;
-	while (*c2) {
-		if (*c2 != '<') {
-			*c1++ = *c2++;
-			continue;
-		}
-		c2 += 1;
-		if (*c2 == '<') {
-			*c1++ = *c2++;
-			continue;
-		}
-		while (*c2 && c2[-1] != '>')
-			c2++;
-	}
-	*c1 = 0;
 
 	call("popup:close", ci->home->parent, NO_NUMERIC, NULL,
 	     cr.s, 0);
