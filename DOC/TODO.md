@@ -322,7 +322,7 @@ Module features
 - [ ] the background "call:" option should report if background was changed.
       An attribute could store chosen information for comparison.
       Would need a 'force' flag.
-- [ ] Replace <attr> text </> in markup with SOH attr STX text ETX
+- [X] Replace <attr> text </> in markup with SOH attr STX text ETX
       This also affects lib-markup and others.
 - [ ] I regularly hit problems because ->mdata is not up to date and we render
       to find a cursor and compare with ->mdata and get confusion.  How can I avoid this?

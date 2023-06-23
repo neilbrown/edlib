@@ -113,7 +113,7 @@ DEF_CMD(render_prev)
  * above it in the stack and push them onto tmpst, which is then in
  * reverse priority order.  As we do that, we count them in 'popped'.
  * Changes can be made in the secondary stack.
- * When all change have been made, we add 'popped' "</>" marked to the output,
+ * When all change have been made, we add 'popped' ETX marked to the output,
  * then process everything in 'tmpst', either discarding it if end<=chars, or
  * outputting the attributes and pushing back on 'ast'.
  */
@@ -181,7 +181,7 @@ static void as_repush(struct attr_return *ar safe, struct buf *b safe)
 	struct attr_stack *to = ar->ast;
 
 	while (ar->popped > 0) {
-		buf_concat(b, "</>");
+		buf_append(b, etx);
 		ar->popped -= 1;
 	}
 
@@ -191,9 +191,9 @@ static void as_repush(struct attr_return *ar safe, struct buf *b safe)
 			free(from->attr);
 			free(from);
 		} else {
-			buf_append(b, '<');
+			buf_append(b, soh);
 			buf_concat(b, from->attr);
-			buf_append(b, '>');
+			buf_append(b, stx);
 			from->next = to;
 			to = from;
 			if (from->end < ar->min_end)
@@ -266,11 +266,8 @@ DEF_CB(text_attr_callback)
 	if (ci->str2) {
 		const char *c = ci->str2;
 		wint_t wch;
-		while ((wch = get_utf8(&c, NULL)) != WEOF) {
-			if (wch == '<')
-				buf_append(&ar->insert, '<');
+		while ((wch = get_utf8(&c, NULL)) != WEOF)
 			buf_append(&ar->insert, wch);
-		}
 	}
 	return 1;
 }
@@ -297,8 +294,6 @@ DEF_CMD(render_line)
 {
 	/* Render the line from 'mark' to the first '\n' or until
 	 * 'num' chars.
-	 * Convert '<' to '<<' and if a char has the 'highlight' attribute,
-	 * include that between '<>'.
 	 */
 	struct buf b;
 	struct pane *focus = ci->focus;
@@ -354,6 +349,8 @@ DEF_CMD(render_line)
 	doc_boundary = call_ret(mark, "doc:get-boundary", focus, 1, m);
 
 	buf_init(&b);
+	/* Assert that '<' are not quoted */
+	buf_append(&b, ack);
 	call_comm("map-attr", focus, &ar.rtn, 0, m, "start-of-line");
 	if (ar.insert.len) {
 		buf_concat(&b, buf_final(&ar.insert));
@@ -418,26 +415,19 @@ DEF_CMD(render_line)
 		chars++;
 		if (ar.ast && strcmp(ar.ast->attr, "hide") == 0)
 			continue;
-		if (ch == '<') {
-			if (o >= 0 && b.len+1 >= o) {
-				doc_prev(focus, m);
-				break;
-			}
-			buf_append(&b, '<');
-		}
 		if (ch == '\r' && noret) {
 			/* do nothing */
 		} else if (ch < ' ' && ch != '\t') {
-			buf_concat(&b, "<fg:red>^");
+			buf_concat(&b, SOH "fg:red" STX "^");
 			buf_append(&b, '@' + ch);
-			buf_concat(&b, "</>");
+			buf_concat(&b, ETX);
 		} else if (ch == 0x7f) {
-			buf_concat(&b, "<fg:red>^?</>");
+			buf_concat(&b, SOH "fg:red" STX "^?" ETX);
 		} else if (ch >= 0x80 && iswcntrl(ch)) {
 			/* Extra unicode control */
-			buf_concat(&b, "<fg:magenta>^");
+			buf_concat(&b, SOH "fg:magenta" STX "^");
 			buf_append(&b, 96 + (ch & 0x1f));
-			buf_concat(&b, "</>");
+			buf_concat(&b, ETX);
 		} else
 			buf_append(&b, ch);
 	}
