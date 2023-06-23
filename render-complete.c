@@ -78,16 +78,26 @@ static void strip_attrs(char *c safe)
 }
 
 static const char *add_highlight(const char *orig, int start, int len,
-				 const char *attr safe, int *offset)
+				 const char *attr safe, int *offset, int *cpos)
 {
 	/* Create a copy of 'orig' with all non-attr chars from start for len
 	 * given the extra 'attr'.  start and len count non-attr chars.
 	 * If offset!=NULL, stop when we get to that place in the result,
 	 * and update *offset with that place in orig.
+	 * If cpos, then when we reach cpos in orig, report len of result.
 	 */
 	struct buf ret;
 	const char *c safe;
 	bool use_lt = True;
+	int cp = -1;
+
+	if (!len)
+		return orig;
+
+	if (cpos) {
+		cp = *cpos;
+		*cpos = -1;
+	}
 
 	if (!len)
 		return orig;
@@ -102,6 +112,8 @@ static const char *add_highlight(const char *orig, int start, int len,
 		c++;
 	}
 	while (*c && (!offset || ret.len < *offset)) {
+		if (cp >= 0 && (c-orig) >= cp && *cpos == -1)
+			*cpos = ret.len;
 		if ((use_lt && (*c != '<' || c[1] == '<')) ||
 		    (!use_lt && (*c != ack && *c != soh && *c != etx))) {
 			/* This is regular text */
@@ -165,6 +177,14 @@ static const char *add_highlight(const char *orig, int start, int len,
 	return buf_final(&ret);
 }
 
+DEF_CMD(get_offset)
+{
+	if (ci->num < 0)
+		return 1;
+	else
+		return ci->num + 1;
+}
+
 DEF_CMD(render_complete_line)
 {
 	struct complete_data *cd = ci->home->data;
@@ -173,6 +193,7 @@ DEF_CMD(render_complete_line)
 	const char *match;
 	int ret, startlen;
 	struct mark *m;
+	int offset = 0;
 
 	if (!ci->mark)
 		return Enoarg;
@@ -199,32 +220,36 @@ DEF_CMD(render_complete_line)
 		 * of highlighted line.
 		 */
 		int num = ci->num;
-		hl = add_highlight(line, startlen, strlen(match), "fg:red", &num);
+		hl = add_highlight(line, startlen, strlen(match), "fg:red", &num, NULL);
 		if (hl != line)
 			free((void*)hl);
 		free(line);
 		mark_free(m);
 		line = call_ret(str, ci->key, ci->home->parent,
 				num, ci->mark);
-	} else if (ci->mark2) { //FIXME
+	} else if (ci->mark2) {
 		/* Only want up-to the cursor, which might be in the middle of
 		 * the highlighted region.  Now we know where that is, we can
 		 * highlight whatever part is still visible.
 		 */
-		free(line);
 		mark_free(m);
-		line = call_ret(str, ci->key, ci->home->parent,
+		offset = call_comm(ci->key, ci->home->parent, &get_offset,
 				ci->num, ci->mark, NULL,
 				0, ci->mark2);
+		if (offset >= 1)
+			offset -= 1;
+		else
+			offset = -1;
 	} else {
 		mark_to_mark(ci->mark, m);
 		mark_free(m);
 	}
 	if (!line)
 		return Efail;
-	hl = add_highlight(line, startlen, strlen(match), "fg:red", NULL);
+	hl = add_highlight(line, startlen, strlen(match), "fg:red", NULL, &offset);
 
-	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, hl);
+	ret = comm_call(ci->comm2, "callback:render", ci->focus,
+			offset, NULL, hl);
 	if (hl != line)
 		free((void*)hl);
 	free(line);
