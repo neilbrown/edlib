@@ -77,41 +77,88 @@ static void strip_attrs(char *c safe)
 	*n = 0;
 }
 
-static char *add_highlight_prefix(const char *orig, int start, int plen,
-				  const char *attr safe, int *offset)
+static const char *add_highlight(const char *orig, int start, int len,
+				 const char *attr safe, int *offset)
 {
+	/* Create a copy of 'orig' with all non-attr chars from start for len
+	 * given the extra 'attr'.  start and len count non-attr chars.
+	 * If offset!=NULL, stop when we get to that place in the result,
+	 * and update *offset with that place in orig.
+	 */
 	struct buf ret;
 	const char *c safe;
+	bool use_lt = True;
+
+	if (!len)
+		return orig;
 
 	if (orig == NULL)
 		return NULL;
 	buf_init(&ret);
 	c = orig;
-	while (start > 0 && *c && (!offset || ret.len < *offset)) {
-		if (*c == '<')
-			buf_append_byte(&ret, *c++);
-		buf_append_byte(&ret, *c++);
-		start -= 1;
+	if (*c == ack) {
+		use_lt = False;
+		buf_append_byte(&ret, ack);
+		c++;
 	}
-	if (!*c || (offset && ret.len >= *offset)) {
-		/* Nothing here to highlight */
-		if (offset)
-			*offset = c - orig;
-		return buf_final(&ret);
-	}
-
-	buf_concat(&ret, attr);
-	while (plen > 0 && *c && (!offset || ret.len < *offset)) {
-		if (*c == '<')
-			buf_append_byte(&ret, *c++);
-		buf_append_byte(&ret, *c++);
-		plen -= 1;
-	}
-	buf_concat(&ret, "</>");
 	while (*c && (!offset || ret.len < *offset)) {
-		if (*c == '<')
+		if ((use_lt && (*c != '<' || c[1] == '<')) ||
+		    (!use_lt && (*c != ack && *c != soh && *c != etx))) {
+			/* This is regular text */
+			if (start > 0)
+				start -= 1;
+			else if (start == 0) {
+				if (use_lt) {
+					buf_append(&ret, '<');
+					buf_concat(&ret, attr);
+					buf_append(&ret, '>');
+				} else {
+					buf_append(&ret, soh);
+					buf_concat(&ret, attr);
+					buf_append(&ret, stx);
+				}
+				start = -1;
+			}
+			if (use_lt && *c == '<')
+				buf_append_byte(&ret, *c++);
 			buf_append_byte(&ret, *c++);
-		buf_append_byte(&ret, *c++);
+			if (start < 0 && len > 0) {
+				len -= 1;
+				if (len == 0) {
+					if (use_lt)
+						buf_concat(&ret, "</>");
+					else
+						buf_append(&ret, etx);
+				}
+			}
+			continue;
+		}
+		/* Not regular text. */
+		if (start < 0 && len > 0) {
+			/* Close the attr highlight */
+			start = 0;
+			if (use_lt)
+				buf_concat(&ret, "</>");
+			else
+				buf_append(&ret, etx);
+		}
+		if (!use_lt) {
+			buf_append(&ret, *c);
+			if (*c == ack || *c == etx) {
+				c++;
+				continue;
+			}
+			c++;
+			while (*c && *c != etx)
+				buf_append(&ret, *c++);
+			if (*c)
+				buf_append(&ret, *c++);
+		} else {
+			while (*c && *c != '>')
+				buf_append_byte(&ret, *c++);
+			if (*c)
+				buf_append(&ret, *c++);
+		}
 	}
 	if (offset)
 		*offset = c - orig;
@@ -121,7 +168,8 @@ static char *add_highlight_prefix(const char *orig, int start, int plen,
 DEF_CMD(render_complete_line)
 {
 	struct complete_data *cd = ci->home->data;
-	char *line, *start, *hl;
+	char *line, *l2, *start = NULL;
+	const char *hl;
 	const char *match;
 	int ret, startlen;
 	struct mark *m;
@@ -136,20 +184,24 @@ DEF_CMD(render_complete_line)
 		return Efail;
 	}
 	match = cd->stk->substr;
-	start = strcasestr(line, match);
+	l2 = strsave(ci->home, line);
+	if (l2){
+		strip_attrs(l2);
+		start = strcasestr(l2, match);
+	}
 	if (!start)
 		startlen = 0;
 	else
-		startlen = start - line;
+		startlen = start - l2;
 	if (ci->num >= 0) {
 		/* Only want 'num' bytes from start, with ->mark positioned.
 		 * So need to find how many bytes of 'line' produce num bytes
 		 * of highlighted line.
 		 */
 		int num = ci->num;
-		hl = add_highlight_prefix(line, startlen, strlen(match),
-					  "<fg:red>", &num);
-		free(hl);
+		hl = add_highlight(line, startlen, strlen(match), "fg:red", &num);
+		if (hl != line)
+			free((void*)hl);
 		free(line);
 		mark_free(m);
 		line = call_ret(str, ci->key, ci->home->parent,
@@ -170,10 +222,11 @@ DEF_CMD(render_complete_line)
 	}
 	if (!line)
 		return Efail;
-	hl = add_highlight_prefix(line, startlen, strlen(match), "<fg:red>", NULL);
+	hl = add_highlight(line, startlen, strlen(match), "fg:red", NULL);
 
 	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, hl);
-	free(hl);
+	if (hl != line)
+		free((void*)hl);
 	free(line);
 	return ret;
 }
