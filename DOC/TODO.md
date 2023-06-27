@@ -768,7 +768,7 @@ Module features
 - [X] C config module that reads an ini-style file to set attributes
       based on path
 - [ ] configure "initial_panes"
-- [ ] discard old auto-load??
+- [X] discard old auto-load??
 - [ ] file patterns for "complete" to (optionally) ignore
 - [ ] read .gitignore and add to "ignore" list
 - [ ] top/bottom margin  - "render-vmargin" set on view or doc??

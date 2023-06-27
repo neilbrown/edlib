@@ -198,46 +198,6 @@ DEF_CMD(editor_load_module)
 	return Efail;
 }
 
-DEF_CMD(editor_auto_load)
-{
-	int ret;
-	struct ed_info *ei = ci->home->data;
-	struct map *map = ei->map;
-	const char *mod = ksuffix(ci, "attach-");
-	char *mod2 = NULL;
-
-	/* Check the key really doesn't exist, rather than
-	 * it fails
-	 */
-	if (key_lookup_cmd(map, ci->key))
-		return Efallthrough;
-
-	if (strstarts(mod, "doc-") ||
-	    strstarts(mod, "render-") ||
-	    strstarts(mod, "mode-") ||
-	    strstarts(mod, "display-"))
-		;
-	else {
-		const char *m = strrchr(ci->key, '-');
-		if (m) {
-			m += 1;
-			mod2 = malloc(4+strlen(m)+1);
-			strcpy(mod2, "lib-");
-			strcpy(mod2+4, m);
-			mod = mod2;
-		}
-	}
-
-	ret = call("global-load-module", ci->home, 0, NULL,
-		   mod, 0);
-	free(mod2);
-
-	if (ret > 0)
-		/* auto-load succeeded */
-		return key_lookup(map, ci);
-	return Efallthrough;
-}
-
 DEF_CMD(editor_auto_event)
 {
 	/* Event handlers register under a private name so we
@@ -512,7 +472,6 @@ struct pane *editor_new(void)
 		key_add(ed_map, "global-get-command", &global_get_command);
 		key_add(ed_map, "global-load-module", &editor_load_module);
 		key_add(ed_map, "global-config-dir", &global_config_dir);
-		key_add_prefix(ed_map, "attach-", &editor_auto_load);
 		key_add_prefix(ed_map, "event:", &editor_auto_event);
 		key_add_prefix(ed_map, "global-multicall-", &editor_multicall);
 		key_add_prefix(ed_map, "editor:request:",
