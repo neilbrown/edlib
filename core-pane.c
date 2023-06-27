@@ -95,7 +95,9 @@ void pane_damaged(struct pane *p, int type)
 	if (!p || (p->damaged | type) == p->damaged)
 		return;
 	if (p == p->parent && !p->damaged)
-		call_comm("event:on-idle", p, &pane_refresh, 1);
+		if (call_comm("event:on-idle", p, &pane_refresh, 1) <= 0)
+			/* Cannot register an event yet, ignore damage */
+			return;
 	if (type & (type-1)) {
 		/* multiple bits are set, handle
 		 * them separately
