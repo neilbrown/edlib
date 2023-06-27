@@ -217,15 +217,6 @@ DEF_CMD(editor_auto_event)
 	return key_lookup_prefix(map, ci);
 }
 
-static const char *initial_panes[] = {
-	"attach-x11selection",
-	"attach-messageline",
-	"attach-global-keymap",
-	"attach-mode-emacs",
-	"attach-tile",
-	NULL
-};
-
 DEF_CMD(editor_activate_display)
 {
 	/* Given a display attached to the root, integrate it
@@ -233,17 +224,30 @@ DEF_CMD(editor_activate_display)
 	 */
 	struct pane *disp = ci->focus;
 	struct pane *p, *p2;
-	int i;
+	char *ip = attr_find(ci->home->attrs, "editor-initial-panes");
+	char *save, *t, *m;
 
+	if (!ip)
+		return Efail;
+	ip = strsave(ci->home, ip);
 	p = pane_root(ci->focus);
-	p2 = call_ret(pane, "attach-input", p);
-	if (p2)
-		pane_reparent(disp, p2);
-	p = disp;
-	for (i = 0; initial_panes[i]; i++) {
-		const char *cmd = initial_panes[i];
-		if (cmd)
-			p2 = call_ret(pane, cmd, p);
+
+	for (t = strtok_r(ip, " \t\n", &save);
+	     t;
+	     t = strtok_r(NULL, " \t\n", &save)) {
+		if (!*t)
+			continue;
+		if (strcmp(t, "DISPLAY") == 0) {
+			if (disp) {
+				pane_reparent(disp, p);
+				p = disp;
+				disp = NULL;
+			}
+			continue;
+		}
+		m = strconcat(NULL, "attach-", t);
+		p2 = call_ret(pane, m, p);
+		free(m);
 		if (p2)
 			p = p2;
 	}
