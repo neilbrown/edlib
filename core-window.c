@@ -7,6 +7,7 @@
  * Provide a pane that is instantiated between the root and any window
  * stack, to provide common functionality.  These includes:
  *
+ * - setting per-window attributes
  * - registering and forwarding per-window notifications
  * - Being an intermediary for per-window selections.
  *
@@ -70,6 +71,21 @@ DEF_CMD(send_notify)
 				ci->focus,
 				ci->num, ci->mark, ci->str,
 				ci->num2, ci->mark2, ci->str2, ci->comm2);
+}
+
+DEF_CMD(window_set)
+{
+	const char *val = ksuffix(ci, "window:set:");
+
+	if (!*val)
+		val = ci->str2;
+	if (!val)
+		return Enoarg;
+
+	if (ci->str)
+		attr_set_str(&ci->home->attrs, val, ci->str);
+
+	return 1;
 }
 
 DEF_CMD(selection_claim)
@@ -165,6 +181,8 @@ void window_setup(struct pane *ed safe)
 	key_add_prefix(window_map, "window:notify:", &send_notify);
 
 	key_add(window_map, "Display:close", &window_close);
+
+	key_add_prefix(window_map, "window:set:", &window_set);
 
 	key_add(window_map, "selection:claim", &selection_claim);
 	key_add(window_map, "selection:commit", &selection_commit);

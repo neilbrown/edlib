@@ -107,15 +107,19 @@ int main(int argc, char *argv[])
 
 		p = call_ret(pane, "attach-display-ncurses", ed,
 			     0, NULL, "-", 0, NULL, TERM);
+		if (p)
+			p = call_ret(pane, "editor:activate-display", p);
 		if (p) {
 			char *e;
 			e = getenv("SSH_CONNECTION");
 			if (e && *e)
-				attr_set_str(&p->attrs, "REMOTE_SESSION", "yes");
+				call("window:set:REMOTE_SESSION", p,
+				     0, NULL, "yes");
 
-			attr_set_str(&p->attrs, "DISPLAY", getenv("DISPLAY"));
-			attr_set_str(&p->attrs, "XAUTHORITY", getenv("XAUTHORITY"));
-			p = call_ret(pane, "editor:activate-display", p);
+			call("window:set:DISPLAY", p,
+			     0, NULL, getenv("DISPLAY"));
+			call("window:set:XAUTHORITY", p,
+			     0, NULL, getenv("XAUTHORITY"));
 		}
 		if (p)
 			p = home_call_ret(pane, doc, "doc:attach-view",

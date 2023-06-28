@@ -145,10 +145,10 @@ try:
                     p = edlib.editor
                     p = p.call("attach-display-ncurses", path, env['TERM'],
                                ret='pane')
+                    self.term = p.call("editor:activate-display", ret='pane')
                     for v in env:
-                        p[v] = env[v]
+                        self.term.call("window:set:", env[v], v)
                     self.disp = p
-                    self.term = self.disp.call("editor:activate-display", ret='pane')
                     self.add_notify(self.disp, "Notify:Close")
                     self.sock.send(b"OK")
                     return 1
