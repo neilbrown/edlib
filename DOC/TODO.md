@@ -73,6 +73,8 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] Do I want "Display" as in "Display:close", or "window" as in
+      "window:notify".  Decide, and make everything consistent.
 - [ ] Do I really need global-multicall- or can I just use
       notifications.
       It would mean more modules would need a private pane, but might

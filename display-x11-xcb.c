@@ -438,6 +438,7 @@ DEF_CMD(xcb_close_display)
 	/* If this is only display, then refuse to close this one */
 	struct call_return cr;
 	struct xcb_data *xd = ci->home->data;
+
 	if (xd->noclose) {
 		call("Message", ci->focus, 0, NULL, xd->noclose);
 		return 1;
@@ -446,7 +447,7 @@ DEF_CMD(xcb_close_display)
 	cr.i = 0;
 	call_comm("editor:notify:all-displays", ci->focus, &cr.c);
 	if (cr.i > 1)
-		pane_close(ci->home);
+		return Efallthrough;
 	else
 		call("Message", ci->focus, 0, NULL,
 		     "Cannot close only window.");
@@ -1593,7 +1594,7 @@ static void handle_client_message(struct pane *home safe,
 	    cme->format == 32 &&
 	    cme->window == xd->win &&
 	    cme->data.data32[0] == xd->atoms[a_WM_DELETE_WINDOW]) {
-		pane_call(home, "Display:close", pane_leaf(home));
+		call("Display:close", pane_leaf(home));
 		return;
 	}
 
@@ -1692,8 +1693,10 @@ DEF_CMD(xcb_input)
 		}
 		xcb_flush(xd->conn);
 	}
-	if (xcb_connection_has_error(xd->conn))
+	if (xcb_connection_has_error(xd->conn)) {
+		call("Display:close", ci->home->parent);
 		pane_close(ci->home);
+	}
 	return ret;
 }
 

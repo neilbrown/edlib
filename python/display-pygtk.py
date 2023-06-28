@@ -50,7 +50,8 @@ class EdDisplay(edlib.Pane):
         self.panes = {}
         self.bg = {}
         self.win.set_title("EDLIB")
-        self.win.connect('destroy', self.close_win)
+        self.win.connect('destroy', self.destroy_win)
+        self.win.connect('delete-event', self.close_win)
         self.create_ui()
         # report approximate size of an "M"
         self["scale:M"] = "%dx%d" % (self.charwidth, self.lineheight)
@@ -79,7 +80,7 @@ class EdDisplay(edlib.Pane):
         x = []
         focus.call("editor:notify:all-displays", lambda key,**a:x.append(1))
         if len(x) > 1:
-            self.close_win()
+            return edlib.Efallthrough
         else:
             focus.call("Message", "Cannot close only window.")
         return 1
@@ -497,7 +498,12 @@ class EdDisplay(edlib.Pane):
         # This must not happen. What should I do?
 
     def close_win(self, *a):
-        self.close()
+        self.call("Display:close")
+        return True
+
+    def destroy_win(self, *a):
+        self.parent("Display:close")
+        return False
 
     def create_ui(self):
         text = Gtk.DrawingArea()

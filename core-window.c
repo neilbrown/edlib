@@ -151,12 +151,20 @@ DEF_CMD(window_attach)
 	return 1;
 }
 
+DEF_CMD(window_close)
+{
+	pane_close(ci->home);
+	return 1;
+}
+
 void window_setup(struct pane *ed safe)
 {
 	window_map = key_alloc();
 
 	key_add_prefix(window_map, "window:request:", &request_notify);
 	key_add_prefix(window_map, "window:notify:", &send_notify);
+
+	key_add(window_map, "Display:close", &window_close);
 
 	key_add(window_map, "selection:claim", &selection_claim);
 	key_add(window_map, "selection:commit", &selection_commit);

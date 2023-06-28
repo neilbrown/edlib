@@ -452,10 +452,10 @@ DEF_CMD(nc_close_display)
 	call_comm("editor:notify:all-displays", ci->focus, &cr.c);
 	if (cr.i > 1) {
 		/* Need to call ncurses_end() before we send a Notify:Close
-		 * notification, else server exists too early
+		 * notification, else server exits too early
 		 */
 		ncurses_end(ci->home);
-		pane_close(ci->home);
+		return Efallthrough;
 	} else
 		call("Message", ci->focus, 0, NULL,
 		     "Cannot close only window.");
