@@ -232,6 +232,11 @@ DEF_CMD(editor_activate_display)
 	ip = strsave(ci->home, ip);
 	p = pane_root(ci->focus);
 
+	p2 = call_ret(pane, "attach-window-core", p);
+	if (!p2)
+		return Efail;
+	p = p2;
+
 	for (t = strtok_r(ip, " \t\n", &save);
 	     t;
 	     t = strtok_r(NULL, " \t\n", &save)) {
@@ -496,6 +501,7 @@ struct pane *editor_new(void)
 	if (ed) {
 		doc_setup(ed);
 		log_setup(ed);
+		window_setup(ed);
 	}
 	return ed;
 }

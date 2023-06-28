@@ -6,38 +6,6 @@
  * This module transalates keystrokes and mouse events into commands.
  * This involves tracking the current 'mode' state.
  *
- * ==============================================================
- * This might belong in a separate pane/module but for now also:
- * Allow any pane to "claim ownership" of "the selection", or to
- * "commit" the selection.  A pane can also "discard" the selection,
- * but that only works if the pane owns it.
- *
- * This can be used for mouse-based copy/paste and interaction with the
- * X11 "PRIMARY" clipboard.
- * When a selection is made in any pane it claims "the selection".
- * When a mouse-based paste request is made, the receiving pane can ask for
- * the selection to be "commited", and then access the most recent copy-buffer.
- * The owner of a selection will, if the selection is still valid, call
- * copy:save to save the selected content.
- * When a "paste" request is made where the location is based on the "point"
- * (current cursor) it is unlikely that a selection in the same pane should be
- * used - if there is one it is more likely to be intended to receive the paste.
- * So the target pane can first "discard" the selection, then "commit", then call
- * "copy:get".  If the selection is in this pane, the "discard" will succeed,
- * the "commit" will be a no-op, and the top copy buf will be used.
- * If the selection is in another pane (or another app via X11), the "discard"
- * will fail (wrong owner), the "commit" will succeed and copy the selection,
- * and the "copy:get" will get it.
- *
- * Operations are "selection:claim", "selection:commit" and "selection:discard".
- * When the selection is claimed, the old owner gets called (not notified)
- * "Notify:selection:claimed", and when a commit request is made,
- * "Notify:selection:commit" is sent.
- *
- * A client can declare itself to be a fall-back handler by calling
- * select:claim with num==1.  Then if any other client discards its selection,
- * the ownership reverse to the fallback.  The fallback typically provides
- * access to some selection external to edlib, such as the x11 selections.
  */
 
 #define _GNU_SOURCE /*  for asprintf */
@@ -66,10 +34,6 @@ struct input_mode {
 
 	char		*log[LOGSIZE];
 	int		head;
-
-	struct pane	*sel_owner;
-	int		sel_committed;
-	struct pane	*sel_owner_fallback;
 };
 
 /* 'head' is 1 more than the last key added. */
@@ -447,21 +411,6 @@ DEF_CMD(mouse_event)
 	return Efalse;
 }
 
-DEF_CMD(request_notify)
-{
-	pane_add_notify(ci->focus, ci->home, ksuffix(ci, "window:request:"));
-	return 1;
-}
-
-DEF_CMD(send_notify)
-{
-	/* window:notify:... */
-	return home_pane_notify(ci->home, ksuffix(ci, "window:notify:"),
-				ci->focus,
-				ci->num, ci->mark, ci->str,
-				ci->num2, ci->mark2, ci->str2, ci->comm2);
-}
-
 DEF_CMD(refocus)
 {
 	struct input_mode *im = ci->home->data;
@@ -482,63 +431,8 @@ DEF_CMD(close_focus)
 		im->source = NULL;
 	}
 
-	if (im->sel_owner_fallback == ci->focus)
-		im->sel_owner_fallback = NULL;
-
-	if (im->sel_owner == ci->focus)
-		im->sel_owner = im->sel_owner_fallback;
-
 	if (im->grab == ci->focus)
 		im->grab = NULL;
-	return 1;
-}
-
-DEF_CMD(selection_claim)
-{
-	struct input_mode *im = ci->home->data;
-
-	if (im->sel_owner && im->sel_owner != ci->focus) {
-		call("Notify:selection:claimed", im->sel_owner);
-		//pane_drop_notifiers(ci->home, "Notify:Close", im->sel_owner);
-	}
-	im->sel_owner = ci->focus;
-	if (ci->num == 1)
-		im->sel_owner_fallback = ci->focus;
-	im->sel_committed = 0;
-	pane_add_notify(ci->home, ci->focus, "Notify:Close");
-	return 1;
-}
-
-DEF_CMD(selection_commit)
-{
-	struct input_mode *im = ci->home->data;
-
-	if (im->sel_owner && !im->sel_committed) {
-		if (call("Notify:selection:commit", im->sel_owner) != 2)
-			im->sel_committed = 1;
-	}
-	return 1;
-}
-
-DEF_CMD(selection_discard)
-{
-	struct input_mode *im = ci->home->data;
-	struct pane *op, *fp;
-
-	if (!im->sel_owner)
-		return Efalse;
-	if (im->sel_owner_fallback == ci->focus)
-		im->sel_owner_fallback = NULL;
-	/* Don't require exactly same pane for sel_owner,
-	 * but ensure they have the same focus.
-	 */
-	op = pane_leaf(im->sel_owner);
-	fp = pane_leaf(ci->focus);
-	if (fp != op)
-		return Efalse;
-
-	im->sel_owner = im->sel_owner_fallback;
-	im->sel_committed = 0;
 	return 1;
 }
 
@@ -570,13 +464,7 @@ static void register_map(void)
 	key_add(im_map, "pane:refocus", &refocus);
 	key_add(im_map, "Notify:Close", &close_focus);
 	key_add(im_map, "input:log", &log_input);
-	key_add_prefix(im_map, "window:request:", &request_notify);
-	key_add_prefix(im_map, "window:notify:", &send_notify);
 	key_add(im_map, "Free", &input_free);
-
-	key_add(im_map, "selection:claim", &selection_claim);
-	key_add(im_map, "selection:commit", &selection_commit);
-	key_add(im_map, "selection:discard", &selection_discard);
 }
 
 DEF_LOOKUP_CMD(input_handle, im_map);

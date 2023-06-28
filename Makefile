@@ -72,7 +72,7 @@ test: edlib lib shared test-rexel
 OBJ = O/edlib.o
 LIBOBJ = O/core-mark.o O/core-doc.o O/core-editor.o O/core-attr.o \
 	O/core-keymap.o O/core-pane.o O/core-misc.o O/core-log.o \
-	O/core-version.o
+	O/core-version.o O/core-window.o
 SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
 	O/doc-email.o O/doc-multipart.o O/doc-list.o \
 	O/render-hex.o O/render-lines.o \
