@@ -1915,23 +1915,6 @@ abort:
 	return NULL;
 }
 
-DEF_CMD(display_xcb)
-{
-	struct pane *p;
-	struct pane *ed = pane_root(ci->focus);
-	const char *d = ci->str;
-
-	if (!d)
-		return Enoarg;
-	p = xcb_display_init(d, ci->str2, ed);
-	if (p && ci->focus != ed)
-		/* Assume ci->focus is a document */
-		p = home_call_ret(pane, ci->focus, "doc:attach-view", p, 1);
-	if (p)
-		return comm_call(ci->comm2, "cb", p);
-	return Efail;
-}
-
 DEF_CMD(xcb_new_display)
 {
 	struct pane *p;
@@ -1957,7 +1940,7 @@ DEF_CMD(xcb_new_display)
 
 void edlib_init(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, &display_xcb, 0, NULL,
+	call_comm("global-set-command", ed, &xcb_new_display, 0, NULL,
 		  "attach-display-x11");
 	call_comm("global-set-command", ed, &xcb_new_display, 0, NULL,
 		  "interactive-cmd-x11window");
