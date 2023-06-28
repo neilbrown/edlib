@@ -145,7 +145,7 @@ try:
                     p = edlib.editor
                     p = p.call("attach-display-ncurses", path, env['TERM'],
                                ret='pane')
-                    self.term = p.call("editor:activate-display", ret='pane')
+                    self.term = p
                     for v in env:
                         self.term.call("window:set:", env[v], v)
                     self.disp = self.term

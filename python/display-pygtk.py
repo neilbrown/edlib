@@ -747,7 +747,8 @@ def new_display(key, focus, comm2, str1, **a):
         s.set_long_property("Gtk-xft-dpi",sc*Pango.SCALE, "code")
 
     disp = EdDisplay(focus, str1)
-    comm2('callback', disp)
+    p = disp.call("editor:activate-display", ret='pane')
+    comm2('callback', p)
     return 1
 
 def new_display2(key, focus, **a):

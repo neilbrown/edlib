@@ -1804,6 +1804,8 @@ DEF_CMD(display_ncurses)
 
 	p = ncurses_init(ci->focus, tty, term);
 	if (p)
+		p = call_ret(pane, "editor:activate-display", p);
+	if (p)
 		return comm_call(ci->comm2, "callback:display", p);
 
 	return Efail;

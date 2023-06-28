@@ -107,8 +107,6 @@ int main(int argc, char *argv[])
 
 		p = call_ret(pane, "attach-display-ncurses", ed,
 			     0, NULL, "-", 0, NULL, TERM);
-		if (p)
-			p = call_ret(pane, "editor:activate-display", p);
 		if (p) {
 			char *e;
 			e = getenv("SSH_CONNECTION");
@@ -135,8 +133,6 @@ int main(int argc, char *argv[])
 		p = call_ret(pane, "attach-display-gtk",
 			     ed, 0, NULL, getenv("DISPLAY"));
 		if (p)
-			p = call_ret(pane, "editor:activate-display", p);
-		if (p)
 			p = home_call_ret(pane, doc, "doc:attach-view",
 					  p, 1);
 		if (!first_window)
@@ -147,8 +143,6 @@ int main(int argc, char *argv[])
 		p = call_ret(pane, "attach-display-x11",
 			     ed, 0, NULL, getenv("DISPLAY"),
 			     0, NULL, getenv("XAUTHORITY"));
-		if (p)
-			p = call_ret(pane, "editor:activate-display", p);
 		if (p)
 			p = home_call_ret(pane, doc, "doc:attach-view",
 					  p, 1);
