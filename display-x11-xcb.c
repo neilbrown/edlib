@@ -1918,11 +1918,15 @@ abort:
 DEF_CMD(display_xcb)
 {
 	struct pane *p;
+	struct pane *ed = pane_root(ci->focus);
 	const char *d = ci->str;
 
 	if (!d)
 		return Enoarg;
-	p = xcb_display_init(d, ci->str2, ci->focus);
+	p = xcb_display_init(d, ci->str2, ed);
+	if (p && ci->focus != ed)
+		/* Assume ci->focus is a document */
+		p = home_call_ret(pane, ci->focus, "doc:attach-view", p, 1);
 	if (p)
 		return comm_call(ci->comm2, "cb", p);
 	return Efail;

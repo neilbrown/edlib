@@ -740,6 +740,7 @@ def new_display(key, focus, comm2, str1, **a):
     if not str1:
         return None
     focus.call("attach-glibevents")
+    ed = focus.root
 
     if 'SCALE' in os.environ:
         sc = int(os.environ['SCALE'])
@@ -748,6 +749,8 @@ def new_display(key, focus, comm2, str1, **a):
 
     disp = EdDisplay(focus, str1)
     p = disp.call("editor:activate-display", ret='pane')
+    if p and focus != ed:
+        p = focus.call("doc:attach-view", p, 1)
     comm2('callback', p)
     return 1
 
