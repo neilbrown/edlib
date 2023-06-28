@@ -112,8 +112,6 @@ def play_macro(key, focus, num, str, **a):
         mac = focus.call("history:get-last", docname, num, ret='str')
     if not mac:
         return edlib.Efail
-    while focus.parent != focus.parent.parent:
-        focus = focus.parent
     keys = macro_split(mac)
     error = False
     i = 0
