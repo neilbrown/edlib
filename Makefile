@@ -145,6 +145,8 @@ edlib-static: $(OBJ) $(STATICOBJ)  $(XOBJ) O/core-version.o
 $(OBJ) $(SHOBJ) $(LIBOBJ) $(XOBJ) $(STATICOBJ) : $(H) O/.exists
 $(LIBOBJ) : internal.h
 
+O/lib-config.o : parse-ini.h
+
 $(OBJ) : O/%.o : %.c
 	$(QUIET_CC)$(CC) $(CPPFLAGS) $(CFLAGS) $(INC-$*) -c -o $@ $<
 	$(QUIET_CHECK)sparse $(CPPFLAGS) $(INC-$*) $(SPARSEFLAGS) $<
