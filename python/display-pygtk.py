@@ -737,8 +737,12 @@ class EdDisplay(edlib.Pane):
         edlib.time_stop(edlib.TIME_KEY)
 
 def new_display(key, focus, comm2, str1, **a):
-    if not str1:
-        return None
+    display = str1
+    if not display:
+        display = focus['DISPLAY']
+        if not display:
+            return None
+
     focus.call("attach-glibevents")
     ed = focus.root
 
@@ -747,30 +751,13 @@ def new_display(key, focus, comm2, str1, **a):
         s = Gtk.settings_get_default()
         s.set_long_property("Gtk-xft-dpi",sc*Pango.SCALE, "code")
 
-    disp = EdDisplay(focus, str1)
+    disp = EdDisplay(ed, display)
     p = disp.call("editor:activate-display", ret='pane')
     if p and focus != ed:
         p = focus.call("doc:attach-view", p, 1)
-    comm2('callback', p)
-    return 1
-
-def new_display2(key, focus, **a):
-    display = focus['DISPLAY']
-    if not display:
-        return None
-    p = focus.root
-    p.call("attach-glibevents")
-
-    if 'SCALE' in os.environ:
-        sc = int(os.environ['SCALE'])
-        s = Gtk.settings_get_default()
-        s.set_long_property("Gtk-xft-dpi",sc*Pango.SCALE, "code")
-
-    disp = EdDisplay(p, display)
-    p = disp.call("editor:activate-display", ret='pane')
-    if p:
-        focus.call("doc:attach-view", p, 1);
+    if comm2:
+        comm2('callback', p)
     return 1
 
 edlib.editor.call("global-set-command", "attach-display-gtk", new_display)
-edlib.editor.call("global-set-command", "interactive-cmd-gtkwindow", new_display2)
+edlib.editor.call("global-set-command", "interactive-cmd-gtkwindow", new_display)
