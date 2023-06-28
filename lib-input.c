@@ -225,7 +225,7 @@ DEF_CMD(keystroke)
 	if (!ci->str)
 		return Enoarg;
 
-	pane_notify("Keystroke-notify", ci->home, 0, NULL, ci->str);
+	call("window:notify:Keystroke-notify", ci->home, 0, NULL, ci->str);
 	log_add(im, "K", ci->str);
 
 	im->mode = strdup("");
@@ -290,8 +290,9 @@ DEF_CMD(mouse_event)
 	if (!ci->str)
 		return Enoarg;
 
-	pane_notify("Mouse-event-notify", ci->home, ci->num, NULL, ci->str,
-		    ci->num2);
+	call("window:notify:Mouse-event-notify", ci->home,
+	     ci->num, NULL, ci->str,
+	     ci->num2);
 	log_add(im, "M", ci->str);
 
 	if (ci->num2 == 1) {
