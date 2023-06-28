@@ -132,7 +132,11 @@ class events(edlib.Pane):
         while self.idle_list[prio]:
             s = self.idle_list[prio].pop()
             f,c,e,n = self.events[s]
-            if c("callback:on-idle", f, n) > 0:
+            try:
+                ret = c("callback:on-idle", f, n)
+            except edlib.commandfailed:
+                ret = edlib.Efalse
+            if ret > 0:
                 if just_one:
                     return
 
@@ -142,7 +146,11 @@ class events(edlib.Pane):
             self.dont_block = False
             for s in self.poll_list:
                 f,c,e,n = self.events[s]
-                if c("callback:poll", f, n) > 0:
+                try:
+                    ret = c("callback:poll", f, n)
+                except edlib.commandfailed:
+                    ret = edlib.Efalse
+                if ret > 0:
                     dont_block = True
             if not dont_block:
                 # Disable any alarm set by python (or other interpreter)

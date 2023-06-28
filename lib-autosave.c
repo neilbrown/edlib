@@ -196,11 +196,11 @@ DEF_CMD(ask_autosave)
 	call_comm("editor:notify:all-displays", p, &cr.c);
 	if (!cr.p)
 		/* No display!!! */
-		return Efail;
+		return Efalse;
 
 	p2 = call_ret(pane, "PopupTile", pane_leaf(cr.p), 0, NULL, "DM3sta");
 	if (!p2)
-		return Efail;
+		return Efalse;
 
 	if ((s = pane_attr_get(p, "autosave-exists")) != NULL &&
 	    strcmp(s, "yes") == 0) {
@@ -216,7 +216,7 @@ DEF_CMD(ask_autosave)
 
 	if (!a || !f) {
 		call("popup:close", p2);
-		return Efail;
+		return Efalse;
 	}
 	doc = call_ret(pane, "doc:from-text", p,
 		       0, NULL, "*Autosave-Diff*",

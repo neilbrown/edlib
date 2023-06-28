@@ -273,7 +273,7 @@ class autospell_view(edlib.Pane):
         self.call("doc:notify:spell:choose-range", start, end)
         if start >= end:
             # nothing to do
-            return edlib.Efail
+            return edlib.Efalse
 
         self.set_time()
         focus = focus.leaf
@@ -304,7 +304,7 @@ class autospell_view(edlib.Pane):
                 remain = -1
         if remain >= 0:
             self.sched()
-        return edlib.Efail
+        return edlib.Efalse
 
 def autospell_attach(key, focus, comm2, **a):
     p = autospell_view(focus)
