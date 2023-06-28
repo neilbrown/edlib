@@ -37,7 +37,7 @@ try:
 
             if not msg :
                 if self.disp:
-                    self.disp.close()
+                    self.disp.call("Display:close")
                 if self.sock:
                     self.sock.close()
                 self.sock = None
@@ -134,7 +134,7 @@ try:
                                     arg, env['XAUTHORITY'], ret='pane')
                     if p:
                         for v in env:
-                            p[v] = env[v]
+                            p.call("window:set:", env[v], v)
                         p.call("Window:bury")
 
                     self.term = p
@@ -148,7 +148,7 @@ try:
                     self.term = p.call("editor:activate-display", ret='pane')
                     for v in env:
                         self.term.call("window:set:", env[v], v)
-                    self.disp = p
+                    self.disp = self.term
                     self.add_notify(self.disp, "Notify:Close")
                     self.sock.send(b"OK")
                     return 1
@@ -212,7 +212,7 @@ try:
                 self.sock.close()
                 self.sock = None
             if self.disp:
-                self.disp.close()
+                self.disp.call("Display:close")
                 self.disp = None
 
     is_client = False

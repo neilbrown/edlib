@@ -177,6 +177,7 @@ Module features
 ### lib-server
 
 - [ ] ctrl-z in elc doesn't ask edlib to release the terminal
+- [ ] do we need both .term and .disp?  When are they different?
 
 ### lib-x11selection-xcb
 
