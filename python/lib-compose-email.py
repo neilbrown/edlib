@@ -57,6 +57,7 @@ class compose_email(edlib.Pane):
         self.view = focus.call("doc:add-view", self) - 1
         self.complete_start = None
         self.find_markers()
+        self.p = None
         m, l = self.vmarks(self.view)
         if not m:
             self.insert_header_mark()
@@ -519,35 +520,59 @@ class compose_email(edlib.Pane):
             return True
         if ('@' in word and '.' in word and
             ('>' in word or '<' not in word)):
-            # looks convincing
+            # looks convincing - nothing to complete here
             return False
-        p = subprocess.Popen(["notmuch-addr", word],
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if self.p:
+            # some other completion pending.
+            p = self.p
+            self.p = None
+            p.kill()
+            p.wait()
         self.call("Message", "Trying to complete %s ..." % word)
-        self.root.refresh()
-        out,err = p.communicate()
+        self.p = subprocess.Popen(["notmuch-addr", word],
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
+        self.complete_end = m.dup()
+        self.call("event:read", self.p.stdout.fileno(), self.get_complete)
+        return True
+
+    def get_complete(self, key, focus, **a):
+        if not self.p:
+            return edlib.Efalse
+        out,err = self.p.communicate()
+        self.p = None
         if not out:
             if err:
                 self.call("Message", "Address expansion gave error: %s" %
                           err.decode('utf-8','ignore'))
                 return True
             self.call("Message", "No completions found for address %s" % word)
-            return True
+            return edlib.Efalse
+        pt = focus.call("doc:point", ret='mark')
+        if not pt or not self.complete_end or pt != self.complete_end:
+            # point moved, do nothing
+            self.complete_end = None
+            return edlib.Efalse
         self.complete_start = None
+        self.complete_end = None
+        st = pt.dup()
+        word = self.prev_addr(st)
+        if not word:
+            return edlib.Efalse
         self.complete_list = out.decode('utf-8','ignore').strip().split("\n")
         if len(self.complete_list) > 1:
             self.call("Message", "%d completions found for address %s"
                       % (len(self.complete_list), word))
             self.complete_start = st
-            self.complete_end = m.dup()
+            self.complete_end = pt.dup()
             self.complete_next = 1
         else:
             self.call("Message", "only 1 completion found for address %s"
                       % word)
-        self.parent.call("doc:replace", st, m, self.complete_list[0])
+        self.parent.call("doc:replace", st, pt, self.complete_list[0])
         if self.complete_start:
             self.complete_end.step(0)
-        return True
+        return edlib.Efalse
 
     def try_cycle_from(self, m):
         start = m.dup()
