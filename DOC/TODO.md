@@ -21,7 +21,7 @@ the file.
 - [X] detect and limit recursion.
 - [X] message-line: use lib-renderline for the one line, so we have
       markup support.
-- [ ] history: Make it possible to search through history. Maybe Alt-p only shows
+- [X] history: Make it possible to search through history. Maybe Alt-p only shows
       lines containing current content.
 - [ ] emacs: Num-C-l doesn't work if it would require part of a wrapped line
       off top of screen
@@ -303,7 +303,7 @@ Module features
 
 #### history
 
-- [ ] Make it possible to search through history. Maybe Alt-p only shows
+- [X] Make it possible to search through history. Maybe Alt-p only shows
       lines containing current content.
 
 ### ncurses

@@ -7,12 +7,24 @@
  * A history pane supports selection of lines from a separate
  * document.  The underlying document is assumed to be one line
  * and this line can be replaced by various lines from the history document.
- * When a line is replaced, if it had been modified, it is saved first.
+ * When a line is replaced, if it had been modified, it is saved first so it
+ * can be revisited when "down" movement gets back to the end.
+ * When a selection is committed (:Enter), it is added to end of history.
  * :A-p - replace current line with previous line from history, if there is one
  * :A-n - replace current line with next line from history.  If none, restore
  *        saved line
- * :A-r - incremental search - later
- * When a selection is committed, it is added to end of history.
+ * :C-r - enter incremental search, looking back
+ * :C-s - enter incremental search, looking forward
+ *
+ * In incremental search mode the current search string appears in the
+ * prompt and:
+ *   -glyph appends to the search string and repeats search from start
+ *          in current direction
+ *   :Backspace strips a glyph and repeats search
+ *   :C-r - sets prev line as search start and repeats search
+ *   :C-s - sets next line as search start and repeats.
+ *   :Enter - drops out of search mode
+ * Anything else drops out of search mode and repeats the command as normal
  */
 
 #include <unistd.h>
@@ -25,7 +37,14 @@
 struct history_info {
 	struct pane	*history;
 	char		*saved;
+	char		*prompt;
 	struct buf	search;
+	int		search_back;
+	struct si {
+		int i;
+		struct si *prev;
+		struct mark *line;
+	} *prev;
 	int		changed;
 	struct map	*done_map;
 	struct lookup_cmd handle;
@@ -34,10 +53,23 @@ struct history_info {
 static struct map *history_map;
 DEF_LOOKUP_CMD(history_handle, history_map);
 
+static void free_si(struct si **sip safe)
+{
+	struct si *i;;
+
+	while ((i = *sip) != NULL) {
+		*sip = i->prev;
+		if (i->prev == NULL || i->prev->line != i->line)
+			mark_free(i->line);
+		free(i);
+	}
+}
+
 DEF_CMD(history_close)
 {
 	struct history_info *hi = ci->home->data;
 
+	free_si(&hi->prev);
 	if (hi->history)
 		pane_close(hi->history);
 	return 1;
@@ -49,6 +81,7 @@ DEF_CMD(history_free)
 
 	free(hi->search.b);
 	free(hi->saved);
+	free(hi->prompt);
 	unalloc(hi, pane);
 	/* handle was in 'hi' */
 	ci->home->handle = NULL;
@@ -59,9 +92,11 @@ DEF_CMD(history_notify_close)
 {
 	struct history_info *hi = ci->home->data;
 
-	if (ci->focus == hi->history)
+	if (ci->focus == hi->history) {
 		/* The history document is going away!!! */
+		free_si(&hi->prev);
 		hi->history = NULL;
+	}
 	return 1;
 }
 
@@ -105,54 +140,62 @@ DEF_CMD(history_notify_replace)
 	return 1;
 }
 
-DEF_CMD(history_move)
+static void recall_line(struct pane *p safe, struct pane *focus safe, int fore)
 {
-	struct history_info *hi = ci->home->data;
+	struct history_info *hi = p->data;
 	struct mark *m;
 	char *l, *e;
-	const char *suffix = ksuffix(ci, "K:A-");
 
-	if (!hi->history || !ci->mark)
-		return Enoarg;
-	if (*suffix == 'p') {
-		m = mark_at_point(hi->history, NULL, MARK_UNGROUPED);
-		call("doc:EOL", hi->history, -2);
-	} else {
-		call("doc:EOL", hi->history, 1, NULL, NULL, 1);
-		m = mark_at_point(hi->history, NULL, MARK_UNGROUPED);
-		call("doc:EOL", hi->history, 1, m, NULL, 1);
-	}
+	if (!hi->history)
+		return;
+	m = mark_at_point(hi->history, NULL, MARK_UNGROUPED);
+	call("doc:EOL", hi->history, 1, m, NULL, 1);
 	l = call_ret(str, "doc:get-str", hi->history, 0, NULL, NULL, 0, m);
+	mark_free(m);
 	if (!l || !*l) {
 		/* No more history */
 		free(l);
-		if (*suffix == 'p') {
-			mark_free(m);
-			return 1;
-		} else
-			l = hi->saved;
+		if (!fore)
+			return;
+
+		l = hi->saved;
 	}
 	if (l) {
 		e = strchr(l, '\n');
 		if (e)
 			*e = 0;
 	}
-	call("doc:EOL", ci->focus, -1, ci->mark);
-	m = mark_dup(ci->mark);
-	call("doc:EOL", ci->focus, 1, m);
+	call("doc:EOL", focus, -1);
+	m = mark_at_point(focus, NULL, MARK_UNGROUPED);
+	call("doc:EOL", focus, 1, m);
 	if (hi->changed) {
 		if (l != hi->saved)
 			free(hi->saved);
-		hi->saved = call_ret(str, "doc:get-str", ci->focus,
-				     0, ci->mark, NULL,
+		hi->saved = call_ret(str, "doc:get-str", focus,
+				     0, NULL, NULL,
 				     0, m);
 	}
-	call("Replace", ci->focus, 1, m, l);
+	call("Replace", focus, 1, m, l);
 	if (l != hi->saved){
 		free(l);
 		hi->changed = 0;
 	}
 	mark_free(m);
+}
+
+DEF_CMD(history_move)
+{
+	struct history_info *hi = ci->home->data;
+	const char *suffix = ksuffix(ci, "K:A-");
+
+	if (!hi->history)
+		return Enoarg;
+	if (*suffix == 'p')
+		call("doc:EOL", hi->history, -2);
+	else
+		call("doc:EOL", hi->history, 1, NULL, NULL, 1);
+
+	recall_line(ci->home, ci->focus, *suffix == 'n');
 	return 1;
 }
 
@@ -183,6 +226,7 @@ DEF_CMD(history_attach)
 		return Efail;
 	call("doc:file", hi->history, 1);
 	buf_init(&hi->search);
+	buf_concat(&hi->search, "?0"); /* remaining chars are searched verbatim */
 	p = pane_register(ci->focus, 0, &hi->handle.c, hi);
 	if (!p)
 		return Efail;
@@ -270,6 +314,146 @@ DEF_CMD(history_last)
 	return rv;
 }
 
+DEF_CMD(history_search)
+{
+	struct history_info *hi = ci->home->data;
+	char *prompt, *prefix;
+
+	if (!hi->history)
+		return 1;
+	call("Mode:set-mode", ci->focus, 0, NULL, ":History-search");
+	buf_reinit(&hi->search);
+	buf_concat(&hi->search, "?0");
+	free_si(&hi->prev);
+	prompt = pane_attr_get(ci->focus, "prompt");
+	if (!prompt)
+		prompt = "?";
+	free(hi->prompt);
+	hi->prompt = strdup(prompt);
+	prefix = strconcat(ci->focus, prompt, " (): ");
+	attr_set_str(&ci->focus->attrs, "prefix", prefix);
+	call("view:changed", ci->focus);
+
+	hi->search_back = (ci->key[4] == 'R');
+	return 1;
+}
+
+static void update_search(struct pane *p safe, struct pane *focus safe,
+			  int offset)
+{
+	struct history_info *hi = p->data;
+	struct si *i;
+	struct mark *m;
+	const char *prefix;
+	int ret;
+
+	if (!hi->history)
+		return;
+	if (offset >= 0) {
+		alloc(i, pane);
+		i->i = offset;
+		i->line = mark_at_point(hi->history, NULL, MARK_UNGROUPED);
+		i->prev = hi->prev;
+		hi->prev = i;
+	}
+	prefix = strconcat(focus, hi->prompt?:"?",
+			   " (", buf_final(&hi->search)+2, "): ");
+	attr_set_str(&focus->attrs, "prefix", prefix);
+	call("view:changed", focus);
+	call("Mode:set-mode", focus, 0, NULL, ":History-search");
+	m = mark_at_point(hi->history, NULL, MARK_UNGROUPED);
+	ret = call("text-search", hi->history, 1, m, buf_final(&hi->search),
+		   hi->search_back);
+	if (ret <= 0) {
+		// clear line
+		mark_free(m);
+		return;
+	}
+	call("doc:EOL", hi->history, -1, m);
+	call("Move-to", hi->history, 0, m);
+	mark_free(m);
+	recall_line(p, focus, 0);
+}
+
+DEF_CMD(history_search_again)
+{
+	struct history_info *hi = ci->home->data;
+	const char *k;
+
+	k = ksuffix(ci, "K:History-search-");
+	if (*k) {
+		int l = hi->search.len;
+		buf_concat(&hi->search, k);
+		update_search(ci->home, ci->focus, l);
+	}
+	return 1;
+}
+
+DEF_CMD(history_search_retry);
+
+DEF_CMD(history_search_bs)
+{
+	struct history_info *hi = ci->home->data;
+	struct si *i = hi->prev;
+
+	if (!i || !hi->history) {
+		history_search_retry_func(ci);
+		return 1;
+	}
+
+	call("Mode:set-mode", ci->focus, 0, NULL, ":History-search");
+
+	hi->search.len = i->i;
+	call("Move:to", hi->history, 0, i->line);
+	if (!i->prev || i->line != i->prev->line)
+		mark_free(i->line);
+	hi->prev = i->prev;
+	free(i);
+	update_search(ci->home, ci->focus, -1);
+	return 1;
+}
+
+DEF_CMD(history_search_repeat)
+{
+	struct history_info *hi = ci->home->data;
+	const char *suffix = ksuffix(ci, "K:History-search:C-");
+
+	if (!hi->history)
+		return Enoarg;
+	hi->search_back = *suffix == 'R';
+	if (hi->search_back)
+		call("doc:EOL", hi->history, -2);
+	else
+		call("doc:EOL", hi->history, 1, NULL, NULL, 1);
+
+	update_search(ci->home, ci->focus, hi->search.len);
+	return 1;
+}
+
+DEF_CMD(history_search_cancel)
+{
+	struct history_info *hi = ci->home->data;
+	const char *prefix;
+
+	prefix = strconcat(ci->focus, hi->prompt?:"?", ": ");
+	attr_set_str(&ci->focus->attrs, "prefix", prefix);
+	call("view:changed", ci->focus);
+	return 1;
+}
+
+REDEF_CMD(history_search_retry)
+{
+	struct history_info *hi = ci->home->data;
+	const char *prefix;
+	char *k = strconcat(ci->home, "K", ksuffix(ci, "K:History-search"));
+
+	prefix = strconcat(ci->focus, hi->prompt?:"?", ": ");
+	attr_set_str(&ci->focus->attrs, "prefix", prefix);
+	call("view:changed", ci->focus);
+	return call(k, ci->focus, ci->num, ci->mark, ci->str,
+		    ci->num2, ci->mark2, ci->str2);
+}
+
 DEF_CMD(history_add)
 {
 	const char *docname = ci->str;
@@ -308,6 +492,21 @@ void edlib_init(struct pane *ed safe)
 	key_add(history_map, "doc:replaced", &history_notify_replace);
 	key_add(history_map, "K:A-p", &history_move);
 	key_add(history_map, "K:A-n", &history_move);
+	key_add(history_map, "K:C-R", &history_search);
+	key_add(history_map, "K:C-S", &history_search);
+	key_add_prefix(history_map, "K:History-search-", &history_search_again);
+	key_add_prefix(history_map, "K:History-search:",
+		       &history_search_retry);
+	key_add(history_map, "K:History-search:Backspace",
+		       &history_search_bs);
+	key_add(history_map, "K:History-search:C-R",
+		       &history_search_repeat);
+	key_add(history_map, "K:History-search:C-S",
+		       &history_search_repeat);
+	key_add(history_map, "K:History-search:Enter",
+		       &history_search_cancel);
+	key_add(history_map, "K:History-search:ESC",
+		       &history_search_cancel);
 	key_add(history_map, "history:save", &history_save);
 	key_add(history_map, "history:get-last", &history_hlast);
 }
