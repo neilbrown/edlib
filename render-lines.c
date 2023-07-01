@@ -398,12 +398,11 @@ static bool step_fore(struct pane *p safe, struct pane *focus safe,
 		      short *y_post safe, short *line_height_post safe)
 {
 	struct mark *end = *endp;
-	bool found_end = False;
 
 	if (!end)
 		return True;
 	call_render_line(p, focus, end, startp);
-	found_end = measure_line(p, focus, end, -1);
+	measure_line(p, focus, end, -1);
 	if (end->mdata)
 		*y_post = end->mdata->h;
 	if (*y_post > 0 && end->mdata)
@@ -415,13 +414,12 @@ static bool step_fore(struct pane *p safe, struct pane *focus safe,
 	else
 		end = vmark_next(end);
 	if (!end) {
-		found_end = 1;
 		if (p->h >= *line_height_post *2)
 			*y_post = p->h / 10;
 	}
 
 	*endp = end;
-	return found_end;
+	return False;
 }
 
 static int consume_space(struct pane *p safe, int y,
@@ -433,7 +431,7 @@ static int consume_space(struct pane *p safe, int y,
 	int y_pre = *y_prep;
 	int y_post = *y_postp;
 
-	if (y_pre > 0 && y_post > 0) {
+	if (y_pre > 0 && y_post > 0 && !found_start && !found_end) {
 		int consume = (y_post < y_pre
 			       ? y_post : y_pre) * 2;
 		int above, below;
@@ -456,7 +454,7 @@ static int consume_space(struct pane *p safe, int y,
 		 * both > 0
 		 */
 	}
-	if (found_end && y_pre) {
+	if (found_end && y_pre && !found_start) {
 		int consume = p->h - y;
 		if (consume > y_pre)
 			consume = y_pre;
@@ -464,7 +462,7 @@ static int consume_space(struct pane *p safe, int y,
 		y += consume;
 		*lines_above += consume / (line_height_pre?:1);
 	}
-	if (found_start && y_post) {
+	if (found_start && y_post && !found_end) {
 		int consume = p->h - y;
 		if (consume > y_post)
 			consume = y_post;
@@ -575,12 +573,13 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		y_post = 0;
 	}
 	if (!end) {
-		found_end = True;
 		if (p->h > line_height_pre * 2)
 			y_post += p->h / 10;
-		else
+		else {
 			/* Small display, no space at EOF */
 			y_post = 0;
+			found_end = True;
+		}
 	}
 	y = 0;
 	if (rl->header && rl->header->mdata)
@@ -602,8 +601,13 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 
 	while ((!found_start || !found_end) && y < p->h) {
 		if (vline != NO_NUMERIC) {
+			/* As lines_above/below measure from the baseline
+			 * of the cursor line, and as we want to see the top
+			 * of he cursor line as well, these two cases are
+			 * asymmetric.
+			 */
 			if (!found_start && vline > 0 &&
-			    lines_above >= vline-1)
+			    lines_above >= vline)
 				found_start = True;
 			if (!found_end && vline < 0 &&
 			    lines_below >= -vline-1)
