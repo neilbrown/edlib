@@ -23,7 +23,7 @@ the file.
       markup support.
 - [X] history: Make it possible to search through history. Maybe Alt-p only shows
       lines containing current content.
-- [ ] emacs: Num-C-l doesn't work if it would require part of a wrapped line
+- [X] emacs: Num-C-l doesn't work if it would require part of a wrapped line
       off top of screen
 - [ ] emacs: :C-q to recognise names of Unicode chars: e.g. WASTEBASKET
        Possibly matches a list which continued :C-q cycles through
@@ -73,6 +73,9 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] Send global notify before/after refresh.  LOG must suspend
+      logging (or notifications at least) during refresh if is visible
+      anywhere
 - [ ] Do I want "Display" as in "Display:close", or "window" as in
       "window:notify".  Decide, and make everything consistent.
 - [ ] Do I really need global-multicall- or can I just use
@@ -274,7 +277,7 @@ Module features
 
 ### emacs
 
-- [ ] Num-C-l doesn't work if it would require part of a wrapped line
+- [X] Num-C-l doesn't work if it would require part of a wrapped line
       off top of screen
 - [ ] :C-q to recognise names of Unicode chars: e.g. WASTEBASKET
        Possibly matches a list which continued :C-q cycles through
@@ -688,16 +691,34 @@ Module features
 
 ### git-mode
 
-- [ ] log view which uses --max-count and --skip to only collect enough
-      log entries to fill the display
+- [ ] log view (:C-c l?) which uses --max-count and --skip to only
+      collect enough log entries to fill the display.  Or better: have a
+      shell mode which only reads from pipe if insertion position is
+      visible.
+- [ ] from log-view, view a commit.  From a commit, view the file
+      at that time.  Maybe 'save' creates a fixup commit which is
+      added to the log.
+- [ ] Have a list of paths are top of log and any commit which doesn't
+      touch the paths is greyed out.  "git log --oneline --stat"
+      provides the info, some of which we hide.
+- [ ] when a git-managed file is saved, if there is a "diff" view, it is
+      updated.  Maybe show both cached and uncached in different colours.
 - [ ] action from log-view to reword and commit - with auto rebase and
       update of the view
 - [ ] actions to re-arrange and deleted the commits.  Integrate with
-      git-rebase.
-- [ ] git-commit command which presents the patch and allows it to be
-      edited (with consistency checks and number updates). On :Commit
-      the patch is applied with "git apply --cached" an if successful
-      the message is added with "| git commit -F"
+      git-rebase...  or simulate git-rebase with "git worktree add
+      --no-checkout" on the most recent unchanged commit, then adding
+      each required commit with git-apply--cached and git-commit
+- [ ] diff-mode editing enhancements:
+      - kill the file marker (+++) kills all chunks in the file
+      - kill the chunk marker (@@) kills the whole chunk
+      - insert line in chunk gets '+' prefix and updates line counts
+      - delete line in chunk updates line counts
+      - editing in chunk re-runs word-diff
+- [ ] git-commit command (:Commit) which presents the patch and allows
+      it to be edited (with consistency checks and number updates).  On
+      :Commit the patch is applied with "git apply --cached" an if
+      successful the message is added with "| git commit -F"
 
 ### lang-python
 
@@ -779,6 +800,8 @@ Module features
 - [ ] c-mode to use tabs or spaces for indent
 - [ ] c-mode: use only spaces for bracket-alignment, or tabs as well
 - [ ] shell command regex to choose parsing: diff, git-log, grep/make
+- [ ] shift width for auto and manual left/right display shift
+- [ ] tab width ??
 
 - [ ] colours of whitespace: tab, at-eol, tab-after-space, past-col ....
 - [ ] whitespace max-col (per-line??)
@@ -1078,36 +1101,6 @@ matter where in the function I am editing, and as many of the
 variables as possible.  If I am in an “if” statement in a “for” look,
 then the loop header and the if condition would be displayed if at all
 possible.
-
-### git-mode
-
-Git adds an extra dimension to editing code - the dimension of history.
-Somethings that the editor can help with:
-
-- creating a commit, including writing the comment message and selection
-  which files, or which lines in which files, should be added to the commit.
-- browsing history - a bit like gitk.  So from a 'git log --oneline', open
-  a view on a patch, or on a file at the time of the commit.  This might
-  only fetch 100 lines - or only since origin/master, and fetch more
-  only when it is accessed.  Including rebase functionality here would
-  be cool.
-- editing history - using "git rebase --interactive" or similar.
-  The editor could open either a file or a diff at the time of a commit
-  and allow them to be editing.  For smaller changes, editing the diff
-  directly would be nice.  In either case, having one auto-update when the
-  other is edited would be cool
-- editing just the comments of recent commits is useful.
-- Showing a current 'diff' which is dynamically updated and which distinguishes
-  between staged and unstaged changes - and lets them be toggled - would be
-  part of this.
-
-A view on "git log" would only show the first page until you scroll down.  Then
-more would be requested and displayed.  So we don't generate thousands of commits
-unless that are actually wanted. i.e. "git log --max-count=100 --skip=N"
-This could collect but hide the commit message, and allow them to be seen later.
-The commit-ids could be marked edit, reword, etc and then rebase run.
-Would be useful to limit to certain files.
-
 
 ### a “reflection” document so I can view the internal data structures.
 

@@ -426,7 +426,8 @@ static int consume_space(struct pane *p safe, int y,
 			 short *y_prep safe, short *y_postp safe,
 			 short *lines_above safe, short *lines_below safe,
 			 int found_start, int found_end,
-			 int line_height_pre, int line_height_post)
+			 int line_height_pre, int line_height_post,
+			 bool line_at_a_time)
 {
 	int y_pre = *y_prep;
 	int y_post = *y_postp;
@@ -437,6 +438,12 @@ static int consume_space(struct pane *p safe, int y,
 		int above, below;
 		if (consume > p->h - y)
 			consume = p->h - y;
+		if (line_at_a_time && consume > 2*line_height_pre &&
+		    line_height_pre > 0)
+			consume = 2*line_height_pre;
+		if (line_at_a_time && consume > 2*line_height_post &&
+		    line_height_post > 0)
+			consume = 2*line_height_post;
 		if (y_pre > y_post) {
 			above = consume - (consume/2);
 			below = consume/2;
@@ -458,6 +465,9 @@ static int consume_space(struct pane *p safe, int y,
 		int consume = p->h - y;
 		if (consume > y_pre)
 			consume = y_pre;
+		if (line_at_a_time && consume > line_height_pre &&
+		    line_height_pre > 0)
+			consume = line_height_pre;
 		y_pre -= consume;
 		y += consume;
 		*lines_above += consume / (line_height_pre?:1);
@@ -466,6 +476,9 @@ static int consume_space(struct pane *p safe, int y,
 		int consume = p->h - y;
 		if (consume > y_post)
 			consume = y_post;
+		if (line_at_a_time && consume > line_height_post &&
+		    line_height_post > 0)
+			consume = line_height_post;
 		y_post -= consume;
 		y += consume;
 		*lines_below += consume / (line_height_post?:1);
@@ -498,27 +511,84 @@ static int consume_space(struct pane *p safe, int y,
  *
  * If we decide to stop moving in both directions, but have not
  * reached EOF or full height of display, keep moving downwards.
+ *
+ * "start" is a mark at the start of the first line we currently
+ * intend to display, and y_pre is the number of pixel from the top
+ * of the display of that line, to the top pixel that will be displayed.
+ * We only move 'start' backward when y_pre is zero, and initially y_pre
+ * is the full height of that line.
+ *
+ * Similarly "end" is the start of the last line we currently intend
+ * to display, and y_post is the number of pixel from the bottom of that display
+ * up to the point we currently intend to display.  We only move "end" forward
+ * when y_post is zero, and when we do we set y_post to the full height of the
+ * line.
+ *
+ * Until we decide on the start or end (found_start, found_end), we
+ * repeatedly add equal parts of y_pre and y_post into the total to
+ * be display - consume_space() does this.  The space removed from y_pre
+ * and y_post is added to 'y' - the total height.
+ * It is also included into lines_above and lines_below which count text lines,
+ * rather than pixels, using line_height_pre and line_height_post as scale
+ * factors.  These are used to determine when vline or rl->margin requirements
+ * have been met.
  */
 static void find_lines(struct mark *pm safe, struct pane *p safe,
 		       struct pane *focus safe,
 		       int vline)
 {
 	struct rl_data *rl = p->data;
+	/* orig_top/bot bound what is currently displayed and
+	 * are used to determine if the display has been repositioned.
+	 * orig_bot is *after* the last displayed line.  Its ->mdata
+	 * will be NULL.
+	 */
 	struct mark *orig_top, *orig_bot;
-	struct mark *top, *bot;  // boundary of previous display
+	/* top and bot are used to enhance stability.  They are NULL
+	 * if vline is given, else they match orig_top/bot.
+	 */
+	struct mark *top, *bot;
 	struct mark *m;
+	/* Current estimate of new display. From y_pre pixels down
+	 * from the top of line at 'start', to y_post pixels up
+	 * from the end of the line before 'end' there are 'y'
+	 * pixel lines that we have committed to display.
+	 */
 	struct mark *start, *end; // current estimate for new display
+	short y_pre = 0, y_post = 0;
 	short y = 0;
+	/* Number of text-lines in the committed region above or below
+	 * the baseline of the line containing pm.  These lines might not
+	 * all be the same height. line_height_pre/post are the heights of
+	 * start and end-1 so changes in y_pre/y_post can be merged into these
+	 * counts.
+	 */
 	short lines_above = 0, lines_below = 0; /* distance from start/end
 						 * to pm.
 						 */
-	short offset; // pos of pm in rendering of that line
-	bool found_start = False, found_end = False;
-	/* y_pre and y_post are measurement from start/end that
-	 * haven't yet been included into lines_above/lines_below.
-	 */
-	short y_pre = 0, y_post = 0;
 	short line_height_pre = 1, line_height_post = 1;
+
+	short offset; // pos of pm while measureing the line holding the cursor.
+	/* We set found_start we we don't want to consider anything above the
+	 * top that we currently intend to display.  Once it is set,
+	 * 'start', y_pre, lines_above are all frozen.
+	 * Similarly once found_end is set we freeze end, y_pos, lines_below,
+	 * but we mught unfreeze those if there is room for more text at end of
+	 * display.
+	 * found_start is set:
+	 *   - when y_pre is zero and start is at top of file
+	 *   - when lines_above reaches positive vline
+	 *   - when intended display has grown down into the previous
+	 *     display.  This means we have added enough lines above and
+	 *     don't want to scroll the display more than we need.
+	 *   - When we hit unexpected errors moving backwards
+	 * found_end is set:
+	 *   - when we hit end-of-file
+	 *   - when lines_below reached -vline
+	 *   - when the top of the intended display overlaps the
+	 *     previous display.
+	 */
+	bool found_start = False, found_end = False;
 
 	orig_top = vmark_first(focus, rl->typenum, p);
 	orig_bot = vmark_last(focus, rl->typenum, p);
@@ -531,11 +601,16 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	start = vmark_new(focus, rl->typenum, p);
 	if (!start)
 		goto abort;
+	/* FIXME why is this here.  We set ->repositioned at the end
+	 * if the marks move.  Maybe we need to check if y_pre moves too.
+	 */
 	rl->repositioned = 1;
 	mark_to_mark(start, pm);
 	start = call_render_line_prev(focus, start, 0, &rl->top_sol);
 	if (!start)
 		goto abort;
+
+	/* Render the cursor line, and find where the cursor is. */
 	offset = call_render_line_to_point(focus, pm, start);
 	call_render_line(p, focus, start, NULL);
 	end = vmark_next(start);
@@ -546,7 +621,6 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	if (!rl->shift_locked)
 		rl->shift_left = 0;
 
-	/* ->cy is top of cursor, we want to measure from bottom */
 	if (start->mdata) {
 		struct pane *hp = start->mdata;
 		int curs_width;
@@ -554,7 +628,9 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 
 		curs_width = pane_attr_get_int(
 			start->mdata, "curs_width", 1);
-		while (!rl->do_wrap && !rl->shift_locked && curs_width > 0 &&
+		if (curs_width < 0)
+			curs_width = 1;
+		while (!rl->do_wrap && !rl->shift_locked &&
 		       hp->cx + curs_width >= p->w) {
 			int shift = 8 * curs_width;
 			if (shift > hp->cx)
@@ -562,6 +638,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			rl->shift_left += shift;
 			measure_line(p, focus, start, offset);
 		}
+		/* ->cy is top of cursor, we want to measure from bottom */
 		line_height_pre = attr_find_int(start->mdata->attrs, "line-height");
 		if (line_height_pre < 1)
 			line_height_pre = 1;
@@ -573,6 +650,11 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		y_post = 0;
 	}
 	if (!end) {
+		/* When cursor at EOF, leave 10% height of display
+		 * blank at bottom to make this more obvious - unless
+		 * the display is so small that might push the last line partly
+		 * off display at the top.
+		 */
 		if (p->h > line_height_pre * 2)
 			y_post += p->h / 10;
 		else {
@@ -586,7 +668,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		y = rl->header->mdata->h;
 
 	/* We have start/end of the focus line.  When rendered this,
-	 * plus header and eof-footed would use y_pre + y + y_post
+	 * plus header and eof-footer would use y_pre + y + y_post
 	 * vertical space.
 	 */
 
@@ -655,7 +737,8 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		y = consume_space(p, y, &y_pre, &y_post,
 				  &lines_above, &lines_below,
 				  found_start, found_end,
-				  line_height_pre, line_height_post);
+				  line_height_pre, line_height_post,
+				  vline && vline != NO_NUMERIC);
 	}
 	/* We might need to continue downwards even after found_end
 	 * if there is more space.
@@ -668,7 +751,8 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		y = consume_space(p, y, &y_pre, &y_post,
 				  &lines_above, &lines_below,
 				  found_start, found_end,
-				  line_height_pre, line_height_post);
+				  line_height_pre, line_height_post,
+				  vline && vline != NO_NUMERIC);
 	}
 
 	if (start->mdata && start->mdata->h <= y_pre) {
