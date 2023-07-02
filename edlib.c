@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 	setlocale(LC_CTYPE, "enUS.UTF-8");
 
 	call("global-load-module", ed, 0, NULL, "lib-config");
-	call("config-load", ed, 0, NULL, "edlib.ini", 0, NULL, argv[0]);
+	call("config-load", ed, 0, NULL, "edlib.ini");
 
 	call("attach-doc-docs", ed);
 

@@ -19,7 +19,7 @@
 #include "core.h"
 #include "parse-ini.h"
 
-static void load_config(const char *path safe, void *data, const char *base);
+static void load_config(const char *path safe, void *data);
 
 static bool __glob_match(const char *patn safe, const char *path safe)
 {
@@ -179,7 +179,7 @@ static void handle(void *data, char *section safe, char *name safe, char *value 
 
 	if (strcmp(section, "") == 0 || strcmp(section,"include") == 0) {
 		if (strcmp(name, "include") == 0) {
-			load_config(value, data, path);
+			load_config(value, data);
 			return;
 		}
 		return;
@@ -214,48 +214,22 @@ static void handle(void *data, char *section safe, char *name safe, char *value 
 	}
 }
 
-static void load_config(const char *path safe, void *data, const char *base)
+static void load_config(const char *path safe, void *data)
 {
-	char *sl, *p, *h;
+	char *p;
+	struct config_data *cd = data;
+
 	if (*path == '/') {
 		parse_ini(path, handle, data);
 		return;
 	}
 	/*
-	 * Relative paths can be loaded from:
-	 * dirname(base)
-	 * /usr/share/edlib/
-	 * $HOME/.config/edlib/
+	 * Relative paths can be loaded using xdg-find-edlib-file data
 	 */
-	if (base && (sl = strrchr(base, '/')) != NULL) {
-		sl += 1;
-		p = malloc((sl - base) + strlen(path) + 1);
-		memcpy(p, base, sl - base);
-		strcpy(p + (sl - base), path);
-		if (access(p, F_OK) == 0) {
-			parse_ini(p, handle, data);
-			free(p);
-			return;
-		}
-		free(p);
-	}
-	p = strconcat(NULL, "/usr/share/edlib/", path);
-	if (access(p, F_OK) == 0) {
+	p = call_ret(str, "xdg-find-edlib-file", cd->root, 0, NULL,
+		     path, 0, NULL, "config");
+	if (p && access(p, F_OK) == 0)
 		parse_ini(p, handle, data);
-		free(p);
-		return;
-	}
-	free(p);
-
-	h = getenv("HOME");
-	if (h == NULL || *h != '/')
-		return;
-	p = strconcat(NULL, h, "/.config/edlib/", path);
-	if (access(p, F_OK) == 0) {
-		parse_ini(p, handle, data);
-		free(p);
-		return;
-	}
 	free(p);
 }
 
@@ -302,7 +276,7 @@ DEF_CMD(config_load)
 		cd = container_of(ci->comm, struct config_data, c);
 	}
 	if (ci->str)
-		load_config(ci->str, cd, ci->str2);
+		load_config(ci->str, cd);
 	return 1;
 }
 

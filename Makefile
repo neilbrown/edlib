@@ -196,6 +196,7 @@ O/.exists:
 lib/.exists:
 	@mkdir -p lib
 	@ln -s ../python lib/python
+	@ln -s .. lib/edlib
 	@touch $@
 
 .PHONY: lib

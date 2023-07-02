@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <fcntl.h>
 #include <stdarg.h>
 #include <dlfcn.h>
 
@@ -23,6 +24,12 @@ struct ed_info {
 	struct mark *mark_free_list;
 	struct map *map safe;
 	struct lookup_cmd cmd;
+	/* These two paths contain nul-terminated strings,
+	 * with a double-nul at the end.
+	 */
+	char *data_path;
+	char *config_path;
+	char *here;
 	bool testing;
 	struct store {
 		struct store *next;
@@ -349,7 +356,11 @@ DEF_EXTERN_CMD(edlib_noop)
 
 DEF_CMD(editor_close)
 {
+	struct ed_info *ei = ci->home->data;
 	stat_free();
+	free(ei->here); ei->here = NULL;
+	free(ei->data_path); ei->data_path = NULL;
+	free(ei->config_path); ei->config_path = NULL;
 	return Efallthrough;
 }
 
@@ -465,6 +476,173 @@ void editor_delayed_mark_free(struct mark *m safe)
 	ei->mark_free_list = m;
 }
 
+static char *set_here(struct pane *p safe)
+{
+	struct ed_info *ei = p->data;
+	Dl_info info;
+
+	if (ei->here)
+		;
+	else if (dladdr(&set_here, &info) == 0)
+		ei->here = strdup("");
+	else {
+		char *sl;
+		ei->here = strdup(info.dli_fname ?: "");
+		sl = strrchr(ei->here, '/');
+		if (sl)
+			*sl = 0;
+	}
+	return ei->here;
+}
+
+static char *set_data_path(struct pane *p safe)
+{
+	struct ed_info *ei = p->data;
+	char *dh, *dd, *here;
+	struct buf b;
+
+	if (ei->data_path)
+		return ei->data_path;
+
+	buf_init(&b);
+	dh = getenv("XDG_DATA_HOME");
+	if (!dh) {
+		char *h = getenv("HOME");
+		if (h)
+			dh = strconcat(p, h, "/.local/share");
+	}
+	if (dh && *dh == '/') {
+		buf_concat(&b, dh);
+		buf_concat(&b, "/edlib/");
+		buf_append_byte(&b, 0);
+	}
+
+	here = set_here(p);
+	if (here && *here == '/') {
+		buf_concat(&b, here);
+		buf_concat(&b, "/edlib/");
+		buf_append_byte(&b, 0);
+	}
+
+	dd = getenv("XDG_DATA_DIRS");
+	if (!dd)
+		dd = "/usr/local/share:/usr/share";
+	while (*dd) {
+		char *c = strchrnul(dd, ':');
+		if (*dd == '/') {
+			buf_concat_len(&b, dd, c-dd);
+			buf_concat(&b, "/edlib/");
+			buf_append_byte(&b, 0);
+		}
+		if (*c)
+			c++;
+		dd = c;
+	}
+	if (b.len)
+		ei->data_path = buf_final(&b);
+	else
+		free(buf_final(&b));
+	return ei->data_path;
+}
+
+static char *set_config_path(struct pane *p safe)
+{
+	struct ed_info *ei = p->data;
+	char *ch, *cd, *here;
+	struct buf b;
+
+	if (ei->config_path)
+		return ei->config_path;
+
+	buf_init(&b);
+	ch = getenv("XDG_CONFIG_HOME");
+	if (!ch) {
+		char *h = getenv("HOME");
+		if (h)
+			ch = strconcat(p, h, "/.config");
+	}
+	if (ch && *ch == '/') {
+		buf_concat(&b, ch);
+		buf_concat(&b, "/edlib/");
+		buf_append_byte(&b, 0);
+	}
+
+	here = set_here(p);
+	if (here && *here == '/') {
+		buf_concat(&b, here);
+		buf_concat(&b, "/edlib/");
+		buf_append_byte(&b, 0);
+	}
+
+	cd = getenv("XDG_CONFIG_DIRS");
+	if (!cd)
+		cd = "/etc/xdg";
+	while (*cd) {
+		char *c = strchrnul(cd, ':');
+		if (*cd == '/') {
+			buf_concat_len(&b, cd, c-cd);
+			buf_concat(&b, "/edlib/");
+			buf_append_byte(&b, 0);
+		}
+		if (*c)
+			c++;
+		cd = c;
+	}
+	if (b.len)
+		ei->config_path = buf_final(&b);
+	else
+		free(buf_final(&b));
+	return ei->config_path;
+}
+
+DEF_CMD(global_find_file)
+{
+	/*
+	 * ->str is a file basename.
+	 * ->str2 is one of "data", "config"
+	 * We find a file with basename in a known location following
+	 * the XDG Base Directory Specificaton.
+	 * https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
+	 * but also look in the directory containing this library $HERE
+	 * For "data" we look in a directory "edlib" under:
+	 * - $XDG_DATA_HOME, or $HOME/.local/share
+	 * - $HERE
+	 * - $XDG_DATA_DIRS, or /usr/local/share:/usr/share
+	 *
+	 * For config we lookin a "edlib" under:
+	 * - $XDG_CONFIG_HOME, or $HOME/.config
+	 * - $HERE
+	 * - $XDG_CONFIG_DIRS, or /etc/xdg
+	 */
+	char *path = NULL;
+
+	if (ci->str == NULL || ci->str2 == NULL)
+		return -Enoarg;
+	if (strcmp(ci->str2, "data") == 0)
+		path = set_data_path(ci->home);
+	else if (strcmp(ci->str2, "config") == 0)
+		path = set_config_path(ci->home);
+
+	if (!path)
+		return Einval;
+	for (; path && *path; path += strlen(path)+1) {
+		char *p = strconcat(NULL, path, ci->str);
+		int fd;
+		if (!p)
+			continue;
+		fd = open(p, O_RDONLY);
+		if (fd < 0) {
+			free(p);
+			continue;
+		}
+		close(fd);
+		comm_call(ci->comm2, "cb", ci->focus, 0, NULL, p);
+		free(p);
+		return 1;
+	}
+	return Efalse;
+}
+
 struct pane *editor_new(void)
 {
 	struct pane *ed;
@@ -481,6 +659,7 @@ struct pane *editor_new(void)
 		key_add(ed_map, "global-get-command", &global_get_command);
 		key_add(ed_map, "global-load-module", &editor_load_module);
 		key_add(ed_map, "global-config-dir", &global_config_dir);
+		key_add(ed_map, "xdg-find-edlib-file", &global_find_file);
 		key_add_prefix(ed_map, "event:", &editor_auto_event);
 		key_add_prefix(ed_map, "global-multicall-", &editor_multicall);
 		key_add_prefix(ed_map, "editor:request:",
