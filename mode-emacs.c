@@ -3109,10 +3109,30 @@ DEF_CMD(emacs_quote)
 		 (str = call_ret(strsave, "doc:get-str", ci->focus,
 				 0, NULL, NULL, 0, mk)) != NULL) {
 		int x;
+		char *ep;
 		if (*str == '#')
 			str ++;
-		if (sscanf(str, "%x", &x) == 1)
+		x = strtoul(str, &ep, 16);
+		if (ep && *ep == 0) {
 			wch = x;
+			call("Message", ci->focus, 0, NULL,
+			     strconcat(ci->focus, "Hex code 0x", str));
+		} else {
+			struct call_return cr;
+			cr = call_ret(all, "Unicode-names", ci->focus,
+				      1, NULL, str);
+			if (cr.s && cr.i) {
+				wch = cr.i;
+				call("Message", ci->focus, 0, NULL,
+				     strconcat(ci->focus,
+					       "Unicode char <", cr.s, ">"));
+			} else {
+				call("Message", ci->focus, 0, NULL,
+				     strconcat(ci->focus,
+					       "Cannot find character <", str, ">"));
+				return Efail;
+			}
+		}
 	}
 	if (wch == WEOF) {
 		call("Mode:set-all", ci->focus, ci->num, NULL, ":CQ", ci->num2);

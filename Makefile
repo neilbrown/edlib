@@ -86,6 +86,7 @@ SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
 	O/lib-renderline.o O/lib-x11selection-gtk.o O/lib-autosave.o \
 	O/lib-x11selection-xcb.o O/display-x11-xcb.o \
 	O/lib-linefilter.o O/lib-wiggle.o O/lib-aspell.o O/lib-calc.o \
+	O/lib-unicode-names.o \
 	O/lang-python.o \
 	O/mode-emacs.o O/emacs-search.o \
 	O/display-ncurses.o
@@ -238,7 +239,7 @@ test-rexel: rexel
 	./rexel -T
 
 NamesList.txt:
-	wget http://www.unicode.org/Public/UCD/latest/ucd/NamesList.txt
+	wget https://unicode.org/Public/UNIDATA/NamesList.txt
 
 checksym: edlib
 	@nm edlib  | awk '$$2 == "T" {print $$3}' | while read a; do grep $$a *.h > /dev/null || echo  $$a; done | grep -vE '^(_.*|main)$$' ||:

@@ -25,7 +25,7 @@ the file.
       lines containing current content.
 - [X] emacs: Num-C-l doesn't work if it would require part of a wrapped line
       off top of screen
-- [ ] emacs: :C-q to recognise names of Unicode chars: e.g. WASTEBASKET
+- [X] emacs: :C-q to recognise names of Unicode chars: e.g. WASTEBASKET
        Possibly matches a list which continued :C-q cycles through
 - [ ] linecount 'view' mode improvements
 - [ ] allocate pane->data together with pane.  A single allocation so
@@ -279,8 +279,12 @@ Module features
 
 - [X] Num-C-l doesn't work if it would require part of a wrapped line
       off top of screen
-- [ ] :C-q to recognise names of Unicode chars: e.g. WASTEBASKET
+- [X] :C-q to recognise names of Unicode chars: e.g. WASTEBASKET
        Possibly matches a list which continued :C-q cycles through
+- [ ] :CX-= to look-up unicode name of character if not ASCII
+- [ ] ":C-q ?" or "- :C-q" to open a find dialog with list of unicode
+      chars.
+- [ ] :C-q when finding unicode chars, allow repeated :C-q to find more
 - [ ] split some generic functionality like arrows and mouse clicks
       into a separate module to be shared with other edit modes.
 - [ ] sort the command names for command-completion?
