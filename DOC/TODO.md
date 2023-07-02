@@ -284,7 +284,7 @@ Module features
 - [ ] :CX-= to look-up unicode name of character if not ASCII
 - [ ] ":C-q ?" or "- :C-q" to open a find dialog with list of unicode
       chars.
-- [ ] :C-q when finding unicode chars, allow repeated :C-q to find more
+- [X] :C-q when finding unicode chars, allow repeated :C-q to find more
 - [ ] split some generic functionality like arrows and mouse clicks
       into a separate module to be shared with other edit modes.
 - [ ] sort the command names for command-completion?

@@ -39,7 +39,8 @@ enum {
 	N2_undo,	/* Last command was 'undo' too */
 	N2_close_others,/* Last command was close-other, just a 1 can repeat */
 	N2_runmacro,	/* Last command was CX-e, just an 'e' can repeat */
-	N2_shift,	/* Laset command was CX-< or CX-> */
+	N2_shift,	/* Last command was CX-< or CX-> */
+	N2_uniquote,	/* Last command was :C-q inserting a unicode from name */
 };
 static inline int N2(const struct cmd_info *ci safe)
 {
@@ -3100,14 +3101,40 @@ DEF_CMD(emacs_quote)
 	wint_t wch = WEOF;
 	char *str = NULL;
 	struct mark *mk = NULL;
+	bool free_mark = False;
 
 	if (ci->num >= 0 && ci->num < NO_NUMERIC)
 		wch = ci->num;
-	else if (ci->mark &&
-		 (mk = call_ret(mark2, "doc:point", ci->focus)) != NULL &&
-		 clear_selection(ci->focus, NULL, mk, 0) &&
-		 (str = call_ret(strsave, "doc:get-str", ci->focus,
-				 0, NULL, NULL, 0, mk)) != NULL) {
+	else if (N2(ci) == N2_uniquote && ci->mark &&
+		 (str = attr_find(ci->mark->attrs, "emacs:unicode_char")) != NULL) {
+		struct call_return cr;
+		int i = N2a(ci);
+		if (ci->num < 0 && i > 1)
+			i -= 1;
+		else
+			i += 1;
+		cr = call_ret(all, "Unicode-names", ci->focus, i, NULL, str);
+		if (cr.s && cr.i && (wint_t)cr.i != WEOF) {
+			wch = cr.i;
+			call("Message", ci->focus, 0, NULL,
+			     strconcat(ci->focus,
+				       "Unicode char <", cr.s, ">"));
+			call("Mode:set-num2", ci->focus,
+			     N2_uniquote | (i << 16));
+			mk = mark_dup(ci->mark);
+			doc_prev(ci->focus, mk);
+			free_mark = True;
+		} else {
+			call("Message", ci->focus, 0, NULL,
+			     strconcat(ci->focus,
+				       "Cannot find another character <", str, ">"));
+			return Efail;
+		}
+	} else if (wch == WEOF && ci->mark &&
+		   (mk = call_ret(mark2, "doc:point", ci->focus)) != NULL &&
+		   clear_selection(ci->focus, NULL, mk, 0) &&
+		   (str = call_ret(strsave, "doc:get-str", ci->focus,
+				   0, NULL, NULL, 0, mk)) != NULL) {
 		int x;
 		char *ep;
 		if (*str == '#')
@@ -3126,6 +3153,13 @@ DEF_CMD(emacs_quote)
 				call("Message", ci->focus, 0, NULL,
 				     strconcat(ci->focus,
 					       "Unicode char <", cr.s, ">"));
+				if (ci->mark) {
+					attr_set_str(&ci->mark->attrs,
+						     "emacs:unicode_char",
+						     str);
+					call("Mode:set-num2", ci->focus,
+					     N2_uniquote | (1 << 16));
+				}
 			} else {
 				call("Message", ci->focus, 0, NULL,
 				     strconcat(ci->focus,
@@ -3139,6 +3173,8 @@ DEF_CMD(emacs_quote)
 		return 1;
 	}
 	call("Replace", ci->focus, 0, mk, put_utf8(b, wch));
+	if (free_mark)
+		mark_free(mk);
 	return 1;
 }
 
