@@ -417,7 +417,7 @@ DEF_CMD(docs_callback_appeared)
 DEF_CMD(doc_damage)
 {
 	struct pane *dp = ci->home->data;
-	struct mark *m = vmark_new(dp, MARK_UNGROUPED, NULL);
+	struct mark *m = mark_new(dp);
 	struct pane *child = ci->focus;
 
 	if (!child || !m)

@@ -182,7 +182,7 @@ static void change_part(struct mp_info *mpi safe, struct mark *m safe,
 		m->ref.m = NULL;
 	}
 	if (part < mpi->nparts && (p = &mpi->parts[part]) && p->pane) {
-		m1 = vmark_new(p->pane, MARK_UNGROUPED, NULL);
+		m1 = mark_new(p->pane);
 		if (m1) {
 			call("doc:set-ref", p->pane, !end, m1);
 			m->ref.m = m1;
@@ -590,7 +590,7 @@ DEF_CMD(mp_attr)
 
 	p = &mpi->parts[d];
 	if (d != ci->mark->ref.docnum && p->pane) {
-		m1 = vmark_new(p->pane, MARK_UNGROUPED, NULL);
+		m1 = mark_new(p->pane);
 		call("doc:set-ref", p->pane,
 		     (d > ci->mark->ref.docnum), m1);
 	}

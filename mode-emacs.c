@@ -1006,7 +1006,7 @@ DEF_CMD(find_prevnext)
 		struct mark *m, *m2;
 
 		attr_set_str(&ci->home->attrs, "find-doc", name);
-		m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
+		m = mark_new(ci->focus);
 		m2 = m ? mark_dup(m) : NULL;
 		call("doc:file", ci->focus, -1, m);
 		call("doc:file", ci->focus, 1, m2);
@@ -2445,7 +2445,7 @@ DEF_CMD(emacs_press)
 	struct mark *pt = call_ret(mark, "doc:point", ci->focus);
 	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
 	struct mark *m2 = call_ret(mark2, "doc:point", ci->focus, 2);
-	struct mark *m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
+	struct mark *m = mark_new(ci->focus);
 	char *type;
 
 	if (!m || !pt) {
@@ -2495,7 +2495,7 @@ DEF_CMD(emacs_release)
 	struct mark *p = call_ret(mark, "doc:point", ci->focus);
 	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
 	struct mark *m2 = call_ret(mark2, "doc:point", ci->focus, 2);
-	struct mark *m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
+	struct mark *m = mark_new(ci->focus);
 	char *type;
 	int prev_pos;
 	int moved;

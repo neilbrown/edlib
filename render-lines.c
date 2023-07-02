@@ -1222,7 +1222,7 @@ DEF_CMD(render_lines_revise)
 
 	if (hdr) {
 		if (!rl->header)
-			rl->header = vmark_new(focus, MARK_UNGROUPED, NULL);
+			rl->header = mark_new(focus);
 		if (rl->header) {
 			vmark_set(p, rl->header, hdr);
 			measure_line(p, focus, rl->header, -1);

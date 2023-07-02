@@ -245,7 +245,7 @@ DEF_CMD(history_hlast)
 	if (!doc)
 		return Einval;
 
-	m = vmark_new(doc, MARK_UNGROUPED, NULL);
+	m = mark_new(doc);
 	if (!m)
 		return 1;
 	call("doc:set-ref", doc, 0, m);
@@ -287,7 +287,7 @@ DEF_CMD(history_last)
 	doc = call_ret(pane, "docs:byname", ci->focus, 0, NULL, ci->str);
 	if (!doc)
 		return 1;
-	m = vmark_new(doc, MARK_UNGROUPED, NULL);
+	m = mark_new(doc);
 	if (!m)
 		return 1;
 	call("doc:set-ref", doc, 0, m);

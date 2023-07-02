@@ -2015,7 +2015,7 @@ static const PyGetSetDef mark_getseters[] = {
 	{NULL}  /* Sentinel */
 };
 
-static Mark *mark_new(PyTypeObject *type safe, PyObject *args, PyObject *kwds)
+static Mark *Mark_new(PyTypeObject *type safe, PyObject *args, PyObject *kwds)
 {
 	Mark *self;
 
@@ -2419,7 +2419,7 @@ static PyTypeObject MarkType = {
 	.tp_methods	= (PyMethodDef*)mark_methods,
 	.tp_getset	= (PyGetSetDef*)mark_getseters,
 	.tp_init	= (initproc)Mark_init,
-	.tp_new		= (newfunc)mark_new,
+	.tp_new		= (newfunc)Mark_new,
 	.tp_repr	= (reprfunc)mark_repr,
 	.tp_as_number	= (PyNumberMethods*)&mark_as_num,
 };

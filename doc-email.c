@@ -581,7 +581,7 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer, char *disp,
 				       0, NULL, NULL, 0, NULL,
 				       "");
 		if (transformed) {
-			m = vmark_new(transformed, MARK_UNGROUPED, NULL);
+			m = mark_new(transformed);
 			call("doc:set-ref", transformed, 1, m);
 			call("doc:replace", transformed, 1, m, "01",
 			     0, m, ",markup:func=doc:email:render-image");
@@ -896,7 +896,7 @@ DEF_CMD(open_email)
 	close(fd);
 	if (!p)
 		return Efallthrough;
-	start = vmark_new(p, MARK_UNGROUPED, NULL);
+	start = mark_new(p);
 	if (!start) {
 		pane_close(p);
 		return Efallthrough;
@@ -1197,7 +1197,7 @@ DEF_CMD(attach_email_view)
 	struct mark *m;
 	int n, i;
 
-	m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
+	m = mark_new(ci->focus);
 	if (!m)
 		return Efail;
 	call("doc:set-ref", ci->focus, 0, m);

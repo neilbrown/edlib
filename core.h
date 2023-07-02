@@ -291,6 +291,10 @@ struct mark *vmark_last(struct pane *p safe, int view, struct pane *owner safe);
 struct mark *vmark_at_or_before(struct pane *p safe, struct mark *m safe,
 				int view, struct pane *owner);
 struct mark *vmark_new(struct pane *p safe, int view, struct pane *owner);
+static inline struct mark *mark_new(struct pane *p safe)
+{
+	return vmark_new(p, MARK_UNGROUPED, NULL);
+}
 void mark_clip(struct mark *m safe, struct mark *start, struct mark *end,
 	       bool tostart);
 void marks_clip(struct pane *p safe, struct mark *start, struct mark *end,

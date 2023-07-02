@@ -949,14 +949,14 @@ DEF_CMD(doc_get_str)
 	buf_init(&g.b);
 	g.end = to;
 	if (!from) {
-		from = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
+		from = mark_new(ci->focus);
 		if (from)
 			call("doc:set-ref", ci->focus, 1, from);
 	}
 	if (!from)
 		return Efail;
 	if (!to) {
-		to = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
+		to = mark_new(ci->focus);
 		if (to)
 			call("doc:set-ref", ci->focus, 0, to);
 	}

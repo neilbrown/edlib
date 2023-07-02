@@ -222,7 +222,7 @@ DEF_CMD(dir_load_file)
 	int doclose = 0;
 
 	prev = NULL;
-	m = vmark_new(ci->home, MARK_UNGROUPED, NULL);
+	m = mark_new(ci->home);
 	if (!m)
 		return Efail;
 	if (fd < 0) {
@@ -1074,7 +1074,7 @@ static void add_name(struct buf *b safe, char *name safe)
 static char *collect_names(struct pane *p safe, char *type,
 			   struct mark *mark)
 {
-	struct mark *m = vmark_new(p, MARK_UNGROUPED, NULL);
+	struct mark *m = mark_new(p);
 	struct buf b;
 
 	if (!m)

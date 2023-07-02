@@ -355,7 +355,7 @@ DEF_CMD(filter_changed)
 	if (!fd->match)
 		return 1;
 
-	start = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
+	start = mark_new(ci->focus);
 	if (!start)
 		return Efail;
 	if (ci->mark && (!ci->mark2 || ci->mark2->seq > ci->mark->seq))
@@ -374,7 +374,7 @@ DEF_CMD(filter_changed)
 		mark_to_mark(start, m);
 	}
 
-	end = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
+	end = mark_new(ci->focus);
 	if (!end) {
 		mark_free(start);
 		return Efail;
