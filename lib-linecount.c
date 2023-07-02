@@ -404,8 +404,8 @@ DEF_CMD(count_lines)
 	if (ci->mark) {
 		if (ci->str && strcmp(ci->str, "goto:line") == 0 &&
 		    ci->num != NO_NUMERIC) {
-			call("doc:notify:doc:GotoLine", ci->focus, ci->num, NULL, NULL,
-			     0, ci->mark);
+			call("doc:notify:doc:GotoLine", ci->focus, ci->num,
+			     ci->mark);
 		}
 		call("doc:notify:doc:CountLines", ci->focus, async, NULL, NULL,
 		     0, ci->mark);
