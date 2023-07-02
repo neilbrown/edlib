@@ -160,7 +160,7 @@ static void do_count(struct pane *p safe, struct pane *owner safe,
 
 DEF_CMD(linecount_restart)
 {
-	pane_notify("doc:CountLines", ci->focus, 1);
+	pane_call(ci->home, "doc:CountLines", ci->focus, 1);
 	return Efalse;
 }
 
@@ -231,16 +231,16 @@ static void count_calculate(struct pane *p safe,
 		call("doc:set-ref", p, 1, m);
 		do_count(p, owner, m, vmark_next(m), &l, &w, &c, sync ? -1 : batch_marks);
 		if (!sync) {
-			call_comm("event:on-idle", p, &linecount_restart);
+			call_comm("event:on-idle", owner, &linecount_restart);
 			return;
 		}
 	}
 
-	if (need_recalc(p, m)) {
+	if (need_recalc(owner, m)) {
 		/* need to update this one */
 		do_count(p, owner, m, vmark_next(m), &l, &w, &c, sync ? -1 : batch_marks);
 		if (!sync) {
-			call_comm("event:on-idle", p, &linecount_restart);
+			call_comm("event:on-idle", owner, &linecount_restart);
 			return;
 		}
 	}
@@ -254,11 +254,11 @@ static void count_calculate(struct pane *p safe,
 		words += attr_find_int(*mark_attr(m), "words");
 		chars += attr_find_int(*mark_attr(m), "chars");
 		m = m2;
-		if (!need_recalc(p, m))
+		if (!need_recalc(owner, m))
 			continue;
 		do_count(p, owner, m, vmark_next(m), &l, &w, &c, sync ? -1 : batch_marks);
 		if (!sync || pane_too_long(owner, 0)) {
-			call_comm("event:on-idle", p, &linecount_restart);
+			call_comm("event:on-idle", owner, &linecount_restart);
 			return;
 		}
 	}
@@ -294,7 +294,7 @@ DEF_CMD(linecount_close)
 	struct count_info *cli = ci->home->data;
 	struct mark *m;
 
-	call_comm("event:free", d, &linecount_restart);
+	call_comm("event:free", ci->home, &linecount_restart);
 	while ((m = vmark_first(d, cli->view_num, ci->home)) != NULL)
 		mark_free(m);
 	home_call(d, "doc:del-view", ci->home, cli->view_num);
@@ -327,7 +327,7 @@ DEF_CMD(linecount_notify_replace)
 	       (!ci->mark2 || mark_ordered_or_same(m2, ci->mark2)))
 		mark_free(m2);
 
-	call_comm("event:free", d, &linecount_restart);
+	call_comm("event:free", ci->home, &linecount_restart);
 	return 1;
 }
 
