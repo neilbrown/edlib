@@ -2291,7 +2291,7 @@ DEF_CMD(text_replace)
 
 	if (!pm) {
 		/* Default to insert at end */
-		pm = vmark_new(ci->home, MARK_POINT, NULL);
+		pm = point_new(ci->home);
 		if (!pm)
 			return Efail;
 		mark_reset(ci->home, pm, 1);

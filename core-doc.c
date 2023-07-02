@@ -1359,7 +1359,7 @@ static struct pane *doc_attach_assign(struct pane *parent safe, struct pane *doc
 	if (!p)
 		return NULL;
 
-	m = vmark_new(doc, MARK_POINT, NULL);
+	m = point_new(doc);
 	if (!m) {
 		pane_close(p);
 		return NULL;

@@ -295,6 +295,10 @@ static inline struct mark *mark_new(struct pane *p safe)
 {
 	return vmark_new(p, MARK_UNGROUPED, NULL);
 }
+static inline struct mark *point_new(struct pane *p safe)
+{
+	return vmark_new(p, MARK_POINT, NULL);
+}
 void mark_clip(struct mark *m safe, struct mark *start, struct mark *end,
 	       bool tostart);
 void marks_clip(struct pane *p safe, struct mark *start, struct mark *end,

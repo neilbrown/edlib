@@ -325,7 +325,7 @@ DEF_CMD(email_select_extras)
 	hdrdoc = call_ret(pane, "doc:multipart:get-part", ci->focus, 1);
 	if (!headers || !hdrdoc)
 		return Einval;
-	point = vmark_new(hdrdoc, MARK_POINT, NULL);
+	point = point_new(hdrdoc);
 	if (point) {
 		char *file;
 
@@ -816,7 +816,7 @@ static bool handle_rfc822(struct pane *email safe,
 	if (!hdrdoc)
 		goto out;
 	call("doc:set:autoclose", hdrdoc, 1);
-	point = vmark_new(hdrdoc, MARK_POINT, NULL);
+	point = point_new(hdrdoc);
 	if (!point)
 		goto out;
 
@@ -916,7 +916,7 @@ DEF_CMD(open_email)
 	attr_set_str(&p->attrs, "email:which", "spacer");
 	call("doc:set:autoclose", p, 1);
 	spacer = p;
-	point = vmark_new(p, MARK_POINT, NULL);
+	point = point_new(p);
 	call("doc:set-ref", p, 1, point);
 	call("doc:set-attr", p, 1, point, "markup:func", 0,
 	     NULL, "doc:email:render-spacer");
