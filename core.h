@@ -97,8 +97,11 @@ static inline unsigned int ts_to_ms(struct timespec *ts safe)
 
 static inline bool pane_too_long(struct pane *p safe, unsigned int msec)
 {
+	extern bool edlib_timing_allowed;
 	struct timespec ts;
 	unsigned int duration;
+	if (!edlib_timing_allowed)
+		return False;
 	clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
 	duration = ts_to_ms(&ts) - p->timestamp;
 	if (msec < 100)
