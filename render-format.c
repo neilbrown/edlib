@@ -38,7 +38,6 @@ struct rf_data {
 	char *attr_cache;
 	void *cache_pos;
 	int cache_field;
-	bool no_linecount;
 };
 
 static inline short FIELD_NUM(int i) { return i >> 16; }
@@ -930,46 +929,6 @@ DEF_CMD(render_line_prev2)
 	return 1;
 }
 
-DEF_CMD(format_request)
-{
-	/* Someone wants to count lines - attach the line count here,
-	 * rather than let it fall through to document.
-	 */
-	struct rf_data *rd = ci->home->data;
-
-	if (rd->no_linecount)
-		return Efallthrough;
-	pane_add_notify(ci->focus, ci->home, ksuffix(ci, "doc:request:"));
-	if (strcmp(ci->key, "doc:request:doc:replaced") == 0)
-		/* Though for doc:replaced, we want the doc to respond too */
-		return Efallthrough;
-	return 1;
-}
-
-DEF_CMD(format_countlines)
-{
-	return pane_notify(ksuffix(ci, "doc:notify:"),
-			   ci->home,
-			   ci->num, ci->mark, ci->str,
-			   ci->num2, ci->mark2, ci->str2, ci->comm2);
-}
-
-DEF_CMD(status_changed)
-{
-	/* line-count sent a status-change message */
-	call("doc:status-changed", ci->focus->parent);
-	return 1;
-}
-
-DEF_CMD(doc_replaced)
-{
-	/* doc sent a doc;replaced message */
-	pane_notify("doc:replaced", ci->home,
-		    ci->num, ci->mark, ci->str,
-		    ci->num2, ci->mark2, ci->str2, ci->comm2);
-	return 1;
-}
-
 static struct pane *do_render_format_attach(struct pane *parent safe);
 DEF_CMD(format_clone)
 {
@@ -1006,11 +965,6 @@ static void render_format_register_map(void)
 	key_add(rf2_map, "doc:content", &format_content2);
 	key_add(rf2_map, "Free", &format_free);
 	key_add(rf2_map, "doc:shares-ref", &format_noshare_ref);
-	key_add(rf2_map, "doc:request:doc:CountLines", &format_request);
-	key_add(rf2_map, "doc:request:doc:replaced", &format_request);
-	key_add(rf2_map, "doc:notify:doc:CountLines", &format_countlines);
-	key_add(rf2_map, "doc:status-changed", &status_changed);
-	key_add(rf2_map, "doc:replaced", &doc_replaced);
 }
 
 DEF_LOOKUP_CMD(render_format_handle, rf_map);
@@ -1031,12 +985,11 @@ static struct pane *do_render_format_attach(struct pane *parent safe)
 			render_format_register_map();
 
 		alloc(rf, pane);
-		if (pane_attr_get(parent, "format:no-linecount"))
-			rf->no_linecount = True;
 		p = pane_register(parent, 0, &render_format2_handle.c, rf);
-		if (p) {
-			pane_add_notify(p, p, "doc:status-changed");
-			home_call(parent, "doc:request:doc:replaced", p);
+		if (p && !pane_attr_get(parent, "format:no-linecount")) {
+			struct pane *p2 = call_ret(pane, "attach-line-count", p);
+			if (p2)
+				p = p2;
 		}
 	}
 	if (!p)

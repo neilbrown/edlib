@@ -27,7 +27,7 @@ the file.
       off top of screen
 - [X] emacs: :C-q to recognise names of Unicode chars: e.g. WASTEBASKET
        Possibly matches a list which continued :C-q cycles through
-- [ ] linecount 'view' mode improvements
+- [X] linecount 'view' mode improvements
 - [ ] allocate pane->data together with pane.  A single allocation so
       that we can avoid the cost of a dereference.
 
@@ -35,7 +35,7 @@ the file.
 
 - [X] lib-mergeview improvements
 - [X] lib-diff slowness with large diff
-- [ ] linecount :when used in 'view' mode, stack the counting pane with all the
+- [X] linecount :when used in 'view' mode, stack the counting pane with all the
       others so it can easily catch view-changed.
 - [X] C config module that reads an ini-style file to set attributes
       based on path
@@ -73,6 +73,10 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] Add optional unit-test interface for modules.  This should be
+      implemented at least by lib-search, doc-text and probably
+      many others.  It is particularly for things that are awkward
+      to test with the ncurses/replay test approach.
 - [ ] Send global notify before/after refresh.  LOG must suspend
       logging (or notifications at least) during refresh if is visible
       anywhere
@@ -172,10 +176,13 @@ Module features
 
 ### lib-linecount
 
-- [ ] when used in 'view' mode, stack the counting pane with all the
+- [X] when used in 'view' mode, stack the counting pane with all the
       others so it can easily catch view-changed.  In general, make it
       easier to use this way.  e.g. easier than catching
       doc:request:doc:CountLines.
+- [ ] handle view:changed properly, and make sure total count changes
+      appropriately in notmuch-query-view.  Maybe view:changed should
+      report if content changed, or just attributes.
 
 ### lib-server
 
@@ -193,6 +200,9 @@ Module features
 - [ ] need a queue of pending selection requests
 
 ### lib-textfill
+
+- [ ] auto-wrap on a line like this one doesn't recognize all the
+  punctuation a the start of the line ... should it?
 
 
 ### render-format
@@ -277,6 +287,8 @@ Module features
 
 ### emacs
 
+- [ ] there is no way to count characters in a range, or find how many
+      characters into the document I am.  Maybe bytes would be good too.
 - [X] Num-C-l doesn't work if it would require part of a wrapped line
       off top of screen
 - [X] :C-q to recognise names of Unicode chars: e.g. WASTEBASKET

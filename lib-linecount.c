@@ -25,6 +25,13 @@
  * When it is called on a mark in the pane, attributes are set on the
  * mark to indicate the line, work and char where the mark is.
  * These are always at least 1.
+ *
+ * Alternately, the pane can be attaching in the view stack so that it
+ * applies to the view rather than the document.  This is useful when
+ * There are views imposed that dramatically alter the number of
+ * lines/words, or that hide parts of the document that really shouldn't
+ * be counted.  The view on an RFC2822 email or the results of a notmuch
+ * search are good and current examples.
  */
 
 #include <unistd.h>
@@ -160,7 +167,7 @@ static void do_count(struct pane *p safe, struct pane *owner safe,
 
 DEF_CMD(linecount_restart)
 {
-	pane_call(ci->home, "doc:CountLines", ci->focus, 1);
+	pane_call(ci->home, "CountLinesAsync", pane_leaf(ci->focus), 1);
 	return Efalse;
 }
 
@@ -308,6 +315,10 @@ DEF_CMD(linecount_notify_replace)
 	struct count_info *cli = ci->home->data;
 	struct mark *m, *m2;
 
+	if (ci->mark && !ci->mark2)
+		/* I might not care about this one... */
+		return Efallthrough;
+
 	attr_del(&d->attrs, "lines");
 	attr_del(&d->attrs, "words");
 	attr_del(&d->attrs, "chars");
@@ -317,7 +328,7 @@ DEF_CMD(linecount_notify_replace)
 	else
 		m = vmark_first(d, cli->view_num, ci->home);
 	if (!m)
-		return 1;
+		return Efallthrough;
 
 	attr_del(mark_attr(m), "lines");
 	attr_del(mark_attr(m), "words");
@@ -328,17 +339,39 @@ DEF_CMD(linecount_notify_replace)
 		mark_free(m2);
 
 	call_comm("event:free", ci->home, &linecount_restart);
-	return 1;
+	return Efallthrough;
 }
 
 DEF_CMD(linecount_notify_count)
 {
 	struct pane *d = ci->focus;
 	struct count_info *cli = ci->home->data;
-	/* Option mark is "mark2" as "mark" gets the "point" */
+	/* Option mark is "mark2" as "mark" gets the "point" so is never NULL */
 	/* num==1 means we don't want to wait for precision */
+	bool sync = ci->mark2 && ci->num != 1;
+
+	if (strcmp(ci->key, "CountLinesAsync") == 0)
+		sync = False;
 	count_calculate(d, ci->mark2, ci->home, cli->view_num,
-			ci->mark2 && ci->num != 1);
+			sync);
+	return 1;
+}
+
+DEF_CMD(linecount_view_count)
+{
+	struct pane *d = ci->focus;
+	struct count_info *cli = ci->home->data;
+	bool sync = strcmp(ci->key, "CountLines") == 0;
+
+	if (strcmp(ci->key, "CountLinesAsync") == 0)
+		sync = False;
+
+	if (ci->mark && ci->str && strcmp(ci->str, "goto:line") == 0 &&
+	    ci->num != NO_NUMERIC) {
+		pane_call(ci->home, "doc:GotoLine", d, ci->num, ci->mark);
+	}
+	count_calculate(d, ci->mark, ci->home, cli->view_num,
+			sync);
 	return 1;
 }
 
@@ -416,10 +449,40 @@ DEF_CMD(count_lines)
 	return 1;
 }
 
+DEF_CMD(linecount_attach)
+{
+	struct count_info *cli;
+	struct pane *p;
+
+	alloc(cli, pane);
+	p = pane_register(ci->focus, 0,
+			  &handle_count_lines.c, cli);
+	if (!p)
+		return Efail;
+	cli->view_num = home_call(p, "doc:add-view", p) - 1;
+	call("doc:request:doc:replaced", p);
+	call("doc:request:Notify:Close", p);
+	call_comm("event:on-idle", p, &linecount_restart, 1);
+
+	comm_call(ci->comm2, "cb", p);
+	return 1;
+}
+
+DEF_CMD(linecount_clone)
+{
+	struct pane *p;
+
+	p = comm_call_ret(pane, &linecount_attach, "attach", ci->focus);
+	pane_clone_children(ci->home, p);
+	return 1;
+}
+
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &count_lines, 0, NULL, "CountLines");
 	call_comm("global-set-command", ed, &count_lines, 0, NULL, "CountLinesAsync");
+	call_comm("global-set-command", ed, &linecount_attach, 0, NULL,
+		  "attach-line-count");
 
 	if (linecount_map)
 		return;
@@ -430,4 +493,10 @@ void edlib_init(struct pane *ed safe)
 	key_add(linecount_map, "doc:CountLines", &linecount_notify_count);
 	key_add(linecount_map, "doc:GotoLine", &linecount_notify_goto);
 	key_add(linecount_map, "Free", &edlib_do_free);
+
+	/* For view-attached version */
+	key_add(linecount_map, "CountLines", &linecount_view_count);
+	key_add(linecount_map, "CountLinesAsync", &linecount_view_count);
+	//key_add(linecount_map, "view:changed", &linecount_notify_replace);
+	key_add(linecount_map, "Clone", &linecount_clone);
 }

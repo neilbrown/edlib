@@ -1171,8 +1171,6 @@ DEF_CMD(email_view_set_attr)
 			  1, m2);
 		call("view:changed", ci->focus, 0, m1, NULL, 0, m2);
 		call("Notify:clip", ci->focus, 0, m1, NULL, 0, m2);
-		/* for CountLines */
-		pane_notify("doc:replaced", ci->home, 0, m1, NULL, 0, m2);
 		mark_free(m1);
 		mark_free(m2);
 
@@ -1192,45 +1190,9 @@ DEF_CMD(email_view_set_attr)
 	return Efallthrough;
 }
 
-DEF_CMD(email_request)
-{
-	/* Someone wants to count lines - attach the line count here,
-	 * rather than let it fall through to document.
-	 */
-	pane_add_notify(ci->focus, ci->home, ksuffix(ci, "doc:request:"));
-	if (strcmp(ci->key, "doc:request:doc:replaced") == 0)
-		/* Though for doc:replaced, we want the doc to respond too */
-		return Efallthrough;
-	return 1;
-}
-
-DEF_CMD(email_countlines)
-{
-	return pane_notify(ksuffix(ci, "doc:notify:"),
-			   ci->home,
-			   ci->num, ci->mark, ci->str,
-			   ci->num2, ci->mark2, ci->str2, ci->comm2);
-}
-
-DEF_CMD(status_changed)
-{
-	/* line-count sent a status-change message */
-	call("doc:status-changed", ci->focus->parent);
-	return 1;
-}
-
-DEF_CMD(doc_replaced)
-{
-	/* doc sent a doc;replaced message */
-	pane_notify("doc:replaced", ci->home,
-		    ci->num, ci->mark, ci->str,
-		    ci->num2, ci->mark2, ci->str2, ci->comm2);
-	return 1;
-}
-
 DEF_CMD(attach_email_view)
 {
-	struct pane *p;
+	struct pane *p, *p2;
 	struct email_view *evi;
 	struct mark *m;
 	int n, i;
@@ -1263,9 +1225,9 @@ DEF_CMD(attach_email_view)
 		free(evi);
 		return Efail;
 	}
-	/* get doc:replaced from the email so I can pass it to linecount */
-	home_call(ci->focus, "doc:request:doc:replaced", p);
-	pane_add_notify(p, p, "doc:status-changed");
+	p2 = call_ret(pane, "attach-line-count", p);
+	if (p2)
+		p = p2;
 	attr_set_str(&p->attrs, "render-hide-CR", "yes");
 	return comm_call(ci->comm2, "callback:attach", p);
 }
@@ -1287,11 +1249,6 @@ static void email_init_map(void)
 	key_add(email_view_map, "email:select:hide", &email_select_hide);
 	key_add(email_view_map, "email:select:full", &email_select_full);
 	key_add(email_view_map, "email:select:extras", &email_select_extras);
-	key_add(email_view_map, "doc:request:doc:CountLines", &email_request);
-	key_add(email_view_map, "doc:request:doc:replaced", &email_request);
-	key_add(email_view_map, "doc:notify:doc:CountLines", &email_countlines);
-	key_add(email_view_map, "doc:status-changed", &status_changed);
-	key_add(email_view_map, "doc:replaced", &doc_replaced);
 }
 
 void edlib_init(struct pane *ed safe)
