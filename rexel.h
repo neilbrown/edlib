@@ -7,7 +7,7 @@ enum rxl_found {
 	RXL_NOMATCH,	/* No match has been found at all */
 	RXL_CONTINUE,	/* No match here, but it is worth looking further */
 	RXL_DONE,	/* A match was previously reported, but no further match
-			 * can be found was we are anchored on that match.
+			 * can be found as we are anchored on that match.
 			 */
 	RXL_MATCH,	/* There was a match once the char was processed */
 	RXL_MATCH_FLAG,	/* A match was found due to flags, but not once char was

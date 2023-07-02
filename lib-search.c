@@ -393,13 +393,13 @@ DEF_CMD(text_search)
 			rxl, strcmp(ci->key, "text-match") == 0 ? RXLF_ANCHORED : 0);
 		int flags = RXL_SOL|RXL_SOD;
 		const char *t = ci->str2;
-		int thelen, start;
+		int thelen = -1, start = 0;
 		enum rxl_found r;
 		wint_t prev_ch = WEOF;
 
 		do {
 			wint_t wc = get_utf8(&t, NULL);
-			if (wc >= WERR) {
+			if (wc >= WERR|| (ci->num2 > 0 && t > ci->str2 + ci->num2)) {
 				rxl_advance(st, RXL_EOL|RXL_EOD);
 				break;
 			}
@@ -415,10 +415,26 @@ DEF_CMD(text_search)
 				flags |= RXL_EOW;
 				break;
 			}
+			if (is_eol(wc))
+				flags |= RXL_EOL;
+			if (prev_ch == WEOF || is_eol(prev_ch))
+				flags |= RXL_SOL;
+			prev_ch = wc;
 			r = rxl_advance(st, wc | flags);
 			flags = 0;
+			if (r >= RXL_MATCH) {
+				/* "start" is in chars, not bytes, so we cannot.
+				 * use it.  Need since_start and then count
+				 * back.
+				 */
+				rxl_info(st, &thelen, NULL, NULL, &since_start);
+				start = t - ci->str2;
+				while (since_start > 0) {
+					start = utf8_round_len(ci->str2, start-1);
+					since_start -= 1;
+				}
+			}
 		} while (r != RXL_DONE);
-		rxl_info(st, &thelen, NULL, &start, NULL);
 		rxl_free_state(st);
 		if (thelen < 0)
 			ret = Efalse;
