@@ -203,7 +203,7 @@ DEF_CMD(view_refresh)
 				vpln = attr_find_int(*mark_attr(pm), "line");
 			}
 
-			l = pane_attr_get_int(ci->home, "lines", 1);
+			l = pane_attr_get_int(ci->focus, "lines", 1);
 			if (l <= 0)
 				l = 1;
 			mid = vd->line_height + (p->h - 4 * vd->line_height) * vpln / l;
