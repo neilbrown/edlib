@@ -5,6 +5,7 @@
  * Declaration shared among core code, but not exported to
  * modules.
  */
+#include "safe.h"
 
 struct mark *doc_new_mark(struct pane *p safe, int view, struct pane *owner);
 struct mark *safe point_dup(struct mark *p safe);

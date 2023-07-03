@@ -8,6 +8,7 @@
 #ifndef EDLIB_MISC
 #define EDLIB_MISC
 
+#include <wchar.h>
 #include "list.h"
 
 #undef bool

@@ -9,10 +9,7 @@
 #include <memory.h>
 #include <endian.h>
 
-#ifndef safe
-#define safe
-#define safe_cast
-#endif
+#include "safe.h"
 
 #define MD5_DIGEST_SIZE		16
 #define MD5_HMAC_BLOCK_SIZE	64

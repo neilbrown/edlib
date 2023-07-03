@@ -2,6 +2,10 @@
  * Copyright Neil Brown ©2015-2023 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  */
+
+#include <wchar.h>
+#include "safe.h"
+
 struct match_state;
 enum rxl_found {
 	RXL_NOMATCH,	/* No match has been found at all */
