@@ -1818,9 +1818,10 @@ DEF_CMD(text_new)
 	t->as.last_change = 0;
 	text_new_alloc(t, 0);
 	p = doc_register(ci->home, &text_handle.c, t);
-	if (p)
-		return comm_call(ci->comm2, "callback:doc", p);
-	return Efail;
+	if (!p)
+		return Efail;
+
+	return comm_call(ci->comm2, "callback:doc", p);
 }
 
 DEF_CMD(text_new2)

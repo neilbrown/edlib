@@ -676,11 +676,12 @@ struct pane *editor_new(void)
 	ei->cmd = ed_handle;
 	ei->cmd.m = &ei->map;
 	ed = pane_register_root(&ei->cmd.c, ei, sizeof(ei));
+	if (!ed)
+		return NULL;
 
-	if (ed) {
-		doc_setup(ed);
-		log_setup(ed);
-		window_setup(ed);
-	}
+	doc_setup(ed);
+	log_setup(ed);
+	window_setup(ed);
+
 	return ed;
 }

@@ -180,9 +180,10 @@ DEF_CMD(list_new)
 	alloc(l, pane);
 	INIT_LIST_HEAD(&l->content);
 	p = doc_register(ci->home, &list_handle.c, l);
-	if (p)
-		return comm_call(ci->comm2, "callback:doc", p);
-	return Efail;
+	if (!p)
+		return Efail;
+
+	return comm_call(ci->comm2, "callback:doc", p);
 }
 
 static void list_init_map(void)

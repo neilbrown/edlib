@@ -745,8 +745,10 @@ static int Pane_init(Pane *self safe, PyObject *args, PyObject *kwds)
 	 */
 	Py_INCREF(self);
 	self->pane = pane_register(parent->pane, z, &self->cmd, self);
-	if (self->pane)
-		pane_get(self->pane);
+	if (!self->pane)
+		return -1;
+
+	pane_get(self->pane);
 	return 0;
 }
 

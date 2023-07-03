@@ -482,9 +482,10 @@ DEF_CMD(input_attach)
 	im->num2 = 0;
 
 	p = pane_register(ci->focus, 0, &input_handle.c, im);
-	if (p)
-		return comm_call(ci->comm2, "callback:attach", p);
-	return Efail;
+	if (!p)
+		return Efail;
+
+	return comm_call(ci->comm2, "callback:attach", p);
 }
 
 void edlib_init(struct pane *ed safe)

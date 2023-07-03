@@ -1355,9 +1355,9 @@ static struct pane *doc_attach_assign(struct pane *parent safe, struct pane *doc
 
 	alloc(dd, pane);
 	p = pane_register(parent, 0, &doc_handle.c, dd);
-	pane_damaged(p, DAMAGED_VIEW);
 	if (!p)
 		return NULL;
+	pane_damaged(p, DAMAGED_VIEW);
 
 	m = point_new(doc);
 	if (!m) {

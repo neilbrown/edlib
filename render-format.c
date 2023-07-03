@@ -986,7 +986,9 @@ static struct pane *do_render_format_attach(struct pane *parent safe)
 
 		alloc(rf, pane);
 		p = pane_register(parent, 0, &render_format2_handle.c, rf);
-		if (p && !pane_attr_get(parent, "format:no-linecount")) {
+		if (!p)
+			return p;
+		if (!pane_attr_get(parent, "format:no-linecount")) {
 			struct pane *p2 = call_ret(pane, "attach-line-count", p);
 			if (p2)
 				p = p2;

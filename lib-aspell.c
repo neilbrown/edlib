@@ -57,13 +57,15 @@ DEF_CMD(aspell_attach_helper)
 	alloc(as, pane);
 	as->speller = safe_cast to_aspell_speller(ret);
 	p = pane_register(ci->focus, 0, &aspell_handle.c, as);
-	if (p) {
-		call("doc:request:aspell:check", p);
-		call("doc:request:aspell:suggest", p);
-		call("doc:request:aspell:set-dict", p);
-		call("doc:request:aspell:add-word", p);
-		call("doc:request:aspell:save", p);
-	}
+	if (!p)
+		return Efail;
+
+	call("doc:request:aspell:check", p);
+	call("doc:request:aspell:suggest", p);
+	call("doc:request:aspell:set-dict", p);
+	call("doc:request:aspell:add-word", p);
+	call("doc:request:aspell:save", p);
+
 	return 1;
 }
 

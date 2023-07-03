@@ -236,13 +236,14 @@ DEF_CMD(ask_autosave)
 		p2 = NULL;
 	if (p2)
 		p2 = pane_register(p2, 0, &autosave_handle.c);
-	if (p2) {
-		attr_set_str(&p2->attrs, "orig_name", f);
-		attr_set_str(&p2->attrs, "autosave_name", a);
-		attr_set_str(&p2->attrs, "autosave_type", autosave_type);
-		if (doc)
-			pane_add_notify(p2, doc, "doc:replaced");
-	}
+	if (!p2)
+		return Efail;
+
+	attr_set_str(&p2->attrs, "orig_name", f);
+	attr_set_str(&p2->attrs, "autosave_name", a);
+	attr_set_str(&p2->attrs, "autosave_type", autosave_type);
+	if (doc)
+		pane_add_notify(p2, doc, "doc:replaced");
 
 	return 1;
 }

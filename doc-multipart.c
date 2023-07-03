@@ -880,14 +880,14 @@ DEF_CMD(attach_mp)
 	alloc(mpi, pane);
 
 	h = doc_register(ci->home, &mp_handle.c, mpi);
-	if (h) {
-		mpi->doc.refcnt = mp_mark_refcnt;
-		attr_set_str(&h->attrs, "render-default", "text");
-		return comm_call(ci->comm2, "callback:doc", h);
+	if (!h) {
+		unalloc(mpi, pane);
+		return Efail;
 	}
 
-	free(mpi);
-	return Efail;
+	mpi->doc.refcnt = mp_mark_refcnt;
+	attr_set_str(&h->attrs, "render-default", "text");
+	return comm_call(ci->comm2, "callback:doc", h);
 }
 
 void edlib_init(struct pane *ed safe)

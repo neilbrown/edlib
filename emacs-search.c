@@ -711,15 +711,17 @@ DEF_CMD(emacs_search)
 	esi->backwards = ci->num & 1;
 
 	p = pane_register(ci->focus, 0, &search_handle.c, esi);
-	if (p) {
-		call("doc:request:doc:replaced", p);
-		attr_set_str(&p->attrs, "status-line", " Search: case insensitive ");
-		comm_call(ci->comm2, "callback:attach", p);
-		pane_add_notify(p, esi->target, "Notify:Close");
+	if (!p)
+		return Efail;
 
-		if (ci->num & 2)
-			call("K:A-%", p);
-	}
+	call("doc:request:doc:replaced", p);
+	attr_set_str(&p->attrs, "status-line", " Search: case insensitive ");
+	comm_call(ci->comm2, "callback:attach", p);
+	pane_add_notify(p, esi->target, "Notify:Close");
+
+	if (ci->num & 2)
+		call("K:A-%", p);
+
 	return 1;
 }
 
@@ -1224,11 +1226,13 @@ DEF_CMD(emacs_search_attach_highlight)
 
 	alloc(hi, pane);
 	p = pane_register(ci->focus, 0, &highlight_handle.c, hi);
-	if (p) {
-		hi->view = home_call(ci->focus, "doc:add-view", p) - 1;
-		hi->replace_view = home_call(ci->focus, "doc:add-view", p) - 1;
-		comm_call(ci->comm2, "callback:attach", p);
-	}
+	if (!p)
+		return Efail;
+
+	hi->view = home_call(ci->focus, "doc:add-view", p) - 1;
+	hi->replace_view = home_call(ci->focus, "doc:add-view", p) - 1;
+	comm_call(ci->comm2, "callback:attach", p);
+
 	return 1;
 }
 

@@ -198,9 +198,10 @@ DEF_CMD(dir_new)
 	INIT_LIST_HEAD(&dr->ents);
 	dr->fname = NULL;
 	p = doc_register(ci->home, &dir_handle.c, dr);
-	if (p)
-		return comm_call(ci->comm2, "callback:doc", p);
-	return Efail;
+	if (!p)
+		return Efail;
+
+	return comm_call(ci->comm2, "callback:doc", p);
 }
 
 DEF_CMD(dir_new2)
@@ -1218,8 +1219,10 @@ DEF_CMD(dirview_clone)
 	struct pane *p;
 
 	p = pane_register(ci->focus, 0, &dirview_handle.c);
-	if (p)
-		pane_clone_children(ci->home, p);
+	if (!p)
+		return Efail;
+
+	pane_clone_children(ci->home, p);
 	return 1;
 }
 

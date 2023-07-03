@@ -437,6 +437,9 @@ static void log_init(struct pane *ed safe)
 	INIT_LIST_HEAD(&log_doc->log);
 	log_pane = doc_register(ed, &log_handle.c, log_doc);
 
+	if (!log_pane)
+		return;
+
 	fname = getenv("EDLIB_LOG");
 	if (!fname || !*fname)
 		return;

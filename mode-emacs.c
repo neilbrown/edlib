@@ -1800,7 +1800,9 @@ DEF_CMD(emacs_shell)
 			     0, NULL, "popup:close");
 		if (p)
 			p = pane_register(p, 0, &find_handle.c, "shellcmd");
-		if (p && ci->comm2)
+		if (!p)
+			return Efail;
+		if (ci->comm2)
 			comm_call(ci->comm2, "cb", p);
 		return 1;
 	}
