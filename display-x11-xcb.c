@@ -143,6 +143,8 @@ void pango_layout_index_to_pos(PangoLayout*, int, PangoRectangle*);
 
 #undef True
 #undef False
+
+#define PANE_DATA_TYPE struct xcb_data
 #include "core.h"
 
 enum my_atoms {
@@ -222,6 +224,7 @@ struct xcb_data {
 		cairo_region_t	*need_update;
 	} *panes;
 };
+#include "core-pane.h"
 
 /* panes->r.x is NEVER_DRAWN if the pane has not been drawn */
 #define NEVER_DRAWN (-60000)
@@ -232,7 +235,7 @@ DEF_LOOKUP_CMD(xcb_handle, xcb_map);
 static struct panes *get_pixmap(struct pane *home safe,
 				struct pane *p safe)
 {
-	struct xcb_data *xd = home->data;
+	struct xcb_data *xd = &home->data;
 	struct panes **pp, *ps;
 
 	for (pp = &xd->panes; (ps = *pp) != NULL; pp = &(*pp)->next) {
@@ -437,7 +440,7 @@ DEF_CMD(xcb_close_display)
 {
 	/* If this is only display, then refuse to close this one */
 	struct call_return cr;
-	struct xcb_data *xd = ci->home->data;
+	struct xcb_data *xd = &ci->home->data;
 
 	if (xd->noclose) {
 		call("Message", ci->focus, 0, NULL, xd->noclose);
@@ -456,7 +459,7 @@ DEF_CMD(xcb_close_display)
 
 DEF_CMD(xcb_set_noclose)
 {
-	struct xcb_data *xd = ci->home->data;
+	struct xcb_data *xd = &ci->home->data;
 
 	free(xd->noclose);
 	xd->noclose = NULL;
@@ -481,7 +484,7 @@ static void wait_for(struct xcb_data *xd safe)
 
 DEF_CMD(xcb_external_viewer)
 {
-	struct xcb_data *xd = ci->home->data;
+	struct xcb_data *xd = &ci->home->data;
 	const char *path = ci->str;
 	struct pids *p;
 	int pid;
@@ -519,7 +522,7 @@ DEF_CMD(xcb_external_viewer)
 
 DEF_CMD(xcb_fullscreen)
 {
-	struct xcb_data *xd = ci->home->data;
+	struct xcb_data *xd = &ci->home->data;
 	xcb_client_message_event_t msg = {};
 
 	msg.response_type = XCB_CLIENT_MESSAGE;
@@ -561,7 +564,7 @@ static void kbd_free(struct xcb_data *xd safe);
 
 DEF_CMD(xcb_close)
 {
-	struct xcb_data *xd = ci->home->data;
+	struct xcb_data *xd = &ci->home->data;
 
 	xcb_destroy_window(xd->conn, xd->win);
 	kbd_free(xd);
@@ -571,7 +574,7 @@ DEF_CMD(xcb_close)
 
 DEF_CMD(xcb_free)
 {
-	struct xcb_data *xd = ci->home->data;
+	struct xcb_data *xd = &ci->home->data;
 
 	pango_font_description_free(xd->fd);
 	cairo_destroy(xd->cairo);
@@ -583,13 +586,12 @@ DEF_CMD(xcb_free)
 	xcb_disconnect(xd->conn);
 	if (xd->need_update)
 		cairo_region_destroy(xd->need_update);
-	unalloc(xd, pane);
 	return 1;
 }
 
 DEF_CMD(xcb_clear)
 {
-	struct xcb_data *xd = ci->home->data;
+	struct xcb_data *xd = &ci->home->data;
 	const char *attr = ci->str;
 	struct panes *src = NULL, *dest;
 	struct rgb bg;
@@ -646,7 +648,7 @@ DEF_CMD(xcb_clear)
 
 DEF_CMD(xcb_text_size)
 {
-	struct xcb_data *xd = ci->home->data;
+	struct xcb_data *xd = &ci->home->data;
 	const char *attr = ci->str2 ?: "";
 	const char *str = ci->str ?: "";
 	int scale = ci->num2;
@@ -688,7 +690,7 @@ DEF_CMD(xcb_text_size)
 
 DEF_CMD(xcb_draw_text)
 {
-	struct xcb_data *xd = ci->home->data;
+	struct xcb_data *xd = &ci->home->data;
 	const char *str = ci->str;
 	const char *attr = ci->str2;
 	int scale = 1000;
@@ -823,7 +825,7 @@ DEF_CMD(xcb_draw_image)
 	 * p->cx, p->cy of a size so that 'x' will fit across and
 	 * 'y' will fit down.
 	 */
-	struct xcb_data *xd = ci->home->data;
+	struct xcb_data *xd = &ci->home->data;
 	bool stretch = ci->num & 16;
 	int pos = ci->num;
 	int w = ci->focus->w, h = ci->focus->h;
@@ -1039,7 +1041,7 @@ static struct panes *sort_merge(struct panes *p1, struct panes *p2)
 
 DEF_CMD(xcb_refresh_post)
 {
-	struct xcb_data *xd = ci->home->data;
+	struct xcb_data *xd = &ci->home->data;
 	struct panes *ps;
 
 	time_start(TIME_WINDOW);
@@ -1122,7 +1124,7 @@ DEF_CMD(xcb_refresh_size)
 	/* FIXME: should I consider resizing the window?
 	 * For now, just ensure we redraw everything.
 	 */
-	struct xcb_data *xd = ci->home->data;
+	struct xcb_data *xd = &ci->home->data;
 	cairo_rectangle_int_t r = {
 		.x = 0,
 		.y = 0,
@@ -1139,7 +1141,7 @@ DEF_CMD(xcb_refresh_size)
 
 DEF_CMD(xcb_pane_close)
 {
-	struct xcb_data *xd = ci->home->data;
+	struct xcb_data *xd = &ci->home->data;
 	struct panes **pp, *ps;
 
 	for (pp = &xd->panes; (ps = *pp) != NULL; pp = &(*pp)->next) {
@@ -1167,7 +1169,7 @@ DEF_CMD(xcb_pane_close)
 
 DEF_CMD(xcb_notify_display)
 {
-	struct xcb_data *xd = ci->home->data;
+	struct xcb_data *xd = &ci->home->data;
 	comm_call(ci->comm2, "callback:display", ci->home, xd->last_event);
 	return 1;
 }
@@ -1175,7 +1177,7 @@ DEF_CMD(xcb_notify_display)
 static void handle_button(struct pane *home safe,
 			  xcb_button_press_event_t *be safe)
 {
-	struct xcb_data *xd = home->data;
+	struct xcb_data *xd = &home->data;
 	bool press = (be->response_type & 0x7f) == XCB_BUTTON_PRESS;
 	char mod[2+2+2+1];
 	char key[2+2+2+9+1+1];
@@ -1209,7 +1211,7 @@ static void handle_button(struct pane *home safe,
 static void handle_motion(struct pane *home safe,
 			  xcb_motion_notify_event_t *mne safe)
 {
-	struct xcb_data *xd = home->data;
+	struct xcb_data *xd = &home->data;
 	xcb_query_pointer_cookie_t c;
 	xcb_query_pointer_reply_t *qpr;
 	int ret;
@@ -1232,7 +1234,7 @@ static void handle_motion(struct pane *home safe,
 
 static void handle_focus(struct pane *home safe, xcb_focus_in_event_t *fie safe)
 {
-	struct xcb_data *xd = home->data;
+	struct xcb_data *xd = &home->data;
 	bool in = (fie->response_type & 0x7f) == XCB_FOCUS_IN;
 	struct pane *p;
 	struct mark *pt;
@@ -1414,7 +1416,7 @@ static struct {
 static void handle_key_press(struct pane *home safe,
 			     xcb_key_press_event_t *kpe safe)
 {
-	struct xcb_data			*xd = home->data;
+	struct xcb_data			*xd = &home->data;
 	xkb_keycode_t			keycode = kpe->detail;
 	xcb_keysym_t			keysym;
 	xkb_keysym_t			sym;
@@ -1527,7 +1529,7 @@ static void handle_key_press(struct pane *home safe,
 static void handle_xkb_event(struct pane *home safe,
 			     xcb_generic_event_t *ev safe)
 {
-	struct xcb_data *xd = home->data;
+	struct xcb_data *xd = &home->data;
 
 	switch (ev->pad0) {
 		xcb_xkb_new_keyboard_notify_event_t	*nkne;
@@ -1561,7 +1563,7 @@ static void handle_xkb_event(struct pane *home safe,
 static void handle_configure(struct pane *home safe,
 			     xcb_configure_notify_event_t *cne safe)
 {
-	struct xcb_data *xd = home->data;
+	struct xcb_data *xd = &home->data;
 
 	pane_resize(home, 0, 0, cne->width, cne->height);
 	cairo_xcb_surface_set_size(xd->surface, cne->width, cne->height);
@@ -1570,7 +1572,7 @@ static void handle_configure(struct pane *home safe,
 static void handle_expose(struct pane *home safe,
 			  xcb_expose_event_t *ee safe)
 {
-	struct xcb_data *xd = home->data;
+	struct xcb_data *xd = &home->data;
 	cairo_rectangle_int_t r = {
 		.x = ee->x,
 		.y = ee->y,
@@ -1588,7 +1590,7 @@ static void handle_expose(struct pane *home safe,
 static void handle_client_message(struct pane *home safe,
 				  xcb_client_message_event_t *cme safe)
 {
-	struct xcb_data *xd = home->data;
+	struct xcb_data *xd = &home->data;
 
 	if (cme->type == xd->atoms[a_WM_PROTOCOLS] &&
 	    cme->format == 32 &&
@@ -1617,7 +1619,7 @@ static void handle_client_message(struct pane *home safe,
 
 DEF_CMD(xcb_input)
 {
-	struct xcb_data *xd = ci->home->data;
+	struct xcb_data *xd = &ci->home->data;
 	xcb_generic_event_t *ev;
 	int ret = 1;
 
@@ -1767,7 +1769,10 @@ static struct pane *xcb_display_init(const char *d safe,
 	if (xcb_connection_has_error(conn))
 		return NULL;
 
-	alloc(xd, pane);
+	p = pane_register(pane_root(focus), 1, &xcb_handle.c);
+	if (!p)
+		return NULL;
+	xd = &p->data;
 
 	xd->motion_blocked = True;
 	xd->in_focus = True;
@@ -1890,9 +1895,6 @@ static struct pane *xcb_display_init(const char *d safe,
 
 	xcb_map_window(conn, xd->win);
 	xcb_flush(conn);
-	p = pane_register(pane_root(focus), 1, &xcb_handle.c, xd);
-	if (!p)
-		goto abort;
 	pane_resize(p, 0, 0, xd->charwidth*80, xd->lineheight*26);
 	call_comm("event:read", p, &xcb_input, xcb_get_file_descriptor(conn));
 	call_comm("event:poll", p, &xcb_input);
@@ -1911,7 +1913,6 @@ abort:
 	xcb_disconnect(conn);
 	free(xd->display);
 	free(xd->disp_auth);
-	unalloc(xd, pane);
 	return NULL;
 }
 

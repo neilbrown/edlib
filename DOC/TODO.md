@@ -73,6 +73,8 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] Ensure all panes that should use "Free" properly, and find some
+      what to encourage its use.
 - [ ] Add optional unit-test interface for modules.  This should be
       implemented at least by lib-search, doc-text and probably
       many others.  It is particularly for things that are awkward
