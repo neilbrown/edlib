@@ -21,6 +21,7 @@ struct doc_ref {
 	struct logbuf *b;
 	unsigned int o;
 };
+#define DOC_DATA_TYPE struct log
 
 #include "core.h"
 #include "internal.h"
@@ -36,6 +37,8 @@ static struct log {
 	struct list_head	log;
 	int blocked;
 } *log_doc safe;
+
+#include "core-pane.h"
 
 static struct pane *log_pane;
 
@@ -117,8 +120,7 @@ void LOG(char *fmt, ...)
 
 DEF_CMD(log_append)
 {
-	struct doc *d = ci->home->data;
-	struct log *l = container_of(d, struct log, doc);
+	struct log *l = &ci->home->doc_data;
 	struct logbuf *b;
 	unsigned int len;
 
@@ -146,8 +148,7 @@ DEF_CMD(log_append)
 
 DEF_CMD(log_content)
 {
-	struct doc *d = ci->home->data;
-	struct log *log = container_of(d, struct log, doc);
+	struct log *log = &ci->home->doc_data;
 	struct mark *from = ci->mark, *to = ci->mark2;
 	struct mark *m;
 	struct logbuf *b, *first, *last;
@@ -236,8 +237,7 @@ DEF_CMD(log_content)
 
 DEF_CMD(log_set_ref)
 {
-	struct doc *d = ci->home->data;
-	struct log *log = container_of(d, struct log, doc);
+	struct log *log = &ci->home->doc_data;
 	struct mark *m = ci->mark;
 
 	if (!m)
@@ -253,8 +253,7 @@ DEF_CMD(log_set_ref)
 
 static int log_step(struct pane *home safe, struct mark *mark safe, int num, int num2)
 {
-	struct doc *d = home->data;
-	struct log *log = container_of(d, struct log, doc);
+	struct log *log = &home->doc_data;
 	struct mark *m = mark;
 	bool forward = num;
 	bool move = num2;
@@ -339,8 +338,7 @@ DEF_CMD(log_char)
 DEF_CMD(log_val_marks)
 {
 	/* mark1 and mark2 must be correctly ordered */
-	struct doc *d = ci->home->data;
-	struct log *log = container_of(d, struct log, doc);
+	struct log *log = &ci->home->doc_data;
 	struct logbuf *b;
 	int found = 0;
 
@@ -404,6 +402,18 @@ DEF_CMD(log_view)
 	return 1;
 }
 
+DEF_CMD(log_close)
+{
+	struct log *l = &ci->home->doc_data;
+
+	while (!list_empty(&l->log)) {
+		struct logbuf *b = list_first_entry(&l->log, struct logbuf, h);
+		list_del(&b->h);
+		free(b);
+	}
+	return 1;
+}
+
 static struct map *log_map;
 DEF_LOOKUP_CMD(log_handle, log_map);
 
@@ -415,11 +425,11 @@ DEF_CMD(log_new)
 	if (!ci->str)
 		return Enoarg;
 
-	alloc(l, pane);
-	INIT_LIST_HEAD(&l->log);
-	p = doc_register(ci->focus, &log_handle.c, l);
+	p = doc_register(ci->focus, &log_handle.c);
 	if (!p)
 		return Efail;
+	l = &p->doc_data;
+	INIT_LIST_HEAD(&l->log);
 	attr_set_str(&p->attrs, "render-default", "text");
 	attr_set_str(&p->attrs, "doc-type", "text");
 	attr_set_str(&p->attrs, "render-default", "text");
@@ -433,12 +443,11 @@ static void log_init(struct pane *ed safe)
 {
 	char *fname;
 
-	alloc(log_doc, pane);
-	INIT_LIST_HEAD(&log_doc->log);
-	log_pane = doc_register(ed, &log_handle.c, log_doc);
-
+	log_pane = doc_register(ed, &log_handle.c);
 	if (!log_pane)
 		return;
+	log_doc = &log_pane->doc_data;
+	INIT_LIST_HEAD(&log_doc->log);
 
 	fname = getenv("EDLIB_LOG");
 	if (!fname || !*fname)
@@ -464,6 +473,7 @@ void log_setup(struct pane *ed safe)
 	key_add(log_map, "doc:char", &log_char);
 	key_add(log_map, "doc:destroy", &log_destroy);
 	key_add(log_map, "doc:log:append", &log_append);
+	key_add(log_map, "Close", &log_close);
 	if(0)key_add(log_map, "debug:validate-marks", &log_val_marks);
 
 	log_init(ed);
