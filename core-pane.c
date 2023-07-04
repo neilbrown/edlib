@@ -153,21 +153,21 @@ static struct pane *__do_pane_register(struct pane *parent, short z,
 				       void *data, short data_size)
 {
 	struct pane *p;
+	short alloc_size = data_size;
 
-	alloc(p, pane);
+	if (data)
+		alloc_size = sizeof(data);
+
+	p = alloc_zbuf(offsetof(struct pane, data) + alloc_size, pane);
 	pane_init(p, parent);
 	p->z = z;
 	if (parent)
 		p->abs_z = parent->abs_z + 1;
 	p->handle = command_get(handle);
-	if (!data)
-		/* type of 'data' should correlate with type of handle,
-		 * which should be parameterised...
-		 */
-		p->data = handle;
-	else
+	if (data) {
 		p->data = data;
-	p->data_size = data_size;
+		p->data_size = data_size;
+	}
 	p->name = handle->name;
 	if (z >= 0) {
 		if (parent && parent->focus == NULL)

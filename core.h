@@ -61,61 +61,7 @@ void LOG_BT(void);
  * Each document and contains a reference to the editor which is the root of the
  * pane tree.
  */
-struct pane {
-	const char		*name; /* For easy discovery in gdb */
-	struct pane		*parent safe;
-	struct list_head	siblings;
-	struct list_head	children;
-	struct pane		*focus;
-	short			x,y,z;
-	short			h,w;
-	short			cx, cy;	/* cursor position */
-	short			abs_z;
-
-	short			damaged;
-	short			data_size;	/* only needed by edlib_do_free */
-
-	int			marks;
-	int			refs;
-	/* timestamp is low bits of time in milliseconds when some
-	 * command started.  This makes it easy to check when we
-	 * have done too much work
-	 */
-	unsigned int		timestamp;
-
-	struct pane		*root safe;
-	struct command		*handle;
-	void			*data safe;
-	struct attrset		*attrs;
-	struct list_head	notifiers, notifiees;
-};
-
-static inline unsigned int ts_to_ms(struct timespec *ts safe)
-{
-	return ts->tv_nsec / 1000 / 1000 + ts->tv_sec * 1000;
-}
-
-static inline bool pane_too_long(struct pane *p safe, unsigned int msec)
-{
-	extern bool edlib_timing_allowed;
-	struct timespec ts;
-	unsigned int duration;
-	if (!edlib_timing_allowed)
-		return False;
-	clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
-	duration = ts_to_ms(&ts) - p->timestamp;
-	if (msec < 100)
-		msec = 100;
-	return (duration > msec);
-}
-
-static inline void pane_set_time(struct pane *p safe)
-{
-	struct timespec ts;
-
-	clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
-	p->timestamp = ts_to_ms(&ts);
-}
+struct pane ;
 
 struct command {
 	int	(*func)(const struct cmd_info *ci safe);
@@ -177,6 +123,12 @@ bool edlib_testing(struct pane *p safe);
 void edlib_init(struct pane *ed safe);
 
 struct doc {
+	/* This pointer always points to itelf. It allows
+	 * a pane to have a pointer to a doc, or an embedded doc,
+	 * and following the pointer at that location will always
+	 * lead to the doc.
+	 */
+	struct doc		*self;
 	struct hlist_head	marks;
 	struct tlist_head	points;
 	struct docview {
@@ -500,29 +452,24 @@ struct pane * __pane_register(struct pane *parent safe, short z,
 			      struct command *handle safe, void *data,
 			      short data_size);
 #define pane_register(...) VFUNC(pane_register, __VA_ARGS__)
+#ifdef PANE_DATA_TYPE
+#define pane_register4(p,z,h,d) __pane_register(p,z,h,d,sizeof(d))
+#define pane_register3(p,z,h) __pane_register(p,z,h,NULL, sizeof(PANE_DATA_TYPE))
+#else
 #define pane_register4(p,z,h,d) __pane_register(p,z,h,d,sizeof((d)[0]))
 #define pane_register3(p,z,h) __pane_register(p,z,h,NULL, 0)
+#endif
 
 struct pane *__doc_register(struct pane *parent safe,
 			    struct command *handle safe,
-			    struct doc *doc safe,
-			    void *data safe,
-			    short data_size);
-#define doc_register(p,h,d) __doc_register(p,h,&(d)->doc,d,sizeof((d)[0]))
+			    struct doc *doc,
+			    unsigned short data_size);
 
-static inline struct pane * safe pane_root(struct pane *p safe)
-{
-	return p->root;
-}
-
-static inline struct pane *safe pane_leaf(struct pane *p safe)
-{
-	struct pane *f;
-
-	while ((f = p->focus) != NULL)
-		p = f;
-	return p;
-}
+#ifdef DOC_DATA_TYPE
+#define doc_register(p,h) __doc_register(p, h, NULL, sizeof(DOC_DATA_TYPE))
+#else
+#define doc_register(p,h,d) __doc_register(p,h,&(d)->doc,sizeof((d)[0]))
+#endif
 
 void pane_reparent(struct pane *p safe, struct pane *newparent safe);
 void pane_move_after(struct pane *p safe, struct pane *after);
@@ -557,16 +504,6 @@ static inline int pane_attr_get_int(struct pane *p safe, const char *key safe,
 	return rv;
 }
 void pane_free(struct pane *p safe);
-static inline struct pane *pane_get(struct pane *p safe) safe
-{
-	p->refs += 1;
-	return p;
-}
-static inline void pane_put(struct pane *p safe)
-{
-	p->refs -= 1;
-	pane_free(p);
-}
 
 /* Inlines */
 
@@ -773,67 +710,6 @@ char *do_call_strsave(enum target_type type, struct pane *home,
 #define call_ret(_ret, key, _focus, ...) CALL(_ret, focus, _focus, key, _focus, ##__VA_ARGS__)
 #define call_comm(key, _focus, comm, ...) _CALL(val, focus, _focus, key, comm, _focus, ##__VA_ARGS__)
 
-static inline int do_call_val(enum target_type type, struct pane *home,
-			      struct command *comm2a,
-			      const char *key safe, struct pane *focus safe,
-			      int num,  struct mark *m,  const char *str,
-			      int num2, struct mark *m2, const char *str2,
-			      int x, int y, struct command *comm2b,
-			      struct commcache *ccache)
-{
-	struct cmd_info ci = {.key = key, .focus = focus, .home = focus,
-			      .num = num, .mark = m, .str = str,
-			      .num2 = num2, .mark2 = m2, .str2 = str2,
-			      .comm2 = comm2a ?: comm2b, .x = x, .y = y,
-			      .comm = safe_cast NULL};
-	int ret;
-
-	if ((type == TYPE_pane || type == TYPE_home) && !home)
-		return 0;
-	if (type == TYPE_comm && !comm2a)
-		return 0;
-	ASSERT(!comm2a || !comm2b || comm2a == comm2b || type == TYPE_comm);
-
-	switch(type) {
-	default:
-	case TYPE_home:
-		if (home)
-			ci.home = home;
-		/* fall-through */
-	case TYPE_focus:
-		if (ccache) {
-			ci.home = ccache->home;
-			ci.comm = ccache->comm;
-		}
-		ret = key_handle(&ci);
-		break;
-	case TYPE_pane:
-		if (!home->handle || (home->damaged & DAMAGED_DEAD))
-			return Efail;
-		if (times_up_fast())
-			return Efail;
-		if (home)
-			ci.home = home;
-		ci.comm = home->handle;
-		ret = ci.comm->func(&ci);
-		break;
-	case TYPE_comm:
-		if (times_up_fast())
-			return Efail;
-		if (home)
-			ci.home = home;
-		ci.comm = comm2a;
-		ci.comm2 = comm2b;
-		ret = ci.comm->func(&ci);
-		ccache = NULL;
-		break;
-	}
-	if (ccache) {
-		ccache->comm = ci.comm;
-		ccache->home = ci.home;
-	}
-	return ret;
-}
 
 #define pane_notify(...) VFUNC(NOTIFY, __VA_ARGS__)
 #define NOTIFY9(not, focus, num, m, str, num2, m2, str2, comm2) \
@@ -870,3 +746,8 @@ static inline int do_call_val(enum target_type type, struct pane *home,
 	do_pane_notify(home, not, focus, num, NULL, NULL, 0, NULL, NULL, NULL)
 #define HOMENOTIFY3(home, not, focus) \
 	do_pane_notify(home, not, focus, 0, NULL, NULL, 0, NULL, NULL, NULL)
+
+#if !defined(PANE_DATA_TYPE) && !defined(DOC_DATA_TYPE)
+/* If you define PANE_DATA_TYPEor DOC_DATA_TYPE, you need to include this yourself */
+#include "core-pane.h"
+#endif

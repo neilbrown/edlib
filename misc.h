@@ -137,6 +137,7 @@ void __unalloc(struct mempool *pool safe, void *obj, int size);
 	do { var = __alloc(&mem##pool, sizeof((var)[0]), 1); } while (0)
 
 #define alloc_buf(size, pool) __alloc(&mem##pool, size, 0)
+#define alloc_zbuf(size, pool) __alloc(&mem##pool, size, 1)
 
 #define unalloc(var, pool)						\
 	do { __unalloc(&mem##pool, var, sizeof((var)[0])); (var)=NULL; } while (0)

@@ -49,6 +49,7 @@ struct doc_data {
 
 static void doc_init(struct doc *d safe)
 {
+	d->self = d;
 	INIT_HLIST_HEAD(&d->marks);
 	INIT_TLIST_HEAD(&d->points, 0);
 	d->views = NULL;
@@ -62,17 +63,23 @@ static void doc_init(struct doc *d safe)
 
 struct pane *__doc_register(struct pane *parent safe,
 			    struct command *handle safe,
-			    struct doc *doc safe,
-			    void *data safe,
-			    short data_size)
+			    struct doc *doc,
+			    unsigned short data_size)
 {
 	struct pane *p;
 
-	ASSERT(data_size == 0 || data == (void*)doc);
+	if (doc == NULL && data_size < sizeof(*doc))
+		/* Not enough room for the doc ! */
+		return NULL;
+
 	/* Documents are always registered against the root */
 	parent = pane_root(parent);
-	doc_init(doc);
 	p = __pane_register(parent, 0, handle, doc, data_size);
+	if (!p)
+		return p;
+	if (!doc)
+		doc = &p->doc;
+	doc_init(doc);
 	return p;
 }
 
