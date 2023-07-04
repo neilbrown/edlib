@@ -43,6 +43,7 @@
 
 #include <term.h>
 
+#define PANE_DATA_TYPE struct display_data
 #include "core.h"
 
 #ifdef RECORD_REPLAY
@@ -101,6 +102,7 @@ struct display_data {
 	int			clears; /* counts of Draw:clear events */
 	#endif
 };
+#include "core-pane.h"
 
 static SCREEN *current_screen;
 static void ncurses_text(struct pane *p safe, struct pane *display safe,
@@ -126,7 +128,7 @@ static void set_screen(struct pane *p)
 		current_screen = NULL;
 		return;
 	}
-	dd = p->data;
+	dd = &p->data;
 	current_dd = dd;
 	if (!dd)
 		return;
@@ -157,7 +159,7 @@ DEF_CMD(next_evt);
 static bool parse_event(struct pane *p safe);
 static bool prepare_recrep(struct pane *p safe)
 {
-	struct display_data *dd = p->data;
+	struct display_data *dd = &p->data;
 	char *name;
 
 	name = getenv("EDLIB_RECORD");
@@ -177,7 +179,7 @@ static bool prepare_recrep(struct pane *p safe)
 
 static void close_recrep(struct pane *p safe)
 {
-	struct display_data *dd = p->data;
+	struct display_data *dd = &p->data;
 
 	if (dd->log) {
 		fprintf(dd->log, "Close %d\n", dd->clears);
@@ -187,7 +189,7 @@ static void close_recrep(struct pane *p safe)
 
 static void record_key(struct pane *p safe, char *key safe)
 {
-	struct display_data *dd = p->data;
+	struct display_data *dd = &p->data;
 	char q;
 
 	if (!dd->log)
@@ -207,7 +209,7 @@ static void record_key(struct pane *p safe, char *key safe)
 
 static void record_mouse(struct pane *p safe, char *key safe, int x, int y)
 {
-	struct display_data *dd = p->data;
+	struct display_data *dd = &p->data;
 	char q;
 	if (!dd->log)
 		return;
@@ -226,7 +228,7 @@ static void record_mouse(struct pane *p safe, char *key safe, int x, int y)
 
 static void record_screen(struct pane *p safe)
 {
-	struct display_data *dd = p->data;
+	struct display_data *dd = &p->data;
 	struct md5_state ctx;
 	uint16_t buf[CCHARW_MAX+5];
 	char out[MD5_DIGEST_SIZE*2+1];
@@ -329,7 +331,7 @@ static char *get_hash(char *line safe, hash_t hash safe)
 
 static bool parse_event(struct pane *p safe)
 {
-	struct display_data *dd = p->data;
+	struct display_data *dd = &p->data;
 	char line[80];
 
 	line[79] = 0;
@@ -375,7 +377,7 @@ static bool parse_event(struct pane *p safe)
 REDEF_CMD(next_evt)
 {
 	struct pane *p = ci->home;
-	struct display_data *dd = p->data;
+	struct display_data *dd = &p->data;
 	int button = 0, type = 0;
 
 	dd->input_sleeping = 0;
@@ -440,7 +442,7 @@ DEF_CMD(nc_close_display)
 {
 	/* If this is only display, then refuse to close this one */
 	struct call_return cr;
-	struct display_data *dd = ci->home->data;
+	struct display_data *dd = &ci->home->data;
 
 	if (dd->noclose) {
 		call("Message", ci->focus, 0, NULL, dd->noclose);
@@ -464,7 +466,7 @@ DEF_CMD(nc_close_display)
 
 DEF_CMD(nc_set_noclose)
 {
-	struct display_data *dd = ci->home->data;
+	struct display_data *dd = &ci->home->data;
 
 	free(dd->noclose);
 	dd->noclose = NULL;
@@ -509,7 +511,7 @@ static void wait_for(struct display_data *dd safe)
 
 DEF_CB(ns_resume)
 {
-	struct display_data *dd = ci->home->data;
+	struct display_data *dd = &ci->home->data;
 
 	if (dd->suspended) {
 		dd->suspended = False;
@@ -522,7 +524,7 @@ DEF_CB(ns_resume)
 DEF_CMD(nc_external_viewer)
 {
 	struct pane *p = ci->home;
-	struct display_data *dd = p->data;
+	struct display_data *dd = &p->data;
 	char *disp = pane_attr_get(p, "DISPLAY");
 	char *disp_auth = pane_attr_get(p, "XAUTHORITY");
 	char *remote = pane_attr_get(p, "REMOTE_SESSION");
@@ -624,7 +626,7 @@ DEF_CMD(nc_external_viewer)
 
 static void ncurses_stop(struct pane *p safe)
 {
-	struct display_data *dd = p->data;
+	struct display_data *dd = &p->data;
 
 	if (dd->is_xterm) {
 		/* disable bracketed-paste */
@@ -649,7 +651,7 @@ static void ncurses_stop(struct pane *p safe)
 
 static void ncurses_end(struct pane *p safe)
 {
-	struct display_data *dd = p->data;
+	struct display_data *dd = &p->data;
 
 	if (dd->did_close)
 		return;
@@ -800,7 +802,7 @@ static int to_pair(struct display_data *dd safe, int fg, int bg)
 static int cvt_attrs(struct pane *p safe, struct pane *home safe,
 		     const char *attrs, int *pairp safe, bool use_parent)
 {
-	struct display_data *dd = home->data;
+	struct display_data *dd = &home->data;
 	int attr = 0;
 	char tmp[40];
 	const char *a;
@@ -868,7 +870,7 @@ static int make_cursor(int attr)
 
 DEF_CMD(nc_notify_display)
 {
-	struct display_data *dd = ci->home->data;
+	struct display_data *dd = &ci->home->data;
 	comm_call(ci->comm2, "callback:display", ci->home, dd->last_event);
 	return 1;
 }
@@ -876,7 +878,7 @@ DEF_CMD(nc_notify_display)
 DEF_CMD(nc_close)
 {
 	struct pane *p = ci->home;
-	struct display_data *dd = p->data;
+	struct display_data *dd = &p->data;
 	ncurses_end(p);
 	hash_free(dd);
 	fclose(dd->scr_file);
@@ -921,7 +923,7 @@ static PANEL * safe pane_panel(struct pane *p safe, struct pane *home)
 DEF_CMD(nc_clear)
 {
 	struct pane *p = ci->home;
-	struct display_data *dd = p->data;
+	struct display_data *dd = &p->data;
 	cchar_t cc = {};
 	int pair = 0;
 	int attr = cvt_attrs(ci->focus, p, ci->str, &pair, ci->str == NULL);
@@ -1025,7 +1027,7 @@ DEF_CMD(nc_draw_image)
 	 * 'y' will fit down.
 	 */
 	struct pane *p = ci->home;
-	struct display_data *dd = p->data;
+	struct display_data *dd = &p->data;
 	int x = 0, y = 0;
 	bool stretch = ci->num & 16;
 	int pos = ci->num;
@@ -1220,7 +1222,7 @@ DEF_CMD(nc_refresh_size)
 DEF_CMD(nc_refresh_post)
 {
 	struct pane *p = ci->home;
-	struct display_data *dd = p->data;
+	struct display_data *dd = &p->data;
 	struct pane *p1;
 	PANEL *pan, *pan2;
 
@@ -1303,7 +1305,7 @@ DEF_CMD(nc_refresh_post)
 
 static void ncurses_start(struct pane *p safe)
 {
-	struct display_data *dd = p->data;
+	struct display_data *dd = &p->data;
 	int rows, cols;
 
 	start_color();
@@ -1353,16 +1355,14 @@ static struct pane *ncurses_init(struct pane *ed safe,
 	if (!scr)
 		return NULL;
 
-	alloc(dd, pane);
+	p = pane_register(ed, 1, &ncurses_handle.c);
+	if (!p)
+		return NULL;
+	dd = &p->data;
 	dd->scr = scr;
 	dd->scr_file = f;
 	dd->is_xterm = (term && strstarts(term, "xterm"));
 
-	p = pane_register(ed, 1, &ncurses_handle.c, dd);
-	if (!p) {
-		unalloc(dd, pane);
-		return NULL;
-	}
 	set_screen(p);
 
 	ncurses_start(p);
@@ -1391,7 +1391,7 @@ static struct pane *ncurses_init(struct pane *ed safe,
 REDEF_CMD(handle_winch)
 {
 	struct pane *p = ci->home;
-	struct display_data *dd = p->data;
+	struct display_data *dd = &p->data;
 	struct winsize size;
 	ioctl(fileno(dd->scr_file), TIOCGWINSZ, &size);
 	set_screen(p);
@@ -1549,7 +1549,7 @@ static char *find_name (struct namelist *l safe, wint_t c)
 
 static void send_key(int keytype, wint_t c, int alt, struct pane *p safe)
 {
-	struct display_data *dd = p->data;
+	struct display_data *dd = &p->data;
 	char *n;
 	char buf[100];/* FIXME */
 	char t[5];
@@ -1581,7 +1581,7 @@ static void do_send_mouse(struct pane *p safe, int x, int y, char *cmd safe,
 			  int button, char *mod, int type)
 {
 	int ret;
-	struct display_data *dd = p->data;
+	struct display_data *dd = &p->data;
 
 	record_mouse(p, cmd, x, y);
 	ret = call("Mouse-event", p, button, NULL, cmd, type, NULL, mod, x, y);
@@ -1602,7 +1602,7 @@ static void do_send_mouse(struct pane *p safe, int x, int y, char *cmd safe,
 
 static void send_mouse(MEVENT *mev safe, struct pane *p safe)
 {
-	struct display_data *dd = p->data;
+	struct display_data *dd = &p->data;
 	int x = mev->x;
 	int y = mev->y;
 	int b;
@@ -1648,7 +1648,7 @@ static void send_mouse(MEVENT *mev safe, struct pane *p safe)
 
 static void paste_start(struct pane *home safe)
 {
-	struct display_data *dd = home->data;
+	struct display_data *dd = &home->data;
 
 	dd->paste_start = time(NULL);
 	buf_init(&dd->paste_buf);
@@ -1656,7 +1656,7 @@ static void paste_start(struct pane *home safe)
 
 static void paste_flush(struct pane *home safe)
 {
-	struct display_data *dd = home->data;
+	struct display_data *dd = &home->data;
 
 	if (!dd->paste_start)
 		return;
@@ -1669,7 +1669,7 @@ static void paste_flush(struct pane *home safe)
 
 static bool paste_recv(struct pane *home safe, int is_keycode, wint_t ch)
 {
-	struct display_data *dd = home->data;
+	struct display_data *dd = &home->data;
 	time_t now;
 	if (dd->paste_start == 0)
 		return False;
@@ -1695,7 +1695,7 @@ static bool paste_recv(struct pane *home safe, int is_keycode, wint_t ch)
 
 DEF_CMD(nc_get_paste)
 {
-	struct display_data *dd = ci->home->data;
+	struct display_data *dd = &ci->home->data;
 
 	comm_call(ci->comm2, "cb", ci->focus,
 		  dd->paste_start, NULL, dd->paste_latest);
@@ -1705,16 +1705,13 @@ DEF_CMD(nc_get_paste)
 REDEF_CMD(input_handle)
 {
 	struct pane *p = ci->home;
-	struct display_data *dd = p->data;
+	struct display_data *dd = &p->data;
 	static const char paste_seq[] = "\e[200~";
 	wint_t c;
 	int is_keycode;
 	int have_escape = 0;
 	int i;
 
-	if (!(void*)p->data)
-		/* already closed */
-		return 0;
 	wait_for(dd);
 	set_screen(p);
 	while ((is_keycode = get_wch(&c)) != ERR) {
@@ -1826,7 +1823,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(nc_map, "Display:set-noclose", &nc_set_noclose);
 	key_add(nc_map, "Display:external-viewer", &nc_external_viewer);
 	key_add(nc_map, "Close", &nc_close);
-	key_add(nc_map, "Free", &edlib_do_free);
 	key_add(nc_map, "Draw:clear", &nc_clear);
 	key_add(nc_map, "Draw:text-size", &nc_text_size);
 	key_add(nc_map, "Draw:text", &nc_draw_text);
