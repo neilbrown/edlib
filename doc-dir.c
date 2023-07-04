@@ -48,6 +48,7 @@ struct doc_ref {
 	unsigned int	ignore;
 };
 
+#define DOC_DATA_TYPE struct directory
 #include "core.h"
 
 struct dir_ent {
@@ -66,6 +67,7 @@ struct directory {
 	struct stat		stat;
 	char			*fname;
 };
+#include "core-pane.h"
 
 static void get_stat(struct directory *dr safe, struct dir_ent *de safe);
 
@@ -194,12 +196,12 @@ DEF_CMD(dir_new)
 	struct directory *dr;
 	struct pane *p;
 
-	alloc(dr, pane);
-	INIT_LIST_HEAD(&dr->ents);
-	dr->fname = NULL;
-	p = doc_register(ci->home, &dir_handle.c, dr);
+	p = doc_register(ci->home, &dir_handle.c);
 	if (!p)
 		return Efail;
+	dr = &p->doc_data;
+	INIT_LIST_HEAD(&dr->ents);
+	dr->fname = NULL;
 
 	return comm_call(ci->comm2, "callback:doc", p);
 }
@@ -213,10 +215,9 @@ DEF_CMD(dir_new2)
 
 DEF_CMD(dir_load_file)
 {
-	struct doc *d = ci->home->data;
 	int fd = ci->num2;
 	const char *name = ci->str;
-	struct directory *dr = container_of(d, struct directory, doc);
+	struct directory *dr = &ci->home->doc_data;
 	struct list_head new;
 	struct dir_ent *de1, *de2;
 	struct mark *prev, *m;
@@ -340,8 +341,7 @@ DEF_CMD(dir_load_file)
 
 DEF_CMD(dir_revisited)
 {
-	struct doc *d = ci->home->data;
-	struct directory *dr = container_of(d, struct directory, doc);
+	struct directory *dr = &ci->home->doc_data;
 	struct stat st;
 
 	if (ci->num <= 0)
@@ -364,10 +364,9 @@ DEF_CMD(dir_revisited)
 
 DEF_CMD(dir_same_file)
 {
-	struct doc *d = ci->home->data;
 	int fd = ci->num2;
 	struct stat stb;
-	struct directory *dr = container_of(d, struct directory, doc);
+	struct directory *dr = &ci->home->doc_data;
 
 	if (!dr->fname)
 		return 0;
@@ -384,11 +383,10 @@ DEF_CMD(dir_same_file)
 static int dir_step(struct pane *home safe, struct mark *mark safe,
 		    int num, int num2)
 {
-	struct doc *doc = home->data;
 	struct mark *m = mark;
 	bool forward = num;
 	bool move = num2;
-	struct directory *dr = container_of(doc, struct directory, doc);
+	struct directory *dr = &home->doc_data;
 	struct dir_ent *d;
 	wint_t ret = '\n';
 
@@ -459,8 +457,7 @@ DEF_CMD(dir_char)
 
 DEF_CMD(dir_set_ref)
 {
-	struct doc *d = ci->home->data;
-	struct directory *dr = container_of(d, struct directory, doc);
+	struct directory *dr = &ci->home->doc_data;
 	struct mark *m = ci->mark;
 
 	if (!m)
@@ -592,8 +589,7 @@ static const char *__dir_get_attr(struct pane *home safe, struct mark *m safe,
 				  const char *attr safe)
 
 {
-	struct doc *d = home->data;
-	struct directory *dr = container_of(d, struct directory, doc);
+	struct directory *dr = &home->doc_data;
 	struct dir_ent *de;
 
 	de = m->ref.d;
@@ -754,8 +750,7 @@ DEF_CMD(dir_doc_set_attr)
 
 DEF_CMD(dir_get_attr)
 {
-	struct doc *d = ci->home->data;
-	struct directory *dr = container_of(d, struct directory, doc);
+	struct directory *dr = &ci->home->doc_data;
 	const char *attr = ci->str;
 	const char *val;
 
@@ -786,8 +781,7 @@ DEF_CMD(dir_get_attr)
 
 DEF_CMD(dir_val_marks)
 {
-	struct doc *d = ci->home->data;
-	struct directory *dr = container_of(d, struct directory, doc);
+	struct directory *dr = &ci->home->doc_data;
 	struct dir_ent *de;
 	int found;
 
@@ -831,8 +825,7 @@ DEF_CMD(dir_val_marks)
 
 DEF_CMD(dir_destroy)
 {
-	struct doc *d = ci->home->data;
-	struct directory *dr = container_of(d, struct directory, doc);
+	struct directory *dr = &ci->home->doc_data;
 
 	while (!list_empty(&dr->ents)) {
 		struct dir_ent *de = list_entry(dr->ents.next,
@@ -1276,7 +1269,6 @@ void edlib_init(struct pane *ed safe)
 
 	key_add(dir_map, "get-attr", &dir_get_attr);
 	key_add(dir_map, "Close", &dir_destroy);
-	key_add(dir_map, "Free", &edlib_do_free);
 	if(0)key_add(dir_map, "debug:validate-marks", &dir_val_marks);
 
 	call_comm("global-set-command", ed, &dirview_attach, 0, NULL,
