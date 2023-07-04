@@ -460,6 +460,8 @@ struct pane * __pane_register(struct pane *parent safe, short z,
 #define pane_register3(p,z,h) __pane_register(p,z,h,NULL, 0)
 #endif
 
+void pane_update_handle(struct pane *p safe, struct command *handle safe);
+
 struct pane *__doc_register(struct pane *parent safe,
 			    struct command *handle safe,
 			    struct doc *doc,

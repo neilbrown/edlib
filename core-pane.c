@@ -197,6 +197,12 @@ struct pane *pane_register_root(struct command *handle safe,
 	return __do_pane_register(NULL, 0, handle, data, data_size);
 }
 
+void pane_update_handle(struct pane *p safe, struct command *handle safe)
+{
+	command_put(p->handle);
+	p->handle = command_get(handle);
+}
+
 /* 'abs_z' is a global z-depth number (->z is relative to parent)
  * 'abs_z' of root is 0, and abs_z of every other pane with z<=0 is 1 more than
  * abs_z or parent, and abs_z of pane with z>0 is 1 more than max abs_z
