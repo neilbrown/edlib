@@ -19,6 +19,7 @@ struct doc_ref {
 	unsigned int i;
 };
 
+#define DOC_DATA_TYPE struct list
 #include "core.h"
 #include "misc.h"
 
@@ -31,11 +32,11 @@ struct list {
 	struct doc		doc;
 	struct list_head	content;
 };
+#include "core-pane.h"
 
 DEF_CMD(list_char)
 {
-	struct doc *d = ci->home->data;
-	struct list *l = container_of(d, struct list, doc);
+	struct list *l = &ci->home->doc_data;
 	struct mark *m = ci->mark;
 	struct mark *end = ci->mark2;
 	int steps = ci->num;
@@ -95,8 +96,7 @@ DEF_CMD(list_char)
 
 DEF_CMD(list_set_ref)
 {
-	struct doc *d = ci->home->data;
-	struct list *l = container_of(d, struct list, doc);
+	struct list *l = &ci->home->doc_data;
 	struct mark *m = ci->mark;
 
 	if (!m)
@@ -153,8 +153,7 @@ DEF_CMD(list_shares_ref)
 
 DEF_CMD(list_add_elmnt)
 {
-	struct doc *d = ci->home->data;
-	struct list *l = container_of(d, struct list, doc);
+	struct list *l = &ci->home->doc_data;
 	struct mark *m = ci->mark;
 	struct elmnt *e;
 
@@ -177,26 +176,40 @@ DEF_CMD(list_new)
 	struct list *l;
 	struct pane *p;
 
-	alloc(l, pane);
-	INIT_LIST_HEAD(&l->content);
-	p = doc_register(ci->home, &list_handle.c, l);
+	p = doc_register(ci->home, &list_handle.c);
 	if (!p)
 		return Efail;
+	l = &p->doc_data;
+	INIT_LIST_HEAD(&l->content);
 
 	return comm_call(ci->comm2, "callback:doc", p);
+}
+
+DEF_CMD(list_close)
+{
+	struct list *l = &ci->home->doc_data;
+	struct elmnt *e;
+
+	while ((e = list_first_entry_or_null(&l->content,
+					    struct elmnt, list)) != NULL) {
+		attr_free(&e->attrs);
+		list_del(&e->list);
+		unalloc(e, pane);
+	}
+	return 1;
 }
 
 static void list_init_map(void)
 {
 	list_map = key_alloc();
 	key_add_chain(list_map, doc_default_cmd);
-	key_add(list_map, "Free", &edlib_do_free);
 	key_add(list_map, "doc:char", &list_char);
 	key_add(list_map, "doc:set-ref", &list_set_ref);
 	key_add(list_map, "doc:set-attr", &list_set_attr);
 	key_add(list_map, "doc:get-attr", &list_get_attr);
 	key_add(list_map, "doc:shares-ref", &list_shares_ref);
 	key_add(list_map, "doc:list-add", &list_add_elmnt);
+	key_add(list_map, "Close", &list_close);
 }
 
 void edlib_init(struct pane *ed safe)
