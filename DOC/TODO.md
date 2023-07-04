@@ -28,7 +28,7 @@ the file.
 - [X] emacs: :C-q to recognise names of Unicode chars: e.g. WASTEBASKET
        Possibly matches a list which continued :C-q cycles through
 - [X] linecount 'view' mode improvements
-- [ ] allocate pane->data together with pane.  A single allocation so
+- [X] allocate pane->data together with pane.  A single allocation so
       that we can avoid the cost of a dereference.
 
 ### Medium
@@ -101,7 +101,7 @@ Core features
 - [ ] LOG_BT() doesn't see TYPE_pane and TYPE_comm calls.
 - [ ] give every pane a link to root/editor main and use that
       instead of statics.  Then maybe times_up() can use pane_too_long()
-- [ ] allocate pane->data together with pane.  A single allocation so
+- [X] allocate pane->data together with pane.  A single allocation so
       that we can avoid the cost of a dereference.
 - [X] mark DEF_CMD structs as const - doesn't work due to refcount
 - [ ] teach input to allow a repeat command to be registered so that e.g.

@@ -78,7 +78,7 @@ struct doc_ref {
 	struct text_chunk *c;
 	unsigned int o;
 };
-
+#define DOC_DATA_TYPE struct text
 #include "core.h"
 #include "misc.h"
 
@@ -180,6 +180,8 @@ struct text {
 	} as;
 };
 
+#include "core-pane.h"
+
 static int text_advance_towards(struct text *t safe, struct doc_ref *ref safe,
 				struct doc_ref *target safe);
 static int text_retreat_towards(struct text *t safe, struct doc_ref *ref safe,
@@ -221,8 +223,7 @@ text_new_alloc(struct text *t safe, int size)
 
 static bool check_file_changed(struct pane *p safe)
 {
-	struct doc *d = p->data;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &p->doc_data;
 	struct stat st;
 
 	if (t->file_changed)
@@ -249,7 +250,7 @@ static bool check_file_changed(struct pane *p safe)
 DEF_CMD(text_readonly)
 {
 	struct doc *d = ci->home->data;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &ci->home->doc_data;
 
 	if (t->file_changed && !d->readonly && ci->num)
 		t->file_changed = 2;
@@ -276,14 +277,13 @@ static const char *safe autosave_name(const char *name safe)
 
 DEF_CMD(text_load_file)
 {
-	struct doc *d = ci->home->data;
 	int fd = ci->num2;
 	const char *name = ci->str;
 	off_t size;
 	struct text_alloc *a;
 	struct text_chunk *c = NULL;
 	int len;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &ci->home->doc_data;
 
 	if (t->saved != t->undo)
 		return Einval;
@@ -386,8 +386,7 @@ err:
 
 DEF_CMD(text_insert_file)
 {
-	struct doc *d = ci->home->data;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &ci->home->doc_data;
 	struct mark *pm = ci->mark, *early;
 	struct text_alloc *a;
 	int len;
@@ -433,8 +432,7 @@ DEF_CMD(text_insert_file)
 static bool do_text_output_file(struct pane *p safe, struct doc_ref *start,
 				struct doc_ref *end, int fd)
 {
-	struct doc *d = p->data;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &p->doc_data;
 	struct text_chunk *c;
 	int offset = 0;
 
@@ -468,8 +466,7 @@ static bool do_text_write_file(struct pane *p safe, struct doc_ref *start,
 	 * Create a temp file with #basename#~, write to that,
 	 * copy mode across, fsync and then rename
 	 */
-	struct doc *d = p->data;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &p->doc_data;
 	char *tempname = malloc(strlen(fname) + 3 + 10);
 	const char *base;
 	char *tbase;
@@ -607,8 +604,7 @@ static void autosaves_record(struct pane *p safe, const char *path safe,
 
 static void do_text_autosave(struct pane *p safe)
 {
-	struct doc *d = p->data;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &p->doc_data;
 	int fd = -1;
 
 	if (!t->fname)
@@ -682,8 +678,7 @@ DEF_CMD(text_autosave_tick)
 
 static void text_check_autosave(struct pane *p safe)
 {
-	struct doc *d = p->data;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &p->doc_data;
 
 	if (t->undo == t->saved)
 		t->as.changes = 0;
@@ -704,7 +699,7 @@ static void text_check_autosave(struct pane *p safe)
 DEF_CMD(text_save_file)
 {
 	struct doc *d = ci->home->data;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &ci->home->doc_data;
 	int ret;
 	char *msg;
 	int change_status = 0;
@@ -757,8 +752,7 @@ DEF_CMD(text_write_file)
 
 DEF_CMD(text_same_file)
 {
-	struct doc *d = ci->home->data;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &ci->home->doc_data;
 	struct stat stb, stb2;
 	int fd = ci->num2;
 
@@ -1313,7 +1307,7 @@ static void text_redo(struct text *t safe, struct text_edit *e safe,
 static bool check_readonly(const struct cmd_info *ci safe)
 {
 	struct doc *d = ci->home->data;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &ci->home->doc_data;
 
 	if (t->undo == t->saved &&
 	    check_file_changed(ci->home) &&
@@ -1329,14 +1323,13 @@ static bool check_readonly(const struct cmd_info *ci safe)
 
 DEF_CMD(text_reundo)
 {
-	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
 	struct doc_ref start, end;
 	int last = 0;
 	struct text_edit *ed = NULL;
 	bool first = 1;
 	int status;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &ci->home->doc_data;
 
 	if (!m)
 		return Enoarg;
@@ -1646,11 +1639,10 @@ static wint_t text_prev(struct text *t safe, struct doc_ref *r safe, bool bytes)
 static int text_step(struct pane *home safe, struct mark *mark safe,
 		     int num, int num2)
 {
-	struct doc *d = home->data;
 	struct mark *m = mark;
 	bool forward = num;
 	bool move = num2;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &home->doc_data;
 	struct doc_ref r;
 	wint_t ret;
 
@@ -1702,11 +1694,10 @@ DEF_CMD(text_char)
 static int text_step_bytes(struct pane *home safe, struct mark *mark safe,
 			   int num, int num2)
 {
-	struct doc *d = home->data;
 	struct mark *m = mark;
 	bool forward = num;
 	bool move = num2;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &home->doc_data;
 	struct doc_ref r;
 	wint_t ret;
 
@@ -1805,7 +1796,10 @@ DEF_CMD(text_new)
 	struct text *t;
 	struct pane *p;
 
-	alloc(t, pane);
+	p = doc_register(ci->home, &text_handle.c);
+	if (!p)
+		return Efail;
+	t = &p->doc_data;
 	t->alloc = safe_cast NULL;
 	INIT_LIST_HEAD(&t->text);
 	t->saved = t->undo = t->redo = NULL;
@@ -1817,9 +1811,6 @@ DEF_CMD(text_new)
 	t->as.timer_started = 0;
 	t->as.last_change = 0;
 	text_new_alloc(t, 0);
-	p = doc_register(ci->home, &text_handle.c, t);
-	if (!p)
-		return Efail;
 
 	return comm_call(ci->comm2, "callback:doc", p);
 }
@@ -1863,10 +1854,9 @@ static int count_bytes(struct text *t safe, struct mark *from, struct mark *to)
 
 DEF_CMD(text_content)
 {
-	struct doc *d = ci->home->data;
 	struct mark *from = ci->mark, *to = ci->mark2;
 	struct mark *m;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &ci->home->doc_data;
 	struct text_chunk *c, *first, *last;
 	int bytes = strcmp(ci->key, "doc:content-bytes") == 0;
 	int l = 0, head, tail;
@@ -2001,8 +1991,7 @@ DEF_CMD(text_debug_mark)
 
 DEF_CMD(text_val_marks)
 {
-	struct doc *d = ci->home->data;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &ci->home->doc_data;
 	struct text_chunk *c;
 	int found;
 
@@ -2045,9 +2034,8 @@ DEF_CMD(text_val_marks)
 
 DEF_CMD(text_set_ref)
 {
-	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &ci->home->doc_data;
 
 	if (!m)
 		return Enoarg;
@@ -2277,8 +2265,8 @@ static void text_add_attrs(struct attrset **attrs safe,
 
 DEF_CMD(text_replace)
 {
-	struct doc *d = ci->home->data;
-	struct text *t = container_of(d, struct text, doc);
+
+	struct text *t = &ci->home->doc_data;
 	struct mark *pm = ci->mark2;
 	struct mark *end = ci->mark;
 	const char *str = ci->str;
@@ -2363,11 +2351,11 @@ DEF_CMD(text_replace)
 	return first ? 1 : 2;
 }
 
-static struct attrset *text_attrset(struct doc *d safe, struct mark *m safe,
+static struct attrset *text_attrset(struct pane *p safe, struct mark *m safe,
 				    int *op safe)
 {
 	struct text_chunk *c;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &p->doc_data;
 	unsigned int o;
 
 	c = m->ref.c;
@@ -2390,7 +2378,6 @@ static struct attrset *text_attrset(struct doc *d safe, struct mark *m safe,
 
 DEF_CMD(text_doc_get_attr)
 {
-	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
 	const char *attr = ci->str;
 	const char *val;
@@ -2399,7 +2386,7 @@ DEF_CMD(text_doc_get_attr)
 
 	if (!m || !attr)
 		return Enoarg;
-	a = text_attrset(d, m, &o);
+	a = text_attrset(ci->home, m, &o);
 	val = attr_get_str(a, attr, o);
 	if (!val && !ci->num2)
 		return Efallthrough;
@@ -2419,8 +2406,7 @@ DEF_CMD(text_doc_get_attr)
 
 DEF_CMD(text_get_attr)
 {
-	struct doc *d = ci->home->data;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &ci->home->doc_data;
 	const char *attr = ci->str;
 	const char *val;
 
@@ -2498,8 +2484,7 @@ DEF_CMD(text_set_attr)
 	const char *attr = ci->str;
 	const char *val = ci->str2;
 	struct text_chunk *c, *c2;
-	struct doc *d = ci->home->data;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &ci->home->doc_data;
 	unsigned int o, o2;
 
 	if (!attr)
@@ -2540,8 +2525,7 @@ DEF_CMD(text_set_attr)
 
 DEF_CMD(text_modified)
 {
-	struct doc *d = ci->home->data;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &ci->home->doc_data;
 
 	if (ci->num == 0) {
 		/* toggle status */
@@ -2562,8 +2546,7 @@ DEF_CMD(text_modified)
 
 DEF_CMD(text_revisited)
 {
-	struct doc *d = ci->home->data;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &ci->home->doc_data;
 
 	if (ci->num <= 0)
 		/* Being buried, not visited */
@@ -2640,8 +2623,7 @@ static void text_cleanout(struct text *t safe)
 
 DEF_CMD(text_destroy)
 {
-	struct doc *d = ci->home->data;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &ci->home->doc_data;
 
 	text_cleanout(t);
 	return Efallthrough;
@@ -2652,8 +2634,7 @@ DEF_CMD(text_clear)
 	/* Clear the document, including undo/redo records
 	 * i.e. free all text
 	 */
-	struct doc *d = ci->home->data;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &ci->home->doc_data;
 	struct mark *m;
 
 	text_cleanout(t);
@@ -2669,12 +2650,10 @@ DEF_CMD(text_clear)
 
 DEF_CMD(text_free)
 {
-	struct doc *d = ci->home->data;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t = &ci->home->doc_data;
 
 	free((void*)t->fname);
 	free((void*)t->autosave_name);
-	unalloc(t, pane);
 	return 1;
 }
 
