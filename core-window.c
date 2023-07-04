@@ -49,6 +49,7 @@
 #include <time.h>
 #include <stdio.h>
 
+#define PANE_DATA_TYPE struct window_data
 #include "core.h"
 #include "internal.h"
 
@@ -57,6 +58,7 @@ struct window_data {
 	int		sel_committed;
 	struct pane	*sel_owner_fallback;
 };
+#include "core-pane.h"
 
 DEF_CMD(request_notify)
 {
@@ -90,7 +92,7 @@ DEF_CMD(window_set)
 
 DEF_CMD(selection_claim)
 {
-	struct window_data *wd = ci->home->data;
+	struct window_data *wd = &ci->home->data;
 
 	if (wd->sel_owner && wd->sel_owner != ci->focus) {
 		call("Notify:selection:claimed", wd->sel_owner);
@@ -106,7 +108,7 @@ DEF_CMD(selection_claim)
 
 DEF_CMD(selection_commit)
 {
-	struct window_data *wd = ci->home->data;
+	struct window_data *wd = &ci->home->data;
 
 	if (wd->sel_owner && !wd->sel_committed) {
 		if (call("Notify:selection:commit", wd->sel_owner) != 2)
@@ -117,7 +119,7 @@ DEF_CMD(selection_commit)
 
 DEF_CMD(selection_discard)
 {
-	struct window_data *wd = ci->home->data;
+	struct window_data *wd = &ci->home->data;
 	struct pane *op, *fp;
 
 	if (!wd->sel_owner)
@@ -139,7 +141,7 @@ DEF_CMD(selection_discard)
 
 DEF_CMD(close_notify)
 {
-	struct window_data *wd = ci->home->data;
+	struct window_data *wd = &ci->home->data;
 
 	if (wd->sel_owner_fallback == ci->focus)
 		wd->sel_owner_fallback = NULL;
@@ -154,15 +156,11 @@ DEF_LOOKUP_CMD(window_handle, window_map);
 
 DEF_CMD(window_attach)
 {
-	struct window_data *wd;
 	struct pane *p;
 
-	alloc(wd, pane);
-	p = pane_register(ci->focus, 0, &window_handle.c, wd);
-	if (!p) {
-		unalloc(wd, pane);
+	p = pane_register(ci->focus, 0, &window_handle.c);
+	if (!p)
 		return Efail;
-	}
 	comm_call(ci->comm2, "cb", p);
 	return 1;
 }
