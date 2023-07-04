@@ -33,6 +33,7 @@ struct doc_ref {
 #define SET_REFS(_mark, val) ((_mark)->mdata = (void*)(unsigned long)(val))
 #define ADD_REFS(_mark, inc) SET_REFS(_mark, GET_REFS(_mark) + (inc))
 
+#define DOC_DATA_TYPE struct mp_info
 #include "core.h"
 
 struct mp_info {
@@ -43,6 +44,7 @@ struct mp_info {
 		struct pane	*pane;
 	} *parts safe;
 };
+#include "core-pane.h"
 
 static struct map *mp_map safe;
 
@@ -211,7 +213,7 @@ static void mp_normalize(struct mp_info *mpi safe, struct mark *m safe,
 
 DEF_CMD(mp_close)
 {
-	struct mp_info *mpi = ci->home->data;
+	struct mp_info *mpi = &ci->home->doc_data;
 	int i;
 	struct mark *m;
 
@@ -233,16 +235,15 @@ DEF_CMD(mp_close)
 
 DEF_CMD(mp_free)
 {
-	struct mp_info *mpi = ci->home->data;
+	struct mp_info *mpi = &ci->home->doc_data;
 
 	free(mpi->parts);
-	unalloc(mpi, pane);
 	return 1;
 }
 
 DEF_CMD(mp_set_ref)
 {
-	struct mp_info *mpi = ci->home->data;
+	struct mp_info *mpi = &ci->home->doc_data;
 	const char *vis = ci->str && (int)strlen(ci->str) >= mpi->nparts ?
 		ci->str : NULL;
 	int ret = 1;
@@ -282,7 +283,7 @@ DEF_CMD(mp_set_ref)
 static int mp_step(struct pane *home safe, struct mark *mark safe,
 		   int forward, int move, const char *str)
 {
-	struct mp_info *mpi = home->data;
+	struct mp_info *mpi = &home->doc_data;
 	struct mark *m1 = NULL;
 	struct mark *m = mark;
 	const char *vis = str && (int)strlen(str) >= mpi->nparts ?
@@ -396,7 +397,7 @@ DEF_CMD(mp_step_part)
 	 * Return part number plus 1.
 	 * If ->str is given, only consider visible parts.
 	 */
-	struct mp_info *mpi = ci->home->data;
+	struct mp_info *mpi = &ci->home->doc_data;
 	struct mark *m = ci->mark;
 	const char *vis = ci->str && (int)strlen(ci->str) >= mpi->nparts ?
 		ci->str : NULL;
@@ -488,7 +489,7 @@ DEF_CMD(mp_content)
 	/* Call doc:content on any visible docs in the range.
 	 * Callback must re-wrap any marks
 	 */
-	struct mp_info *mpi = ci->home->data;
+	struct mp_info *mpi = &ci->home->doc_data;
 	struct mp_cb cb;
 	struct mark *m, *m2;
 	const char *invis = ci->str;
@@ -537,7 +538,7 @@ DEF_CMD(mp_content)
 
 DEF_CMD(mp_attr)
 {
-	struct mp_info *mpi = ci->home->data;
+	struct mp_info *mpi = &ci->home->doc_data;
 	struct mark *m1 = NULL;
 	struct part *p;
 	int ret = Efallthrough;
@@ -606,7 +607,7 @@ DEF_CMD(mp_attr)
 
 DEF_CMD(mp_set_attr)
 {
-	struct mp_info *mpi = ci->home->data;
+	struct mp_info *mpi = &ci->home->doc_data;
 	struct part *p;
 	struct mark *m = ci->mark;
 	struct mark *m1;
@@ -651,7 +652,7 @@ DEF_CMD(mp_notify_close)
 	/* sub-document has been closed.
 	 * Can we survive? or should we just shut down?
 	 */
-	struct mp_info *mpi = ci->home->data;
+	struct mp_info *mpi = &ci->home->doc_data;
 	int i;
 
 	for (i = 0; i < mpi->nparts; i++)
@@ -694,7 +695,7 @@ static void mp_resize(struct mp_info *mpi safe, int size)
 
 DEF_CMD(mp_add)
 {
-	struct mp_info *mpi = ci->home->data;
+	struct mp_info *mpi = &ci->home->doc_data;
 	struct mark *m;
 	int n;
 
@@ -723,7 +724,7 @@ DEF_CMD(mp_add)
 
 DEF_CMD(mp_forward_by_num)
 {
-	struct mp_info *mpi = ci->home->data;
+	struct mp_info *mpi = &ci->home->doc_data;
 	struct mark *m1 = NULL, *m2 = NULL;
 	struct part *p;
 	const char *key;
@@ -756,7 +757,7 @@ DEF_CMD(mp_forward_by_num)
 
 DEF_CMD(mp_get_part)
 {
-	struct mp_info *mpi = ci->home->data;
+	struct mp_info *mpi = &ci->home->doc_data;
 	struct part *p;
 	int d = ci->num;
 
@@ -774,7 +775,7 @@ DEF_CMD(mp_forward)
 	 * ci->mark2.
 	 * ci->mark is forwarded if it is in same document
 	 */
-	struct mp_info *mpi = ci->home->data;
+	struct mp_info *mpi = &ci->home->doc_data;
 	struct part *p;
 	struct mark *m1, *m2;
 	const char *key;
@@ -877,13 +878,10 @@ DEF_CMD(attach_mp)
 	struct mp_info *mpi;
 	struct pane *h;
 
-	alloc(mpi, pane);
-
-	h = doc_register(ci->home, &mp_handle.c, mpi);
-	if (!h) {
-		unalloc(mpi, pane);
+	h = doc_register(ci->home, &mp_handle.c);
+	if (!h)
 		return Efail;
-	}
+	mpi = &h->doc_data;
 
 	mpi->doc.refcnt = mp_mark_refcnt;
 	attr_set_str(&h->attrs, "render-default", "text");
