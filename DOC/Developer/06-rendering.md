@@ -168,11 +168,17 @@ map mouse clicks to locations in the document.
 
 When "render-lines" determines the range of lines that will fit on the
 display is sends a "render:reposition" message to the whole stack with
-marks for the start and end of the visible range.  This message is
-normally only sent when there is a change to report.  However other
-panes can request the information by sending "render:request:reposition"
-which will cause the "render:reposition" message to be send on the next
-refresh.
+marks for the start and end of the visible range.  The number of rows
+and columns displays are also reported as num and num2.  These can be
+less than the height and width of the pane, but not more.  The are
+calculated at a different time to the start and end marks and so can
+result in a separate "render:reposition" message which doesn't contain
+the marks.
+
+This message is normally only sent when there is a change to report.
+However other panes can request the information by sending
+"render:request:reposition" which will cause the "render:reposition"
+message to be send on the next refresh.
 
 "render-lines" listens for "doc:replaced" notification from the document
 and will update the display of anything that has changed.  It also

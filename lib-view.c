@@ -378,7 +378,7 @@ DEF_CMD(view_reposition)
 	struct view_data *vd = ci->home->data;
 
 	if (!ci->mark)
-		return Enoarg;
+		return Efallthrough;
 
 	if (!vd->viewpoint || !mark_same(vd->viewpoint, ci->mark)) {
 		pane_damaged(ci->home, DAMAGED_REFRESH);

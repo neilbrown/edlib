@@ -504,6 +504,7 @@ Module features
 
 ### doc-email
 
+- [ ] if charset module doesn't load, things go very bad. (utf-8 failure)
 - [ ] use mimetypes.guess_type() to interpret filenames in email attachments??
 - [ ] don't allow non-text email parts to appear as text.  Maybe hex??
 

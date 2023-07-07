@@ -897,7 +897,7 @@ static int render(struct mark *pm, struct pane *p safe,
 			draw_line(p, focus, m, -1, refresh_all);
 		}
 		if (m->mdata) {
-			int cols = m->mdata->x + m->mdata->w;
+			int cols = pane_attr_get_int(m->mdata, "width", 0);
 			if (cols > rl->cols)
 				rl->cols = cols;
 			y = m->mdata->y + m->mdata->h;
@@ -1272,6 +1272,8 @@ DEF_CMD(render_lines_refresh)
 	struct pane *focus = ci->focus;
 	struct rl_data *rl = p->data;
 	struct mark *m, *pm = NULL;
+	int cols = rl->cols;
+	int lines = rl->lines;
 
 	//pane_damaged(p, DAMAGED_VIEW);
 
@@ -1283,6 +1285,8 @@ DEF_CMD(render_lines_refresh)
 		return 1;
 
 	rl->lines = render(pm, p, focus);
+	if (rl->lines != lines || rl->cols != cols)
+		call("render:reposition", focus, rl->lines, NULL, NULL, rl->cols);
 
 	return 1;
 }

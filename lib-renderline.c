@@ -46,6 +46,7 @@ struct rline_data {
 	const char	*cursattr;
 	short		curs_width;
 	int		scale;
+	int		width;
 	const char	*line;
 	int		curspos;
 };
@@ -1053,6 +1054,7 @@ DEF_CMD(renderline)
 		 * be out-of-sync with display manager.
 		 */
 		pane_resize(p, p->x, p->y, p->w, y);
+	rd->width = margin + twidth;
 	attr_set_int(&p->attrs, "line-height", line_height);
 	while (rlst) {
 		struct render_list *r = rlst;
@@ -1084,6 +1086,8 @@ DEF_CMD(renderline_get)
 		snprintf(buf, sizeof(buf), "%d", rd->curs_width);
 	else if (strcmp(ci->str, "xyattr") == 0)
 		val = rd->xyattr;
+	else if (strcmp(ci->str, "width") == 0)
+		snprintf(buf, sizeof(buf), "%d", rd->width);
 	else if (strcmp(ci->str, "cursattr") == 0)
 		val = rd->cursattr;
 	else
