@@ -19,6 +19,8 @@ import edlib
 class AbbrevPane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
+        self.menu = None
+        self.opening_menu = False
 
         self.call("doc:request:doc:replaced")
         self.call("doc:request:mark:moving")
@@ -44,7 +46,43 @@ class AbbrevPane(edlib.Pane):
         self.prefix_end.step(0)
         self.completions = []
         self.current = -1
-        self.next_completion(1)
+        #self.next_completion(1)
+        self.get_completions()
+        self.complete_len = 0
+
+        if not self.completions:
+            return 1
+        self.opening_menu = True
+        mp = self.call("attach-menu", (self.parent.cx, self.parent.cy), ret='pane')
+        for c in self.completions:
+            mp.call("menu-add", self.prefix+c)
+        mp.call("doc:file", -1)
+        self.menu = mp
+        self.add_notify(mp, "Notify:Close")
+        self.opening_menu = False
+
+    def handle_close(self, key, focus, **a):
+        "handle:Notify:Close"
+        if focus == self.menu:
+            self.menu = None
+        return 1
+
+    def menu_done(self, key, focus, str, **a):
+        "handle:menu-done"
+        if not self.prefix_start:
+            return
+        edlib.LOG(key, str)
+        if not str:
+            # Menu aborted
+            self.call("view:changed", self.prefix_start, self.prefix_end)
+            self.prefix_start = None
+            self.prefix_end = None
+            self.call("Message", "")
+            return 1
+        self.call("doc:replace", str, self.prefix_end, self.prefix_start)
+        self.complete_len = len(str)
+        self.call("view:changed", self.prefix_start, self.prefix_end)
+        return 1
 
     def get_completions(self):
         m = self.prefix_start.dup()
@@ -156,12 +194,25 @@ class AbbrevPane(edlib.Pane):
             self.complete_len = len(c)
         self.call("view:changed", self.prefix_start, self.prefix_end)
 
-    def handle_highlight(self, key, focus, mark, str1, str2, comm2, **a):
+    def handle_draw(self, key, focus, str2, xy, **a):
+        "handle:Draw:text"
+        if not self.menu or not str2 or ",menu_here" not in str2:
+            return edlib.Efallthrough
+
+        p = self.menu.call("ThisPopup", ret='pane')
+        if p:
+            xy = p.mapxy(focus, xy[0], focus.h)
+            p.x = xy[0]
+            p.y = xy[1]
+        return edlib.Efallthrough
+
+    def handle_highlight(self, key, focus, mark, str1, str2, xy, comm2, **a):
         "handle:map-attr"
         if not comm2 or not self.prefix_start:
             return
         if str1 == "render:abbrev" and str2 == 'prefix' and mark == self.prefix_start:
             comm2("cb", focus, mark, "bg:yellow", self.prefix_len, 250)
+            comm2("cb", focus, mark, "menu_here", 1, 250)
             return 1
         if str1 == "render:abbrev" and str2 == 'completion' and mark == self.prefix_end:
             comm2("cb", focus, mark, "bg:cyan", self.complete_len, 250)
@@ -229,6 +280,14 @@ class AbbrevPane(edlib.Pane):
         if key == "mark:moving":
             point = self.call("doc:point", ret = 'mark')
             if mark.seq != point.seq:
+                return edlib.Efallthrough
+
+        if key == "pane:defocus":
+            if self.opening_menu:
+                # Focus moved to menu - ignore
+                return edlib.Efallthrough
+            if self.has_focus():
+                # Maybe the menu lost focus ... I wonder why I would care
                 return edlib.Efallthrough
 
         if not self.active and self.prefix_start:

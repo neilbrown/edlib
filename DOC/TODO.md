@@ -776,7 +776,7 @@ Module features
 
 ### dynamic completion
 
-- [ ] provide a drop-down menu with options
+- [X] provide a drop-down menu with options
 - [ ] unify UI with spell
 
 ### spell-checker
@@ -800,7 +800,7 @@ Module features
 
 ### lib-menu
 
-- [ ] popup menu to which we can add entries, pop it at a location, get
+- [X] popup menu to which we can add entries, pop it at a location, get
       a selection
 - [ ] menu-bar to which we can add menus from which commands are sent
 

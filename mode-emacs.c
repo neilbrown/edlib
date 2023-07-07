@@ -2515,7 +2515,10 @@ DEF_CMD(emacs_release)
 
 	call("Move-CursorXY", ci->focus,
 	     2, m, NULL, moved, NULL, NULL, ci->x, ci->y);
-	if (moved) {
+	/* That action might have closed a pane.  Better check... */
+	if (ci->focus->damaged & DAMAGED_CLOSED) {
+		/* Do nothing */
+	} else if (moved) {
 		/* Moved the mouse, so new location is point */
 		call("Move-to", ci->focus, 0, m);
 		update_sel(ci->focus, p, m2, NULL);

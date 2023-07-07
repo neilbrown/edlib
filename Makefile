@@ -86,7 +86,7 @@ SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
 	O/lib-renderline.o O/lib-x11selection-gtk.o O/lib-autosave.o \
 	O/lib-x11selection-xcb.o O/display-x11-xcb.o \
 	O/lib-linefilter.o O/lib-wiggle.o O/lib-aspell.o O/lib-calc.o \
-	O/lib-unicode-names.o \
+	O/lib-menu.o O/lib-unicode-names.o \
 	O/lang-python.o \
 	O/mode-emacs.o O/emacs-search.o \
 	O/display-ncurses.o
