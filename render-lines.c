@@ -784,18 +784,26 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	}
 
 	y = 0;
-	if (rl->header && rl->header->mdata)
+	rl->cols = 0;
+	if (rl->header && rl->header->mdata) {
 		y = rl->header->mdata->h;
+		rl->cols = pane_attr_get_int(rl->header->mdata, "width", 0);
+	}
 	y -= rl->skip_height;
 	for (m = vmark_first(focus, rl->typenum, p);
 	     m && m->mdata ; m = vmark_next(m)) {
 		struct pane *hp = m->mdata;
+		int cols;
 		hp->damaged &= ~DAMAGED_SIZE;
 		pane_resize(hp, hp->x, y, hp->w, hp->h);
 		if (hp->damaged & DAMAGED_SIZE && !rl->background_uniform)
 			pane_damaged(hp, DAMAGED_REFRESH);
 		y += hp->h;
+		cols = pane_attr_get_int(hp, "width", 0);
+		if (cols > rl->cols)
+			rl->cols = cols;
 	}
+	rl->lines = y;
 	pane_damaged(p, DAMAGED_REFRESH);
 	m = vmark_first(focus, rl->typenum, p);
 	if (!m || !orig_top || !mark_same(m, orig_top))
@@ -865,7 +873,7 @@ static int render(struct mark *pm, struct pane *p safe,
 		struct pane *hp = rl->header->mdata;
 		draw_line(p, focus, rl->header, -1, refresh_all);
 		y = hp->h;
-		rl->cols = hp->x + hp->w;
+		rl->cols = pane_attr_get_int(hp, "width", 0);
 	}
 	y -= rl->skip_height;
 
