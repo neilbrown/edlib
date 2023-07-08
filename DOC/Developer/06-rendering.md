@@ -205,15 +205,15 @@ document, rather than on its content.
   from the end of the display, a positive number is counted forward from
   the start.  A line number of zero is the centre of the display.
 
-- "Move-CursorXY" does not adjust the display, but moved the point as
+- "Move-CursorXY" does not adjust the display, but moves the point as
   close as possible to the x,y position passed in the message.
-  The num1 argument will report if the message is due to a mouse click
-  (1) or release (2) or motion (3).  If it was "release" then
-  "render-lines" will check if the attribute "active-tag" appears in the
-  markup for that location.  If it does then a message is sent to the
-  stack with a key formed from "Activate:" followed by the value
-  of "active-tag".  "mark" will be a mark at the location, "str1" will be
-  the tag, and "str2" will be all attributes active at that location.
+  The str1 argument can indicate that a context-dependant action, if
+  any,  could be performed.  If the content at the target location has
+  a tag named "action-" followed by the value in str1, then the value of
+  that tag is used as a command name and is sent to the focus with
+  all attributes at that location passed as "str1".  "mark" will be the
+  location that the cursor is about to move to, and "mark2" will be the
+  mark that will be moved.
 
 - "Move-Line" moves the cursor (point) forward or backward some number
   of lines based on the num1 argument.  "render-lines" attempts to keep

@@ -90,7 +90,7 @@ DEF_CMD(menu_attach)
 	call("doc:set:autoclose", docp, 1);
 	attr_set_str(&docp->attrs, "render-simple", "format");
 	attr_set_str(&docp->attrs, "heading", "");
-	attr_set_str(&docp->attrs, "line-format", "<active-tag:menu-select>%name</>");
+	attr_set_str(&docp->attrs, "line-format", "<action-activate:menu-select>%name</>");
 	attr_set_str(&docp->attrs, "done-key", ci->str2 ?: "menu-done");
 	/* No borders, just a shaded background to make menu stand out */
 	attr_set_str(&docp->attrs, "borders", "");
@@ -120,7 +120,7 @@ static void menu_init_map(void)
 	key_add(menu_map, "menu-add", &menu_add);
 	key_add(menu_map, "K:ESC", &menu_abort);
 	key_add(menu_map, "K:Enter", &menu_done);
-	key_add(menu_map, "Activate:menu-select", &menu_done);
+	key_add(menu_map, "menu-select", &menu_done);
 }
 
 void edlib_init(struct pane *ed safe)

@@ -78,7 +78,7 @@ static bool handle_rfc822(struct pane *email safe,
 static bool cond_append(struct buf *b safe, char *txt safe, char *tag safe,
 			int offset, int *pos safe)
 {
-	char *tagf = "active-tag:email-";
+	char *tagf = "action-activate:email-";
 	int prelen = 1 + strlen(tagf) + strlen(tag) + 1 + 1;
 	int postlen = 1 + 3;
 	int len = prelen + strlen(txt) + postlen;

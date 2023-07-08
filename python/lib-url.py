@@ -8,8 +8,8 @@
 # The "tag" leads to a pane attribute 'url:tag' which hold the full url.
 #
 # "render:url-view" is an overlay pane which:
-#  - responds to map-attr for render:url, adding the active-tag attr
-#  - handles Activate:url to also activate the url
+#  - responds to map-attr for render:url, adding the action-activate attr
+#  - handles Acivate:url to also activate the url
 
 import edlib
 
@@ -70,12 +70,12 @@ class url_view(edlib.Pane):
             if str1 == "render:url-end":
                 leng = -1
             comm2("attr:callback", focus, leng, mark,
-                  "fg:cyan-60,underline,active-tag:url,url-tag="+tg, 120)
+                  "fg:cyan-60,underline,action-activate:Activate:url,url-tag="+tg, 120)
             return 1
 
-    def handle_click(self, key, focus, mark, str2, **a):
+    def handle_click(self, key, focus, mark, str1, **a):
         "handle:Activate:url"
-        a = str2.split(',')
+        a = str1.split(',')
         tag=""
         for w in a:
             if w.startswith("url-tag="):
@@ -100,7 +100,7 @@ class url_view(edlib.Pane):
 
     def handle_enter(self, key, focus, mark, **a):
         "handle:K:Enter"
-        return focus.call("Activate", mark)
+        return focus.call("Action", "activate", mark)
 
 edlib.editor.call("global-set-command", "url:mark-up", mark_urls)
 edlib.editor.call("global-set-command", "attach-render-url-view", attach_url)

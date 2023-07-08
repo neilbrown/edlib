@@ -1451,32 +1451,38 @@ DEF_CMD(render_lines_move_view)
 	return 1;
 }
 
-static char *get_active_tag(const char *a)
+static char *get_action_tag(const char *tag safe, const char *a)
 {
+	int taglen = strlen(tag);
 	char *t;
 	char *c;
 
 	if (!a)
 		return NULL;
-	t = strstr(a, ",active-tag:");
-	if (!t)
-		return NULL;
-	t += 12;
+	do {
+		t = strstr(a, ",action-");
+		if (!t)
+			return NULL;
+		a = t+1;
+	} while (!(strncmp(t+8, tag, taglen) == 0 &&
+		   t[8+taglen] == ':'));
+
+	t += 8 + taglen + 1;
 	c = strchr(t, ',');
 	return strndup(t, c?c-t: (int)strlen(t));
 }
 
 DEF_CMD(render_lines_set_cursor)
 {
-	/* ->num is
-	 * 1 if this resulted from a click
-	 * 2 if from a release
-	 * 3 if from motion
-	 * 0 any other reason.
+	/* ->str gives a context specific action to perform
+	 * If the attributes at the location include
+	 * action-$str then the value of that attribute
+	 * is send as a command
 	 */
 	struct pane *p = ci->home;
 	struct pane *focus = ci->focus;
 	struct rl_data *rl = p->data;
+	const char *action = ci->str;
 	struct mark *m;
 	struct mark *m2 = NULL;
 	struct xy cih;
@@ -1510,17 +1516,12 @@ DEF_CMD(render_lines_set_cursor)
 	if (m2) {
 		char *tag, *xyattr;
 
-		if (ci->num == 2) { /* Mouse release */
+		if (action) {
 			xyattr = pane_attr_get(m->mdata, "xyattr");
-			tag = get_active_tag(xyattr);
-			if (tag) {
-				char *c = NULL;
-				asprintf(&c, "Activate:%s", tag);
-				if (c)
-					call(c, focus, 0, m2, tag,
-					     0, ci->mark, xyattr);
-				free(c);
-			}
+			tag = get_action_tag(action, xyattr);
+			if (tag)
+				call(tag, focus, 0, m2, xyattr,
+				     0, ci->mark);
 		}
 		m = m2;
 	} else {
@@ -1536,9 +1537,9 @@ DEF_CMD(render_lines_set_cursor)
 	return 1;
 }
 
-DEF_CMD(render_lines_activate)
+DEF_CMD(render_lines_action)
 {
-	/* If there is an active-tag: at '->mark', send Activate:tag
+	/* If there is an action-$str: at '->mark', send the command
 	 * to the focus
 	 */
 	struct mark *m = ci->mark;
@@ -1549,7 +1550,7 @@ DEF_CMD(render_lines_activate)
 	int offset;
 	char *attr, *tag;
 
-	if (!m)
+	if (!m || !ci->str)
 		return Enoarg;
 	v = vmark_first(p, rl->typenum, p);
 
@@ -1564,15 +1565,9 @@ DEF_CMD(render_lines_activate)
 		return Efallthrough;
 	measure_line(p, focus, v, offset);
 	attr = pane_attr_get(v->mdata, "cursattr");
-	tag = get_active_tag(attr);
-	if (tag) {
-		char *c = NULL;
-		asprintf(&c, "Activate:%s", tag);
-		if (c)
-			call(c, focus, 0, m, tag,
-			     0, NULL, attr);
-		free(c);
-	}
+	tag = get_action_tag(ci->str, attr);
+	if (tag)
+		call(tag, focus, 0, m, attr);
 	return 1;
 }
 
@@ -1906,7 +1901,7 @@ static void render_lines_register_map(void)
 	/* Make it easy to stop ignoring point */
 	key_add(rl_map, "Abort", &render_lines_abort);
 
-	key_add(rl_map, "Activate", &render_lines_activate);
+	key_add(rl_map, "Action", &render_lines_action);
 
 	key_add(rl_map, "Close", &render_lines_close);
 	key_add(rl_map, "Close:mark", &render_lines_close_mark);

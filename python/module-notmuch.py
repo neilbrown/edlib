@@ -3368,15 +3368,15 @@ class notmuch_message_view(edlib.Pane):
         return 1
 
     def handle_toggle_hide(self, key, focus, mark, **a):
-        "handle-list/Activate:email-hide/email:select:hide"
+        "handle-list/email-hide/email:select:hide"
         return self.handle_vis(focus, mark, "hide")
 
     def handle_toggle_full(self, key, focus, mark, **a):
-        "handle-list/Activate:email-full/email:select:full"
+        "handle-list/email-full/email:select:full"
         return self.handle_vis(focus, mark, "full")
 
     def handle_toggle_extras(self, key, focus, mark, **a):
-        "handle-list/Activate:email-extras/email:select:extras/doc:char-X"
+        "handle-list/email-extras/email:select:extras/doc:char-X"
         if not mark:
             # a mark at the first "sep" part will identify the headers
             mark = edlib.Mark(focus)
@@ -3414,7 +3414,7 @@ class notmuch_message_view(edlib.Pane):
         return 1
 
     def handle_save(self, key, focus, mark, **a):
-        "handle-list/Activate:email-save/email:select:save"
+        "handle-list/email-save/email:select:save"
 
         file = focus.call("doc:get-attr", "multipart-prev:email:filename", mark, ret='str')
         if not file:
@@ -3432,7 +3432,7 @@ class notmuch_message_view(edlib.Pane):
         return 1
 
     def handle_external(self, key, focus, mark, **a):
-        "handle-list/Activate:email-external view/email:select:external view"
+        "handle-list/email-external view/email:select:external view"
         type = focus.call("doc:get-attr", "multipart-prev:email:content-type", mark, ret='str')
         prefix = focus.call("doc:get-attr", "multipart-prev:email:prefix", mark, ret='str')
         ext = focus.call("doc:get-attr", "multipart-prev:email:ext", mark, ret='str')

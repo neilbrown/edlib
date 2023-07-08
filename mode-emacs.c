@@ -2514,7 +2514,7 @@ DEF_CMD(emacs_release)
 	attr_set_int(&m2->attrs, "emacs:track-selection", 0);
 
 	call("Move-CursorXY", ci->focus,
-	     2, m, NULL, moved, NULL, NULL, ci->x, ci->y);
+	     0, m, "activate", moved, NULL, NULL, ci->x, ci->y);
 	/* That action might have closed a pane.  Better check... */
 	if (ci->focus->damaged & DAMAGED_CLOSED) {
 		/* Do nothing */

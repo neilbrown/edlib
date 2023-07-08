@@ -132,11 +132,14 @@ Standard attributes are:
            the following line is prefixed with the value of the
            attribute.
 
-  active-tag:$tag If a mouse-click happens on text with this attribute,
-           Activate:$tag is called with:
+  action-$name:$command If a mouse-click happens on text with this attribute,
+           then depending on the name the command will be called with:
               ->mark being a new mark at the location
-              ->str being $tag
-	      ->str2 being all attributes active at the location
+	      ->mark2 being the point that will be moved there.
+              ->str being all attributes at that location.
+           $name is "activate" for a mouse-1 release.
+           This command can also be triggered by calling "Action"
+           passing the name as ->str.
 
 only on pygtk:
   NN      font size
