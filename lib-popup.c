@@ -508,6 +508,7 @@ DEF_CMD(popup_attach)
 	struct popup_info *ppi;
 	const char *style = ci->str;
 	char *in_popup;
+	struct xy xy;
 	int z = 1;
 
 	if (!style)
@@ -549,7 +550,8 @@ DEF_CMD(popup_attach)
 		return Efail;
 	ppi->style = strdup(style);
 	popup_set_style(p);
-	popup_resize(p, style, ci->x, ci->y);
+	xy = pane_mapxy(ci->focus, root, ci->x, ci->y, True);
+	popup_resize(p, style, xy.x, xy.y);
 	attr_set_str(&p->attrs, "render-wrap", "no");
 
 	pane_add_notify(p, ppi->target, "Notify:Close");

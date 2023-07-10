@@ -2536,6 +2536,24 @@ DEF_CMD(emacs_release)
 	return 1;
 }
 
+DEF_CMD(emacs_menu_open)
+{
+	/* If there is a menu action here, activate it. */
+
+	return call("Move-CursorXY", ci->focus, 3, ci->mark, "menu",
+		    0, NULL, NULL, ci->x, ci->y);
+}
+
+DEF_CMD(emacs_menu_select)
+{
+	/* If a menu was opened it should have claimed the mouse focus
+	 * so ci->focus is now the menu.  We want to activate the entry
+	 * under the mouse
+	 */
+	return call("Move-CursorXY", ci->focus, 3, ci->mark, "activate",
+		    0, NULL, NULL, ci->x, ci->y);
+}
+
 DEF_CMD(emacs_motion)
 {
 	struct mark *p = call_ret(mark, "doc:point", ci->focus);
@@ -3347,6 +3365,8 @@ static void emacs_init(void)
 
 	key_add(m, "M:Press-1", &emacs_press);
 	key_add(m, "M:Release-1", &emacs_release);
+	key_add(m, "M:Press-3", &emacs_menu_open);
+	key_add(m, "M:Release-3", &emacs_menu_select);
 	key_add(m, "M:DPress-1", &emacs_press);
 	key_add(m, "M:Click-2", &emacs_paste);
 	key_add(m, "M:C:Click-1", &emacs_paste);

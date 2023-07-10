@@ -189,7 +189,7 @@ static char *get_last_attr(const char *attrs safe, const char *attr safe)
 
 static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 		      struct render_list **rlp safe,
-		      int y, int scale, int wrap_pos, int *wrap_margin safe,
+		      int y, int ascent, int scale, int wrap_pos, int *wrap_margin safe,
 		      int *wrap_prefix_sizep,
 		      const char **xypos, const char **xyattr, const char **cursattr)
 {
@@ -248,13 +248,27 @@ static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 		if (dodraw)
 			home_call(focus, "Draw:text", p, cp, NULL, rl->text,
 				  scale, NULL, rl->attr,
-				  x, y);
-		x += rl->width;
+				  x, y + ascent);
 		if (xypos && rl->xypos) {
 			*xypos = rl->xypos;
-			if (xyattr)
-				*xyattr = strsave(p, rl->attr);
+			if (xyattr) {
+				/* FIXME this is a bit of a hack.
+				 * We still the x,y co-ords of the start
+				 * of the current attr in front of the
+				 * attrs so render-lines can provide a
+				 * good location for a menu
+				 */
+				char buf[100];
+				struct render_list *rl2;
+				int ax = 0;
+				for (rl2 = *rlp; rl2 != rl; rl2 = rl2->next)
+					if (strcmp(rl2->attr, rl->attr) == 0)
+						ax = rl2->x;
+				snprintf(buf, sizeof(buf), "%dx%d,", ax, y);
+				*xyattr = strconcat(p, buf, rl->attr);
+			}
 		}
+		x += rl->width;
 		if (cp >= 0 && cursattr)
 			*cursattr = strsave(p, rl->attr);
 	}
@@ -267,7 +281,7 @@ static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 		if (cp >= 0 && dodraw)
 			home_call(focus, "Draw:text", p, cp, NULL, rl->text,
 				  scale, NULL, rl->attr,
-				  rl->x, y);
+				  rl->x, y + ascent);
 		x = rl->x + rl->width;
 	}
 	/* Draw the wrap-tail */
@@ -275,7 +289,7 @@ static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 		char *e = get_last_attr(last_rl->attr, "wrap-tail");
 		home_call(focus, "Draw:text", p, -1, NULL, e ?: "\\",
 			  scale, NULL, "underline,fg:blue",
-			  wrap_pos, y);
+			  wrap_pos, y + ascent);
 		free(e);
 	}
 
@@ -803,7 +817,7 @@ DEF_CMD(renderline)
 			if (wrap && *line && *line != '\n') {
 				int wrap_prefix_size;
 				int len = flush_line(p, focus, dodraw, &rlst,
-						     y+ascent, scale,
+						     y, ascent, scale,
 						     p->w - mwidth, &wrap_margin,
 						     &wrap_prefix_size,
 						     &xypos, &xyattr, &cursattr);
@@ -949,7 +963,7 @@ DEF_CMD(renderline)
 			break;
 		case '\n':
 			xypos = line-1;
-			flush_line(p, focus, dodraw, &rlst, y+ascent, scale, 0,
+			flush_line(p, focus, dodraw, &rlst, y, ascent, scale, 0,
 				   &wrap_margin, NULL, &xypos, &xyattr, &cursattr);
 			y += line_height;
 			x = 0;
@@ -1020,7 +1034,7 @@ DEF_CMD(renderline)
 			  posx, scale);
 	}
 
-	flush_line(p, focus, dodraw, &rlst, y+ascent, scale, 0,
+	flush_line(p, focus, dodraw, &rlst, y, ascent, scale, 0,
 		   &wrap_margin, NULL,  &xypos, &xyattr, &cursattr);
 
 	if (want_xypos == 1) {

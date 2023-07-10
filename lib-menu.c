@@ -76,13 +76,13 @@ DEF_LOOKUP_CMD(menu_handle, menu_map);
 DEF_CMD(menu_attach)
 {
 	struct pane *docp, *p, *p2;
-	/* Multi-line popup with x,y location provided. */
-	const char *mode = "Mx";
+	/* Multi-line temporary popup with x,y location provided. */
+	const char *mode = "Mtx";
 	const char *mmode = ci->str ?: "";
 
 	if (strchr(mmode, 'D'))
 		/* per-display, not per-pane */
-		mode = "DMx";
+		mode = "DMtx";
 
 	docp = call_ret(pane, "attach-doc-list", ci->focus);
 	if (!docp)
@@ -108,6 +108,7 @@ DEF_CMD(menu_attach)
 	p2 = pane_register(p2, 0, &menu_handle.c);
 	if (!p2)
 		return Efail;
+	call("Mouse-grab", p2);
 	return comm_call(ci->comm2, "cb:attach", p2);
 }
 

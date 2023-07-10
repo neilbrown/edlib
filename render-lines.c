@@ -1519,9 +1519,23 @@ DEF_CMD(render_lines_set_cursor)
 		if (action) {
 			xyattr = pane_attr_get(m->mdata, "xyattr");
 			tag = get_action_tag(action, xyattr);
-			if (tag)
+			if (tag) {
+				int x, y;
+				/* This is a hack to get the start of these
+				 * attrs so menu can be placed correctly.
+				 * Only works for menus below the line.
+				 */
+				if (sscanf(xyattr, "%dx%d,", &x, &y) == 2) {
+					cih.x = x;
+					cih.y = m->mdata->y + y +
+						attr_find_int(m->mdata->attrs,
+							      "line-height");
+;
+				}
 				call(tag, focus, 0, m2, xyattr,
-				     0, ci->mark);
+				     0, ci->mark, NULL,
+				     cih.x, cih.y);
+			}
 		}
 		m = m2;
 	} else {

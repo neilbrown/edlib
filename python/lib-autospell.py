@@ -227,8 +227,43 @@ class autospell_view(edlib.Pane):
         if not str1 or not mark or not comm2:
             return edlib.Efallthrough
         if str1 == "render:spell-incorrect":
-            comm2("cb", focus, int(str2), mark, "fg:red-80,underline", 120)
+            comm2("cb", focus, int(str2), mark, "fg:red-80,underline,action-menu:autospell-menu", 120)
         return edlib.Efallthrough
+
+    def handle_click(self, key, focus, mark, xy, str1, **a):
+        "handle:autospell-menu"
+        mp = self.call("attach-menu", "", "autospell-choice", xy, ret='pane')
+        self.wordend = mark.dup()
+        st = mark.dup()
+        w = focus.call("Spell:ThisWord", focus, mark, st, ret='str')
+        self.thisword = w
+        mp.call("menu-add", "+", "[Insert in dict]")
+        mp.call("menu-add", "!", "[Accept for now]")
+        focus.call("Spell:Suggest", w, lambda key, str1, **a: mp.call("menu-add", str1))
+        mp.call("doc:file", -1)
+        self.menu = mp
+        self.add_notify(mp, "Notify:Close")
+        return 1
+
+    def handle_choice(self, key, focus, mark, str1, **a):
+        "handle:autospell-choice"
+        if not str1:
+            return None
+        m = self.wordend
+        self.wordend = None
+        st = m.dup()
+        w = focus.call("Spell:ThisWord", m, st, ret='str')
+        if str1 == "+":
+            focus.call("Spell:AddWord", 1, self.thisword)
+            focus.call("spell:dict-changed", st, m)
+            return 1
+        if str1 == '!':
+            focus.call("Spell:AddWord", 0, self.thisword)
+            focus.call("spell:dict-changed", st, m)
+            return 1
+        if w == self.thisword:
+            focus.call("doc:replace", st, m, str1)
+        return 1
 
     def handle_recheck(self, key, **a):
         "handle:spell:recheck"

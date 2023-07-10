@@ -411,6 +411,15 @@ DEF_CMD(mouse_event)
 	return Efalse;
 }
 
+DEF_CMD(mouse_grab)
+{
+	struct input_mode *im = ci->home->data;
+
+	im->grab = ci->focus;
+	pane_add_notify(ci->home, ci->focus, "Notify:Close");
+	return 1;
+}
+
 DEF_CMD(refocus)
 {
 	struct input_mode *im = ci->home->data;
@@ -457,6 +466,7 @@ static void register_map(void)
 	im_map = key_alloc();
 	key_add(im_map, "Keystroke", &keystroke);
 	key_add(im_map, "Mouse-event", &mouse_event);
+	key_add(im_map, "Mouse-grab", &mouse_grab);
 	key_add(im_map, "Mode:set-mode", &set_mode);
 	key_add(im_map, "Mode:set-num", &set_num);
 	key_add(im_map, "Mode:set-num2", &set_num2);

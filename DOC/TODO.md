@@ -176,6 +176,12 @@ Core features
 Module features
 ---------------
 
+### lib-askpass
+
+- [ ] New module which server can use to ask for a password.
+      When an external program is run, we pass SSH_ASKPASS=client
+      and SSH_ASKPASS_REQUIRE=force.
+
 ### lib-linecount
 
 - [X] when used in 'view' mode, stack the counting pane with all the
@@ -803,6 +809,12 @@ Module features
 - [X] popup menu to which we can add entries, pop it at a location, get
       a selection
 - [ ] menu-bar to which we can add menus from which commands are sent
+- [ ] track movement so entry under cursor can be highlighted
+- [ ] support positioning above the target is no space below.
+- [ ] support single-click to open modal menu.??
+- [ ] improve hack for communicating action position.  Maybe require
+      an 'is-button' attribute and report button height (and width?)
+      in num and num2.
 
 ### lib-url
 
