@@ -30,6 +30,7 @@ struct ed_info {
 	 */
 	char *data_path;
 	char *config_path;
+	char *bin_path;
 	char *here;
 	bool testing;
 	struct store {
@@ -585,11 +586,52 @@ static char *set_config_path(struct pane *p safe)
 	return ei->config_path;
 }
 
+static char *set_bin_path(struct pane *p safe)
+{
+	struct ed_info *ei = &p->data;
+	char *bd, *here;
+	struct buf b;
+
+	if (ei->bin_path)
+		return ei->bin_path;
+
+	buf_init(&b);
+	here = set_here(p);
+	if (here && *here == '/') {
+		buf_concat(&b, here);
+		if (b.len > 4 &&
+		    strncmp(b.b + b.len-4, "/lib", 4) == 0)
+			b.len -= 3;
+		else
+			buf_concat(&b, "/../");
+		buf_concat(&b, "bin/");
+		buf_append_byte(&b, 0);
+	}
+	bd = getenv("PATH");
+	if (!bd)
+		bd = "/usr/bin:/usr/local/bin";
+	while (*bd) {
+		char *c = strchrnul(bd, ':');
+		if (*bd == '/') {
+			buf_concat_len(&b, bd, c-bd);
+			buf_append_byte(&b, 0);
+		}
+		if (*c)
+			c++;
+		bd = c;
+	}
+	if (b.len)
+		ei->bin_path = buf_final(&b);
+	else
+		free(buf_final(&b));
+	return ei->bin_path;
+}
+
 DEF_CMD(global_find_file)
 {
 	/*
 	 * ->str is a file basename.
-	 * ->str2 is one of "data", "config"
+	 * ->str2 is one of "data", "config", "bin"
 	 * We find a file with basename in a known location following
 	 * the XDG Base Directory Specificaton.
 	 * https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
@@ -599,10 +641,12 @@ DEF_CMD(global_find_file)
 	 * - $HERE
 	 * - $XDG_DATA_DIRS, or /usr/local/share:/usr/share
 	 *
-	 * For config we lookin a "edlib" under:
+	 * For config we look in a "edlib" under:
 	 * - $XDG_CONFIG_HOME, or $HOME/.config
 	 * - $HERE
 	 * - $XDG_CONFIG_DIRS, or /etc/xdg
+	 *
+	 * For bin we look in $HERE/../bin and $PATH
 	 */
 	char *path = NULL;
 
@@ -612,6 +656,8 @@ DEF_CMD(global_find_file)
 		path = set_data_path(ci->home);
 	else if (strcmp(ci->str2, "config") == 0)
 		path = set_config_path(ci->home);
+	else if (strcmp(ci->str2, "bin") == 0)
+		path = set_bin_path(ci->home);
 
 	if (!path)
 		return Einval;
