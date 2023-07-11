@@ -3,7 +3,20 @@
 # Copyright Neil Brown ©2019-2023 <neil@brown.name>
 # May be distributed under terms of GPLv2 - see file:COPYING
 #
-
+# Server protocol (subject to change):
+# client sends:  cmd  arg  env    - all '\0' separated
+# server replies OK or FAIL or "Close" or "Done"
+#
+# cmd:
+#   goto-line NN     - sets line number
+#   open FILENAME    - open and view the file, going to given line if set
+#   request-done FILENAME - request notification when file "done" (cx #)
+#   request-close    - send notify when display is closed (K:C-X 5 0)
+#   x11window        - create x11window on display ARG with ENV
+#   term             - open ncurse display on tty ARG with ENV
+#   sig-winch        - terminal changed size - refresh
+#   close            - close display and connection
+#
 import socket, os, sys, fcntl, signal
 
 if 'EDLIB_SOCK' in os.environ:
@@ -44,8 +57,9 @@ try:
                 self.close()
                 return edlib.Efalse
             else:
-                words = msg.split(b' ')
+                words = msg.split(b'\0')
                 cmd = words[0].decode('utf-8','ignore')
+                arg = None
                 env={}
                 if len(words) > 1:
                     arg = words[1].decode('utf-8','ignore')
@@ -57,15 +71,15 @@ try:
                                                   b'REMOTE_SESSION']:
                         env[vw[0].decode("utf-8")] = vw[1].decode("utf-8",'ignore')
 
-                if msg[:10] == b"goto-line:":
+                if cmd == "goto-line":
                     try:
-                        self.lineno = int(msg[10:])
+                        self.lineno = int(arg)
                     except ValueError:
                         self.lineno = None
                     self.sock.send(b'OK')
                     return 1
-                if msg[:5] == b"open:":
-                    path = msg[5:].decode("utf-8",'ignore')
+                if cmd == "open":
+                    path = arg
                     try:
                         # 8==reload
                         d = edlib.editor.call("doc:open", -1, 8, path, ret='pane')
@@ -108,8 +122,8 @@ try:
                     else:
                         self.sock.send(b"No Display!")
                     return 1
-                if msg[:21] == b"doc:request:doc:done:":
-                    path = msg[21:].decode("utf-8", 'ignore')
+                if cmd == "request-done":
+                    path = arg
                     d = edlib.editor.call("doc:open", -1, path, ret='pane')
                     if not d:
                         self.sock.send(b"FAIL")
@@ -122,7 +136,7 @@ try:
                                        "Cannot close display until document done - use 'C-x #'")
                     self.sock.send(b"OK")
                     return 1
-                if msg == b"Request:Notify:Close":
+                if  cmd == "request-close":
                     if self.term:
                         # trigger finding a new document
                         self.term.call("Window:bury")
@@ -152,14 +166,14 @@ try:
                     self.add_notify(self.disp, "Notify:Close")
                     self.sock.send(b"OK")
                     return 1
-                if msg == b"Sig:Winch":
+                if cmd == "sig-winch":
                     if self.term:
-                        self.term.call("Sig:Winch")
+                        self.term.caLl("Sig:Winch")
                         self.sock.send(b"OK")
                     else:
                         self.sock.send(b"Unknown")
                     return 1
-                if msg == b"Close":
+                if cmd == "close":
                     if self.disp:
                         self.disp.call("Display:set-noclose")
                         self.disp.call("Display:close")
@@ -259,7 +273,7 @@ if is_client:
         for i in ['XAUTHORITY']:
             if i in os.environ:
                 m.append(i + "=" + os.environ[i])
-        s.send(' '.join(m).encode('utf-8'))
+        s.send('\0'.join(m).encode('utf-8'))
         ret = s.recv(100)
         if ret != b'OK':
             print("Cannot start x11 display:" + ret.decode('utf-8','ignore'))
@@ -274,40 +288,40 @@ if is_client:
             if 'SSH_CONNECTION' in os.environ:
                 m.append("REMOTE_SESSION=yes")
 
-            s.send(' '.join(m).encode('utf-8'))
+            s.send('\0'.join(m).encode('utf-8'))
             ret = s.recv(100)
             if ret != b"OK":
                 print("Cannot open terminal on", t)
-                s.send(b"Close")
+                s.send(b"close")
                 s.recv(100)
                 sys.exit(1)
             def handle_winch(sig, frame):
                 if winch_ok:
-                    s.send(b"Sig:Winch")
+                    s.send(b"sig-winch")
                 return 1
             signal.signal(signal.SIGWINCH, handle_winch)
 
     if file:
         if lineno is not None:
-            s.send(b"goto-line:" + lineno.encode('utf-8'))
+            s.send(b"goto-line\0" + lineno.encode('utf-8'))
             ret = s.recv(100)
         file = os.path.realpath(file)
-        s.send(b"open:" + file.encode("utf-8"))
+        s.send(b"open\0" + file.encode("utf-8"))
         ret = s.recv(100)
         if ret != b"OK":
-            s.send(b"Close")
+            s.send(b"close")
             s.recv(100)
             print("Cannot open: ", ret.decode("utf-8", 'ignore'))
             sys.exit(1)
-        s.send(b"doc:request:doc:done:"+file.encode("utf-8"))
+        s.send(b"request-done\0"+file.encode("utf-8"))
     elif term:
-        s.send(b"Request:Notify:Close")
+        s.send(b"request-close")
     else:
         sys.exit(0)
     ret = s.recv(100)
     if ret != b"OK":
         print("Cannot request notification: ", ret.decode('utf-8', 'ignore'))
-        s.send(b"Close")
+        s.send(b"close")
         s.recv(100)
         sys.exit(1)
     winch_ok = True
@@ -315,15 +329,15 @@ if is_client:
         ret = s.recv(100)
         if ret != b"OK":
             break
-        # probably a reply to Sig:Winch
+        # probably a reply to sig-winch
     winch_ok = False
-    if ret and ret != b"Done" and ret != b"Close":
+    if ret and ret != b"Done" and ret != b"close":
         print("Received unexpected notification: ", ret.decode('utf-8', 'ignore'))
-        s.send(b"Close")
+        s.send(b"close")
         s.recv(100)
         sys.exit(1)
     if ret and ret != b"Close":
-        s.send(b"Close")
+        s.send(b"close")
         s.recv(100)
     s.close()
     sys.exit(0)
