@@ -24,7 +24,8 @@ if 'EDLIB_SOCK' in os.environ:
 else:
     sockpath = "/tmp/edlib-neilb"
 
-try:
+if sys.argv[0] == "":
+    # server
     import edlib
 
     class ServerPane(edlib.Pane):
@@ -229,11 +230,90 @@ try:
                 self.disp.call("Display:close")
                 self.disp = None
 
-    is_client = False
-except:
-    is_client = True
+    global server_sock
+    server_sock = None
+    def server_accept(key, **a):
+        global server_sock
+        try:
+            (new, addr) = server_sock.accept()
+            ServerPane(new)
+        except:
+            pass
+        return 1
 
-if is_client:
+    def server_done(key, focus, **a):
+        ret = focus.call("doc:notify:doc:done", "test")
+        if ret > 0:
+            # maybe save, then notify properly
+            fn = focus["filename"]
+            mod = focus["doc-modified"]
+            if fn and mod == "yes":
+                focus.call("Message", "Please save first!")
+            else:
+                focus.call("doc:notify:doc:done")
+                # FIXME need something better than 'bury'
+                # If it was already visible, it should stay that way
+                focus.call("Window:bury")
+        else:
+            # Find and visit a doc waiting to be done
+            choice = []
+            def chose(choice, a):
+                focus = a['focus']
+                if focus.notify("doc:done", "test") > 0:
+                    choice.append(focus)
+                    return 1
+                return 0
+            focus.call("docs:byeach", lambda key,**a:chose(choice, a))
+            if len(choice):
+                par = focus.call("ThisPane", ret='pane')
+                if par:
+                    par = choice[0].call("doc:attach-view", par, 1, ret='pane')
+                    par.take_focus()
+
+        return 1
+
+    def server_rebind(key, focus, **a):
+        global server_sock
+
+        msg = ""
+        if key.startswith("interactive-cmd"):
+            msg = "Server started"
+        if server_sock:
+            # stop reading this file
+            focus.call("event:free", server_accept)
+            server_sock.close()
+            server_sock = None
+            msg="Server restarted"
+
+        try:
+            os.unlink(sockpath)
+        except OSError:
+            pass
+        mask = os.umask(0o077)
+        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        s.bind(sockpath)
+        os.umask(mask)
+        s.listen(5)
+
+        fl = fcntl.fcntl(s.fileno(), fcntl.F_GETFL)
+        fcntl.fcntl(s.fileno(), fcntl.F_SETFL, fl | os.O_NONBLOCK)
+
+        focus.root.call("event:read", s.fileno(), server_accept)
+        server_sock = s
+        if key != "key":
+            focus.call("Message", msg)
+        return 1
+
+    def server_autostart(key, focus, **a):
+        if focus["server:autostart"] == 'yes':
+            server_rebind(key, focus)
+
+    edlib.editor.call("global-set-command", "startup-server", server_autostart)
+    edlib.editor.call("global-set-command", "lib-server:done", server_done)
+    edlib.editor.call("global-set-command", "interactive-cmd-server-start",
+                server_rebind)
+
+else:
     term = False
     file = None
     lineno = None
@@ -341,84 +421,4 @@ if is_client:
         s.recv(100)
     s.close()
     sys.exit(0)
-else:
-    global server_sock
-    server_sock = None
-    def server_accept(key, **a):
-        global server_sock
-        try:
-            (new, addr) = server_sock.accept()
-            ServerPane(new)
-        except:
-            pass
-        return 1
 
-    def server_done(key, focus, **a):
-        ret = focus.call("doc:notify:doc:done", "test")
-        if ret > 0:
-            # maybe save, then notify properly
-            fn = focus["filename"]
-            mod = focus["doc-modified"]
-            if fn and mod == "yes":
-                focus.call("Message", "Please save first!")
-            else:
-                focus.call("doc:notify:doc:done")
-                # FIXME need something better than 'bury'
-                # If it was already visible, it should stay that way
-                focus.call("Window:bury")
-        else:
-            # Find and visit a doc waiting to be done
-            choice = []
-            def chose(choice, a):
-                focus = a['focus']
-                if focus.notify("doc:done", "test") > 0:
-                    choice.append(focus)
-                    return 1
-                return 0
-            focus.call("docs:byeach", lambda key,**a:chose(choice, a))
-            if len(choice):
-                par = focus.call("ThisPane", ret='pane')
-                if par:
-                    par = choice[0].call("doc:attach-view", par, 1, ret='pane')
-                    par.take_focus()
-
-        return 1
-
-    def server_rebind(key, focus, **a):
-        global server_sock
-
-        msg = ""
-        if key.startswith("interactive-cmd"):
-            msg = "Server started"
-        if server_sock:
-            # stop reading this file
-            focus.call("event:free", server_accept)
-            server_sock.close()
-            server_sock = None
-            msg="Server restarted"
-
-        try:
-            os.unlink(sockpath)
-        except OSError:
-            pass
-        mask = os.umask(0o077)
-        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        s.bind(sockpath)
-        os.umask(mask)
-        s.listen(5)
-
-        fl = fcntl.fcntl(s.fileno(), fcntl.F_GETFL)
-        fcntl.fcntl(s.fileno(), fcntl.F_SETFL, fl | os.O_NONBLOCK)
-
-        focus.root.call("event:read", s.fileno(), server_accept)
-        server_sock = s
-        if key != "key":
-            focus.call("Message", msg)
-        return 1
-    def server_autostart(key, focus, **a):
-        if focus["server:autostart"] == 'yes':
-            server_rebind(key, focus)
-    edlib.editor.call("global-set-command", "startup-server", server_autostart)
-    edlib.editor.call("global-set-command", "lib-server:done", server_done)
-    edlib.editor.call("global-set-command", "interactive-cmd-server-start",
-                server_rebind)
