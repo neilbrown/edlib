@@ -65,7 +65,7 @@ CFLAGS= -g -Wall -Wstrict-prototypes -Wextra -Wno-unused-parameter $(DBG) $(VCFL
 #CFLAGS= -pg -fno-pie -fno-PIC -g -Wall -Wstrict-prototypes -Wextra -Wno-unused-parameter $(DBG) $(VCFLAGS)
 #Doesn't work :-( -fsanitize=address
 
-all: edlib checksym lib shared NamesList.txt
+all: edlib checksym lib shared NamesList.txt bin
 test: edlib lib shared test-rexel
 	./tests run
 
@@ -92,6 +92,11 @@ SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
 	O/display-ncurses.o
 XOBJ = O/rexel.o
 WOBJ = O/libwiggle.a
+
+BIN = edlib elc
+
+bin/edlib : edlib
+bin/elc : python/lib-server.py
 
 # From python 3.8 on we need python3-embed to get the right libraries
 pypkg=$(shell pkg-config --atleast-version=3.8 python3 && echo python3-embed || echo python3)
@@ -200,11 +205,16 @@ lib/.exists:
 	@ln -s .. lib/edlib
 	@touch $@
 
-.PHONY: lib
+.PHONY: lib bin
 lib: lib/libedlib.so lib/.exists
 lib/libedlib.so: $(LIBOBJ)
 	@mkdir -p lib
 	$(QUIET_CC)$(CC) -shared -Wl,-soname,libedlib.so -o $@ $(LIBOBJ)
+bin: $(patsubst %,bin/%,$(BIN))
+bin/% :
+	@mkdir -p bin
+	cp $< $@
+	@chmod +x $@
 
 shared: $(SO)
 lib/edlib-lib-search.so : O/lib-search.o $(XOBJ)
@@ -247,4 +257,4 @@ checksym: edlib
 .PHONY: clean
 clean:
 	rm -f edlib edlib-static
-	rm -rf lib O
+	rm -rf lib O bin
