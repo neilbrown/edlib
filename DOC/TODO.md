@@ -559,8 +559,8 @@ Module features
 - [ ] TESTS
 - [ ] make sure Clone actually works for all panes - or remove it
 - [ ] add counter and colour for 'flagged'
-- [ ] if no 'saved:current' use "not exclude_tags"
-- [ ] change from "saved:" to "query:" after re-organizing my queries.
+- [ ] if no 'query.current' use "not exclude_tags"
+- [X] change from "saved:" to "query:" after re-organizing my queries.
 - [ ] support selection messages and applying tags
 - [ ] When changing any tag in a thread, or when opening the thread,
       assess thread tags by looking at all matched messages.

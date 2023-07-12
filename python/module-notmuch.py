@@ -16,9 +16,8 @@
 # These can be all in with one pane, with sub-panes, or can sometimes
 # have a pane to themselves.
 #
-# saved search are stored in config file as "saved.foo" or in the database
-# as "query.foo". Some are special.  They are treated identically and we will
-# assume "query." below.
+# saved search are stored in config (file or database) as "query.foo"
+# Some are special.
 # "query.current" selects messages that have not been archived, and are not spam
 # "query.unread" selects messages that should be highlighted. It is normally
 # "tag:unread"
@@ -252,7 +251,7 @@ class searches:
         self.slist = {}
         for line in p.stdout:
             line = line.decode("utf-8", "ignore")
-            if not line.startswith('saved.') and not line.startswith('query.'):
+            if not line.startswith('query.'):
                 continue
             w = line[6:].strip().split("=", 1)
             self.slist[w[0]] = w[1]
@@ -338,17 +337,17 @@ class searches:
                 self.worker.pending == None and
                 self.slow_worker.pending == None)
 
-    patn = "\\b(saved|query):([-_A-Za-z0-9]*)\\b"
+    patn = "\\bquery:([-_A-Za-z0-9]*)\\b"
     def map_search(self, query):
         m = re.search(self.patn, query)
         while m:
-            s = m.group(2)
+            s = m.group(1)
             if s in self.slist:
                 q = self.slist[s]
-                query = re.sub('\\b(saved|query):' + s + '\\b',
+                query = re.sub('\\bquery:' + s + '\\b',
                                '(' + q + ')', query)
             else:
-                query = re.sub('\\b(saved|query):' + s + '\\b',
+                query = re.sub('\\bquery:' + s + '\\b',
                                'query-'+s, query)
             m = re.search(self.patn, query)
         return query
@@ -365,7 +364,7 @@ class searches:
         ret = []
         if n in self.slist:
             for s in self.slist[n].split(" "):
-                if s.startswith('saved:') or s.startswith('query:'):
+                if s.startswith('query:'):
                     ret.append(s[6:])
         return ret
 
