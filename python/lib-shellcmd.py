@@ -59,6 +59,12 @@ class ShellPane(edlib.Pane):
             self.call("doc:replace", "Cmd: %s\nCwd: %s\n\n" % (cmd,cwd))
         env = os.environ.copy()
         env['PWD'] = cwd
+        askp = self.call("xdg-find-edlib-file",
+                         "el-askpass", "bin",  ret='str')
+        if askp:
+            env['SSH_ASKPASS'] = askp
+            env['SSH_ASKPASS_REQUIRE'] = 'force'
+
         try:
             self.pipe = subprocess.Popen(cmd, shell=True, close_fds=True,
                                          cwd=cwd, env=env,

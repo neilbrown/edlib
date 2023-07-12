@@ -86,17 +86,18 @@ SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
 	O/lib-renderline.o O/lib-x11selection-gtk.o O/lib-autosave.o \
 	O/lib-x11selection-xcb.o O/display-x11-xcb.o \
 	O/lib-linefilter.o O/lib-wiggle.o O/lib-aspell.o O/lib-calc.o \
-	O/lib-menu.o O/lib-unicode-names.o \
+	O/lib-menu.o O/lib-unicode-names.o O/lib-askpass.o \
 	O/lang-python.o \
 	O/mode-emacs.o O/emacs-search.o \
 	O/display-ncurses.o
 XOBJ = O/rexel.o
 WOBJ = O/libwiggle.a
 
-BIN = edlib elc
+BIN = edlib elc el-askpass
 
 bin/edlib : edlib
 bin/elc : python/lib-server.py
+bin/el-askpass : python/lib-server.py
 
 # From python 3.8 on we need python3-embed to get the right libraries
 pypkg=$(shell pkg-config --atleast-version=3.8 python3 && echo python3-embed || echo python3)

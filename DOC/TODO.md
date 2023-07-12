@@ -178,9 +178,13 @@ Module features
 
 ### lib-askpass
 
-- [ ] New module which server can use to ask for a password.
+- [X] New module which server can use to ask for a password.
       When an external program is run, we pass SSH_ASKPASS=client
       and SSH_ASKPASS_REQUIRE=force.
+- [ ] have askpass tell shellmode (and others) about the SSH_ASKPASS*
+      environment, so they don't need to know it themselves
+- [ ] start-agent command which runs ssh-agent can records the
+      environment reported for later shells.
 
 ### lib-linecount
 

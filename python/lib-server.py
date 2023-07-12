@@ -174,6 +174,17 @@ if sys.argv[0] == "":
                     self.sock = None
                     self.close()
                     return edlib.Efalse
+                if cmd == "askpass":
+                    def cb(key, str1, **a):
+                        if str1:
+                            self.sock.send(str1.encode())
+                        self.sock.close()
+                        self.sock = None
+
+                    p = self.choose_pane()
+                    if p:
+                        p.call("AskPass", arg, cb)
+                    return 1
                 self.sock.send(b"Unknown")
                 return 1
 
@@ -317,6 +328,19 @@ if sys.argv[0] == "":
     edlib.editor.call("global-set-command", "interactive-cmd-server-start",
                 server_rebind)
 
+elif 'askpass' in sys.argv[0]:
+    msg = sys.argv[1]
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    try:
+        s.connect(sockpath)
+    except OSError:
+        print("Cannot connect to ",sockpath)
+        sys.exit(1)
+
+    s.send(b"askpass\0" + msg.encode())
+    ret = s.recv(1000)
+    print(ret.decode('utf-8', 'ignore'))
+    sys.exit(0)
 else:
     term = False
     file = None
