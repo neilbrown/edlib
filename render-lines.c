@@ -1580,8 +1580,9 @@ DEF_CMD(render_lines_action)
 	measure_line(p, focus, v, offset);
 	attr = pane_attr_get(v->mdata, "cursattr");
 	tag = get_action_tag(ci->str, attr);
-	if (tag)
-		call(tag, focus, 0, m, attr);
+	if (!tag)
+		return Efallthrough;
+	call(tag, focus, 0, m, attr);
 	return 1;
 }
 
