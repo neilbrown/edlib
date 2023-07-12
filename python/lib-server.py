@@ -98,30 +98,20 @@ if sys.argv[0] == "":
                             pt = p.call("doc:point", ret='mark')
                             p.call("CountLines", self.lineno, pt, "goto:line")
                         return 1
-                    self.display_time = 0
-                    self.destpane = None
-                    self.call("editor:notify:all-displays", self.display_callback)
-                    if self.destpane:
-                        p = self.destpane.leaf
-                        self.destpane = None
-                        # Need to avoid transient popups
-                        if p:
-                            p = p.call("ThisPane", ret='pane')
-                        if p:
-                            p2 = p.call("PopupTile", "MD3tsa", ret='pane')
-                            if p2:
-                                p = p2
-                        if p:
-                            p3 = d.call("doc:attach-view", p, 1, ret='pane')
-                            p.take_focus()
-                            self.sock.send(b"OK")
-                            if self.lineno != None:
-                                pt = p3.call("doc:point", ret='mark')
-                                p3.call("CountLines", self.lineno, pt, "goto:line")
-                        else:
-                            self.sock.send(b"No Cannot create pane")
-                    else:
+                    p = self.choose_pane()
+                    if not p:
                         self.sock.send(b"No Display!")
+                        return 1
+                    p = p.call("PopupTile", "MD3tsa", ret='pane')
+                    if not p:
+                        self.sock.send(b"No tile!")
+                        return 1
+                    p2 = d.call("doc:attach-view", p, 1, ret='pane')
+                    p.take_focus()
+                    self.sock.send(b"OK")
+                    if self.lineno != None:
+                        pt = p2.call("doc:point", ret='mark')
+                        p2.call("CountLines", self.lineno, pt, "goto:line")
                     return 1
                 if cmd == "request-done":
                     path = arg
@@ -213,6 +203,20 @@ if sys.argv[0] == "":
                 self.sock.send(b"Done")
             return 1
 
+        def choose_pane(self):
+            self.display_time = 0
+            self.destpane = None
+            self.call("editor:notify:all-displays", self.display_callback)
+            if self.destpane:
+                p = self.destpane.leaf
+                self.destpane = None
+                # Need to avoid transient popups
+                if p:
+                    p = p.call("ThisPane", ret='pane')
+            else:
+                p = None
+            return p
+
         def display_callback(self, key, focus, num, **a):
             if self.display_time == 0 or num > self.display_time:
                 self.destpane = focus
@@ -257,13 +261,13 @@ if sys.argv[0] == "":
         else:
             # Find and visit a doc waiting to be done
             choice = []
-            def chose(choice, a):
+            def choose(choice, a):
                 focus = a['focus']
                 if focus.notify("doc:done", "test") > 0:
                     choice.append(focus)
                     return 1
                 return 0
-            focus.call("docs:byeach", lambda key,**a:chose(choice, a))
+            focus.call("docs:byeach", lambda key,**a:choose(choice, a))
             if len(choice):
                 par = focus.call("ThisPane", ret='pane')
                 if par:
