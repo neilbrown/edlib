@@ -875,6 +875,30 @@ Module features
 New Modules
 -----------
 
+- [ ] emacs-pinentry.  pinentry-curses can talk to emacs using a
+      protocol that edlib can copy.
+      export INSIDE_EMACS=yes
+      Listen on a SOCK_STREAM at ${TMPDIR-/tmp}/emacs$(id -u)/pinentry.
+      On connect, end "OK".  In general responses are lines terminated
+      by '\n' with OK or ERR ending a response
+      D <data up to newline>  with %XX esacpe for % \n \r
+      OK
+      ERR <errcode>
+      #comment
+
+      Respond to GETPIN with D data
+      Respond to CONFIRM with  OK if user sends OK.
+      Accept some settings:
+           SETTITLE Context for PIN
+           SETDESC  Enter PIN for Fred Bloggs <freddy@bloggs.net>
+           SETERROR Error message
+           SETPROMPT PIN:
+           SETREPEAT  IF PIN needs to be entered twice for confirmation
+           SETREPEATERROR  message to show if they don't match
+           SETOK   Text for label of OK button
+           SETCANCEL Text for label of "NO" or "Cancel" button
+           SETNOTOK   NOT OK button???
+
 - [ ] separate out CUA-base from mode-emacs:
 
      - selection management

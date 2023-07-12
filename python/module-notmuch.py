@@ -843,7 +843,7 @@ class notmuch_query(edlib.Doc):
                                "<tab:350>%TM-size%TM-threadinfo<%TM-hilite>" +
                                "<fg:red,bold>%TM-flag</>" +
                                "<wrap-tail:,wrap-head:         ,wrap> </>" +
-                               "<wrap-margin><fg:#FF8C00-40>%TM-subject</></></>")
+                               "<wrap-margin><fg:#FF8C00-40,action-activate:notmuch:select-1>%TM-subject</></></>")
         self.add_notify(self.maindoc, "Notify:Tag")
         self.add_notify(self.maindoc, "Notify:Close")
         self['doc-status'] = ""
@@ -1918,6 +1918,12 @@ class notmuch_master_view(edlib.Pane):
         focus.call("notmuch:select", mark, 1)
         return 1
 
+    def handle_select_1(self, key, focus, mark, **a):
+        "handle:notmuch:select-1"
+        # select thing under point, and enter it
+        focus.call("notmuch:select", mark, 1)
+        return 1
+
     def handle_search(self, key, focus, **a):
         "handle:doc:char-s"
         pup = focus.call("PopupTile", "3", "", ret='pane')
@@ -2534,7 +2540,7 @@ class notmuch_list_view(edlib.Pane):
         edlib.Pane.__init__(self, focus)
         self['notmuch:pane'] = 'main'
         self['background'] = 'color:#A0FFFF'
-        self['line-format'] = '<%fmt>%count%space%name</>'
+        self['line-format'] = '<%fmt>%count%space<underline,action-activate:notmuch:select>%name</></>'
         self.call("notmuch:set_list_pane")
         self.call("doc:request:doc:replaced")
         self.selected = None
