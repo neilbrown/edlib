@@ -1,5 +1,5 @@
 /*
- * Copyright Neil Brown ©2016-2021 <neil@brown.name>
+ * Copyright Neil Brown ©2016-2023 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
  * history

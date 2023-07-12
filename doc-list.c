@@ -1,5 +1,5 @@
 /*
- * Copyright Neil Brown ©2022 <neil@brown.name>
+ * Copyright Neil Brown ©2022-2023 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
  * doc-list: present an arbitrary list of items as a document.
