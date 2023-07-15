@@ -1533,6 +1533,9 @@ static int text_str_cmp(struct text *t, struct doc_ref *r, char *s)
 
 static void text_normalize(struct text *t safe, struct doc_ref *r safe)
 {
+	/* Adjust so at not at the end of a chunk - either ->o points
+	 * at a byte, or ->c is NULL.
+	 */
 	while (r->c && r->o >= r->c->end) {
 		if (r->c->lst.next == &t->text) {
 			r->c = NULL;
@@ -1546,6 +1549,7 @@ static void text_normalize(struct text *t safe, struct doc_ref *r safe)
 
 static void text_denormalize(struct text *t safe, struct doc_ref *r safe)
 {
+	/* Ensure r->o is after some byte, or at start of file. */
 	if (r->c && r->o > r->c->start)
 		/* nothing to do */
 		return;
@@ -1585,7 +1589,7 @@ static void text_add_str(struct text *t safe, struct mark *pm safe,
 
 static wint_t text_next(struct text *t safe, struct doc_ref *r safe, bool bytes)
 {
-	wint_t ret;
+	wint_t ret = WERR;
 	const char *c;
 
 	text_normalize(t, r);
@@ -1593,10 +1597,11 @@ static wint_t text_next(struct text *t safe, struct doc_ref *r safe, bool bytes)
 		return WEOF;
 
 	c = r->c->txt + r->o;
-	ret = get_utf8(&c, r->c->txt + r->c->end);
-	if (ret < WERR) {
+	if (!bytes)
+		ret = get_utf8(&c, r->c->txt + r->c->end);
+	if (ret < WERR)
 		r->o = c - r->c->txt;
-	} else
+	else
 		ret = (unsigned char)r->c->txt[r->o++];
 	text_normalize(t, r);
 	return ret;
@@ -1607,19 +1612,13 @@ static wint_t text_prev(struct text *t safe, struct doc_ref *r safe, bool bytes)
 	wint_t ret;
 	const char *c;
 
-	if (r->c == NULL) {
-		if (list_empty(&t->text))
-			return WEOF;
-		r->c = list_entry(t->text.prev, struct text_chunk, lst);
-		r->o = r->c->end;
-	}
+	text_denormalize(t, r);
+	if (list_empty(&t->text))
+		return WEOF;
+	if (r->c == NULL || r->o <= r->c->start)
+		// assert (r->c->lst.prev == &t->text)
+		return WEOF;
 
-	if (r->o <= r->c->start) {
-		if (r->c->lst.prev == &t->text)
-			return WEOF;
-		r->c = list_prev_entry(r->c, lst);
-		r->o = r->c->end;
-	}
 	if (bytes)
 		r->o -= 1;
 	else {
