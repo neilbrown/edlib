@@ -47,8 +47,11 @@ struct doc_ref {
 	struct dir_ent	*d;
 	unsigned int	ignore;
 };
-
+#define DOC_SHARESREF
 #define DOC_DATA_TYPE struct directory
+struct directory;
+#define DOC_NEXT dir_next
+#define DOC_PREV dir_prev
 #include "core.h"
 
 struct dir_ent {
@@ -380,79 +383,43 @@ DEF_CMD(dir_same_file)
 	return 1;
 }
 
-static int dir_step(struct pane *home safe, struct mark *mark safe,
-		    int num, int num2)
+static inline wint_t dir_next(struct directory *dr safe, struct doc_ref *r safe, bool bytes)
 {
-	struct mark *m = mark;
-	bool forward = num;
-	bool move = num2;
-	struct directory *dr = &home->doc_data;
-	struct dir_ent *d;
-	wint_t ret = '\n';
+	struct dir_ent *d = r->d;
 
-	if (!mark_valid(mark))
-		/* FIXME this might be needed after deleting lots
-		 * of dir entries, and refreshing.
-		 */
+	if (d == NULL)
 		return WEOF;
-	d = m->ref.d;
-	if (forward) {
-		if (d == NULL)
-			ret = WEOF;
-		else {
-			if (d == list_last_entry(&dr->ents,
-						 struct dir_ent, lst))
-				d = NULL;
-			else
-				d = list_next_entry(d, lst);
-		}
-	} else {
-		if (d == list_first_entry(&dr->ents, struct dir_ent, lst))
+	else {
+		if (d == list_last_entry(&dr->ents,
+					 struct dir_ent, lst))
 			d = NULL;
-		else if (d == NULL)
-			d = list_last_entry(&dr->ents, struct dir_ent, lst);
 		else
-			d = list_prev_entry(d, lst);
-		if (!d) {
-			ret = WEOF;
-			d = m->ref.d;
-		}
+			d = list_next_entry(d, lst);
 	}
-	if (move) {
-		mark_step_sharesref(m, forward);
-		m->ref.d = d;
-	}
-	/* return value must be +ve, so use high bits to ensure this. */
-	return CHAR_RET(ret);
+	r->d = d;
+	return '\n';
+}
+
+static inline wint_t dir_prev(struct directory *dr safe, struct doc_ref *r safe, bool bytes)
+{
+	struct dir_ent *d = r->d;
+
+	if (d == list_first_entry(&dr->ents, struct dir_ent, lst))
+		d = NULL;
+	else if (d == NULL)
+		d = list_last_entry(&dr->ents, struct dir_ent, lst);
+	else
+		d = list_prev_entry(d, lst);
+	if (!d)
+		return WEOF;
+
+	r->d = d;
+	return '\n';
 }
 
 DEF_CMD(dir_char)
 {
-	struct mark *m = ci->mark;
-	struct mark *end = ci->mark2;
-	int steps = ci->num;
-	int forward = steps > 0;
-	int ret = Einval;
-
-	if (!m)
-		return Enoarg;
-	if (end && mark_same(m, end))
-		return 1;
-	if (end && (end->seq < m->seq) != (steps < 0))
-		/* Can never cross 'end' */
-		return Einval;
-	while (steps && ret != CHAR_RET(WEOF) && (!end || !mark_same(m, end))) {
-		ret = dir_step(ci->home, m, forward, 1);
-		steps -= forward*2 - 1;
-	}
-	if (end)
-		return 1 + (forward ? ci->num - steps : steps - ci->num);
-	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
-		return ret;
-	if (ci->num && (ci->num2 < 0) == forward)
-		return ret;
-	/* Want the 'next' char */
-	return dir_step(ci->home, m, ci->num2 > 0, 0);
+	return do_char_byte(ci);
 }
 
 DEF_CMD(dir_set_ref)

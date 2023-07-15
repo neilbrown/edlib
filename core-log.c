@@ -21,7 +21,10 @@ struct doc_ref {
 	struct logbuf *b;
 	unsigned int o;
 };
+struct log;
 #define DOC_DATA_TYPE struct log
+#define DOC_NEXT log_next
+#define DOC_PREV log_prev
 
 #include "core.h"
 #include "internal.h"
@@ -251,88 +254,63 @@ DEF_CMD(log_set_ref)
 	return 1;
 }
 
-static int log_step(struct pane *home safe, struct mark *mark safe, int num, int num2)
+static inline wint_t log_next(struct log *log safe, struct doc_ref *r safe, bool bytes)
 {
-	struct log *log = &home->doc_data;
-	struct mark *m = mark;
-	bool forward = num;
-	bool move = num2;
-	struct doc_ref ref;
 	wint_t ret;
 
-	ref = m->ref;
-	if (forward) {
-		if (!ref.b)
-			ret = WEOF;
-		else {
-			const char *s = &ref.b->text[ref.o];
+	if (!r->b)
+		ret = WEOF;
+	else {
+		const char *s = &r->b->text[r->o];
 
-			ret = get_utf8(&s, ref.b->text + ref.b->end);
-			ref.o = s - ref.b->text;
-			if (ref.o >= ref.b->end) {
-				if (ref.b == list_last_entry(&log->log,
-							     struct logbuf, h))
-					ref.b = NULL;
-				else
-					ref.b = list_next_entry(ref.b, h);
-				ref.o = 0;
-			}
+		if (bytes)
+			ret = *s++;
+		else
+			ret = get_utf8(&s, r->b->text + r->b->end);
+		r->o = s - r->b->text;
+		if (r->o >= r->b->end) {
+			if (r->b == list_last_entry(&log->log,
+						     struct logbuf, h))
+				r->b = NULL;
+			else
+				r->b = list_next_entry(r->b, h);
+			r->o = 0;
 		}
-	} else {
-		if (list_empty(&log->log))
-			ret = WEOF;
-		else if (!ref.b) {
-			ref.b = list_last_entry(&log->log, struct logbuf, h);
-			ref.o = utf8_round_len(ref.b->text, ref.b->end - 1);
-		} else if (ref.o == 0) {
-			if (ref.b != list_first_entry(&log->log,
-						      struct logbuf, h)) {
-				ref.b = list_prev_entry(ref.b, h);
-				ref.o = utf8_round_len(ref.b->text,
-						       ref.b->end - 1);
-			} else
-				ret = WEOF;
+	}
+	return ret;
+}
+
+static inline wint_t log_prev(struct log *log safe, struct doc_ref *r safe, bool bytes)
+{
+	const char *s;
+
+	if (list_empty(&log->log))
+		return WEOF;
+	else if (!r->b) {
+		r->b = list_last_entry(&log->log, struct logbuf, h);
+		r->o = r->b->end;
+	} else if (r->o == 0) {
+		if (r->b != list_first_entry(&log->log,
+					      struct logbuf, h)) {
+			r->b = list_prev_entry(r->b, h);
+			r->o = r->b->end;
 		} else
-			ref.o = utf8_round_len(ref.b->text, ref.o - 1);
-		if ((ref.b != m->ref.b || ref.o != m->ref.o) && ref.b) {
-			const char *s = ref.b->text + ref.o;
-			ret = get_utf8(&s, ref.b->text + ref.b->end);
-		}
+			return WEOF;
 	}
-	if (move) {
-		mark_step(m, forward);
-		m->ref = ref;
-	}
-	return CHAR_RET(ret);
+	if (bytes)
+		r->o -= 1;
+	else
+		r->o = utf8_round_len(r->b->text, r->o - 1);
+	s = r->b->text + r->o;
+	if (bytes)
+		return *s;
+	else
+		return get_utf8(&s, r->b->text + r->b->end);
 }
 
 DEF_CMD(log_char)
 {
-	struct mark *m = ci->mark;
-	struct mark *end = ci->mark2;
-	int steps = ci->num;
-	int forward = steps > 0;
-	int ret = Einval;
-
-	if (!m)
-		return Enoarg;
-	if (end && mark_same(m, end))
-		return 1;
-	if (end && (end->seq < m->seq) != (steps < 0))
-		/* Can never cross 'end' */
-		return Einval;
-	while (steps && ret != CHAR_RET(WEOF) && (!end || !mark_same(m, end))) {
-		ret = log_step(ci->home, m, forward, 1);
-		steps -= forward*2 - 1;
-	}
-	if (end)
-		return 1 + (forward ? ci->num - steps : steps - ci->num);
-	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
-		return ret;
-	if (ci->num && (ci->num2 < 0) == forward)
-		return ret;
-	/* Want the 'next' char */
-	return log_step(ci->home, m, ci->num2 > 0, 0);
+	return do_char_byte(ci);
 }
 
 DEF_CMD(log_val_marks)

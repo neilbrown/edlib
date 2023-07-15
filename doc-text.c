@@ -78,7 +78,10 @@ struct doc_ref {
 	struct text_chunk *c;
 	unsigned int o;
 };
+struct text;
 #define DOC_DATA_TYPE struct text
+#define DOC_NEXT text_next
+#define DOC_PREV text_prev
 #include "core.h"
 #include "misc.h"
 
@@ -1587,7 +1590,7 @@ static void text_add_str(struct text *t safe, struct mark *pm safe,
 		;
 }
 
-static wint_t text_next(struct text *t safe, struct doc_ref *r safe, bool bytes)
+static inline wint_t text_next(struct text *t safe, struct doc_ref *r safe, bool bytes)
 {
 	wint_t ret = WERR;
 	const char *c;
@@ -1607,7 +1610,7 @@ static wint_t text_next(struct text *t safe, struct doc_ref *r safe, bool bytes)
 	return ret;
 }
 
-static wint_t text_prev(struct text *t safe, struct doc_ref *r safe, bool bytes)
+static inline wint_t text_prev(struct text *t safe, struct doc_ref *r safe, bool bytes)
 {
 	wint_t ret;
 	const char *c;
@@ -1635,119 +1638,10 @@ static wint_t text_prev(struct text *t safe, struct doc_ref *r safe, bool bytes)
 	return ret;
 }
 
-static int text_step(struct pane *home safe, struct mark *mark safe,
-		     int num, int num2)
+DEF_CMD(text_char_byte)
 {
-	struct mark *m = mark;
-	bool forward = num;
-	bool move = num2;
-	struct text *t = &home->doc_data;
-	struct doc_ref r;
-	wint_t ret;
-
-	ASSERT(m->owner == home);
-
-	r = m->ref;
-	if (forward)
-		ret = text_next(t, &r, 0);
-	else
-		ret = text_prev(t, &r, 0);
-
-	if (move) {
-		mark_step(m, forward);
-		m->ref = r;
-	}
-	/* return value must be +ve, so use high bits to ensure this. */
-	return CHAR_RET(ret);
+	return do_char_byte(ci);
 }
-
-DEF_CMD(text_char)
-{
-	struct mark *m = ci->mark;
-	struct mark *end = ci->mark2;
-	int steps = ci->num;
-	int forward = steps > 0;
-	int ret = Einval;
-
-	if (!m)
-		return Enoarg;
-	if (end && mark_same(m, end))
-		return 1;
-	if (end && (end->seq < m->seq) != (steps < 0))
-		/* Can never cross 'end' */
-		return Einval;
-	while (steps && ret != CHAR_RET(WEOF) && (!end || !mark_same(m, end))) {
-		ret = text_step(ci->home, m, forward, 1);
-		steps -= forward*2 - 1;
-	}
-	if (end)
-		return 1 + (forward ? ci->num - steps : steps - ci->num);
-	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
-		return ret;
-	if (ci->num && (ci->num2 < 0) == forward)
-		return ret;
-	/* Want the 'next' char */
-	return text_step(ci->home, m, ci->num2 > 0, 0);
-}
-
-static int text_step_bytes(struct pane *home safe, struct mark *mark safe,
-			   int num, int num2)
-{
-	struct mark *m = mark;
-	bool forward = num;
-	bool move = num2;
-	struct text *t = &home->doc_data;
-	struct doc_ref r;
-	wint_t ret;
-
-	if (!m)
-		return Enoarg;
-
-	ASSERT(m->owner == home);
-
-	r = m->ref;
-	if (forward)
-		ret = text_next(t, &r, 1);
-	else
-		ret = text_prev(t, &r, 1);
-
-	if (move) {
-		mark_step(m, forward);
-		m->ref = r;
-	}
-	/* return value must be +ve, so use high bits to ensure this. */
-	return CHAR_RET(ret);
-}
-
-DEF_CMD(text_byte)
-{
-	struct mark *m = ci->mark;
-	struct mark *end = ci->mark2;
-	int steps = ci->num;
-	int forward = steps > 0;
-	int ret = Einval;
-
-	if (!m)
-		return Enoarg;
-	if (end && mark_same(m, end))
-		return 1;
-	if (end && (end->seq < m->seq) != (steps < 0))
-		/* Can never cross 'end' */
-		return Einval;
-	while (steps && ret != CHAR_RET(WEOF) && (!end || !mark_same(m, end))) {
-		ret = text_step_bytes(ci->home, m, forward, 1);
-		steps -= forward*2 - 1;
-	}
-	if (end)
-		return 1 + (forward ? ci->num - steps : steps - ci->num);
-	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
-		return ret;
-	if (ci->num && (ci->num2 < 0) == forward)
-		return ret;
-	/* Want the 'next' char */
-	return text_step_bytes(ci->home, m, ci->num2 > 0, 0);
-}
-
 static bool _text_ref_same(struct text *t safe, struct doc_ref *r1 safe,
 			   struct doc_ref *r2 safe)
 {
@@ -2678,8 +2572,8 @@ void edlib_init(struct pane *ed safe)
 	key_add(text_map, "doc:set-attr", &text_set_attr);
 	key_add(text_map, "doc:get-attr", &text_doc_get_attr);
 	key_add(text_map, "doc:replace", &text_replace);
-	key_add(text_map, "doc:char", &text_char);
-	key_add(text_map, "doc:byte", &text_byte);
+	key_add(text_map, "doc:char", &text_char_byte);
+	key_add(text_map, "doc:byte", &text_char_byte);
 	key_add(text_map, "doc:modified", &text_modified);
 	key_add(text_map, "doc:set:readonly", &text_readonly);
 	key_add(text_map, "doc:notify:doc:revisit", &text_revisited);

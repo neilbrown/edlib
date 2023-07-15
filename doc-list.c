@@ -19,7 +19,11 @@ struct doc_ref {
 	unsigned int i;
 };
 
+#define DOC_SHARESREF
 #define DOC_DATA_TYPE struct list
+struct list;
+#define DOC_NEXT list_next
+#define DOC_PREV list_prev
 #include "core.h"
 #include "misc.h"
 
@@ -34,64 +38,33 @@ struct list {
 };
 #include "core-pane.h"
 
+static inline wint_t list_next(struct list *l safe, struct doc_ref *r safe, bool bytes)
+{
+	if (r->p == NULL)
+		return WEOF;
+
+	if (r->p == list_last_entry(&l->content, struct elmnt, list))
+		r->p = NULL;
+	else
+		r->p = list_next_entry(r->p, list);
+	return ' ';
+}
+
+static inline wint_t list_prev(struct list *l safe, struct doc_ref *r safe, bool bytes)
+{
+	if (r->p == list_first_entry_or_null(&l->content, struct elmnt, list))
+		return WEOF;
+
+	if (r->p == NULL)
+		r->p = list_last_entry(&l->content, struct elmnt, list);
+	else
+		r->p = list_prev_entry(r->p, list);
+	return ' ';
+}
+
 DEF_CMD(list_char)
 {
-	struct list *l = &ci->home->doc_data;
-	struct mark *m = ci->mark;
-	struct mark *end = ci->mark2;
-	int steps = ci->num;
-	int forward = steps > 0;
-	int ret = Einval;
-
-	if (!m)
-		return Enoarg;
-
-	if (end && mark_same(m, end))
-		return 1;
-	if (end && (end->seq < m->seq) != (steps < 0))
-		/* Can never cross 'end' */
-		return Einval;
-	while (steps && ret != CHAR_RET(WEOF) &&
-	       (!end || !mark_same(m, end))) {
-		if (forward) {
-			if (m->ref.p == NULL)
-				ret = CHAR_RET(WEOF);
-			else {
-				ret = CHAR_RET(' ');
-				mark_step_sharesref(m, 1);
-				if (m->ref.p == list_last_entry(&l->content, struct elmnt, list))
-					m->ref.p = NULL;
-				else
-					m->ref.p = list_next_entry(m->ref.p, list);
-				steps -= 1;
-			}
-		} else {
-			if (m->ref.p == list_first_entry_or_null(&l->content, struct elmnt, list))
-				ret = CHAR_RET(WEOF);
-			else {
-				ret = CHAR_RET(' ');
-				mark_step_sharesref(m, 0);
-				if (m->ref.p == NULL)
-					m->ref.p = list_last_entry(&l->content, struct elmnt, list);
-				else
-					m->ref.p = list_prev_entry(m->ref.p, list);
-				steps += 1;
-			}
-		}
-	}
-	if (end)
-		return 1 + (forward ? ci->num - steps : steps - ci->num);
-	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
-		return ret;
-	if (ci->num && (ci->num2 < 0) == forward)
-		return ret;
-	/* Want the 'next' char */
-	if (ci->num2 > 0 && m->ref.p == NULL)
-		return CHAR_RET(WEOF);
-	if (ci->num2 < 0 && m->ref.p ==
-	    list_first_entry_or_null(&l->content, struct elmnt, list))
-		return CHAR_RET(WEOF);
-	return CHAR_RET(' ');
+	return do_char_byte(ci);
 }
 
 DEF_CMD(list_set_ref)
