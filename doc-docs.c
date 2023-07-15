@@ -43,6 +43,11 @@ struct doc_ref {
 	struct pane	*p;
 	unsigned int	ignore;
 };
+#define DOC_SHARESREF
+#define DOC_DATA_TYPE struct docs
+struct docs;
+#define DOC_NEXT docs_next
+#define DOC_PREV docs_prev
 #include "core.h"
 
 static struct map *docs_map, *docs_aux_map, *docs_modified_map,
@@ -57,13 +62,14 @@ struct docs {
 	struct command		callback;
 	struct pane		*collection safe;
 };
+#include "core-pane.h"
 
 static void docs_demark(struct pane *d safe, struct pane *p safe)
 {
 	/* This document (p) is about to be moved in the list (d->collection).
 	 * Any mark pointing at it is moved forward
 	 */
-	struct docs *doc = container_of(d->data, struct docs, doc);
+	struct docs *doc = &d->doc_data;
 	struct mark *m, *first = NULL;
 	struct pane *next;
 	struct pane *col = doc->collection;
@@ -95,7 +101,7 @@ static void docs_enmark(struct pane *d safe, struct pane *p safe)
 	/* This document has just been added to the list.
 	 * any mark pointing just past it is moved back.
 	 */
-	struct docs *doc = container_of(d->data, struct docs, doc);
+	struct docs *doc = &d->doc_data;
 	struct mark *m, *first = NULL;
 	struct pane *next;
 	struct pane *col = doc->collection;
@@ -172,10 +178,8 @@ static void check_name(struct docs *docs safe, struct pane *pane safe)
 
 static void doc_checkname(struct pane *p safe, struct pane *d safe, int n)
 {
-	struct docs *ds = container_of(d->data, struct docs, doc);
-
+	struct docs *ds = &d->doc_data;
 	ASSERT(p->parent->handle == &docs_aux.c);
-	ASSERT(p->parent->data == d);
 	check_name(ds, p);
 	if (n) {
 		docs_demark(d, p);
@@ -264,7 +268,7 @@ DEF_CMD(docs_callback_complete)
 
 DEF_CMD(docs_callback_byname)
 {
-	struct docs *doc = ci->home->data;
+	struct docs *doc = &ci->home->doc_data;
 	struct pane *p;
 
 	if (ci->str == NULL || strcmp(ci->str, "*Documents*") == 0)
@@ -281,7 +285,7 @@ DEF_CMD(docs_callback_byname)
 
 DEF_CMD(docs_callback_byfd)
 {
-	struct docs *doc = ci->home->data;
+	struct docs *doc = &ci->home->doc_data;
 	struct pane *p;
 
 	list_for_each_entry(p, &doc->collection->children, siblings) {
@@ -294,7 +298,7 @@ DEF_CMD(docs_callback_byfd)
 
 DEF_CMD(docs_callback_byeach)
 {
-	struct docs *doc = ci->home->data;
+	struct docs *doc = &ci->home->doc_data;
 	struct pane *p;
 
 	list_for_each_entry(p, &doc->collection->children, siblings) {
@@ -308,7 +312,7 @@ DEF_CMD(docs_callback_byeach)
 
 DEF_CMD(docs_callback_choose)
 {
-	struct docs *doc = ci->home->data;
+	struct docs *doc = &ci->home->doc_data;
 	struct pane *choice = NULL, *last = NULL;
 	struct pane *p;
 
@@ -340,7 +344,7 @@ DEF_CMD(docs_callback_choose)
 
 DEF_CMD(docs_callback_saveall)
 {
-	struct docs *doc = ci->home->data;
+	struct docs *doc = &ci->home->doc_data;
 	struct pane *p;
 	int dirlen = ci->str ? (int)strlen(ci->str) : -1;
 
@@ -361,7 +365,7 @@ DEF_CMD(docs_callback_saveall)
 
 DEF_CMD(docs_callback_modified)
 {
-	struct docs *doc = ci->home->data;
+	struct docs *doc = &ci->home->doc_data;
 	struct pane *p;
 
 	p = home_call_ret(pane, ci->home, "doc:attach-view", ci->focus,
@@ -390,7 +394,7 @@ DEF_CMD(docs_callback_modified)
 
 DEF_CMD(docs_callback_appeared)
 {
-	struct docs *doc = ci->home->data;
+	struct docs *doc = &ci->home->doc_data;
 	struct pane *p;
 
 	/* Always return Efallthrough so other handlers get a chance */
@@ -436,7 +440,7 @@ DEF_CMD(doc_revisit)
 {
 	struct pane *p = ci->focus;
 	struct pane *dp = ci->home->data;
-	struct docs *docs = container_of(dp->data, struct docs, doc);
+	struct docs *docs = &dp->doc_data;
 
 	if (!p)
 		return Einval;
@@ -448,86 +452,46 @@ DEF_CMD(doc_revisit)
 	return 1;
 }
 
-static int docs_step(struct pane *home safe, struct mark *mark safe,
-		     int num, int num2)
+static inline wint_t docs_next(struct docs *d safe, struct doc_ref *r safe, bool bytes)
 {
-	struct doc *doc = home->data;
-	struct mark *m = mark;
-	bool forward = num;
-	bool move = num2;
-	int ret;
-	struct pane *p, *next;
-	struct docs *d = container_of(doc, struct docs, doc);
-
-	p = m->ref.p;
-	if (forward) {
-		/* report on d */
-		if (p == NULL || p == list_last_entry(&d->collection->children,
-						      struct pane, siblings))
-			next = NULL;
-		else
-			next = list_next_entry(p, siblings);
-	} else {
-		next = p;
-		if (list_empty(&d->collection->children))
-			p = NULL;
-		else if (!p)
-			p = list_last_entry(&d->collection->children,
-					    struct pane, siblings);
-		else if (p != list_first_entry(&d->collection->children,
-					       struct pane, siblings))
-			p = list_prev_entry(p, siblings);
-		else
-			p = NULL;
-		if (p)
-			next = p;
-	}
-	if (move) {
-		mark_step_sharesref(m, forward);
-		m->ref.p = next;
-	}
+	struct pane *p = r->p;
 
 	if (p == NULL)
-		ret = WEOF;
-	else
-		ret = '\n';
+		return WEOF;
 
-	return CHAR_RET(ret);
+	if (p == list_last_entry(&d->collection->children,
+				 struct pane, siblings))
+		r->p = NULL;
+	else
+		r->p = list_next_entry(p, siblings);
+	return '\n';
+}
+static inline wint_t docs_prev(struct docs *d safe, struct doc_ref *r safe, bool bytes)
+{
+	struct pane *p = r->p;
+
+	if (list_empty(&d->collection->children))
+		return WEOF;
+	else if (!p)
+		p = list_last_entry(&d->collection->children,
+				    struct pane, siblings);
+	else if (p != list_first_entry(&d->collection->children,
+				       struct pane, siblings))
+		p = list_prev_entry(p, siblings);
+	else
+		return WEOF;
+	r->p = p;
+	return '\n';
 }
 
 DEF_CMD(docs_char)
 {
-	struct mark *m = ci->mark;
-	struct mark *end = ci->mark2;
-	int steps = ci->num;
-	int forward = steps > 0;
-	int ret = Einval;
-
-	if (!m)
-		return Enoarg;
-	if (end && mark_same(m, end))
-		return 1;
-	if (end && (end->seq < m->seq) != (steps < 0))
-		/* Can never cross 'end' */
-		return Einval;
-	while (steps && ret != CHAR_RET(WEOF) && (!end || !mark_same(m, end))) {
-		ret = docs_step(ci->home, m, forward, 1);
-		steps -= forward*2 - 1;
-	}
-	if (end)
-		return 1 + (forward ? ci->num - steps : steps - ci->num);
-	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
-		return ret;
-	if (ci->num && (ci->num2 < 0) == forward)
-		return ret;
-	/* Want the 'next' char */
-	return docs_step(ci->home, m, ci->num2 > 0, 0);
+	return do_char_byte(ci);
 }
 
 DEF_CMD(docs_set_ref)
 {
-	struct doc *dc = ci->home->data;
-	struct docs *d = container_of(dc, struct docs, doc);
+	struct docs *d = &ci->home->doc_data;
 	struct mark *m = ci->mark;
 
 	if (!m)
@@ -786,8 +750,7 @@ DEF_CMD(docs_shares_ref)
 
 DEF_CMD(docs_val_marks)
 {
-	struct doc *dc = ci->home->data;
-	struct docs *d = container_of(dc, struct docs, doc);
+	struct docs *d = &ci->home->doc_data;
 	struct pane *p;
 	int found;
 
@@ -831,7 +794,7 @@ DEF_CMD(docs_val_marks)
 
 DEF_CMD(docs_close)
 {
-	struct docs *docs = ci->home->data;
+	struct docs *docs = &ci->home->doc_data;
 
 	call_comm("global-set-command-prefix", ci->home, &edlib_noop,
 		  0, NULL, "docs:");
@@ -918,15 +881,12 @@ DEF_CMD(attach_docs)
 	struct docs *doc;
 	struct pane *pd, *paux;
 
-	alloc(doc, pane);
 	docs_init_map();
 
-	pd = doc_register(ci->home, &docs_handle.c, doc);
-	if (!pd) {
-		free(doc->doc.name);
-		free(doc);
+	pd = doc_register(ci->home, &docs_handle.c);
+	if (!pd)
 		return Efail;
-	}
+	doc = &pd->doc_data;
 	doc->doc.name = strdup("*Documents*");
 	paux = pane_register(ci->home, 0, &docs_aux.c, pd);
 	if (!paux) {
