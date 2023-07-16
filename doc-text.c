@@ -1590,8 +1590,9 @@ static void text_add_str(struct text *t safe, struct mark *pm safe,
 		;
 }
 
-static inline wint_t text_next(struct text *t safe, struct doc_ref *r safe, bool bytes)
+static inline wint_t text_next(struct pane *p safe, struct doc_ref *r safe, bool bytes)
 {
+	struct text *t = &p->doc_data;
 	wint_t ret = WERR;
 	const char *c;
 
@@ -1610,8 +1611,9 @@ static inline wint_t text_next(struct text *t safe, struct doc_ref *r safe, bool
 	return ret;
 }
 
-static inline wint_t text_prev(struct text *t safe, struct doc_ref *r safe, bool bytes)
+static inline wint_t text_prev(struct pane *p safe, struct doc_ref *r safe, bool bytes)
 {
+	struct text *t = &p->doc_data;
 	wint_t ret;
 	const char *c;
 
@@ -1984,7 +1986,7 @@ static int text_retreat_towards(struct text *t safe, struct doc_ref *ref safe,
 	 */
 
 	if (ref->c != target->c && (!ref->c || ref->o <= ref->c->start))
-		if (text_prev(t, ref, 1) == WEOF)
+		if (text_prev(safe_cast container_of(t, struct pane, doc_data), ref, 1) == WEOF)
 			return 0;
 
 	if (ref->c == target->c) {

@@ -45,7 +45,6 @@ struct doc_ref {
 };
 #define DOC_SHARESREF
 #define DOC_DATA_TYPE struct docs
-struct docs;
 #define DOC_NEXT docs_next
 #define DOC_PREV docs_prev
 #include "core.h"
@@ -452,8 +451,9 @@ DEF_CMD(doc_revisit)
 	return 1;
 }
 
-static inline wint_t docs_next(struct docs *d safe, struct doc_ref *r safe, bool bytes)
+static inline wint_t docs_next(struct pane *home safe, struct doc_ref *r safe, bool bytes)
 {
+	struct docs *d = &home->doc_data;
 	struct pane *p = r->p;
 
 	if (p == NULL)
@@ -466,8 +466,9 @@ static inline wint_t docs_next(struct docs *d safe, struct doc_ref *r safe, bool
 		r->p = list_next_entry(p, siblings);
 	return '\n';
 }
-static inline wint_t docs_prev(struct docs *d safe, struct doc_ref *r safe, bool bytes)
+static inline wint_t docs_prev(struct pane *home safe, struct doc_ref *r safe, bool bytes)
 {
+	struct docs *d = &home->doc_data;
 	struct pane *p = r->p;
 
 	if (list_empty(&d->collection->children))

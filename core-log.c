@@ -21,7 +21,6 @@ struct doc_ref {
 	struct logbuf *b;
 	unsigned int o;
 };
-struct log;
 #define DOC_DATA_TYPE struct log
 #define DOC_NEXT log_next
 #define DOC_PREV log_prev
@@ -254,8 +253,9 @@ DEF_CMD(log_set_ref)
 	return 1;
 }
 
-static inline wint_t log_next(struct log *log safe, struct doc_ref *r safe, bool bytes)
+static inline wint_t log_next(struct pane *p safe, struct doc_ref *r safe, bool bytes)
 {
+	struct log *log = &p->doc_data;
 	wint_t ret;
 
 	if (!r->b)
@@ -280,8 +280,9 @@ static inline wint_t log_next(struct log *log safe, struct doc_ref *r safe, bool
 	return ret;
 }
 
-static inline wint_t log_prev(struct log *log safe, struct doc_ref *r safe, bool bytes)
+static inline wint_t log_prev(struct pane *p safe, struct doc_ref *r safe, bool bytes)
 {
+	struct log *log = &p->doc_data;
 	const char *s;
 
 	if (list_empty(&log->log))

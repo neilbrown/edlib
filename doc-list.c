@@ -21,7 +21,6 @@ struct doc_ref {
 
 #define DOC_SHARESREF
 #define DOC_DATA_TYPE struct list
-struct list;
 #define DOC_NEXT list_next
 #define DOC_PREV list_prev
 #include "core.h"
@@ -38,8 +37,10 @@ struct list {
 };
 #include "core-pane.h"
 
-static inline wint_t list_next(struct list *l safe, struct doc_ref *r safe, bool bytes)
+static inline wint_t list_next(struct pane *p safe, struct doc_ref *r safe, bool bytes)
 {
+	struct list *l = &p->doc_data;
+
 	if (r->p == NULL)
 		return WEOF;
 
@@ -50,8 +51,10 @@ static inline wint_t list_next(struct list *l safe, struct doc_ref *r safe, bool
 	return ' ';
 }
 
-static inline wint_t list_prev(struct list *l safe, struct doc_ref *r safe, bool bytes)
+static inline wint_t list_prev(struct pane *p safe, struct doc_ref *r safe, bool bytes)
 {
+	struct list *l = &p->doc_data;
+
 	if (r->p == list_first_entry_or_null(&l->content, struct elmnt, list))
 		return WEOF;
 

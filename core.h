@@ -552,6 +552,55 @@ static inline wint_t doc_pending(struct pane *p safe, struct mark *m, int n)
 	return WEOF;
 }
 
+#if defined(DOC_NEXT)
+static inline wint_t DOC_NEXT(struct pane *p safe, struct doc_ref *r safe, bool byte);
+static inline wint_t DOC_PREV(struct pane *p safe, struct doc_ref *r safe, bool byte);
+static inline int do_char_byte(const struct cmd_info *ci safe)
+{
+	struct mark *m = ci->mark;
+	struct mark *end = ci->mark2;
+	struct pane *p = ci->home;
+	struct doc_ref r;
+	int steps = ci->num;
+	int forward = steps > 0;
+	wint_t ret = ' ';
+	int byte = strcmp(ci->key, "doc:byte") == 0;
+
+	if (!m)
+		return Enoarg;
+	if (end && mark_same(m, end))
+		return 1;
+	if (end && (end->seq < m->seq) != (steps < 0))
+		/* Can never cross 'end' */
+		return Einval;
+	while (steps && ret != CHAR_RET(WEOF) && (!end || !mark_same(m, end))) {
+		#ifdef DOC_SHARESREF
+		mark_step_sharesref(m, forward);
+		#else
+		mark_step(m, forward);
+		#endif
+		if (forward)
+			ret = DOC_NEXT(p, &m->ref, byte);
+		else
+			ret = DOC_PREV(p, &m->ref, byte);
+		steps -= forward*2 - 1;
+	}
+	if (end)
+		return 1 + (forward ? ci->num - steps : steps - ci->num);
+	if (ret == WEOF || ci->num2 == 0)
+		return CHAR_RET(ret);
+	if (ci->num && (ci->num2 < 0) == forward)
+		return CHAR_RET(ret);
+	/* Want the 'next' char */
+	r = m->ref;
+	if (ci->num2 > 0)
+		ret = DOC_NEXT(p, &r, byte);
+	else
+		ret = DOC_PREV(p, &r, byte);
+	return CHAR_RET(ret);
+}
+#endif
+
 struct call_return {
 	struct command c;
 	struct mark *m, *m2;

@@ -49,7 +49,6 @@ struct doc_ref {
 };
 #define DOC_SHARESREF
 #define DOC_DATA_TYPE struct directory
-struct directory;
 #define DOC_NEXT dir_next
 #define DOC_PREV dir_prev
 #include "core.h"
@@ -383,8 +382,9 @@ DEF_CMD(dir_same_file)
 	return 1;
 }
 
-static inline wint_t dir_next(struct directory *dr safe, struct doc_ref *r safe, bool bytes)
+static inline wint_t dir_next(struct pane *p safe, struct doc_ref *r safe, bool bytes)
 {
+	struct directory *dr = &p->doc_data;
 	struct dir_ent *d = r->d;
 
 	if (d == NULL)
@@ -400,8 +400,9 @@ static inline wint_t dir_next(struct directory *dr safe, struct doc_ref *r safe,
 	return '\n';
 }
 
-static inline wint_t dir_prev(struct directory *dr safe, struct doc_ref *r safe, bool bytes)
+static inline wint_t dir_prev(struct pane *p safe, struct doc_ref *r safe, bool bytes)
 {
+	struct directory *dr = &p->doc_data;
 	struct dir_ent *d = r->d;
 
 	if (d == list_first_entry(&dr->ents, struct dir_ent, lst))
