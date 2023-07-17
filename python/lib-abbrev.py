@@ -201,7 +201,7 @@ class AbbrevPane(edlib.Pane):
 
         p = self.menu.call("ThisPopup", ret='pane')
         if p:
-            xy = p.mapxy(focus, xy[0], focus.h)
+            xy = p.parent.mapxy(focus, xy[0], focus.h)
             p.x = xy[0]
             p.y = xy[1]
         return edlib.Efallthrough

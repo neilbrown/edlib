@@ -1065,11 +1065,12 @@ struct call_return do_call_bytes(enum target_type type, struct pane *home,
 struct xy pane_mapxy(struct pane *p safe, struct pane *target safe,
 		     short x, short y, bool clip)
 {
+	/* x and y are relative to p.  The result xy is relative to target */
 	struct xy xy;
 
 	/* This is a bit of a hack, but is needed to map lib-renderline
 	 * co-ordes to a pane which is parallel with the render-line
-	 * pane, but might be further fromt the root.
+	 * pane, but might be further from the root.
 	 * We move 'target' towards the root to a pane of exactly the
 	 * same size and position.  This will not change a correct
 	 * result, and can make a correct result more likely.
