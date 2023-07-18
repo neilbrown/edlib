@@ -2538,9 +2538,14 @@ DEF_CMD(emacs_release)
 DEF_CMD(emacs_menu_open)
 {
 	/* If there is a menu action here, activate it. */
+	/* Don't move the cursor though */
+	struct mark *m = mark_new(ci->focus);
+	int ret;
 
-	return call("Move-CursorXY", ci->focus, 0, ci->mark, "menu",
-		    0, NULL, NULL, ci->x, ci->y);
+	ret = call("Move-CursorXY", ci->focus, 0, m, "menu",
+		   0, NULL, NULL, ci->x, ci->y);
+	mark_free(m);
+	return ret;
 }
 
 DEF_CMD(emacs_menu_select)
@@ -2549,8 +2554,13 @@ DEF_CMD(emacs_menu_select)
 	 * so ci->focus is now the menu.  We want to activate the entry
 	 * under the mouse
 	 */
-	return call("Move-CursorXY", ci->focus, 0, ci->mark, "activate",
-		    0, NULL, NULL, ci->x, ci->y);
+	struct mark *m = mark_new(ci->focus);
+	int ret;
+
+	ret = call("Move-CursorXY", ci->focus, 0, m, "activate",
+		   0, NULL, NULL, ci->x, ci->y);
+	mark_free(m);
+	return ret;
 }
 
 DEF_CMD(emacs_motion)
