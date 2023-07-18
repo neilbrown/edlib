@@ -1489,8 +1489,8 @@ DEF_CMD(render_lines_set_cursor)
 	int xypos;
 
 	cih = pane_mapxy(ci->focus, ci->home,
-			 ci->x >= 0 ? ci->x : p->cx >= 0 ? p->cx : 0,
-			 ci->y >= 0 ? ci->y : p->cy >= 0 ? p->cy : 0,
+			 ci->x == INT_MAX ? p->cx : ci->x,
+			 ci->y == INT_MAX ? p->cy : ci->y,
 			 False);
 
 	m = vmark_first(p, rl->typenum, p);
