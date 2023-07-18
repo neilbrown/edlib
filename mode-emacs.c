@@ -2456,8 +2456,7 @@ DEF_CMD(emacs_press)
 		return Efallthrough;
 	}
 	/* NOTE must find new location before view changes. */
-	call("Move-CursorXY", ci->focus,
-	     1, m, NULL, 0, NULL, NULL, ci->x, ci->y);
+	call("Move-CursorXY", ci->focus, 0, m, NULL, 0, NULL, NULL, ci->x, ci->y);
 
 	clear_selection(ci->focus, pt, mk, 0);
 	call("Move-to", ci->focus, 0, m);
@@ -2514,7 +2513,7 @@ DEF_CMD(emacs_release)
 	attr_set_int(&m2->attrs, "emacs:track-selection", 0);
 
 	call("Move-CursorXY", ci->focus,
-	     0, m, "activate", moved, NULL, NULL, ci->x, ci->y);
+	     0, m, "activate", 0, NULL, NULL, ci->x, ci->y);
 	/* That action might have closed a pane.  Better check... */
 	if (ci->focus->damaged & DAMAGED_CLOSED) {
 		/* Do nothing */
@@ -2540,7 +2539,7 @@ DEF_CMD(emacs_menu_open)
 {
 	/* If there is a menu action here, activate it. */
 
-	return call("Move-CursorXY", ci->focus, 3, ci->mark, "menu",
+	return call("Move-CursorXY", ci->focus, 0, ci->mark, "menu",
 		    0, NULL, NULL, ci->x, ci->y);
 }
 
@@ -2550,7 +2549,7 @@ DEF_CMD(emacs_menu_select)
 	 * so ci->focus is now the menu.  We want to activate the entry
 	 * under the mouse
 	 */
-	return call("Move-CursorXY", ci->focus, 3, ci->mark, "activate",
+	return call("Move-CursorXY", ci->focus, 0, ci->mark, "activate",
 		    0, NULL, NULL, ci->x, ci->y);
 }
 
@@ -2566,7 +2565,7 @@ DEF_CMD(emacs_motion)
 		return Efallthrough;
 
 	call("Move-CursorXY", ci->focus,
-	     3, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
+	     0, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
 
 	update_sel(ci->focus, p, m2, NULL);
 	return 1;
