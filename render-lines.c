@@ -1507,11 +1507,21 @@ DEF_CMD(render_lines_set_cursor)
 		 * of that content (possible EOF) so move there
 		 */
 	} else {
-		if (cih.y < m->mdata->y)
+		if (cih.y < m->mdata->y) {
+			/* action only permitted in precise match */
+			action = NULL;
 			cih.y = m->mdata->y;
+		}
 		xypos = find_xy_line(p, focus, m, cih.x, cih.y);
-		if (xypos >= 0)
+		if (xypos >= 0) {
 			m2 = call_render_line_offset(focus, m, xypos);
+			if (m2) {
+				wint_t c = doc_following(focus, m2);
+				if (c == WEOF || is_eol(c))
+					/* after last char on line - no action. */
+					action = NULL;
+			}
+		}
 	}
 	if (m2) {
 		char *tag, *xyattr;

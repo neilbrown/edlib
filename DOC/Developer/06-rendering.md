@@ -215,6 +215,11 @@ document, rather than on its content.
   location that the cursor is about to move to, and "mark2" will be the
   mark that will be moved.
 
+  Note that while Move-CursorXY will move the mark to a "near by"
+  location if the is no character at that exact locate, the action will
+  only be performed if there is a suitable character exactly where the
+  x,y co-ords are.
+
 - "Move-Line" moves the cursor (point) forward or backward some number
   of lines based on the num1 argument.  "render-lines" attempts to keep
   the cursor in the same column as it started in.  This column number is
