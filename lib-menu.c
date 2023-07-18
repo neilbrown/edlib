@@ -89,6 +89,7 @@ DEF_CMD(menu_attach)
 		return Efail;
 	call("doc:set:autoclose", docp, 1);
 	attr_set_str(&docp->attrs, "render-simple", "format");
+	attr_set_str(&docp->attrs, "shift-left", "0");
 	attr_set_str(&docp->attrs, "heading", "");
 	attr_set_str(&docp->attrs, "line-format", "<action-activate:menu-select>%name</>");
 	attr_set_str(&docp->attrs, "done-key", ci->str2 ?: "menu-done");
