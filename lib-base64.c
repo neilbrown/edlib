@@ -22,6 +22,9 @@
 #include <stdlib.h>
 #include <wctype.h>
 
+#define DOC_NEXT base64_next
+#define DOC_PREV base64_prev
+
 #include "core.h"
 
 static struct map *b64_map safe;
@@ -102,16 +105,15 @@ static int get_pos(struct mark *m safe)
 	return -1;
 }
 
-static int base64_step(struct pane *home safe, struct mark *mark,
-		       int forward, int move)
+static inline wint_t base64_next(struct pane *home safe, struct mark *mark safe,
+				 struct doc_ref *r safe, bool bytes)
 {
 	int pos = 0;
+	int move = r == &mark->ref;
 	struct mark *m;
 	struct pane *p = home->parent;
 	wint_t c1, c2, b;
 
-	if (!mark)
-		return Enoarg;
 	pos = get_pos(mark);
 	if (pos < 0)
 		/* bug? */
@@ -119,38 +121,83 @@ static int base64_step(struct pane *home safe, struct mark *mark,
 
 	m = mark_dup(mark);
 retry:
-	if (forward) {
-		c1 = get_b64(p, m);
-		c2 = get_b64(p, m);
-		/* If we found '=', there is no more to find */
-		if (c1 == 64 || c2 == 64) {
-			while (pos < 2 && c2 != WEOF) {
-				c2 = get_b64(p, m);
-				pos += 1;
-			}
-			pos = 0;
-			if (c2 != WEOF)
-				/* hopefully it was 64 aka '=' */
-				goto retry;
+	c1 = get_b64(p, m);
+	c2 = get_b64(p, m);
+	/* If we found '=', there is no more to find */
+	if (c1 == 64 || c2 == 64) {
+		while (pos < 2 && c2 != WEOF) {
+			c2 = get_b64(p, m);
+			pos += 1;
 		}
-	} else {
-		if (pos)
-			if (get_b64(p, m) == WEOF)
-				pos = 0;
-		c2 = get_b64_rev(p, m);
+		pos = 0;
+		if (c2 != WEOF)
+			/* hopefully it was 64 aka '=' */
+			goto retry;
+	}
+	if (c1 == WEOF || c2 == WEOF) {
+		mark_free(m);
+		return CHAR_RET(WEOF);
+	}
+
+	switch(pos) {
+	case 0:
+		b = (c1 << 2) | (c2 >> 4);
+		break;
+	case 1:
+		b = ((c1 << 4) & 0xF0) | (c2 >> 2);
+		break;
+	case 2:
+		b = ((c1 << 6) & 0xC0) | c2;
+		break;
+	default:
+		b = 0;
+	}
+	if (move) {
+		if (pos < 2)
+			/* Step back to look at the last char read */
+			doc_prev(p, m);
+		else
+			pos += 1;
+		mark_to_mark(mark, m);
+		set_pos(mark, pos+1);
+	}
+
+	mark_free(m);
+	return b;
+}
+
+static inline wint_t base64_prev(struct pane *home safe, struct mark *mark safe,
+				 struct doc_ref *r safe, bool bytes)
+{
+	int pos = 0;
+	int move = r == &mark->ref;
+	struct mark *m;
+	struct pane *p = home->parent;
+	wint_t c1, c2, b;
+
+	pos = get_pos(mark);
+	if (pos < 0)
+		/* bug? */
+		pos = 0;
+
+	m = mark_dup(mark);
+
+	if (pos)
+		if (get_b64(p, m) == WEOF)
+			pos = 0;
+	c2 = get_b64_rev(p, m);
+	c1 = get_b64_rev(p, m);
+	if (pos <= 0)
+		pos = 2;
+	else
+		pos -= 1;
+	while (c2 == 64) {
+		c2 = c1;
 		c1 = get_b64_rev(p, m);
 		if (pos <= 0)
 			pos = 2;
 		else
 			pos -= 1;
-		while (c2 == 64) {
-			c2 = c1;
-			c1 = get_b64_rev(p, m);
-			if (pos <= 0)
-				pos = 2;
-			else
-				pos -= 1;
-		}
 	}
 
 	if (c1 == WEOF || c2 == WEOF) {
@@ -172,51 +219,17 @@ retry:
 		b = 0;
 	}
 	if (move) {
-		if (forward) {
-			if (pos < 2)
-				/* Step back to look at the last char read */
-				doc_prev(p, m);
-			else
-				pos += 1;
-		}
 		mark_to_mark(mark, m);
-		if (forward)
-			set_pos(mark, pos+1);
-		else
-			set_pos(mark, pos);
+		set_pos(mark, pos);
 	}
 
 	mark_free(m);
-	return CHAR_RET(b);
+	return b;
 }
 
 DEF_CMD(base64_char)
 {
-	struct mark *m = ci->mark;
-	struct mark *end = ci->mark2;
-	int steps = ci->num;
-	int forward = steps > 0;
-	int ret = Einval;
-
-	if (!m)
-		return Enoarg;
-	if (end && mark_same(m, end))
-		return 1;
-	if (end && (end->seq < m->seq) != (steps < 0))
-		/* Can never cross 'end' */
-		return Einval;
-	while (steps && ret != CHAR_RET(WEOF) && (!end || !mark_same(m, end))) {
-		ret = base64_step(ci->home, m, forward, 1);
-		steps -= forward*2 - 1;
-	}
-	if (end)
-		return 1 + (forward ? ci->num - steps : steps - ci->num);
-	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
-		return ret;
-	if (ci->num && (ci->num2 < 0) == forward)
-		return ret;
-	/* Want the 'next' char */
-	return base64_step(ci->home, m, ci->num2 > 0, 0);
+	return do_char_byte(ci);
 }
 
 DEF_CMD(base64_setref)

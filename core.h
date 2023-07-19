@@ -554,11 +554,11 @@ static inline wint_t doc_pending(struct pane *p safe, struct mark *m, int n)
 
 #if defined(DOC_NEXT)
 #ifdef DOC_NEXT_DECL
-static inline wint_t DOC_NEXT_DECL(struct pane *p safe, struct mark *m, struct doc_ref *r safe, bool byte);
-static inline wint_t DOC_PREV_DECL(struct pane *p safe, struct mark *m, struct doc_ref *r safe, bool byte);
+static inline wint_t DOC_NEXT_DECL(struct pane *p safe, struct mark *m safe, struct doc_ref *r safe, bool byte);
+static inline wint_t DOC_PREV_DECL(struct pane *p safe, struct mark *m safe, struct doc_ref *r safe, bool byte);
 #else
-static inline wint_t DOC_NEXT(struct pane *p safe, struct mark *m, struct doc_ref *r safe, bool byte);
-static inline wint_t DOC_PREV(struct pane *p safe, struct mark *m, struct doc_ref *r safe, bool byte);
+static inline wint_t DOC_NEXT(struct pane *p safe, struct mark *m safe, struct doc_ref *r safe, bool byte);
+static inline wint_t DOC_PREV(struct pane *p safe, struct mark *m safe, struct doc_ref *r safe, bool byte);
 #endif
 static inline int do_char_byte(const struct cmd_info *ci safe)
 {
