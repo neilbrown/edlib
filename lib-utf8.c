@@ -9,16 +9,17 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#define DOC_NEXT utf8_next
+#define DOC_PREV utf8_prev
 #include "core.h"
 
 static struct map *utf8_map safe;
 DEF_LOOKUP_CMD(utf8_handle, utf8_map);
 
-static int utf8_step(struct pane *home safe, struct mark *mark safe,
-		     int num, int num2)
+static inline wint_t utf8_next(struct pane *home safe, struct mark *mark safe,
+			       struct doc_ref *r, bool bytes)
 {
-	int dir = num ? 1 : -1;
-	int move = num2;
+	int move = r == &mark->ref;
 	struct pane *p = home->parent;
 	wint_t ch;
 	struct mark *m = mark;
@@ -28,71 +29,72 @@ static int utf8_step(struct pane *home safe, struct mark *mark safe,
 	wint_t ret;
 
 	if (move)
-		ch = doc_move(p, m, dir);
+		ch = doc_move(p, m, 1);
 	else
-		ch = doc_pending(p, m, dir);
+		ch = doc_pending(p, m, 1);
 	if (ch == WEOF || (ch & 0x7f) == ch)
-		return CHAR_RET(ch);
+		return ch;
 	if (!move) {
 		m = mark_dup(m);
-		doc_move(p, m, dir);
+		doc_move(p, m, 1);
 	}
-	if (dir > 0) {
-		i = 0;
+	i = 0;
+	buf[i++] = ch;
+	while ((ch = doc_following(p, m)) != WEOF &&
+	       (ch & 0xc0) == 0x80 && i < 10) {
 		buf[i++] = ch;
-		while ((ch = doc_following(p, m)) != WEOF &&
-		       (ch & 0xc0) == 0x80 && i < 10) {
-			buf[i++] = ch;
-			doc_next(p, m);
-		}
-		b = buf;
-		ret = get_utf8(&b, b+i);
-		if (ret == WERR)
-			ret = (unsigned char)buf[0];
-	} else {
-		i = 10;
-		buf[--i] = ch;
-		while (ch != WEOF && (ch & 0xc0) != 0xc0 && i > 0) {
-			ch = doc_prev(p, m);
-			buf[--i] = ch;
-		}
-		b = buf + i;
-		ret = get_utf8(&b, buf+10);
-		if (ret == WERR)
-			ret = (unsigned char)buf[i];
+		doc_next(p, m);
 	}
+	b = buf;
+	ret = get_utf8(&b, b+i);
+	if (ret == WERR)
+		ret = (unsigned char)buf[0];
 	if (!move)
 		mark_free(m);
-	return CHAR_RET(ret);
+	return ret;
+}
+
+static inline wint_t utf8_prev(struct pane *home safe, struct mark *mark safe,
+			       struct doc_ref *r, bool bytes)
+{
+	int move = r == &mark->ref;
+	struct pane *p = home->parent;
+	wint_t ch;
+	struct mark *m = mark;
+	char buf[10];
+	const char *b;
+	int i;
+	wint_t ret;
+
+	if (move)
+		ch = doc_move(p, m, -1);
+	else
+		ch = doc_pending(p, m, -1);
+	if (ch == WEOF || (ch & 0x7f) == ch)
+		return ch;
+	if (!move) {
+		m = mark_dup(m);
+		doc_move(p, m, -1);
+	}
+	i = 10;
+	buf[--i] = ch;
+	while (ch != WEOF && (ch & 0xc0) != 0xc0 && i > 0) {
+		ch = doc_prev(p, m);
+		buf[--i] = ch;
+	}
+	b = buf + i;
+	ret = get_utf8(&b, buf+10);
+	if (ret == WERR)
+		ret = (unsigned char)buf[i];
+
+	if (!move)
+		mark_free(m);
+	return ret;
 }
 
 DEF_CMD(utf8_char)
 {
-	struct mark *m = ci->mark;
-	struct mark *end = ci->mark2;
-	int steps = ci->num;
-	int forward = steps > 0;
-	int ret = Einval;
-
-	if (!m)
-		return Enoarg;
-	if (end && mark_same(m, end))
-		return 1;
-	if (end && (end->seq < m->seq) != (steps < 0))
-		/* Can never cross 'end' */
-		return Einval;
-	while (steps && ret != CHAR_RET(WEOF) && (!end || !mark_same(m, end))) {
-		ret = utf8_step(ci->home, m, forward, 1);
-		steps -= forward*2 - 1;
-	}
-	if (end)
-		return 1 + (forward ? ci->num - steps : steps - ci->num);
-	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
-		return ret;
-	if (ci->num && (ci->num2 < 0) == forward)
-		return ret;
-	/* Want the 'next' char */
-	return utf8_step(ci->home, m, ci->num2 > 0, 0);
+	return do_char_byte(ci);
 }
 
 DEF_CMD(utf8_byte)

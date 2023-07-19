@@ -62,7 +62,7 @@ the file.
       others so it can easily catch view-changed.
 - [X] C config module that reads an ini-style file to set attributes
       based on path
-- [ ] review all doc:char implementations for simplification.
+- [X] review all doc:char implementations for simplification.
 - [ ] make it easy for a make-search command to search backwards
 
 ### Large
@@ -139,7 +139,6 @@ Core features
 - [ ] explicitly guard against infinite loops in consistency checks
 - [ ] skip consistency checks after several with no stop for input.
 - [ ] unwanted docs too easily appear high in recent-list - *Output*
-- [ ] review all doc:char implementations for simplification.
 - [ ] design a way for a keystroke to interrupt a long-running function.
 - [ ] extend Draw:measure protocol to allow constant-width-fonts to
       cannot-scale displays can be detected and measurement optimised for.
@@ -774,6 +773,7 @@ Module features
 
 ### lang-python
 
+- [ ] review python doc:char implementations for simplification.
 - [ ] repeated alarm(10)/alarm(0) calls slow things down
 - [ ] array index should allow two args, second being a mark for
       doc:get-attr etc.
