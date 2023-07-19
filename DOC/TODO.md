@@ -23,47 +23,36 @@ the file.
 - [ ] cursor is sometimes off-screen when it shouldn't be.  I don't know
       what cause this yet, but I will try to remember to take notes next
       time.
-      When seaching backwards and result is just above display, the
+      When searching backwards and result is just above display, the
       result doesn't get shown.  Sometimes.
 - [ ] visiting a new file from a 44 popup is weird.
 - [ ] search in history always finds a new history line.  It doesn't
       check if new patterns still matches this line.
-- [ ] in notmuch cursor should go to search result when changing
+- [ ] in notmuch cursor should go to query result when changing
       messages.
 - [ ] menu for address completions in email-compose
 
-- [X] give every pane a link to root/editor main and use that
-      instead of statics.  Then maybe times_up() can use pane_too_long()
-- [X] mark DEF_CMD structs as const- NO, ->refcnt is not constant.
-- [X] rexel: don't abort if something looks wrong, just fail.
-- [X] check EDLIB_TESTING just once and set a flag in editor, accessible
-      as pane_testing(): p->root->data(cast)->testing.
+- [ ] Change times_up() to use pane_too_long()
+- [ ] change :A-x menu to use doc-list - add sorting
+- [ ] Change render-lines to handle centring and right-align in flush_line
+- [ ] Teach render-lines to pad spaces to left/right align text
 
 ### Small
 
-- [X] detect and limit recursion.
-- [X] message-line: use lib-renderline for the one line, so we have
-      markup support.
-- [X] history: Make it possible to search through history. Maybe Alt-p only shows
-      lines containing current content.
-- [X] emacs: Num-C-l doesn't work if it would require part of a wrapped line
-      off top of screen
-- [X] emacs: :C-q to recognise names of Unicode chars: e.g. WASTEBASKET
-       Possibly matches a list which continued :C-q cycles through
-- [X] linecount 'view' mode improvements
-- [X] allocate pane->data together with pane.  A single allocation so
-      that we can avoid the cost of a dereference.
+- [ ] notmuch addresses in From: list to have menu to add address to
+      any from-* query
+- [ ] Disable <hide> if cursor is in the hidden region.
+- [ ] fill mode to handle all punctuation at start of this line
+- [ ] Enable lib-menu to show short-cut keys
+- [ ] Add menu-bar to lib-menu.  Pop it up on F10 with simple commands
 
 ### Medium
 
-- [X] lib-mergeview improvements
-- [X] lib-diff slowness with large diff
-- [X] linecount :when used in 'view' mode, stack the counting pane with all the
-      others so it can easily catch view-changed.
-- [X] C config module that reads an ini-style file to set attributes
-      based on path
-- [X] review all doc:char implementations for simplification.
+- [ ] split range management out of autospell so it can be used by other
+  modules.
 - [ ] make it easy for a make-search command to search backwards
+- [ ] Make a start on CUA mode with mouse/menu/selection support.
+      Also Function keys: help, close, refresh
 
 ### Large
 
@@ -126,9 +115,6 @@ Core features
 - [ ] LOG_BT() doesn't see TYPE_pane and TYPE_comm calls.
 - [ ] give every pane a link to root/editor main and use that
       instead of statics.  Then maybe times_up() can use pane_too_long()
-- [X] allocate pane->data together with pane.  A single allocation so
-      that we can avoid the cost of a dereference.
-- [X] mark DEF_CMD structs as const - doesn't work due to refcount
 - [ ] teach input to allow a repeat command to be registered so that e.g.
       search/replace and do a bit of work, then ask to be called again.
       input can cancel this on suitable input.
@@ -150,10 +136,6 @@ Core features
       Efalse probably becomes 0.
 - [ ] send warning message when recursive notification is prohibited.
        editor:notify:Message:broadcast
-- [X] detect and limit recursion.
-      Each call creates a frame, and each pane has a link to recent frame
-      If a call happens on a frame with a link, we check that the same
-      'key' isn't already active.
 - [ ] Make DEF_CB really different from DEF_CMD and ensure it is used properly.
 - [ ] is DocLeaf really a good idea?  Maybe panes should have 'leafward'
       pointer separate to 'focus'?  Maybe panes could have optional
@@ -200,9 +182,6 @@ Module features
 
 ### lib-askpass
 
-- [X] New module which server can use to ask for a password.
-      When an external program is run, we pass SSH_ASKPASS=client
-      and SSH_ASKPASS_REQUIRE=force.
 - [ ] have askpass tell shellmode (and others) about the SSH_ASKPASS*
       environment, so they don't need to know it themselves
 - [ ] start-agent command which runs ssh-agent can records the
@@ -210,10 +189,6 @@ Module features
 
 ### lib-linecount
 
-- [X] when used in 'view' mode, stack the counting pane with all the
-      others so it can easily catch view-changed.  In general, make it
-      easier to use this way.  e.g. easier than catching
-      doc:request:doc:CountLines.
 - [ ] handle view:changed properly, and make sure total count changes
       appropriately in notmuch-query-view.  Maybe view:changed should
       report if content changed, or just attributes.
@@ -237,7 +212,7 @@ Module features
 
 - [ ] auto-wrap on a line like this one doesn't recognize all the
   punctuation a the start of the line ... should it?
-
+- [ ] fill mode to handle all punctuation at start of this line
 
 ### render-format
 
@@ -259,7 +234,6 @@ Module features
 
 ### rexel
 
-- [X] don't abort if something looks wrong, just fail.
 - [ ] move to separate git repo and document well.
 - [ ] review return code of rxl_advance().  What should be
       returned if a flag allowed a match, but the char didn't.
@@ -275,9 +249,6 @@ Module features
 
 ### lib-diff
 
-- [X] When viewing diff or merge can get into infinite loop.  Possibly due
-      to edit at end-of-file
-- [X] slowness with large diff - particularly lots of "+" lines at end
 - [ ] highlight white-space errors.
 - [ ] command to apply a hunk to a given document - or to reverse it.
       How much of a hunk?  Selection?  How to record which hunks are done?
@@ -291,46 +262,17 @@ Module features
 
 ### lib-mergeview
 
-- [X] commands to resolve a conflict with numeric args to :A-m
-      negative: discard change, keep original
-      0: if no conflicts remain, wiggle change into place
-      1: ignore conflicts, keep replacement
-      9: if in merge cut patch to copy-buffer
-         if there is a selection, paste in patch with selection as
-         "orig"
-         if no selection - just paste it in with empty orig
-- [X] merge-mode to highlight markers with "space-only" or "no-diff" state
-      Also have green for "no conflicts", but it doesn't stand out.
-      It would be nice if space-only differences didn't stand out so much.
-      That would require different mark-up, or moving a mark around while
-      handling map-attr.
-      But I want to know about blank conflicts for border highlight.
-      So I think I want more markup.
-      So: no-conflict: brighter green
-          space-conflicts: bold blue
-          conflicts: red
-          in text, space conflicts get underline, no inverse
-- [X] Capture '-<' and '->' on the marker lines to move the orig section
-      w.r.t surrounding text, or to prune the before and after sections.
 - [ ] Consider what else can be done with < and > on other markers.
-- [X] Capture :CX:C-x command to cycle through matching places in the
-      three branches.
-- [X] merge-mode automatic detect, enable, goto-first
-       I'm not sure I want this, but probably try it and see
-      Maybe time-limit on search
+- [ ] Capture a new doc-reappeared for when reloaded, and search again
+      for markers.
 
 ### emacs
 
 - [ ] there is no way to count characters in a range, or find how many
       characters into the document I am.  Maybe bytes would be good too.
-- [X] Num-C-l doesn't work if it would require part of a wrapped line
-      off top of screen
-- [X] :C-q to recognise names of Unicode chars: e.g. WASTEBASKET
-       Possibly matches a list which continued :C-q cycles through
 - [ ] :CX-= to look-up unicode name of character if not ASCII
 - [ ] ":C-q ?" or "- :C-q" to open a find dialog with list of unicode
       chars.
-- [X] :C-q when finding unicode chars, allow repeated :C-q to find more
 - [ ] split some generic functionality like arrows and mouse clicks
       into a separate module to be shared with other edit modes.
 - [ ] sort the command names for command-completion?
@@ -355,9 +297,6 @@ Module features
        Surely everything.  Prefix if present, string if active, point always.
 
 #### history
-
-- [X] Make it possible to search through history. Maybe Alt-p only shows
-      lines containing current content.
 
 ### ncurses
 
@@ -386,8 +325,6 @@ Module features
 - [ ] the background "call:" option should report if background was changed.
       An attribute could store chosen information for comparison.
       Would need a 'force' flag.
-- [X] Replace <attr> text </> in markup with SOH attr STX text ETX
-      This also affects lib-markup and others.
 - [ ] I regularly hit problems because ->mdata is not up to date and we render
       to find a cursor and compare with ->mdata and get confusion.  How can I avoid this?
 - [ ] view:changed shouldn't destroy the view, else Move-CursorXY
@@ -407,6 +344,10 @@ Module features
       scaling.
 - [ ] if the first char if a line is marked for <wrap> it disappears
       without cursor.  This is bad.
+
+### lib-markup
+
+- [ ] Disable <hide> if cursor is in the hidden region.
 
 
 ### lib-macro
@@ -487,7 +428,6 @@ Module features
       timestamp updates on the minute.
 - [ ] allow marked-up messages to be given.
 - [ ] Differentiate warnings from info, and blink-screen for warnings.
-- [X] use lib-renderline for the one line, so we have markup support.
 
 ### docs
 
@@ -582,7 +522,6 @@ Module features
 - [ ] make sure Clone actually works for all panes - or remove it
 - [ ] add counter and colour for 'flagged'
 - [ ] if no 'query.current' use "not exclude_tags"
-- [X] change from "saved:" to "query:" after re-organizing my queries.
 - [ ] support selection messages and applying tags
 - [ ] When changing any tag in a thread, or when opening the thread,
       assess thread tags by looking at all matched messages.
@@ -603,6 +542,8 @@ Module features
 
 ###  Notmuch message display
 
+- [ ] notmuch addresses in From: list to have menu to add address to
+      any from-* query
 - [ ] "%d quoted lines" still not quite right.  Moving 'down' past it
       jumps to end of line.
 - [ ] Don't wrap email header lines when cursor isn't on the line - too noisy
@@ -809,7 +750,6 @@ Module features
 
 ### dynamic completion
 
-- [X] provide a drop-down menu with options
 - [ ] unify UI with spell
 
 ### spell-checker
@@ -817,6 +757,8 @@ Module features
 - [ ] Some way for 'c-mode' to report where comments are so they can be spell-checked
 - [ ] drop-down with options
 - [ ] unify UI with dynamic-completion
+- [ ] split range management out of autospell so it can be used by other
+  modules.
 
 ### calculator
 - [ ] regression test
@@ -833,8 +775,7 @@ Module features
 
 ### lib-menu
 
-- [X] popup menu to which we can add entries, pop it at a location, get
-      a selection
+- [ ] Enable lib-menu to show short-cut keys
 - [ ] menu-bar to which we can add menus from which commands are sent
 - [ ] track movement so entry under cursor can be highlighted
 - [ ] support positioning above the target is no space below.
@@ -847,10 +788,6 @@ Module features
 
 ### config
 
-- [X] C config module that reads an ini-style file to set attributes
-      based on path
-- [X] configure "initial_panes"
-- [X] discard old auto-load??
 - [ ] file patterns for "complete" to (optionally) ignore
 - [ ] read .gitignore and add to "ignore" list
 - [ ] top/bottom margin  - "render-vmargin" set on view or doc??
@@ -1218,9 +1155,49 @@ I want:
 - spreadsheet cells for auto calculations.
 - outlining support of course.
 
+Syntax - markdown plus...
+
+Lines:
+- basic paragraph: not indented more than 3 spaces
+- heading: starts # or single line followed by 3 or more - or = on next
+  line
+- bullet list: lines starts '-' in first 4.  Following lines that are
+  indented are included.  Maybe '*' or '+' also do same?? A waste
+- number list: digits period.
+- block-quote: lines start '>'  These nest naturally
+- code: lines indented with no prefix
+- fenced code: line starts ``` then until a close.  Ouch - hard to parse
+  backwards
+- horzontal rule: --- or ___ or *** and nothing else following blank line
+
+- table.  Line start '|' continue to blank line.??
+    A row starts with '|' at start of line and ends with '|' at end of line.
+- formatting info starts ':'
+- image: ![caption](file)
+- reference [label]: link "text" If link in HERE then internal
+  reference.  link can have #label to find label in that file.
+
+Special:
+- is a line ends 2 or more spaces, hard line break.  If 0 or 1, then continue
+
+Intra line:
+ **word** is bold
+ _word_ is italic
+ `word` is monospaced (code)
+ [word] is a link. [word](link) is too
+    or [word](link "title text")
+
+ <url>
+ <user@domian.thing>
+
+ \X  is X literal.  \ * _ `
+
+ $=number[calculation](format)
+
+Formatting controls..
+
 Non-module functionality
 ------------------------
-
 
 ### Documentation
 
