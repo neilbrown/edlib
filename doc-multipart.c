@@ -34,6 +34,11 @@ struct doc_ref {
 #define ADD_REFS(_mark, inc) SET_REFS(_mark, GET_REFS(_mark) + (inc))
 
 #define DOC_DATA_TYPE struct mp_info
+
+#define DOC_NEXT(p,m,r,b) multipart_next_prev(p, m, r, 1, b, ci->str)
+#define DOC_PREV(p,m,r,b) multipart_next_prev(p, m, r, 0, b, ci->str)
+#define DOC_NEXT_DECL(p,m,r,b) multipart_next_prev(p, m, r, int forward, b, const char *str)
+#define DOC_PREV_DECL(p,m,r,b) multipart_next_prev(p, m, r, int forward, b, const char *str)
 #include "core.h"
 
 struct mp_info {
@@ -280,9 +285,11 @@ DEF_CMD(mp_set_ref)
 	return ret;
 }
 
-static int mp_step(struct pane *home safe, struct mark *mark safe,
-		   int forward, int move, const char *str)
+static inline wint_t multipart_next_prev(struct pane *home safe, struct mark *mark safe,
+					 struct doc_ref *r safe,
+					 int forward, bool bytes, const char *str)
 {
+	int move = r == &mark->ref;
 	struct mp_info *mpi = &home->doc_data;
 	struct mark *m1 = NULL;
 	struct mark *m = mark;
@@ -360,31 +367,7 @@ static int mp_step(struct pane *home safe, struct mark *mark safe,
 
 DEF_CMD(mp_char)
 {
-	struct mark *m = ci->mark;
-	struct mark *end = ci->mark2;
-	int steps = ci->num;
-	int forward = steps > 0;
-	int ret = Einval;
-
-	if (!m)
-		return Enoarg;
-	if (end && mark_same(m, end))
-		return 1;
-	if (end && (end->seq < m->seq) != (steps < 0))
-		/* Can never cross 'end' */
-		return Einval;
-	while (steps && ret != CHAR_RET(WEOF) && (!end || !mark_same(m, end))) {
-		ret = mp_step(ci->home, m, forward, 1, ci->str);
-		steps -= forward*2 - 1;
-	}
-	if (end)
-		return 1 + (forward ? ci->num - steps : steps - ci->num);
-	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
-		return ret;
-	if (ci->num && (ci->num2 < 0) == forward)
-		return ret;
-	/* Want the 'next' char */
-	return mp_step(ci->home, m, ci->num2 > 0, 0, ci->str);
+	return do_char_byte(ci);
 }
 
 DEF_CMD(mp_step_part)
