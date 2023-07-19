@@ -49,8 +49,8 @@ struct doc_ref {
 };
 #define DOC_SHARESREF
 #define DOC_DATA_TYPE struct directory
-#define DOC_NEXT dir_next
-#define DOC_PREV dir_prev
+#define DOC_NEXT(d,m,r,b) dir_next(d,r,b)
+#define DOC_PREV(d,m,r,b) dir_prev(d,r,b)
 #include "core.h"
 
 struct dir_ent {

@@ -21,8 +21,8 @@ struct doc_ref {
 
 #define DOC_SHARESREF
 #define DOC_DATA_TYPE struct list
-#define DOC_NEXT list_next
-#define DOC_PREV list_prev
+#define DOC_NEXT(d,m,r,b) list_next(d,r,b)
+#define DOC_PREV(d,m,r,b) list_prev(d,r,b)
 #include "core.h"
 #include "misc.h"
 

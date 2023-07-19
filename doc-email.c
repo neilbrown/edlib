@@ -42,7 +42,8 @@
 #include <stdio.h>
 
 #define PANE_DATA_TYPE struct email_view
-
+#define DOC_NEXT email_next
+#define DOC_PREV email_prev
 #include "core.h"
 #include "misc.h"
 
@@ -980,80 +981,63 @@ static int count_buttons(struct pane *p safe, struct mark *m safe)
 	return cnt;
 }
 
-static int email_step(struct pane *home safe, struct mark *mark safe,
-		      int forward, int move)
+static inline wint_t email_next(struct pane *p safe, struct mark *m safe,
+				struct doc_ref *r safe, bool bytes)
 {
-	struct pane *p = home;
 	struct email_view *evi = &p->data;
+	bool move = r == &m->ref;
 	wint_t ret;
 	int n = -1;
 
-	if (forward) {
-		ret = home_call(p->parent, "doc:char", home,
-				move ? 1 : 0,
-				mark, evi->invis,
-				move ? 0 : 1);
-		n = get_part(p->parent, mark);
-		if (move && is_spacer(n)) {
-			/* Moving in a spacer, If after valid buttons,
-			 * move to end
-			 */
-			wint_t c;
-			unsigned int buttons;
-			buttons = count_buttons(p, mark);
-			while ((c = doc_following(p->parent, mark)) != WEOF
-			       && iswdigit(c) && (c - '0') >= buttons)
-					doc_next(p->parent, mark);
-		}
-	} else {
-		ret = home_call(p->parent, "doc:char", home,
-				move ? -1 : 0,
-				mark, evi->invis,
-				move ? 0 : -1);
-		n = get_part(p->parent, mark);
-		if (is_spacer(n) && move &&
-		    ret != CHAR_RET(WEOF) && iswdigit(ret & 0x1fffff)) {
-			/* Just stepped back over the 9 at the end of a spacer,
-			 * Maybe step further if there aren't 10 buttons.
-			 */
-			unsigned int buttons = count_buttons(p, mark);
-			wint_t c = ret & 0x1fffff;
+	ret = home_call(p->parent, "doc:char", p,
+			move ? 1 : 0,
+			m, evi->invis,
+			move ? 0 : 1);
+	n = get_part(p->parent, m);
+	if (move && is_spacer(n)) {
+		/* Moving in a spacer.  IF after valid buttons,
+		 * move to end.
+		 */
+		wint_t c;
+		unsigned int buttons = count_buttons(p, m);
+		while ((c = doc_following(p->parent, m)) != WEOF &&
+		       iswdigit(c) && (c-'0') >= buttons)
+			doc_next(p->parent, m);
+	}
+	return ret;
+}
 
-			while (c != WEOF && iswdigit(c) && c - '0' >= buttons)
-				c = doc_prev(p->parent, mark);
-			ret = CHAR_RET(c);
-		}
+static inline wint_t email_prev(struct pane *p safe, struct mark *m safe,
+				struct doc_ref *r safe, bool bytes)
+{
+	struct email_view *evi = &p->data;
+	bool move = r == &m->ref;
+	wint_t ret;
+	int n = -1;
+
+	ret = home_call(p->parent, "doc:char", p,
+			move ? -1 : 0,
+			m, evi->invis,
+			move ? 0 : -1);
+	n = get_part(p->parent, m);
+	if (is_spacer(n) && move &&
+	    ret != CHAR_RET(WEOF) && iswdigit(ret & 0x1fffff)) {
+		/* Just stepped back over the 9 at the end of a spacer,
+		 * Maybe step further if there aren't 10 buttons.
+		 */
+		unsigned int buttons = count_buttons(p, m);
+		wint_t c = ret & 0x1fffff;
+
+		while (c != WEOF && iswdigit(c) && c - '0' >= buttons)
+			c = doc_prev(p->parent, m);
+		ret = c;
 	}
 	return ret;
 }
 
 DEF_CMD(email_char)
 {
-	struct mark *m = ci->mark;
-	struct mark *end = ci->mark2;
-	int steps = ci->num;
-	int forward = steps > 0;
-	int ret = Einval;
-
-	if (!m)
-		return Enoarg;
-	if (end && mark_same(m, end))
-		return 1;
-	if (end && (end->seq < m->seq) != (steps < 0))
-		/* Can never cross 'end' */
-		return Einval;
-	while (steps && ret != CHAR_RET(WEOF) && (!end || !mark_same(m, end))) {
-		ret = email_step(ci->home, m, forward, 1);
-		steps -= forward*2 - 1;
-	}
-	if (end)
-		return 1 + (forward ? ci->num - steps : steps - ci->num);
-	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
-		return ret;
-	if (ci->num &&(ci->num2 < 0) == forward)
-		return ret;
-	/* Want the 'next' char */
-	return email_step(ci->home, m, ci->num2 > 0, 0);
+	return do_char_byte(ci);
 }
 
 DEF_CMD(email_content)

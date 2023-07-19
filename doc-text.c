@@ -80,8 +80,8 @@ struct doc_ref {
 };
 struct text;
 #define DOC_DATA_TYPE struct text
-#define DOC_NEXT text_next
-#define DOC_PREV text_prev
+#define DOC_NEXT(d,m,r,b) text_next(d,r,b)
+#define DOC_PREV(d,m,r,b) text_prev(d,r,b)
 #include "core.h"
 #include "misc.h"
 

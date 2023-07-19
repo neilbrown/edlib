@@ -553,8 +553,8 @@ static inline wint_t doc_pending(struct pane *p safe, struct mark *m, int n)
 }
 
 #if defined(DOC_NEXT)
-static inline wint_t DOC_NEXT(struct pane *p safe, struct doc_ref *r safe, bool byte);
-static inline wint_t DOC_PREV(struct pane *p safe, struct doc_ref *r safe, bool byte);
+static inline wint_t DOC_NEXT(struct pane *p safe, struct mark *m, struct doc_ref *r safe, bool byte);
+static inline wint_t DOC_PREV(struct pane *p safe, struct mark *m, struct doc_ref *r safe, bool byte);
 static inline int do_char_byte(const struct cmd_info *ci safe)
 {
 	struct mark *m = ci->mark;
@@ -580,9 +580,9 @@ static inline int do_char_byte(const struct cmd_info *ci safe)
 		mark_step(m, forward);
 		#endif
 		if (forward)
-			ret = DOC_NEXT(p, &m->ref, byte);
+			ret = DOC_NEXT(p, m, &m->ref, byte);
 		else
-			ret = DOC_PREV(p, &m->ref, byte);
+			ret = DOC_PREV(p, m, &m->ref, byte);
 		steps -= forward*2 - 1;
 	}
 	if (end)
@@ -594,9 +594,9 @@ static inline int do_char_byte(const struct cmd_info *ci safe)
 	/* Want the 'next' char */
 	r = m->ref;
 	if (ci->num2 > 0)
-		ret = DOC_NEXT(p, &r, byte);
+		ret = DOC_NEXT(p, m, &r, byte);
 	else
-		ret = DOC_PREV(p, &r, byte);
+		ret = DOC_PREV(p, m, &r, byte);
 	return CHAR_RET(ret);
 }
 #endif

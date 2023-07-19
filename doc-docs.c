@@ -45,8 +45,8 @@ struct doc_ref {
 };
 #define DOC_SHARESREF
 #define DOC_DATA_TYPE struct docs
-#define DOC_NEXT docs_next
-#define DOC_PREV docs_prev
+#define DOC_NEXT(d,m,r,b) docs_next(d,r,b)
+#define DOC_PREV(d,m,r,b) docs_prev(d,r,b)
 #include "core.h"
 
 static struct map *docs_map, *docs_aux_map, *docs_modified_map,

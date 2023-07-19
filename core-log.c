@@ -22,8 +22,8 @@ struct doc_ref {
 	unsigned int o;
 };
 #define DOC_DATA_TYPE struct log
-#define DOC_NEXT log_next
-#define DOC_PREV log_prev
+#define DOC_NEXT(p,m,r,b) log_next(p,r,b)
+#define DOC_PREV(p,m,r,b) log_prev(p,r,b)
 
 #include "core.h"
 #include "internal.h"
