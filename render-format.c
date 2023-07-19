@@ -15,7 +15,10 @@
 #include <stdio.h>
 
 #define PANE_DATA_TYPE struct rf_data
-
+#define DOC_NEXT(p,m,r,b) format_next_prev(p, ci->focus, m, r, 1, b)
+#define DOC_PREV(p,m,r,b) format_next_prev(p, ci->focus, m, r, 0, b)
+#define DOC_NEXT_DECL(p,m,r,b) format_next_prev(p, struct pane *focus safe, m, r, int forward, b)
+#define DOC_PREV_DECL(p,m,r,b) format_next_prev(p, struct pane *focus safe, m, r, int forward, b)
 #include "core.h"
 #include "misc.h"
 
@@ -522,15 +525,13 @@ static void next_line(struct pane *home safe, struct mark *m safe)
 	mark_step(m, 1);
 }
 
-static int format_step(struct pane *home safe, struct pane *focus safe,
-		       struct mark *mark safe,
-		       int num, int num2)
+static inline wint_t format_next_prev(struct pane *home safe, struct pane *focus safe,
+				      struct mark *m safe, struct doc_ref *r safe,
+				      int forward, bool bytes)
 {
 	struct rf_data *rd = &home->data;
 	struct rf_field *rf;
-	struct mark *m = mark;
-	int forward = num;
-	int move = num2;
+	int move = r == &m->ref;
 	int f, o;
 	int margin;
 	int fsize;
@@ -568,7 +569,6 @@ static int format_step(struct pane *home safe, struct pane *focus safe,
 	rf = &rd->fields[f];
 	fsize = field_size(home, focus, m, f, &val);
 	if (move && forward) {
-		mark_step(m, forward);
 		index = normalize(home, focus, m, 1);
 		if (index < 0) {
 			next_line(home, m);
@@ -576,7 +576,6 @@ static int format_step(struct pane *home safe, struct pane *focus safe,
 		}
 		update_offset(m, rd, index);
 	} else if (move && !forward) {
-		mark_step(m, forward);
 		update_offset(m, rd, index);
 	}
 
@@ -626,31 +625,7 @@ static int format_step(struct pane *home safe, struct pane *focus safe,
 
 DEF_CMD(format_char)
 {
-	struct mark *m = ci->mark;
-	struct mark *end = ci->mark2;
-	int steps = ci->num;
-	int forward = steps > 0;
-	int ret = Einval;
-
-	if (!m)
-		return Enoarg;
-	if (end && mark_same(m, end))
-		return 1;
-	if (end && (end->seq < m->seq) != (steps < 0))
-		/* Can never cross 'end' */
-		return Einval;
-	while (steps && ret != CHAR_RET(WEOF) && (!end || !mark_same(m, end))) {
-		ret = format_step(ci->home, ci->focus, m, forward, 1);
-		steps -= forward*2 - 1;
-	}
-	if (end)
-		return 1 + (forward ? ci->num - steps : steps - ci->num);
-	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
-		return ret;
-	if (ci->num &&(ci->num2 < 0) == forward)
-		return ret;
-	/* Want the 'next' char */
-	return format_step(ci->home, ci->focus, m, ci->num2 > 0, 0);
+	return do_char_byte(ci);
 }
 
 DEF_CMD(format_content2)
