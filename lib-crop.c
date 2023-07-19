@@ -11,12 +11,16 @@
 
 #include <stdlib.h>
 #include <string.h>
+
+#define PANE_DATA_TYPE struct crop_data
+
 #include "core.h"
 
 struct crop_data {
 	struct mark *start safe;
 	struct mark *end safe;
 };
+#include "core-pane.h"
 
 static bool in_range(struct mark *m, struct crop_data *cd safe)
 {
@@ -56,7 +60,7 @@ static bool crop(struct mark *m, struct crop_data *cd safe)
 
 DEF_CMD(crop_close)
 {
-	struct crop_data *cd = ci->home->data;
+	struct crop_data *cd = &ci->home->data;
 
 	mark_free(cd->start);
 	mark_free(cd->end);
@@ -66,7 +70,7 @@ DEF_CMD(crop_close)
 DEF_CMD(crop_write)
 {
 	struct pane *p = ci->home->parent;
-	struct crop_data *cd = ci->home->data;
+	struct crop_data *cd = &ci->home->data;
 
 	return home_call(p, ci->key, ci->focus, ci->num,
 			 ci->mark ?: cd->start,
@@ -79,7 +83,7 @@ static int crop_step(struct pane *home safe, struct mark *mark safe,
 		     int num, int num2, const char *key safe)
 {
 	struct pane *p = home->parent;
-	struct crop_data *cd = home->data;
+	struct crop_data *cd = &home->data;
 	int ret;
 
 	/* Always force marks to be in range */
@@ -135,7 +139,7 @@ DEF_CMD(crop_char)
 
 DEF_CMD(crop_clip)
 {
-	struct crop_data *cd = ci->home->data;
+	struct crop_data *cd = &ci->home->data;
 
 	mark_clip(cd->start, ci->mark, ci->mark2, !!ci->num);
 	mark_clip(cd->end, ci->mark, ci->mark2, !!ci->num);
@@ -144,7 +148,7 @@ DEF_CMD(crop_clip)
 
 DEF_CMD(crop_content)
 {
-	struct crop_data *cd = ci->home->data;
+	struct crop_data *cd = &ci->home->data;
 	struct mark *m, *m2;
 	int ret;
 
@@ -168,7 +172,7 @@ DEF_CMD(crop_content)
 DEF_CMD(crop_generic)
 {
 	struct pane *p = ci->home->parent;
-	struct crop_data *cd = ci->home->data;
+	struct crop_data *cd = &ci->home->data;
 	int ret;
 
 	if (!ci->mark && !ci->mark2)
@@ -202,12 +206,11 @@ DEF_CMD(crop_attach)
 		return Enoarg;
 	if (ci->mark->seq >= ci->mark2->seq)
 		return Einval;
-	alloc(cd, pane);
-	p = pane_register(ci->focus, 0, &crop_handle.c, cd);
-	if (!p) {
-		free(cd);
+	p = pane_register(ci->focus, 0, &crop_handle.c);
+	if (!p)
 		return Efail;
-	}
+
+	cd = &p->data;
 	cd->start = mark_dup(ci->mark);
 	cd->end = mark_dup(ci->mark2);
 
@@ -222,7 +225,6 @@ void edlib_init(struct pane *ed safe)
 	crop_map = key_alloc();
 	key_add_prefix(crop_map, "doc:", &crop_generic);
 	key_add(crop_map, "Close", &crop_close);
-	key_add(crop_map, "Free", &edlib_do_free);
 	key_add(crop_map, "doc:write_file", &crop_write);
 	key_add(crop_map, "doc:char", &crop_char);
 	key_add(crop_map, "doc:byte", &crop_char);
