@@ -13,6 +13,9 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>
+
+#define PANE_DATA_TYPE struct rf_data
+
 #include "core.h"
 #include "misc.h"
 
@@ -39,6 +42,8 @@ struct rf_data {
 	void *cache_pos;
 	int cache_field;
 };
+
+#include "core-pane.h"
 
 static inline short FIELD_NUM(int i) { return i >> 16; }
 static inline short FIELD_OFFSET(int i) { return i & 0xFFFF; }
@@ -229,12 +234,11 @@ DEF_CMD(render_line_prev)
 
 DEF_CMD(format_free)
 {
-	struct rf_data *rf = ci->home->data;
+	struct rf_data *rf = &ci->home->data;
 
 	free(rf->attr_cache);
 	free(rf->fields);
 	free(rf->format);
-	unalloc(rf, pane);
 	return 1;
 }
 
@@ -356,7 +360,7 @@ static int field_size(struct pane *home safe, struct pane *focus safe,
 		      struct mark *m safe, int field,
 		      const char **valp safe)
 {
-	struct rf_data *rd = home->data;
+	struct rf_data *rd = &home->data;
 	struct rf_field *rf;
 	const char *val;
 	int l;
@@ -404,7 +408,7 @@ static int field_size(struct pane *home safe, struct pane *focus safe,
 static int normalize(struct pane *home safe, struct pane *focus safe,
 		     struct mark *m safe, int inc)
 {
-	struct rf_data *rd = home->data;
+	struct rf_data *rd = &home->data;
 	int index = m->ref.i;
 	unsigned short f = FIELD_NUM(index);
 	unsigned short o = FIELD_OFFSET(index);
@@ -497,7 +501,7 @@ static void update_offset(struct mark *m safe, struct rf_data *rd safe,
 
 static void prev_line(struct pane *home safe, struct mark *m safe)
 {
-	struct rf_data *rd = home->data;
+	struct rf_data *rd = &home->data;
 
 	/* Move m to end of previous line, just before the newline */
 	if (doc_prev(home->parent, m) == WEOF) {
@@ -511,7 +515,7 @@ static void prev_line(struct pane *home safe, struct mark *m safe)
 
 static void next_line(struct pane *home safe, struct mark *m safe)
 {
-	struct rf_data *rd = home->data;
+	struct rf_data *rd = &home->data;
 
 	doc_next(home->parent, m);
 	update_offset(m, rd, MAKE_INDEX(0, 0));
@@ -522,7 +526,7 @@ static int format_step(struct pane *home safe, struct pane *focus safe,
 		       struct mark *mark safe,
 		       int num, int num2)
 {
-	struct rf_data *rd = home->data;
+	struct rf_data *rd = &home->data;
 	struct rf_field *rf;
 	struct mark *m = mark;
 	int forward = num;
@@ -661,7 +665,7 @@ DEF_CMD(format_content2)
 	 */
 	struct pane *home = ci->home;
 	struct pane *focus = ci->focus;
-	struct rf_data *rd = home->data;
+	struct rf_data *rd = &home->data;
 	struct rf_field *rf;
 	struct mark *m = ci->mark;
 	struct mark *end = ci->mark2;
@@ -793,7 +797,7 @@ DEF_CMD(format_attr)
 	 * Also "format:plain" which formats the line directly
 	 * without the cost of all the lib-markup machinery.
 	 */
-	struct rf_data *rd = ci->home->data;
+	struct rf_data *rd = &ci->home->data;
 	struct mark *m = ci->mark;
 	int previ;
 	int f0, f;
@@ -852,7 +856,7 @@ DEF_CMD(format_attr)
 
 DEF_CMD(format_map)
 {
-	struct rf_data *rd = ci->home->data;
+	struct rf_data *rd = &ci->home->data;
 	struct mark *m = ci->mark;
 	int idx, previ;
 	int f0, f;
@@ -907,7 +911,7 @@ DEF_CMD(format_map)
 
 DEF_CMD(render_line_prev2)
 {
-	struct rf_data *rd = ci->home->data;
+	struct rf_data *rd = &ci->home->data;
 	struct mark *m = ci->mark;
 	struct mark *m2, *mn;
 
@@ -973,21 +977,20 @@ DEF_LOOKUP_CMD(render_format2_handle, rf2_map);
 static struct pane *do_render_format_attach(struct pane *parent safe)
 {
 	struct pane *p;
-	struct rf_data *rf;
 
 	if (call("doc:shares-ref", parent) != 1) {
 		if (!rf_map)
 			render_format_register_map();
 
-		p = pane_register(parent, 0, &render_format_handle.c);
+		p = pane_register(parent, 0, &render_format_handle.c, NULL);
 	} else {
 		if (!rf2_map)
 			render_format_register_map();
 
-		alloc(rf, pane);
-		p = pane_register(parent, 0, &render_format2_handle.c, rf);
+		p = pane_register(parent, 0, &render_format2_handle.c);
 		if (!p)
 			return p;
+
 		if (!pane_attr_get(parent, "format:no-linecount")) {
 			struct pane *p2 = call_ret(pane, "attach-line-count", p);
 			if (p2)
