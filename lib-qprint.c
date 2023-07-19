@@ -20,6 +20,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#define DOC_NEXT qp_next
+#define DOC_PREV qp_prev
 #include "core.h"
 
 static struct map *qp_map safe;
@@ -36,184 +38,164 @@ static int hex(wint_t c)
 	return -1;
 }
 
-static int qp_step(struct pane *home safe, struct mark *mark safe,
-		   int num, int num2)
+static inline wint_t qp_next(struct pane *home safe, struct mark *mark safe,
+			     struct doc_ref *r safe, bool byte)
 {
-	int forward = num;
-	int move = num2;
+	int move = r == &mark->ref;
 	struct pane *p = home->parent;
 	wint_t ch, c2, c3;
 	struct mark *m = mark;
 
-	if (!m)
-		return Enoarg;
-
 retry:
-	if (forward) {
-		if (move)
-			ch = doc_next(p, m);
-		else
-			ch = doc_following(p, m);
-		if (ch != '=' && ch != ' ' && ch != '\t' && ch != '\r') {
-			if (m != mark) {
-				if (move)
-					mark_to_mark(mark, m);
-				mark_free(m);
-			}
-			goto normalize;
-		}
-		if (ch == '\r') {
-			/* assume CR-LF - skip an extra char */
-			if (move)
-				doc_next(p, m);
-			if (m != mark) {
-				if (move)
-					mark_to_mark(mark, m);
-				mark_free(m);
-			}
-			ch = '\n';
-			goto normalize;
-		}
-		if (m == mark)
-			m = mark_dup(m);
-		if (!move)
-			doc_next(p, m);
-		if (ch == '=') {
-			/* CRLF or HexHex expected. */
-			c2 = doc_next(p, m);
-			if (c2 == '\n')
-				goto retry;
-			c3 = doc_next(p, m);
-			if (c2 == '\r' && c3 == '\n')
-				goto retry;
-			if (hex(c2) >= 0 && hex(c3) >= 0) {
-				ch = hex(c2)*16 + hex(c3);
-				if (move)
-					mark_to_mark(mark, m);
-			}
-			mark_free(m);
-			goto normalize;
-		}
-		/* Whitespace, ignore if at eol */
-		if (move)
-			mark_to_mark(mark, m);
-		while ((c2 = doc_next(p, m)) == ' ' || c2 == '\t')
-			;
-		if (c2 == '\r')
-			/* Found the white-space, retry from here and see the '\n' */
-			goto retry;
-		if (c2 == '\n') {
-			/* No \r, just \n.  Step back to see it */
-			doc_prev(p, m);
-			goto retry;
-		}
-		/* Just normal white space */
-		mark_free(m);
-	normalize:
-		if (!move)
-			return CHAR_RET(ch);
-	normalize_more:
-		m = mark;
-		/* If next is "=\n" we need to skip over it. */
-		if (doc_following(p, m) != '=')
-			return CHAR_RET(ch);
-		m = mark_dup(mark);
-		doc_next(p, m);
-		while ((c2 = doc_next(p, m)) == ' ' ||
-		       c2 == '\t' || c2 == '\r')
-			;
-		if (c2 != '\n') {
-			/* Don't need to skip this */
-			mark_free(m);
-			return CHAR_RET(ch);
-		}
-		mark_to_mark(mark, m);
-		mark_free(m);
-		goto normalize_more;
-	} else {
-		if (move)
-			ch = doc_prev(p, m);
-		else
-			ch = doc_prior(p, m);
-		if (ch == '\n') {
-			if (m == mark)
-				m = mark_dup(m);
-			if (!move)
-				doc_prev(p, m);
-			/* '\n', skip '\r' and white space */
-			while ((ch = doc_prior(p, m)) == '\r' ||
-			       ch == ' ' || ch == '\t')
-				doc_prev(p, m);
-			if (ch == '=') {
-				doc_prev(p, m);
-				goto retry;
-			}
+	if (move)
+		ch = doc_next(p, m);
+	else
+		ch = doc_following(p, m);
+	if (ch != '=' && ch != ' ' && ch != '\t' && ch != '\r') {
+		if (m != mark) {
 			if (move)
 				mark_to_mark(mark, m);
 			mark_free(m);
-			return CHAR_RET('\n');
 		}
-		if (hex(ch) < 0) {
-			if (m != mark) {
-				if (move)
-					mark_to_mark(mark, m);
-				mark_free(m);
-			}
-			return CHAR_RET(ch);
+		goto normalize;
+	}
+	if (ch == '\r') {
+		/* assume CR-LF - skip an extra char */
+		if (move)
+			doc_next(p, m);
+		if (m != mark) {
+			if (move)
+				mark_to_mark(mark, m);
+			mark_free(m);
 		}
-		if (m == mark)
-			m = mark_dup(m);
-		else if (move)
-			mark_to_mark(mark, m);
-		if (!move)
-			doc_prev(p, m);
-
-		/* Maybe =HH */
-		c3 = ch;
-		c2 = doc_prev(p, m);
-		if (hex(c2) >= 0) {
-			wint_t ceq = doc_prev(p, m);
-			if (ceq == '=') {
-				/* =HH */
-				ch = hex(c2)*16 + hex(c3);
-				if (move)
-					mark_to_mark(mark, m);
-				mark_free(m);
-				return CHAR_RET(ch);
-			}
+		ch = '\n';
+		goto normalize;
+	}
+	if (m == mark)
+		m = mark_dup(m);
+	if (!move)
+		doc_next(p, m);
+	if (ch == '=') {
+		/* CRLF or HexHex expected. */
+		c2 = doc_next(p, m);
+		if (c2 == '\n')
+			goto retry;
+		c3 = doc_next(p, m);
+		if (c2 == '\r' && c3 == '\n')
+			goto retry;
+		if (hex(c2) >= 0 && hex(c3) >= 0) {
+			ch = hex(c2)*16 + hex(c3);
+			if (move)
+				mark_to_mark(mark, m);
 		}
 		mark_free(m);
-		return CHAR_RET(ch);
+		goto normalize;
 	}
+	/* Whitespace, ignore if at eol */
+	if (move)
+		mark_to_mark(mark, m);
+	while ((c2 = doc_next(p, m)) == ' ' || c2 == '\t')
+		;
+	if (c2 == '\r')
+		/* Found the white-space, retry from here and see the '\n' */
+		goto retry;
+	if (c2 == '\n') {
+		/* No \r, just \n.  Step back to see it */
+		doc_prev(p, m);
+		goto retry;
+	}
+	/* Just normal white space */
+	mark_free(m);
+normalize:
+	if (!move)
+		return ch;
+normalize_more:
+	m = mark;
+	/* If next is "=\n" we need to skip over it. */
+	if (doc_following(p, m) != '=')
+		return ch;
+	m = mark_dup(mark);
+	doc_next(p, m);
+	while ((c2 = doc_next(p, m)) == ' ' ||
+	       c2 == '\t' || c2 == '\r')
+		;
+	if (c2 != '\n') {
+		/* Don't need to skip this */
+		mark_free(m);
+		return ch;
+	}
+	mark_to_mark(mark, m);
+	mark_free(m);
+	goto normalize_more;
+}
+
+static inline wint_t qp_prev(struct pane *home safe, struct mark *mark safe,
+			     struct doc_ref *r safe, bool byte)
+{
+	int move = r == &mark->ref;
+	struct pane *p = home->parent;
+	wint_t ch, c2, c3;
+	struct mark *m = mark;
+
+retry:
+	if (move)
+		ch = doc_prev(p, m);
+	else
+		ch = doc_prior(p, m);
+	if (ch == '\n') {
+		if (m == mark)
+			m = mark_dup(m);
+		if (!move)
+			doc_prev(p, m);
+		/* '\n', skip '\r' and white space */
+		while ((ch = doc_prior(p, m)) == '\r' ||
+		       ch == ' ' || ch == '\t')
+			doc_prev(p, m);
+		if (ch == '=') {
+			doc_prev(p, m);
+			goto retry;
+		}
+		if (move)
+			mark_to_mark(mark, m);
+		mark_free(m);
+		return '\n';
+	}
+	if (hex(ch) < 0) {
+		if (m != mark) {
+			if (move)
+				mark_to_mark(mark, m);
+			mark_free(m);
+		}
+		return ch;
+	}
+	if (m == mark)
+		m = mark_dup(m);
+	else if (move)
+		mark_to_mark(mark, m);
+	if (!move)
+		doc_prev(p, m);
+
+	/* Maybe =HH */
+	c3 = ch;
+	c2 = doc_prev(p, m);
+	if (hex(c2) >= 0) {
+		wint_t ceq = doc_prev(p, m);
+		if (ceq == '=') {
+			/* =HH */
+			ch = hex(c2)*16 + hex(c3);
+			if (move)
+				mark_to_mark(mark, m);
+			mark_free(m);
+			return ch;
+		}
+	}
+	mark_free(m);
+	return ch;
 }
 
 DEF_CMD(qp_char)
 {
-	struct mark *m = ci->mark;
-	struct mark *end = ci->mark2;
-	int steps = ci->num;
-	int forward = steps > 0;
-	int ret = Einval;
-
-	if (!m)
-		return Enoarg;
-	if (end && mark_same(m, end))
-		return 1;
-	if (end && (end->seq < m->seq) != (steps < 0))
-		/* Can never cross 'end' */
-		return Einval;
-	while (steps && ret != CHAR_RET(WEOF) && (!end || !mark_same(m, end))) {
-		ret = qp_step(ci->home, m, forward, 1);
-		steps -= forward*2 - 1;
-	}
-	if (end)
-		return 1 + (forward ? ci->num - steps : steps - ci->num);
-	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
-		return ret;
-	if (ci->num && (ci->num2 < 0) == forward)
-		return ret;
-	/* Want the 'next' char */
-	return qp_step(ci->home, m, ci->num2 > 0, 0);
+	return do_char_byte(ci);
 }
 
 struct qpcb {
