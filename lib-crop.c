@@ -13,7 +13,8 @@
 #include <string.h>
 
 #define PANE_DATA_TYPE struct crop_data
-
+#define DOC_NEXT crop_next
+#define DOC_PREV crop_prev
 #include "core.h"
 
 struct crop_data {
@@ -79,62 +80,56 @@ DEF_CMD(crop_write)
 			 0,0, ci->comm2);
 }
 
-static int crop_step(struct pane *home safe, struct mark *mark safe,
-		     int num, int num2, const char *key safe)
+static inline wint_t crop_next(struct pane *home safe, struct mark *mark safe,
+			       struct doc_ref *r, bool bytes)
 {
 	struct pane *p = home->parent;
 	struct crop_data *cd = &home->data;
+	int move = r == &mark->ref;
 	int ret;
 
 	/* Always force marks to be in range */
 	crop(mark, cd);
 
-	ret = home_call(p, key, home,
-			num2 ? (num ? 1 : -1) : 0,
+	ret = home_call(p, bytes ? "doc:byte" : "doc:char", home,
+			move ? 1 : 0,
 			mark, NULL,
-			num2 ? 0 : (num ? 1 : -1));
+			move ? 0 : 1);
 	if (crop(mark, cd))
-		ret = CHAR_RET(WEOF);
+		ret = WEOF;
 
-	if (num2 == 0) {
-		if (num) {
-			if (mark_same(mark, cd->end))
-				ret = CHAR_RET(WEOF);
-		} else {
-			if (mark_same(mark, cd->start))
-				ret = CHAR_RET(WEOF);
-		}
-	}
+	if (!move && mark_same(mark, cd->end))
+		ret = WEOF;
+	return ret;
+}
+
+static inline wint_t crop_prev(struct pane *home safe, struct mark *mark safe,
+			       struct doc_ref *r, bool bytes)
+{
+	struct pane *p = home->parent;
+	struct crop_data *cd = &home->data;
+	int move = r == &mark->ref;
+	int ret;
+
+	/* Always force marks to be in range */
+	crop(mark, cd);
+
+	ret = home_call(p, bytes ? "doc:byte" : "doc:char", home,
+			move ? -1 : 0,
+			mark, NULL,
+			move ? 0 : -1);
+	if (crop(mark, cd))
+		ret = WEOF;
+
+	if (!move && mark_same(mark, cd->start))
+		ret = WEOF;
+
 	return ret;
 }
 
 DEF_CMD(crop_char)
 {
-	struct mark *m = ci->mark;
-	struct mark *end = ci->mark2;
-	int steps = ci->num;
-	int forward = steps > 0;
-	int ret = Einval;
-
-	if (!m)
-		return Enoarg;
-	if (end && mark_same(m, end))
-		return 1;
-	if (end && (end->seq < m->seq) != (steps < 0))
-		/* Can never cross 'end' */
-		return Einval;
-	while (steps && ret != CHAR_RET(WEOF) && (!end || !mark_same(m, end))) {
-		ret = crop_step(ci->home, m, forward, 1, ci->key);
-		steps -= forward*2 - 1;
-	}
-	if (end)
-		return 1 + (forward ? ci->num - steps : steps - ci->num);
-	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
-		return ret;
-	if (ci->num && (ci->num2 < 0) == forward)
-		return ret;
-	/* Want the 'next' char */
-	return crop_step(ci->home, m, ci->num2 > 0, 0, ci->key);
+	return do_char_byte(ci);
 }
 
 DEF_CMD(crop_clip)
