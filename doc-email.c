@@ -40,8 +40,18 @@
 #include <wctype.h>
 #include <ctype.h>
 #include <stdio.h>
+
+#define PANE_DATA_TYPE struct email_view
+
 #include "core.h"
 #include "misc.h"
+
+struct email_view {
+	int	parts;
+	char	*invis safe;
+};
+
+#include "core-pane.h"
 
 static inline bool is_orig(int p)
 {
@@ -947,17 +957,11 @@ out:
 	return Efail;
 }
 
-struct email_view {
-	int	parts;
-	char	*invis safe;
-};
-
 DEF_CMD(email_view_free)
 {
-	struct email_view *evi = ci->home->data;
+	struct email_view *evi = &ci->home->data;
 
 	free(evi->invis);
-	unalloc(evi, pane);
 	return 1;
 }
 
@@ -980,7 +984,7 @@ static int email_step(struct pane *home safe, struct mark *mark safe,
 		      int forward, int move)
 {
 	struct pane *p = home;
-	struct email_view *evi = p->data;
+	struct email_view *evi = &p->data;
 	wint_t ret;
 	int n = -1;
 
@@ -1058,7 +1062,7 @@ DEF_CMD(email_content)
 	 * what is invisible, marking all spacers as invisible
 	 */
 	struct pane *p = ci->home;
-	struct email_view *evi = p->data;
+	struct email_view *evi = &p->data;
 	char *invis2 = strsave(p, evi->invis);
 	int i;
 
@@ -1074,7 +1078,7 @@ DEF_CMD(email_content)
 DEF_CMD(email_set_ref)
 {
 	struct pane *p = ci->home;
-	struct email_view *evi = p->data;
+	struct email_view *evi = &p->data;
 
 	if (!ci->mark)
 		return Enoarg;
@@ -1086,7 +1090,7 @@ DEF_CMD(email_set_ref)
 DEF_CMD(email_step_part)
 {
 	struct pane *p = ci->home;
-	struct email_view *evi = p->data;
+	struct email_view *evi = &p->data;
 
 	if (!ci->mark)
 		return Enoarg;
@@ -1098,7 +1102,7 @@ DEF_CMD(email_view_get_attr)
 {
 	int p;
 	char *v;
-	struct email_view *evi = ci->home->data;
+	struct email_view *evi = &ci->home->data;
 
 	if (!ci->str || !ci->mark)
 		return Enoarg;
@@ -1124,7 +1128,7 @@ DEF_CMD(email_view_get_attr)
 DEF_CMD(email_view_set_attr)
 {
 	int p;
-	struct email_view *evi = ci->home->data;
+	struct email_view *evi = &ci->home->data;
 
 	if (!ci->str || !ci->mark)
 		return Enoarg;
@@ -1206,7 +1210,10 @@ DEF_CMD(attach_email_view)
 	if (n <= 0 || n > 1000 )
 		return Einval;
 
-	alloc(evi, pane);
+	p = pane_register(ci->focus, 0, &email_view_handle.c);
+	if (!p)
+		return Efail;
+	evi = &p->data;
 	evi->parts = n;
 	evi->invis = calloc(n+1, sizeof(char));
 	for (i = 0; i < n; i++) {
@@ -1219,11 +1226,6 @@ DEF_CMD(attach_email_view)
 		else
 			/* Everything else default to invisible */
 			evi->invis[i] = 'i';
-	}
-	p = pane_register(ci->focus, 0, &email_view_handle.c, evi);
-	if (!p) {
-		free(evi);
-		return Efail;
 	}
 	p2 = call_ret(pane, "attach-line-count", p);
 	if (p2)

@@ -4,10 +4,33 @@ To-do list for edlib
 Current priorities
 ------------------
 
-All of these, except Trivial, are references to todo items elsewhere in
+All of these, except Triage, are references to todo items elsewhere in
 the file.
 
-### Trivial
+### Triage
+
+- [ ] If a pane with shift-disabled has cursor past the right edge, the
+      cursor gets positioned outside the window
+- [ ] when find-file dialog shifts left, it doesn't shift back until
+      cursor is v.close to left, even when the rest of the line is blank
+- [ ] line-count in make output is weird.  Second line can be thousands
+- [ ] Make sometimes doesn't follow output, though usually it does
+- [ ] If dynamic-complete only finds one completion, does it still want
+      a menu?
+- [ ] When merge makes a change, highlight the new content.
+- [ ] Review the options for editing a merge - it doesn't always do what
+      I want.  Maybe have a menu of choices to remind me
+- [ ] cursor is sometimes off-screen when it shouldn't be.  I don't know
+      what cause this yet, but I will try to remember to take notes next
+      time.
+      When seaching backwards and result is just above display, the
+      result doesn't get shown.  Sometimes.
+- [ ] visiting a new file from a 44 popup is weird.
+- [ ] search in history always finds a new history line.  It doesn't
+      check if new patterns still matches this line.
+- [ ] in notmuch cursor should go to search result when changing
+      messages.
+- [ ] menu for address completions in email-compose
 
 - [X] give every pane a link to root/editor main and use that
       instead of statics.  Then maybe times_up() can use pane_too_long()
