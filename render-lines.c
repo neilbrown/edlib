@@ -830,14 +830,14 @@ static int render(struct mark *pm, struct pane *p safe,
 	struct mark *m, *m2;
 	struct xy scale = pane_scale(focus);
 	char *s;
-	int hide_cursor = 0;
-	int cursor_drawn = 0;
+	bool hide_cursor = False;
+	bool cursor_drawn = False;
 	bool refresh_all = rl->shift_left != rl->shift_left_last_refresh;
 
 	rl->shift_left_last_refresh = rl->shift_left;
 	s = pane_attr_get(focus, "hide-cursor");
 	if (s && strcmp(s, "yes") == 0)
-		hide_cursor = 1;
+		hide_cursor = True;
 
 	rl->cols = 0;
 	m = vmark_first(focus, rl->typenum, p);
@@ -893,14 +893,14 @@ static int render(struct mark *pm, struct pane *p safe,
 			draw_line(p, focus, m, len, True);
 			rl->cursor_line = hp->y + hp->cy;
 			curs = pane_mapxy(hp, p, hp->cx, hp->cy, False);
-			if (hp->cx < 0) {
+			if (hp->cx < 0 || hp->cx >= hp->w) {
 				p->cx = -1;
 				p->cy = -1;
 			} else {
 				p->cx = curs.x;
 				p->cy = curs.y;
+				cursor_drawn = True;
 			}
-			cursor_drawn = 1;
 		} else {
 			draw_line(p, focus, m, -1, refresh_all);
 		}

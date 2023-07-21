@@ -9,7 +9,7 @@ the file.
 
 ### Triage
 
-- [ ] If a pane with shift-disabled has cursor past the right edge, the
+- [X] If a pane with shift-disabled has cursor past the right edge, the
       cursor gets positioned outside the window
 - [ ] when find-file dialog shifts left, it doesn't shift back until
       cursor is v.close to left, even when the rest of the line is blank
