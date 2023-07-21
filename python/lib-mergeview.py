@@ -18,6 +18,7 @@ class MergePane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
         self.marks = None
+        self.done_marks = None
         self.wig = None
         self.conflicts = 0
         self.space_conflicts = 0
@@ -83,6 +84,11 @@ class MergePane(edlib.Pane):
         self.call("view:changed", start, m3)
         return 1
 
+    def done(self, focus, start, end):
+        self.done_marks = [ start.dup(), end.dup() ]
+        self.marks = None
+        focus.call("view:changed", self.done_marks[0], self.done_marks[1])
+
     def handle_alt_m(self, key, focus, num, mark, **a):
         "handle:K:A-m"
 
@@ -100,7 +106,7 @@ class MergePane(edlib.Pane):
                 focus.call("doc:EOL", 1, 1, m)
                 # Remove before/after section with markers
                 focus.call("doc:replace", 0, 1, self.marks[1], m)
-                self.marks = None
+                self.done(focus, self.marks[0], self.marks[1])
                 return 1
             if num == 0:
                 # if no conflicts remain, wiggle the merge
@@ -113,7 +119,7 @@ class MergePane(edlib.Pane):
                 m = self.marks[3].dup()
                 focus.call("doc:EOL", 1, 1, m)
                 focus.call("doc:replace", self.marks[0], m, self.wig)
-                self.marks = None
+                self.done(focus, self.marks[0], m)
                 return 1
             if num == 1:
                 focus.call("doc:set-attr", "render:merge-same",
@@ -127,7 +133,7 @@ class MergePane(edlib.Pane):
                 focus.call("doc:EOL", 1, 1, m)
                 # Remove final marker
                 focus.call("doc:replace", 0, 1, self.marks[3], m)
-                self.marks = None
+                self.done(focus, self.marks[2], self.marks[3])
                 return 1
             if num == 9:
                 focus.call("doc:set-attr", "render:merge-same",
@@ -175,6 +181,9 @@ class MergePane(edlib.Pane):
             focus.call("doc:set-attr", "render:merge-same",
                        self.marks[0], self.marks[3])
             self.marks = None
+        if self.done_marks:
+            focus.call("view:changed", self.done_marks[0], self.done_marks[1])
+            self.done_marks = None
 
         if not mark:
             return
@@ -391,16 +400,21 @@ class MergePane(edlib.Pane):
             self.call("event:on-idle", self.remark)
             return 0
 
-    def handle_highlight(self, key, focus, str, str2, mark, comm2, **a):
+    def handle_highlight(self, key, focus, str1, str2, mark, comm2, **a):
         "handle:map-attr"
         if not comm2 or not mark:
             return
+
+        if self.done_marks and str1 == "start-of-line":
+            if mark >= self.done_marks[0] and mark < self.done_marks[1]:
+                comm2("attr:cb", focus, mark, "fg:green-60,inverse", 10000, 220)
+                return
 
         if not self.marks:
             return
         o,b,a,e = self.marks
 
-        if str == "start-of-line":
+        if str1 == "start-of-line":
             if mark == o or mark == b or mark == a or mark == e:
                 if self.conflicts > self.space_conflicts:
                     comm2("attr:cb", focus, mark, "fg:red-40",
@@ -413,7 +427,7 @@ class MergePane(edlib.Pane):
                           0, 102)
             return edlib.Efallthrough
 
-        if str == "render:merge-same":
+        if str1 == "render:merge-same":
             # [ML] len type num {spaces}
             w = str2.split()
             alen = int(w[1])

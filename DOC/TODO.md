@@ -17,7 +17,7 @@ the file.
 - [X] Make sometimes doesn't follow output, though usually it does
 - [X] If dynamic-complete only finds one completion, does it still want
       a menu?
-- [ ] When merge makes a change, highlight the new content.
+- [X] When merge makes a change, highlight the new content.
 - [ ] Review the options for editing a merge - it doesn't always do what
       I want.  Maybe have a menu of choices to remind me
 - [ ] cursor is sometimes off-screen when it shouldn't be.  I don't know
