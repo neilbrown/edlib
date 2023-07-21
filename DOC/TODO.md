@@ -28,7 +28,7 @@ the file.
 - [X] visiting a new file from a 44 popup is weird.
 - [X] search in history always finds a new history line.  It doesn't
       check if new patterns still matches this line.
-- [ ] in notmuch cursor should go to query result when changing
+- [X] in notmuch cursor should go to query result when changing
       messages.
 - [ ] menu for address completions in email-compose
 

@@ -2038,8 +2038,6 @@ class notmuch_master_view(edlib.Pane):
 
         m = p.call("doc:dup-point", 0, edlib.MARK_UNGROUPED, ret='mark')
         p.call("notmuch:select", m, direction)
-        if self.query_pane:
-            self.query_pane.take_focus()
         return 1
 
     def handle_j(self, key, focus, **a):
@@ -3055,6 +3053,7 @@ class notmuch_query_view(edlib.Pane):
                 focus.call("notmuch:select-message", s2, s)
                 self.selmsg = s2
                 self.call("view:changed")
+        self.take_focus()
         return 1
 
     def handle_reposition(self, key, focus, mark, mark2, **a):
