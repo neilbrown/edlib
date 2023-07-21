@@ -362,6 +362,8 @@ static void update_search(struct pane *p safe, struct pane *focus safe,
 	call("view:changed", focus);
 	call("Mode:set-mode", focus, 0, NULL, ":History-search");
 	m = mark_at_point(hi->history, NULL, MARK_UNGROUPED);
+	/* Alway search backwards from the end-of-line of last match */
+	call("doc:EOL", hi->history, 1, m);
 	ret = call("text-search", hi->history, 1, m, buf_final(&hi->search),
 		   hi->search_back);
 	if (ret <= 0) {
@@ -369,6 +371,7 @@ static void update_search(struct pane *p safe, struct pane *focus safe,
 		mark_free(m);
 		return;
 	}
+	/* Leave point at start-of-line */
 	call("doc:EOL", hi->history, -1, m);
 	call("Move-to", hi->history, 0, m);
 	mark_free(m);
