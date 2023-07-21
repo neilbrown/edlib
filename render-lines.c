@@ -726,9 +726,13 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			found_end = step_fore(p, focus, &start, &end,
 					      &y_post, &line_height_post);
 
+		/* This test has "> rl->margin" while found_end test has
+		 * ">= rl->margin" due to the asymmetry of measuring from the
+		 * baseline, not the centreling, of the target text.
+		 */
 		if (!found_start && top && end &&
 		    mark_ordered_or_same(start, top) &&
-		    lines_above >= rl->margin)
+		    lines_above > rl->margin)
 			if (mark_ordered_not_same(top, end) ||
 			    (mark_same(top, end) &&
 			     y_post - rl->tail_height >= y_pre))

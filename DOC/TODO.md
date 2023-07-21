@@ -20,7 +20,7 @@ the file.
 - [X] When merge makes a change, highlight the new content.
 - [ ] Review the options for editing a merge - it doesn't always do what
       I want.  Maybe have a menu of choices to remind me
-- [ ] cursor is sometimes off-screen when it shouldn't be.  I don't know
+- [X] cursor is sometimes off-screen when it shouldn't be.  I don't know
       what cause this yet, but I will try to remember to take notes next
       time.
       When searching backwards and result is just above display, the
