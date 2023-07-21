@@ -3,7 +3,9 @@ rexel
 core
 test_*
 TAGS
+NamesList.txt
 lib/
+bin/
 O/
 /.DEBUG
 /.LEAK
