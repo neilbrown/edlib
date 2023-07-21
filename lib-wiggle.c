@@ -546,6 +546,7 @@ static char *collect_merge(struct merge *merge safe,
 		else if (m->type == Changed)
 			l += copy_words(str+l, &af, m->c, m->cl);
 	}
+	str[l] = 0;
 	return str;
 }
 
