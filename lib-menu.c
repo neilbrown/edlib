@@ -44,9 +44,14 @@ DEF_CMD(menu_reposition)
 	int cols = ci->num2;
 	struct pane *p = call_ret(pane, "ThisPopup", ci->focus);
 
-	if (p && lines != 0 && cols != 0 &&
-	    (lines <= p->h && cols <= p->w))
-		pane_resize(p, p->x, p->y, cols, lines);
+	if (!p || lines <= 0 || cols <= 0)
+		return Efallthrough;
+	if (lines > p->parent->h - p->y)
+		lines = p->parent->h - p->y;
+	if (cols > p->parent->w - p->x)
+		cols = p->parent->w - p->x;
+	/* Add 1 to cols so that if menu gets wider we will see that and resize */
+	pane_resize(p, p->x, p->y, cols+1, lines);
 	return Efallthrough;
 }
 
