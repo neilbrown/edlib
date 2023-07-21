@@ -56,6 +56,7 @@ class compose_email(edlib.Pane):
         edlib.Pane.__init__(self, focus)
         self.view = focus.call("doc:add-view", self) - 1
         self.complete_start = None
+        self.complete_menu = None
         self.find_markers()
         self.p = None
         m, l = self.vmarks(self.view)
@@ -369,6 +370,10 @@ class compose_email(edlib.Pane):
         if not str or not mark or not comm2:
             return edlib.Enoarg
 
+        if str == "render:compose-email-menu":
+            comm2("cb", focus, mark, "menu_here", 1, 250)
+            return 1
+
         if str == "render:rfc822header-wrap":
             comm2("attr:callback", focus, int(str2), mark, "wrap", 30)
             return 1
@@ -417,7 +422,9 @@ class compose_email(edlib.Pane):
         "handle:doc:replace"
         self.complete_start = None
         self.complete_end = None
-        self.complete_list = None
+        if self.complete_menu:
+            self.complete_menu("Window:Close")
+        self.complete_menu = None
         if not mark:
             mark = focus.call("doc:point", ret='mark')
         if not mark2:
@@ -509,15 +516,6 @@ class compose_email(edlib.Pane):
         word = self.prev_addr(st)
         if not word:
             return False
-        if self.complete_start and self.complete_end == m:
-            self.parent.call("doc:replace", self.complete_start, m,
-                             self.complete_list[self.complete_next])
-            self.complete_end.step(0)
-            self.complete_next += 1
-            if self.complete_next >= len(self.complete_list):
-                self.call("Message", "last completion - will cycle around")
-                self.complete_next = 0
-            return True
         if ('@' in word and '.' in word and
             ('>' in word or '<' not in word)):
             # looks convincing - nothing to complete here
@@ -529,6 +527,7 @@ class compose_email(edlib.Pane):
             p.kill()
             p.wait()
         self.call("Message", "Trying to complete %s ..." % word)
+        self.complete_word = word
         self.p = subprocess.Popen(["notmuch-addr", word],
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE)
@@ -546,7 +545,8 @@ class compose_email(edlib.Pane):
                 self.call("Message", "Address expansion gave error: %s" %
                           err.decode('utf-8','ignore'))
                 return True
-            self.call("Message", "No completions found for address %s" % word)
+            self.call("Message",
+                      "No completions found for address %s" % self.complete_word)
             return edlib.Efalse
         pt = focus.call("doc:point", ret='mark')
         if not pt or not self.complete_end or pt != self.complete_end:
@@ -555,24 +555,62 @@ class compose_email(edlib.Pane):
             return edlib.Efalse
         self.complete_start = None
         self.complete_end = None
+        if self.complete_menu:
+            self.complete_menu.call("Window:Close")
+        self.complete_menu = None
         st = pt.dup()
         word = self.prev_addr(st)
         if not word:
             return edlib.Efalse
-        self.complete_list = out.decode('utf-8','ignore').strip().split("\n")
-        if len(self.complete_list) > 1:
+        complete_list = out.decode('utf-8','ignore').strip().split("\n")
+        if len(complete_list) > 1:
             self.call("Message", "%d completions found for address %s"
-                      % (len(self.complete_list), word))
+                      % (len(complete_list), word))
             self.complete_start = st
+            st["render:compose-email-menu"] = "here"
+            mp = self.call("attach-menu", ret='pane')
+            for c in complete_list:
+                mp.call("menu-add", c)
+            mp.call("doc:file", -1)
+            self.complete_menu = mp
+            self.add_notify(mp, "Notify:Close")
             self.complete_end = pt.dup()
-            self.complete_next = 1
+            return edlib.Efalse
         else:
             self.call("Message", "only 1 completion found for address %s"
                       % word)
-        self.parent.call("doc:replace", st, pt, self.complete_list[0])
-        if self.complete_start:
-            self.complete_end.step(0)
+        self.parent.call("doc:replace", st, pt, complete_list[0])
         return edlib.Efalse
+
+    def handle_close(self, key, focus, **a):
+        "handle:Notify:Close"
+        if focus == self.complete_menu:
+            self.complete_menu = None
+        return 1
+
+    def menu_done(self, key, focus, str1, **a):
+        "handle:menu-done"
+        if self.complete_start and str1:
+            self.call("doc:replace", str1, self.complete_end, self.complete_start)
+        self.complete_start = None
+        self.complete_end = None
+        self.complete_menu = None
+        return 1
+
+    def handle_draw(self, key, focus, str2, xy, **a):
+        "handle:Draw:text"
+        if not self.complete_menu or not str2 or ",menu_here" not in str2:
+            return edlib.Efallthrough
+
+        p = self.complete_menu.call("ThisPopup", ret='pane')
+        if p:
+            xy = p.parent.mapxy(focus, xy[0], focus.h)
+            p.x = xy[0]
+            p.y = xy[1]
+            if p.h > p.parent.h - p.y:
+                # FIXME how do I avoid the border provided by lib-view
+                p.h = p.parent.h - p.y
+        return edlib.Efallthrough
 
     def try_cycle_from(self, m):
         start = m.dup()

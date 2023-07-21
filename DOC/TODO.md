@@ -30,7 +30,7 @@ the file.
       check if new patterns still matches this line.
 - [X] in notmuch cursor should go to query result when changing
       messages.
-- [ ] menu for address completions in email-compose
+- [X] menu for address completions in email-compose
 
 - [ ] Change times_up() to use pane_too_long()
 - [ ] change :A-x menu to use doc-list - add sorting
