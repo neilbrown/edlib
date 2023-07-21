@@ -1054,7 +1054,7 @@ static int revalidate_start(struct rl_data *rl safe,
 			while (hp->cx < prefix_len &&
 			       rl->shift_left > 0 &&
 			       shifts++ < 1000 &&
-			       hp->cx + curs_width * 8*curs_width < p->w) {
+			       hp->cx + curs_width * 8 < p->w) {
 				int shift = 8 * curs_width;
 				if (shift > rl->shift_left)
 					shift = rl->shift_left;
