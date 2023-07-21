@@ -14,7 +14,7 @@ the file.
 - [X] when find-file dialog shifts left, it doesn't shift back until
       cursor is v.close to left, even when the rest of the line is blank
 - [X] line-count in make output is weird.  Second line can be thousands
-- [ ] Make sometimes doesn't follow output, though usually it does
+- [X] Make sometimes doesn't follow output, though usually it does
 - [ ] If dynamic-complete only finds one completion, does it still want
       a menu?
 - [ ] When merge makes a change, highlight the new content.

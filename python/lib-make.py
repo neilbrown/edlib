@@ -563,6 +563,7 @@ class MakeViewerPane(edlib.Pane):
         edlib.Pane.__init__(self, focus)
         self.call("doc:request:doc:replaced")
         self.call("doc:request:make-set-match")
+        self.call("doc:request:make-close")
         self.may_follow = True
         # I think I want to start following, but if there are already matches,
         # I really want to go to one of those...  let's try this.
@@ -573,6 +574,12 @@ class MakeViewerPane(edlib.Pane):
         self.call("Move-to", mark, 0, 1)
         # suppress following the next update
         self.may_follow = (num == 1)
+        return 1
+
+    def handle_make_close(self, key, **a):
+        "handle:make-close"
+        # A new doc, so I want to follow
+        self.may_follow = True
         return 1
 
     def handle_enter(self, key, focus, mark, **a):
