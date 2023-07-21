@@ -137,7 +137,7 @@ static void add_markup(struct pane *p, struct mark *start,
 	m = mark_dup(start);
 	while (csl->len) {
 		int st = which ? csl->b : csl->a;
-		const char *startp = afile.list[st].start;
+		const char *startp = afile.list[st].start - afile.list[st].prefix;
 		const char *endp =	afile.list[st + csl->len - 1].start +
 					afile.list[st + csl->len - 1].len;
 		char buf[20];
@@ -336,6 +336,7 @@ DEF_CMD(wiggle_set_common)
 	struct file bfile, afile;
 	struct csl *csl;
 	int ret = Efail;
+	int ignore_blanks = 0 /* IgnoreBlanks */;
 
 	if (!collect(wd->texts[1].text, wd->texts[1].start, wd->texts[1].end,
 		     wd->texts[1].skip, wd->texts[1].choose, &before))
@@ -346,8 +347,8 @@ DEF_CMD(wiggle_set_common)
 		return Enoarg;
 	}
 
-	bfile = wiggle_split_stream(before, ByWord);
-	afile = wiggle_split_stream(after, ByWord);
+	bfile = wiggle_split_stream(before, ByWord | ignore_blanks);
+	afile = wiggle_split_stream(after, ByWord | ignore_blanks);
 	csl = wiggle_diff(bfile, afile, 1);
 	if (csl) {
 		add_markup(wd->texts[1].text, wd->texts[1].start,
@@ -418,7 +419,8 @@ static void add_merge_markup(struct pane *p safe,
 			     struct mark *st,
 			     int skip, int choose,
 			     struct file f, struct merge *merge safe,
-			     const char *attr safe, int which)
+			     const char *attr safe, int which,
+			     int ignore_blanks)
 {
 	struct merge *m;
 	int mergenum;
@@ -428,6 +430,19 @@ static void add_merge_markup(struct pane *p safe,
 		return;
 	st = mark_dup(st);
 
+#if 0
+	LOG("which=%d", which);
+	for (m = merge, mergenum=0; m->type != End; m++, mergenum++) {
+		pos2 = 0;
+		switch(which) {
+		case 0: pos2 = m->a; break;
+		case 1: pos2 = m->b; break;
+		case 2: pos2 = m->c; break;
+		}
+		LOG("M:%d %-10s %d  %d  %d (%d+%d)", mergenum, typenames[m->type], m->al, m->bl, m->cl,
+		    f.list[pos2].prefix, f.list[pos2].len);
+	}
+#endif
 	doskip(p, st, NULL, skip, choose);
 	for (m = merge, mergenum=0; m->type != End; m++, mergenum++) {
 		int len;
@@ -461,8 +476,14 @@ static void add_merge_markup(struct pane *p safe,
 		/* From here for 'len' element in f are 'm->type' */
 		if (!len)
 			continue;
-		cp = f.list[pos].start;
+		cp = f.list[pos].start - f.list[pos].prefix;
 		endcp = f.list[pos+len-1].start + f.list[pos+len-1].len;
+		if (ignore_blanks && endcp) {
+			while (*endcp == ' ' || *endcp == '\t')
+				endcp++;
+			if (*endcp == '\n')
+				endcp++;
+		}
 		pos += len;
 		chars = 0;
 		non_space = False;
@@ -558,6 +579,7 @@ DEF_CMD(wiggle_set_wiggle)
 	struct csl *csl1, *csl2;
 	struct ci info;
 	const char *attr = ci->str ?: "render:wiggle";
+	int ignore_blanks = 0 /*IgnoreBlanks*/;
 
 	if (!collect(wd->texts[0].text, wd->texts[0].start, wd->texts[0].end,
 		     wd->texts[0].skip, wd->texts[0].choose, &ostr))
@@ -574,9 +596,9 @@ DEF_CMD(wiggle_set_wiggle)
 		return Enoarg;
 	}
 
-	of = wiggle_split_stream(ostr, ByWord);
-	bf = wiggle_split_stream(bstr, ByWord);
-	af = wiggle_split_stream(astr, ByWord);
+	of = wiggle_split_stream(ostr, ByWord | ignore_blanks);
+	bf = wiggle_split_stream(bstr, ByWord | ignore_blanks);
+	af = wiggle_split_stream(astr, ByWord | ignore_blanks);
 
 	csl1 = wiggle_diff(of, bf, 1);
 	csl2 = wiggle_diff(bf, af, 1);
@@ -594,15 +616,15 @@ DEF_CMD(wiggle_set_wiggle)
 			add_merge_markup(ci->focus,
 					 wd->texts[0].start,
 					 wd->texts[0].skip, wd->texts[0].choose,
-					 of, info.merger, attr, 0);
+					 of, info.merger, attr, 0, ignore_blanks);
 			add_merge_markup(ci->focus,
 					 wd->texts[1].start,
 					 wd->texts[1].skip, wd->texts[1].choose,
-					 bf, info.merger, attr, 1);
+					 bf, info.merger, attr, 1, ignore_blanks);
 			add_merge_markup(ci->focus,
 					 wd->texts[2].start,
 					 wd->texts[2].skip, wd->texts[2].choose,
-					 af, info.merger, attr, 2);
+					 af, info.merger, attr, 2, ignore_blanks);
 		}
 	}
 
