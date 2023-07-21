@@ -2539,6 +2539,7 @@ DEF_CMD(text_clear)
 		m->ref.c = NULL;
 		m->ref.o = 0;
 	}
+	pane_notify("doc:replaced", ci->home);
 
 	return 1;
 }
