@@ -415,13 +415,13 @@ DEF_CMD(popup_child_notify)
 		return 1;
 restart:
 	list_for_each_entry(old, &p->children, siblings) {
-		if (c->z == 0)
+		if (c->z != 0)
 			/* Ignore */
 			continue;
 		if (old == c)
 			/* This pane is under control... */
 			continue;
-		if (c->damaged & DAMAGED_CLOSED)
+		if (old->damaged & DAMAGED_CLOSED)
 			continue;
 		if (ci->num > 0) {
 			/* Not the pane we just added, so close it */

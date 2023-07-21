@@ -25,7 +25,7 @@ the file.
       time.
       When searching backwards and result is just above display, the
       result doesn't get shown.  Sometimes.
-- [ ] visiting a new file from a 44 popup is weird.
+- [X] visiting a new file from a 44 popup is weird.
 - [ ] search in history always finds a new history line.  It doesn't
       check if new patterns still matches this line.
 - [ ] in notmuch cursor should go to query result when changing
