@@ -11,7 +11,7 @@ the file.
 
 - [X] If a pane with shift-disabled has cursor past the right edge, the
       cursor gets positioned outside the window
-- [ ] when find-file dialog shifts left, it doesn't shift back until
+- [X] when find-file dialog shifts left, it doesn't shift back until
       cursor is v.close to left, even when the rest of the line is blank
 - [ ] line-count in make output is weird.  Second line can be thousands
 - [ ] Make sometimes doesn't follow output, though usually it does

@@ -1035,6 +1035,7 @@ static int revalidate_start(struct rl_data *rl safe,
 		}
 		if (m && m->mdata) {
 			struct pane *hp = m->mdata;
+			int cols;
 			int offset = call_render_line_to_point(focus,
 							       pm, m);
 			measure_line(p, focus, m, offset);
@@ -1043,7 +1044,7 @@ static int revalidate_start(struct rl_data *rl safe,
 			curs_width = pane_attr_get_int(
 				m->mdata, "curs_width", 1);
 
-			while (hp->cx + curs_width >= p->w && shifts++ < 1000) {
+			while (hp->cx + curs_width > p->w && shifts++ < 1000) {
 				int shift = 8 * curs_width;
 				if (shift > hp->cx)
 					shift = hp->cx;
@@ -1051,7 +1052,12 @@ static int revalidate_start(struct rl_data *rl safe,
 				measure_line(p, focus, m, offset);
 				refresh_all = 1;
 			}
-			while (hp->cx < prefix_len &&
+			/* We shift right is cursor is off the left end, or if
+			 * doing so wouldn't hide anything on the right end
+			 */
+			cols = pane_attr_get_int(hp, "width", 0);
+			while ((hp->cx < prefix_len
+				|| cols + curs_width * 8 + curs_width < p->w) &&
 			       rl->shift_left > 0 &&
 			       shifts++ < 1000 &&
 			       hp->cx + curs_width * 8 < p->w) {
@@ -1060,6 +1066,7 @@ static int revalidate_start(struct rl_data *rl safe,
 					shift = rl->shift_left;
 				rl->shift_left -= shift;
 				measure_line(p, focus, m, offset);
+				cols = pane_attr_get_int(hp, "width", 0);
 				refresh_all = 1;
 			}
 		}
