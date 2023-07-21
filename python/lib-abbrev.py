@@ -52,6 +52,23 @@ class AbbrevPane(edlib.Pane):
 
         if not self.completions:
             return 1
+        if len(self.completions) == 1:
+            self.complete_with(self.completions[0])
+            return
+        # find longest prefix
+        p = self.completions[0]
+        for i in range(1, len(self.completions)):
+            c = self.completions[i]
+            while p:
+                if c.startswith(p):
+                    break
+                p = p[:-1]
+            if not p:
+                break
+        if p:
+            self.complete_with(p)
+            return
+        # Need a menu
         self.opening_menu = True
         mp = self.call("attach-menu", (self.parent.cx, self.parent.cy), ret='pane')
         for c in self.completions:
@@ -67,11 +84,14 @@ class AbbrevPane(edlib.Pane):
             self.menu = None
         return 1
 
+    def complete_with(self, str):
+        self.call("doc:replace", str, self.prefix_end, self.prefix_end)
+        self.call("view:changed", self.prefix_start, self.prefix_end)
+
     def menu_done(self, key, focus, str, **a):
         "handle:menu-done"
         if not self.prefix_start:
             return
-        edlib.LOG(key, str)
         if not str:
             # Menu aborted
             self.call("view:changed", self.prefix_start, self.prefix_end)
@@ -80,7 +100,6 @@ class AbbrevPane(edlib.Pane):
             self.call("Message", "")
             return 1
         self.call("doc:replace", str, self.prefix_end, self.prefix_start)
-        self.complete_len = len(str)
         self.call("view:changed", self.prefix_start, self.prefix_end)
         return 1
 
@@ -294,7 +313,7 @@ class AbbrevPane(edlib.Pane):
             self.call("view:changed", self.prefix_start, self.prefix_end)
             self.prefix_start = None
             self.prefix_end = None
-            self.call("Message", "")
+            #self.call("Message", "")
         return edlib.Efallthrough
 
 def abbrev_attach(key, focus, comm2, **a):
