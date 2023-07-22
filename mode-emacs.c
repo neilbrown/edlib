@@ -2072,8 +2072,9 @@ DEF_CB(take_cmd)
 		return Enoarg;
 	cmd = ci->str + 16;
 	if (cr->p) {
-		call("doc:replace", cr->p, 1, NULL, cmd);
-		call("doc:replace", cr->p, 1, NULL, "\n");
+		struct mark *m = vmark_new(cr->p, MARK_UNGROUPED, NULL);
+		call("doc:list-add", cr->p, 0, m);
+		call("doc:set-attr", cr->p, 0, m, "cmd", 0, NULL, cmd);
 	}
 	return 1;
 }
@@ -2089,10 +2090,14 @@ REDEF_CMD(emacs_cmd_complete)
 	s = call_ret(strsave, "doc:get-str", ci->focus);
 	if (!s)
 		s = "";
-	doc = call_ret(pane, "doc:from-text", ci->focus, 0, NULL, "*Command List*");
+	doc = call_ret(pane, "attach-doc-list", ci->focus);
 	if (!doc)
 		return Efail;
+	call("doc:set-name", doc, 0, NULL, "*Command List*");
 	call("doc:set:autoclose", doc, 1);
+	attr_set_str(&doc->attrs, "render-simple", "format");
+	attr_set_str(&doc->attrs, "heading", "");
+	attr_set_str(&doc->attrs, "line-format", "%cmd");
 	cr.c = take_cmd;
 	cr.p = doc;
 	call_comm("keymap:list", ci->focus, &cr.c,
@@ -2100,7 +2105,7 @@ REDEF_CMD(emacs_cmd_complete)
 	pop = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "DM1r");
 	if (!pop)
 		goto fail;
-	p = home_call_ret(pane, cr.p, "doc:attach-view", pop, -1);
+	p = home_call_ret(pane, cr.p, "doc:attach-view", pop, -1, NULL, "simple");
 	if (!p)
 		goto fail_pop;
 	attr_set_str(&p->attrs, "done-key", "Replace");
