@@ -33,7 +33,7 @@ the file.
 - [X] menu for address completions in email-compose
 
 - [X] Change times_up() to use pane_too_long()
-- [ ] change :A-x menu to use doc-list - add sorting
+- [X] change :A-x menu to use doc-list - add sorting
 - [ ] Change render-lines to handle centring and right-align in flush_line
 - [ ] Teach render-lines to pad spaces to left/right align text
 
@@ -275,7 +275,7 @@ Module features
       chars.
 - [ ] split some generic functionality like arrows and mouse clicks
       into a separate module to be shared with other edit modes.
-- [ ] sort the command names for command-completion?
+- [X] sort the command names for command-completion?
        Currently lines are inserted into buffer.  I need to store in
        an array first, then qsort()
 - [ ] Do I want a 'truncated' marker at start/end of line when not

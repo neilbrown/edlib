@@ -2102,6 +2102,7 @@ REDEF_CMD(emacs_cmd_complete)
 	cr.p = doc;
 	call_comm("keymap:list", ci->focus, &cr.c,
 		  0, NULL, "interactive-cmd-");
+	call("doc:list-sort", doc, 0, NULL, "cmd");
 	pop = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "DM1r");
 	if (!pop)
 		goto fail;

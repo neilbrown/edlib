@@ -144,6 +144,109 @@ DEF_CMD(list_add_elmnt)
 	return 1;
 }
 
+static char *key(struct list_head *le, const char *keyattr safe)
+{
+	struct elmnt *e;
+	char *ret;
+	if (le == NULL)
+		return NULL;
+	e = container_of(le, struct elmnt, list);
+	ret = attr_find(e->attrs, keyattr);
+	return ret ?: "";
+}
+
+static void sort_list(struct list_head *lst safe, const char *keyattr safe)
+{
+	struct list_head *de[2];
+	struct list_head *l;
+
+	if (list_empty(lst))
+		return;
+	/* Convert to NULL terminated singly-linked list for sorting */
+	lst->prev->next = safe_cast NULL;
+
+	de[0] = lst->next;
+	de[1] = NULL;
+
+	do {
+		struct list_head ** safe dep[2];
+		struct list_head *d[2];
+		int curr = 0;
+		char *prev = "";
+		int next = 0;
+
+		dep[0] = &de[0];
+		dep[1] = &de[1];
+		d[0] = de[0];
+		d[1] = de[1];
+
+		/* d[0] and d[1] are two lists to be merged and split.
+		 * The results will be put in de[0] and de[1].
+		 * dep[0] and dep[1] are end pointers to de[0] and de[1] so far.
+		 *
+		 * Take least of d[0] and d[1].
+		 * If it is larger than prev, add to
+		 * dep[curr], else swap curr then add
+		 */
+		while (d[0] || d[1]) {
+			char *kn = key(d[next], keyattr);
+			char *kp = key(d[1-next], keyattr);
+			if (kn == NULL ||
+			    (kp != NULL &&
+			     !((strcmp(prev, kp) <= 0)
+			       ^(strcmp(kp, kn) <= 0)
+			       ^(strcmp(kn, prev) <= 0)))
+			) {
+				char *t = kn;
+				kn = kp;
+				kp = t;
+				next = 1 - next;
+			}
+
+			if (!d[next] || !kn)
+				break;
+			if (strcmp(kn, prev) < 0)
+				curr = 1 - curr;
+			prev = kn;
+			*dep[curr] = d[next];
+			dep[curr] = &d[next]->next;
+			d[next] = d[next]->next;
+		}
+		*dep[0] = NULL;
+		*dep[1] = NULL;
+	} while (de[0] && de[1]);
+
+	/* Now re-assemble the doublely-linked list */
+	if (de[0])
+		lst->next = de[0];
+	else
+		lst->next = safe_cast de[1];
+	l = lst;
+
+	while ((void*)l->next) {
+		l->next->prev = l;
+		l = l->next;
+	}
+	l->next = lst;
+	lst->prev = l;
+}
+
+DEF_CMD(list_sort)
+{
+	struct list *l = &ci->home->doc_data;
+	struct mark *m;
+
+	if (!ci->str)
+		return Enoarg;
+	/* First move all marks to end */
+	for (m = mark_first(&l->doc); m ; m = mark_next(m)) {
+		m->ref.p = NULL;
+		m->ref.i = 0;
+	}
+	sort_list(&l->content, ci->str);
+	return 1;
+}
+
 static struct map *list_map;
 DEF_LOOKUP_CMD(list_handle, list_map);
 
@@ -185,6 +288,7 @@ static void list_init_map(void)
 	key_add(list_map, "doc:get-attr", &list_get_attr);
 	key_add(list_map, "doc:shares-ref", &list_shares_ref);
 	key_add(list_map, "doc:list-add", &list_add_elmnt);
+	key_add(list_map, "doc:list-sort", &list_sort);
 	key_add(list_map, "Close", &list_close);
 }
 
