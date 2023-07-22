@@ -9,10 +9,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 #include <wchar.h>
 #include <time.h>
 #include <unistd.h>
 
+#include "core.h"
 #include "safe.h"
 #include "list.h"
 #include "misc.h"
@@ -532,11 +534,23 @@ int utf8_round_len(const char *text safe, int len)
 }
 
 time_t edlib_timing = 0;
-/* Set this to False when using gdb. It must be
- * extern to avoid it being optimised away.
- */
-extern bool edlib_timing_allowed;
-bool edlib_timing_allowed = True;
+
+static int _debugger_present = -1;
+static void _sigtrap_handler(int signum)
+{
+	_debugger_present = 0;
+	signal(SIGTRAP, SIG_DFL);
+}
+
+bool debugger_is_present(void)
+{
+	if (_debugger_present < 0) {
+		_debugger_present = 1;
+		signal(SIGTRAP, _sigtrap_handler);
+		raise(SIGTRAP);
+	}
+	return _debugger_present;
+}
 
 int times_up(void)
 {
@@ -547,6 +561,11 @@ int times_up(void)
 		return 1;
 	now = time(NULL);
 	if (edlib_timing + 15 < now) {
+		/* If running under gdb, then I was probaly delayed
+		 * by single-stepping, so don't through an error
+		 */
+		if (debugger_is_present())
+			return 0;
 		edlib_timing = 1;
 		return 1;
 	}
@@ -555,7 +574,7 @@ int times_up(void)
 
 void time_starts(void)
 {
-	if (edlib_timing_allowed)
+	if (_debugger_present != 1)
 		edlib_timing = time(NULL);
 }
 

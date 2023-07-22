@@ -43,18 +43,20 @@ static inline unsigned int ts_to_ms(struct timespec *ts safe)
 	return ts->tv_nsec / 1000 / 1000 + ts->tv_sec * 1000;
 }
 
+extern bool debugger_is_present(void);
+
 static inline bool pane_too_long(struct pane *p safe, unsigned int msec)
 {
-	extern bool edlib_timing_allowed;
 	struct timespec ts;
 	unsigned int duration;
-	if (!edlib_timing_allowed)
-		return False;
+
 	clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
 	duration = ts_to_ms(&ts) - p->timestamp;
 	if (msec < 100)
 		msec = 100;
-	return (duration > msec);
+	if (duration <= msec)
+		return False;
+	return ! debugger_is_present();
 }
 
 static inline void pane_set_time(struct pane *p safe)
