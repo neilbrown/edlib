@@ -32,7 +32,7 @@ the file.
       messages.
 - [X] menu for address completions in email-compose
 
-- [ ] Change times_up() to use pane_too_long()
+- [X] Change times_up() to use pane_too_long()
 - [ ] change :A-x menu to use doc-list - add sorting
 - [ ] Change render-lines to handle centring and right-align in flush_line
 - [ ] Teach render-lines to pad spaces to left/right align text

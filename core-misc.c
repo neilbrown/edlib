@@ -533,8 +533,6 @@ int utf8_round_len(const char *text safe, int len)
 	return len;
 }
 
-time_t edlib_timing = 0;
-
 static int _debugger_present = -1;
 static void _sigtrap_handler(int signum)
 {
@@ -550,35 +548,4 @@ bool debugger_is_present(void)
 		raise(SIGTRAP);
 	}
 	return _debugger_present;
-}
-
-int times_up(void)
-{
-	time_t now;
-	if (edlib_timing == 0)
-		return 0;
-	if (edlib_timing == 1)
-		return 1;
-	now = time(NULL);
-	if (edlib_timing + 15 < now) {
-		/* If running under gdb, then I was probaly delayed
-		 * by single-stepping, so don't through an error
-		 */
-		if (debugger_is_present())
-			return 0;
-		edlib_timing = 1;
-		return 1;
-	}
-	return 0;
-}
-
-void time_starts(void)
-{
-	if (_debugger_present != 1)
-		edlib_timing = time(NULL);
-}
-
-void time_ends(void)
-{
-	edlib_timing = 0;
 }

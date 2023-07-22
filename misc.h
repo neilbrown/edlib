@@ -98,14 +98,7 @@ void time_stop(enum timetype);
 void time_start_key(const char *key safe);
 void time_stop_key(const char *key safe);
 
-extern time_t edlib_timing;
-int times_up(void);
-void time_starts(void);
-void time_ends(void);
-static inline int times_up_fast(void)
-{
-	return edlib_timing == 1;
-}
+extern bool debugger_is_present(void);
 
 void stat_count(char *name safe);
 

@@ -16,7 +16,9 @@ struct pane {
 	int			refs;
 	/* timestamp is low bits of time in milliseconds when some
 	 * command started.  This makes it easy to check when we
-	 * have done too much work
+	 * have done too much work.
+	 * 0 means nothing is running.
+	 * 1 means time is exhausted
 	 */
 	unsigned int		timestamp;
 
@@ -38,38 +40,36 @@ struct pane {
 	};
 };
 
-static inline unsigned int ts_to_ms(struct timespec *ts safe)
+bool pane_too_long(struct pane *p safe, unsigned int msec);
+void pane_set_time(struct pane *p safe);
+static inline void pane_end_time(struct pane *p safe)
 {
-	return ts->tv_nsec / 1000 / 1000 + ts->tv_sec * 1000;
-}
-
-extern bool debugger_is_present(void);
-
-static inline bool pane_too_long(struct pane *p safe, unsigned int msec)
-{
-	struct timespec ts;
-	unsigned int duration;
-
-	clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
-	duration = ts_to_ms(&ts) - p->timestamp;
-	if (msec < 100)
-		msec = 100;
-	if (duration <= msec)
-		return False;
-	return ! debugger_is_present();
-}
-
-static inline void pane_set_time(struct pane *p safe)
-{
-	struct timespec ts;
-
-	clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
-	p->timestamp = ts_to_ms(&ts);
+	p->timestamp = 0;
 }
 
 static inline struct pane * safe pane_root(struct pane *p safe)
 {
 	return p->root;
+}
+
+static inline void time_starts(struct pane *p safe)
+{
+	pane_set_time(pane_root(p));
+}
+
+static inline void time_ends(struct pane *p safe)
+{
+	pane_end_time(pane_root(p));
+}
+
+static inline bool times_up(struct pane *p safe)
+{
+	return pane_too_long(pane_root(p), 15000);
+}
+
+static inline bool times_up_fast(struct pane *p safe)
+{
+	return pane_root(p)->timestamp == 1;
 }
 
 static inline struct pane *safe pane_leaf(struct pane *p safe)
@@ -129,7 +129,7 @@ static inline int do_call_val(enum target_type type, struct pane *home,
 	case TYPE_pane:
 		if (!home->handle || (home->damaged & DAMAGED_DEAD))
 			return Efail;
-		if (times_up_fast())
+		if (times_up_fast(focus))
 			return Efail;
 		if (home)
 			ci.home = home;
@@ -137,7 +137,7 @@ static inline int do_call_val(enum target_type type, struct pane *home,
 		ret = ci.comm->func(&ci);
 		break;
 	case TYPE_comm:
-		if (times_up_fast())
+		if (times_up_fast(focus))
 			return Efail;
 		if (home)
 			ci.home = home;

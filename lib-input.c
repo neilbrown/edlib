@@ -214,13 +214,13 @@ DEF_CMD(keystroke)
 	m = im->point;
 
 	key = strconcat(ci->home, "K", mode, ci->str);
-	time_starts();
+	time_starts(ci->home);
 	ret = call(key, p, num, m, NULL, num2);
 	if (ret == 0 && (alt = map_key(ci->str)) != NULL) {
 		key = strconcat(ci->home, "K", mode, alt);
 		ret = call(key, p, num, m, NULL, num2);
 	}
-	time_ends();
+	time_ends(ci->home);
 	if (ret < 0)
 		call("Message:default", ci->focus, 0, NULL,
 		     "** Command Failed **");
@@ -351,10 +351,10 @@ DEF_CMD(mouse_event)
 	if (!ms) {
 		int ret;
 		key = strconcat(ci->home, "M", mode, ci->str);
-		time_starts();
+		time_starts(ci->home);
 		ret = call(key, focus, num, NULL, NULL, ex, NULL, NULL,
 			    xy.x, xy.y);
-		time_ends();
+		time_ends(ci->home);
 		return ret;
 	}
 	if (press) {
@@ -395,10 +395,10 @@ DEF_CMD(mouse_event)
 		n[1] = 0;
 		key = strconcat(ci->home, "M", mode, ms->mod, ":", mult,
 				cmd, n);
-		time_starts();
+		time_starts(ci->home);
 		ret = call(key, focus, num, NULL, NULL, ex,
 			   NULL, NULL, xy.x, xy.y);
-		time_ends();
+		time_ends(ci->home);
 		if (ret > 0) {
 			/* If this is 'press', then don't want
 			 * click_on_up.  If this is release, it

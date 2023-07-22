@@ -436,14 +436,14 @@ static int do_comm_call(struct command *comm safe,
 	struct backtrace bt;
 	int ret;
 
-	if (edlib_timing == 1)
+	if (times_up_fast(ci->home))
 		return Efail;
 	if (backtrace_depth > 100) {
 		backtrace_depth = 0;
 		LOG("Recursion limit of 100 reached");
 		LOG_BT();
 		backtrace_depth = 100;
-		edlib_timing = 1;
+		pane_root(ci->home)->timestamp = 1;
 		return Efail;
 	}
 	bt.comm = comm;
@@ -537,7 +537,7 @@ int key_handle(const struct cmd_info *ci safe)
 	if (ci->mark2 && !mark_valid(ci->mark2))
 		return Einval;
 
-	if (times_up())
+	if (times_up(ci->home))
 		return Efail;
 	time_start_key(ci->key);
 	if ((void*) ci->comm) {
