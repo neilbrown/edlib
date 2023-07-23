@@ -688,7 +688,7 @@ char *do_call_strsave(enum target_type type, struct pane *home,
 
 #define CH(f,a,b) f(a,b)
 
-#define _CALL(...) VFUNC(CALL, __VA_ARGS__)
+#define _doCALL(...) VFUNC(CALL, __VA_ARGS__)
 #define CALL15(ret, t_type, target, key, comm2a, focus, num, mark, str,	\
 	       num2, mark2, str2, x, y, comm2) \
 	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2,target), \
@@ -718,7 +718,7 @@ char *do_call_strsave(enum target_type type, struct pane *home,
 	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
 		      key, focus, 0, NULL, NULL, 0, NULL, NULL, 0, 0, NULL, NULL)
 
-#define CALL(ret, t_type, target, key, ...) _CALL(ret, t_type, target, key, NULL, __VA_ARGS__)
+#define CALL(ret, t_type, target, key, ...) _doCALL(ret, t_type, target, key, NULL, __VA_ARGS__)
 
 #define _CCALL(...) VFUNC(CCALL, __VA_ARGS__)
 #define CCALL15(ccache, ret, t_type, target, key, comm2a, focus, num, mark, str, num2, mark2, str2, x, y) \
@@ -761,10 +761,10 @@ char *do_call_strsave(enum target_type type, struct pane *home,
 #define pane_call(_pane, key, ...) CALL(val, pane, _pane, key, ##__VA_ARGS__)
 #define pane_call_ret(_ret, _pane, key, ...) CALL(_ret, pane, _pane, key, ##__VA_ARGS__)
 #define home_call(_home, key, ...) CALL(val, home, _home, key, ##__VA_ARGS__)
-#define home_call_comm(_home, key, _focus, comm, ...) _CALL(val, home, _home, key, comm, _focus, ##__VA_ARGS__)
+#define home_call_comm(_home, key, _focus, comm, ...) _doCALL(val, home, _home, key, comm, _focus, ##__VA_ARGS__)
 #define home_call_ret(_ret, _home, key, ...) CALL(_ret, home, _home, key, ##__VA_ARGS__)
 #define call_ret(_ret, key, _focus, ...) CALL(_ret, focus, _focus, key, _focus, ##__VA_ARGS__)
-#define call_comm(key, _focus, comm, ...) _CALL(val, focus, _focus, key, comm, _focus, ##__VA_ARGS__)
+#define call_comm(key, _focus, comm, ...) _doCALL(val, focus, _focus, key, comm, _focus, ##__VA_ARGS__)
 
 
 #define pane_notify(...) VFUNC(NOTIFY, __VA_ARGS__)

@@ -25,8 +25,8 @@
 	9,8,7,6,5,4,3,2,1,0
 
 // general definition for any function name
-#define _VFUNC_(name, n) name##n
-#define _VFUNC(name, n) _VFUNC_(name, n)
-#define VFUNC(func, ...) _VFUNC(func, __NARG__(__VA_ARGS__)) (__VA_ARGS__)
+#define _vFUNC_(name, n) name##n
+#define _vFUNC(name, n) _vFUNC_(name, n)
+#define VFUNC(func, ...) _vFUNC(func, __NARG__(__VA_ARGS__)) (__VA_ARGS__)
 
 #endif
