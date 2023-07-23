@@ -324,7 +324,7 @@ DEF_CMD(editor_free_marks)
 	while (ei->mark_free_list) {
 		struct mark *m = ei->mark_free_list;
 		ei->mark_free_list = (struct mark*)m->all.next;
-		__mark_free(m);
+		do_mark_free(m);
 	}
 
 	return 1;
@@ -411,7 +411,7 @@ char *strnsave(struct pane *p safe, const char *buf, int len)
 	return s;
 }
 
-char * safe __strconcat(struct pane *p, const char *s1 safe, ...)
+char * safe do_strconcat(struct pane *p, const char *s1 safe, ...)
 {
 	va_list ap;
 	char *s;

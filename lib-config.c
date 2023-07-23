@@ -21,7 +21,7 @@
 
 static void load_config(const char *path safe, void *data);
 
-static bool __glob_match(const char *patn safe, const char *path safe)
+static bool _glob_match(const char *patn safe, const char *path safe)
 {
 	while(1) {
 		switch (*patn) {
@@ -35,10 +35,10 @@ static bool __glob_match(const char *patn safe, const char *path safe)
 			break;
 		case '*':
 			if (patn[1] == '*') {
-				if (__glob_match(patn+2, path))
+				if (_glob_match(patn+2, path))
 					return True;
 			} else {
-				if (__glob_match(patn+1, path))
+				if (_glob_match(patn+1, path))
 					return True;
 				if (*path == '/')
 					return False;
@@ -66,7 +66,7 @@ static bool glob_match(const char *patn safe, const char *path safe)
 		if (sl)
 			path = sl + 1;
 	}
-	ret = __glob_match(patn, path);
+	ret = _glob_match(patn, path);
 	return ret;
 }
 

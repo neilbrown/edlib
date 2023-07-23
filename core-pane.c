@@ -68,18 +68,18 @@ static void pane_init(struct pane *p safe, struct pane *par)
 	p->refs = 1;
 }
 
-static void __pane_check(struct pane *p safe)
+static void _pane_check(struct pane *p safe)
 {
 	struct pane *c;
 	list_for_each_entry(c, &p->children, siblings) {
 		ASSERT(c->parent == p);
-		__pane_check(c);
+		_pane_check(c);
 	}
 }
 
 static void pane_check(struct pane *p safe)
 {
-	__pane_check(pane_root(p));
+	_pane_check(pane_root(p));
 }
 
 DEF_CMD(pane_refresh);
@@ -148,7 +148,7 @@ void pane_damaged(struct pane *p, int type)
 	}
 }
 
-static struct pane *__do_pane_register(struct pane *parent, short z,
+static struct pane *_do_pane_register(struct pane *parent, short z,
 				       struct command *handle safe,
 				       void *data, short data_size)
 {
@@ -184,17 +184,17 @@ static struct pane *__do_pane_register(struct pane *parent, short z,
 	return p;
 }
 
-struct pane *__pane_register(struct pane *parent safe, short z,
-			     struct command *handle safe,
-			     void *data, short data_size)
+struct pane *do_pane_register(struct pane *parent safe, short z,
+			      struct command *handle safe,
+			      void *data, short data_size)
 {
-	return __do_pane_register(parent, z, handle, data, data_size);
+	return _do_pane_register(parent, z, handle, data, data_size);
 }
 
 struct pane *pane_register_root(struct command *handle safe,
 				void *data, short data_size)
 {
-	return __do_pane_register(NULL, 0, handle, data, data_size);
+	return _do_pane_register(NULL, 0, handle, data, data_size);
 }
 
 void pane_update_handle(struct pane *p safe, struct command *handle safe)

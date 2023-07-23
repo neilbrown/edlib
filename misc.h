@@ -91,7 +91,7 @@ enum timetype {
 	TIME_IDLE,
 	TIME_REFRESH,
 	TIME_MISC,
-	__TIME_COUNT,
+	TIME__COUNT,
 };
 void time_start(enum timetype);
 void time_stop(enum timetype);
@@ -116,32 +116,32 @@ struct mempool {
 	struct list_head linkage;
 };
 
-#define MEMPOOL(__name)							\
-	struct mempool mem ## __name = {				\
-		.name = #__name,					\
-		.linkage = LIST_HEAD_INIT(mem ## __name.linkage),	\
+#define MEMPOOL(_name)							\
+	struct mempool mem ## _name = {				\
+		.name = #_name,					\
+		.linkage = LIST_HEAD_INIT(mem ## _name.linkage),	\
 	}
-#define MEMPOOL_DECL(__name) struct mempool mem ## __name;
+#define MEMPOOL_DECL(_name) struct mempool mem ## _name;
 
-void *safe __alloc(struct mempool *pool safe, int size, int zero);
-void __unalloc(struct mempool *pool safe, void *obj, int size);
+void *safe do_alloc(struct mempool *pool safe, int size, int zero);
+void do_unalloc(struct mempool *pool safe, void *obj, int size);
 
 #define alloc(var, pool)						\
-	do { var = __alloc(&mem##pool, sizeof((var)[0]), 1); } while (0)
+	do { var = do_alloc(&mem##pool, sizeof((var)[0]), 1); } while (0)
 
-#define alloc_buf(size, pool) __alloc(&mem##pool, size, 0)
-#define alloc_zbuf(size, pool) __alloc(&mem##pool, size, 1)
+#define alloc_buf(size, pool) do_alloc(&mem##pool, size, 0)
+#define alloc_zbuf(size, pool) do_alloc(&mem##pool, size, 1)
 
 #define unalloc(var, pool)						\
-	do { __unalloc(&mem##pool, var, sizeof((var)[0])); (var)=NULL; } while (0)
+	do { do_unalloc(&mem##pool, var, sizeof((var)[0])); (var)=NULL; } while (0)
 
 #define unalloc_buf(var, size, pool)					\
-	do { __unalloc(&mem##pool, var, size); (var) = NULL; } while(0)
+	do { do_unalloc(&mem##pool, var, size); (var) = NULL; } while(0)
 
 #define unalloc_safe(var, pool)						\
-	do { __unalloc(&mem##pool, var, sizeof((var)[0])); (var)=safe_cast NULL; } while (0)
+	do { do_unalloc(&mem##pool, var, sizeof((var)[0])); (var)=safe_cast NULL; } while (0)
 
 #define unalloc_buf_safe(var, size, pool)				\
-	do { __unalloc(&mem##pool, var, size); (var) = safe_cast NULL; } while(0)
+	do { do_unalloc(&mem##pool, var, size); (var) = safe_cast NULL; } while(0)
 
 #endif /* EDLIB_MISC */

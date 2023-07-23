@@ -553,7 +553,7 @@ static char *grname(int gid)
 	return last_name;
 }
 
-static const char *__dir_get_attr(struct pane *home safe, struct mark *m safe,
+static const char *_dir_get_attr(struct pane *home safe, struct mark *m safe,
 				  const char *attr safe)
 
 {
@@ -692,7 +692,7 @@ DEF_CMD(dir_doc_get_attr)
 
 	if (!m || !attr)
 		return Enoarg;
-	val = __dir_get_attr(ci->home, m, attr);
+	val = _dir_get_attr(ci->home, m, attr);
 
 	if (!val)
 		return Efallthrough;

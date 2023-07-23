@@ -15,7 +15,7 @@ struct mark *do_vmark_first(struct doc *d safe, int view, struct pane *owner saf
 struct mark *do_vmark_last(struct doc *d safe, int view, struct pane *owner safe);
 struct mark *do_vmark_at_or_before(struct doc *d safe, struct mark *m safe, int view, struct pane *owner);
 struct mark *do_mark_at_point(struct mark *pt safe, int view);
-void __mark_free(struct mark *m);
+void do_mark_free(struct mark *m);
 
 struct pane *pane_register_root(struct command *handle safe,
 				void *data, short data_size);

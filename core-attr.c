@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
 
 #endif
 
-static int __attr_find(struct attrset ***setpp safe, const char *key safe,
+static int _attr_find(struct attrset ***setpp safe, const char *key safe,
 		       int *offsetp safe, int keynum)
 {
 	struct attrset **setp safe;
@@ -207,7 +207,7 @@ bool attr_del(struct attrset * *setp safe, const char *key safe)
 	int offset = 0;
 	int cmp;
 
-	cmp = __attr_find(&setp, key, &offset, -1);
+	cmp = _attr_find(&setp, key, &offset, -1);
 
 	if (cmp)
 		/* Not found */
@@ -224,7 +224,7 @@ void attr_del_all(struct attrset * *setp safe, const char *key safe,
 	while (low <= high) {
 		struct attrset *set;
 		int n;
-		int cmp = __attr_find(&setp, key, &offset, low);
+		int cmp = _attr_find(&setp, key, &offset, low);
 
 		if (cmp < 0)
 			/* Nothing more to find */
@@ -251,7 +251,7 @@ char *attr_get_str(struct attrset *set, const char *key safe, int keynum)
 {
 	struct attrset **setp = &set;
 	int offset = 0;
-	int cmp = __attr_find(&setp, key, &offset, keynum);
+	int cmp = _attr_find(&setp, key, &offset, keynum);
 
 	if (cmp != 0 || !*setp)
 		return NULL;
@@ -270,7 +270,7 @@ const char *attr_get_next_key(struct attrset *set, const char *key safe,
 {
 	struct attrset **setp = &set;
 	int offset = 0;
-	int cmp = __attr_find(&setp, key, &offset, keynum);
+	int cmp = _attr_find(&setp, key, &offset, keynum);
 	const char *val;
 
 	if (cmp < 0)
@@ -311,7 +311,7 @@ int attr_set_str_key(struct attrset **setp safe,
 	char nkey[22];
 	int nkeylen = 0;
 
-	cmp = __attr_find(&setp, key, &offset, keynum);
+	cmp = _attr_find(&setp, key, &offset, keynum);
 
 	if (cmp == 0)
 		/* Remove old value */
@@ -537,7 +537,7 @@ void attr_trim(struct attrset **setp safe, int nkey)
 	int offset;
 	struct attrset *set;
 
-	__attr_find(&setp, "", &offset, nkey);
+	_attr_find(&setp, "", &offset, nkey);
 	set = *setp;
 	if (!set)
 		return;

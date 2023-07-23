@@ -61,10 +61,10 @@ static void doc_init(struct doc *d safe)
 	d->refcnt = NULL;
 }
 
-struct pane *__doc_register(struct pane *parent safe,
-			    struct command *handle safe,
-			    struct doc *doc,
-			    unsigned short data_size)
+struct pane *do_doc_register(struct pane *parent safe,
+			     struct command *handle safe,
+			     struct doc *doc,
+			     unsigned short data_size)
 {
 	struct pane *p;
 
@@ -74,7 +74,7 @@ struct pane *__doc_register(struct pane *parent safe,
 
 	/* Documents are always registered against the root */
 	parent = pane_root(parent);
-	p = __pane_register(parent, 0, handle, doc, data_size);
+	p = do_pane_register(parent, 0, handle, doc, data_size);
 	if (!p)
 		return p;
 	if (!doc)

@@ -696,7 +696,7 @@ DEF_CMD(python_close_mark)
 	return 1;
 }
 
-static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds,
+static int do_Pane_init(Pane *self safe, PyObject *args, PyObject *kwds,
 		       Pane **parentp safe,
 		       int *zp safe)
 {
@@ -733,7 +733,7 @@ static int Pane_init(Pane *self safe, PyObject *args, PyObject *kwds)
 {
 	Pane *parent = NULL;
 	int z = 0;
-	int ret = __Pane_init(self, args, kwds, &parent, &z);
+	int ret = do_Pane_init(self, args, kwds, &parent, &z);
 
 	if (ret <= 0)
 		return ret;
@@ -756,7 +756,7 @@ static int Doc_init(Doc *self, PyObject *args, PyObject *kwds)
 {
 	Pane *parent = NULL;
 	int z = 0;
-	int ret = __Pane_init((Pane*safe)self, args, kwds, &parent, &z);
+	int ret = do_Pane_init((Pane*safe)self, args, kwds, &parent, &z);
 
 	if (ret <= 0)
 		return ret;
@@ -764,7 +764,7 @@ static int Doc_init(Doc *self, PyObject *args, PyObject *kwds)
 		return -1;
 
 	self->cmd.func = python_doc_call_func;
-	self->pane = __doc_register(parent->pane, &self->cmd, &self->doc, 0);
+	self->pane = do_doc_register(parent->pane, &self->cmd, &self->doc, 0);
 	if (self->pane)
 		pane_get(self->pane);
 	self->doc.refcnt = mark_refcnt;

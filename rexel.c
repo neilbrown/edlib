@@ -1149,7 +1149,7 @@ static wint_t cvt_oct(const char **sp safe, int maxlen)
 	return rv;
 }
 
-static bool __add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
+static bool _add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
 			int plane, int *planes safe, int *newplane safe)
 {
 	int p;
@@ -1285,11 +1285,11 @@ static bool add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
 {
 	if (!(st->mod & IgnoreCase) ||
 	    !iswalpha(start) || !iswalpha(end))
-		return __add_range(st, start, end, plane, planes, newplane);
-	if (!__add_range(st, towlower(start), towlower(end),
+		return _add_range(st, start, end, plane, planes, newplane);
+	if (!_add_range(st, towlower(start), towlower(end),
 			plane, planes, newplane))
 		return False;
-	return __add_range(st, towupper(start), towupper(end),
+	return _add_range(st, towupper(start), towupper(end),
 			   plane, planes, newplane);
 }
 

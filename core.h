@@ -115,8 +115,8 @@ struct pane *editor_new(void);
 void * safe memsave(struct pane *p safe, const char *buf, int len);
 char *strsave(struct pane *p safe, const char *buf);
 char *strnsave(struct pane *p safe, const char *buf, int len);
-char * safe __strconcat(struct pane *p, const char *s1 safe, ...);
-#define strconcat(p, ...) __strconcat(p, __VA_ARGS__, NULL)
+char * safe do_strconcat(struct pane *p, const char *s1 safe, ...);
+#define strconcat(p, ...) do_strconcat(p, __VA_ARGS__, NULL)
 bool edlib_testing(struct pane *p safe);
 
 /* This is declared here so sparse knows it is global */
@@ -148,7 +148,7 @@ extern struct map *doc_default_cmd safe;
 
 #define CHAR_RET(_c) ((_c & 0x1FFFFF) | 0x200000)
 
-#define is_eol(c) ({int __c = c; __c == '\n' || __c == '\v' || __c == '\f'; })
+#define is_eol(c) ({int _c = c; _c == '\n' || _c == '\v' || _c == '\f'; })
 
 /* Points and Marks */
 
@@ -212,8 +212,8 @@ void mark_to_end(struct pane *p safe, struct mark *m safe, int end);
 void doc_check_consistent(struct doc *d safe);
 void mark_to_mark(struct mark *m safe, struct mark *target safe);
 void mark_to_mark_noref(struct mark *m safe, struct mark *target safe);
-wint_t __doc_step(struct pane *p safe, struct mark *m,
-		  int forward, int move);
+wint_t do_doc_step(struct pane *p safe, struct mark *m,
+		   int forward, int move);
 void mark_step(struct mark *m safe, int forward);
 void mark_step_sharesref(struct mark *m safe, int forward);
 bool marks_validate(struct mark *m1 safe, struct mark *m2 safe);
@@ -448,29 +448,29 @@ enum {
 #define DAMAGED_NEED_CALL (DAMAGED_SIZE | DAMAGED_REFRESH)
 
 struct xy {short x,y;};
-struct pane * __pane_register(struct pane *parent safe, short z,
-			      struct command *handle safe, void *data,
-			      short data_size);
+struct pane * do_pane_register(struct pane *parent safe, short z,
+			       struct command *handle safe, void *data,
+			       short data_size);
 #define pane_register(...) VFUNC(pane_register, __VA_ARGS__)
 #ifdef PANE_DATA_TYPE
-#define pane_register4(p,z,h,d) __pane_register(p,z,h,d,sizeof(d))
-#define pane_register3(p,z,h) __pane_register(p,z,h,NULL, sizeof(PANE_DATA_TYPE))
+#define pane_register4(p,z,h,d) do_pane_register(p,z,h,d,sizeof(d))
+#define pane_register3(p,z,h) do_pane_register(p,z,h,NULL, sizeof(PANE_DATA_TYPE))
 #else
-#define pane_register4(p,z,h,d) __pane_register(p,z,h,d,sizeof((d)[0]))
-#define pane_register3(p,z,h) __pane_register(p,z,h,NULL, 0)
+#define pane_register4(p,z,h,d) do_pane_register(p,z,h,d,sizeof((d)[0]))
+#define pane_register3(p,z,h) do_pane_register(p,z,h,NULL, 0)
 #endif
 
 void pane_update_handle(struct pane *p safe, struct command *handle safe);
 
-struct pane *__doc_register(struct pane *parent safe,
-			    struct command *handle safe,
-			    struct doc *doc,
-			    unsigned short data_size);
+struct pane *do_doc_register(struct pane *parent safe,
+			     struct command *handle safe,
+			     struct doc *doc,
+			     unsigned short data_size);
 
 #ifdef DOC_DATA_TYPE
-#define doc_register(p,h) __doc_register(p, h, NULL, sizeof(DOC_DATA_TYPE))
+#define doc_register(p,h) do_doc_register(p, h, NULL, sizeof(DOC_DATA_TYPE))
 #else
-#define doc_register(p,h,d) __doc_register(p,h,&(d)->doc,sizeof((d)[0]))
+#define doc_register(p,h,d) do_doc_register(p,h,&(d)->doc,sizeof((d)[0]))
 #endif
 
 void pane_reparent(struct pane *p safe, struct pane *newparent safe);
@@ -511,22 +511,22 @@ void pane_free(struct pane *p safe);
 
 static inline wint_t doc_next(struct pane *p safe, struct mark *m)
 {
-	return __doc_step(p, m, 1, 1);
+	return do_doc_step(p, m, 1, 1);
 }
 
 static inline wint_t doc_prev(struct pane *p safe, struct mark *m)
 {
-	return __doc_step(p, m, 0, 1);
+	return do_doc_step(p, m, 0, 1);
 }
 
 static inline wint_t doc_following(struct pane *p safe, struct mark *m)
 {
-	return __doc_step(p, m, 1, 0);
+	return do_doc_step(p, m, 1, 0);
 }
 
 static inline wint_t doc_prior(struct pane *p safe, struct mark *m)
 {
-	return __doc_step(p, m, 0, 0);
+	return do_doc_step(p, m, 0, 0);
 }
 
 static inline wint_t doc_move(struct pane *p safe, struct mark *m, int n)

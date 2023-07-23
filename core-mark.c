@@ -168,7 +168,7 @@ static void point_free(struct mark *p safe)
 		    mark);
 }
 
-void __mark_free(struct mark *m)
+void do_mark_free(struct mark *m)
 {
 	unalloc(m, mark);
 }
@@ -529,8 +529,8 @@ struct mark *doc_new_mark(struct pane *p safe, int view, struct pane *owner)
  * by the doc redirector.
  */
 
-wint_t __doc_step(struct pane *p safe, struct mark *m,
-		  int forward, int move)
+wint_t do_doc_step(struct pane *p safe, struct mark *m,
+		   int forward, int move)
 {
 	int ret;
 	static int dodebug = -1;
@@ -898,7 +898,7 @@ void mark_step_sharesref(struct mark *m safe, int forward)
  * silently skipping over the points.
  */
 
-static struct mark *__vmark_next(struct tlist_head *tl safe)
+static struct mark *_vmark_next(struct tlist_head *tl safe)
 {
 	while (TLIST_TYPE(tl) != GRP_HEAD) {
 		if (TLIST_TYPE(tl) == GRP_LIST) {
@@ -918,7 +918,7 @@ struct mark *vmark_next(struct mark *m safe)
 		return NULL;
 
 	tl = TLIST_PTR(m->view.next);
-	return __vmark_next(tl);
+	return _vmark_next(tl);
 }
 
 static struct mark *vmark_or_point_next(struct mark *m safe, int view)
@@ -945,7 +945,7 @@ static struct mark *vmark_or_point_next(struct mark *m safe, int view)
 	}
 }
 
-static struct mark *__vmark_prev(struct tlist_head *tl safe)
+static struct mark *_vmark_prev(struct tlist_head *tl safe)
 {
 	while (TLIST_TYPE(tl) != GRP_HEAD) {
 		if (TLIST_TYPE(tl) == GRP_LIST) {
@@ -965,7 +965,7 @@ struct mark *vmark_prev(struct mark *m safe)
 		return NULL;
 
 	tl = TLIST_PTR(m->view.prev);
-	return __vmark_prev(tl);
+	return _vmark_prev(tl);
 }
 
 static struct mark *vmark_or_point_prev(struct mark *m safe, int view)
@@ -1112,9 +1112,9 @@ struct mark *do_vmark_at_or_before(struct doc *d safe,
 	if (vm->viewnum == MARK_POINT) {
 		struct point_links *lnk = safe_cast vm->mdata;
 		struct tlist_head *tl = &lnk->lists[view];
-		vm = __vmark_next(tl);
+		vm = _vmark_next(tl);
 		if (!vm)
-			vm = __vmark_prev(tl);
+			vm = _vmark_prev(tl);
 		else if (mark_same(vm, m)) {
 			/* maybe there are even more */
 			struct mark *vm2;

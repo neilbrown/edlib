@@ -651,7 +651,7 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer, char *disp,
  * Return 1 if a terminal boundary is found (trailing --)
  * Return -1 if nothing is found.
  */
-#define is_lws(c) ({int __c2 = c; __c2 == ' ' || __c2 == '\t' || is_eol(__c2); })
+#define is_lws(c) ({int _c2 = c; _c2 == ' ' || _c2 == '\t' || is_eol(_c2); })
 static int find_boundary(struct pane *p safe,
 			 struct mark *start safe, struct mark *end safe,
 			 struct mark *pos,

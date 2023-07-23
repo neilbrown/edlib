@@ -572,7 +572,7 @@ static void handle_selection_request(struct xcbc_info *xci safe,
 #define Sec (1000 * 1000 * 1000)
 #define Msec (1000 * 1000)
 
-static xcb_generic_event_t *__xcb_wait_for_event_timeo(
+static xcb_generic_event_t *_xcb_wait_for_event_timeo(
 	xcb_connection_t *conn, unsigned int request,
 	xcb_generic_error_t **e, int msecs)
 {
@@ -624,9 +624,9 @@ static xcb_generic_event_t *__xcb_wait_for_event_timeo(
 }
 
 #define xcb_wait_for_event_timeo(c, ms)		\
-	__xcb_wait_for_event_timeo(c, 0, NULL, ms)
+	_xcb_wait_for_event_timeo(c, 0, NULL, ms)
 #define xcb_wait_for_reply_timeo(c, rq, e, ms)		\
-	__xcb_wait_for_event_timeo(c, rq, e, ms)
+	_xcb_wait_for_event_timeo(c, rq, e, ms)
 
 #define REPLY_TIMEO 50
 

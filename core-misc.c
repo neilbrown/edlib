@@ -70,9 +70,9 @@ void buf_append_byte(struct buf *b safe, char c)
  * performance measurements
  */
 
-static long long tstart[__TIME_COUNT];
-static int tcount[__TIME_COUNT];
-static long long tsum[__TIME_COUNT];
+static long long tstart[TIME__COUNT];
+static int tcount[TIME__COUNT];
+static long long tsum[TIME__COUNT];
 static int stats_enabled = 1;
 
 static time_t last_dump = 0;
@@ -98,7 +98,7 @@ static const char *tnames[] = {
 void time_start(enum timetype type)
 {
 	struct timespec start;
-	if (type < 0 || type >= __TIME_COUNT || !stats_enabled)
+	if (type < 0 || type >= TIME__COUNT || !stats_enabled)
 		return;
 	clock_gettime(CLOCK_MONOTONIC, &start);
 	tstart[type] = start.tv_sec * NSEC + start.tv_nsec;
@@ -109,7 +109,7 @@ void time_stop(enum timetype type)
 	struct timespec stop;
 	long long nsec;
 
-	if (type < 0 || type >= __TIME_COUNT || !stats_enabled)
+	if (type < 0 || type >= TIME__COUNT || !stats_enabled)
 		return;
 	if (!tstart[type])
 		return;
@@ -155,7 +155,7 @@ static void stat_dump(void)
 		}
 	}
 	fprintf(dump_file, "%ld:", (long)time(NULL));
-	for (i = 0; i< __TIME_COUNT; i++) {
+	for (i = 0; i< TIME__COUNT; i++) {
 		fprintf(dump_file, " %s:%d:%lld", tnames[i], tcount[i],
 			tsum[i] / (tcount[i]?:1));
 		tcount[i] = 0;
@@ -348,7 +348,7 @@ void stat_free(void)
 
 static LIST_HEAD(mem_pools);
 
-void *safe __alloc(struct mempool *pool safe, int size, int zero)
+void *safe do_alloc(struct mempool *pool safe, int size, int zero)
 {
 	void *ret = malloc(size);
 
@@ -363,7 +363,7 @@ void *safe __alloc(struct mempool *pool safe, int size, int zero)
 	return ret;
 }
 
-void __unalloc(struct mempool *pool safe, void *obj, int size)
+void do_unalloc(struct mempool *pool safe, void *obj, int size)
 {
 	if (obj) {
 		pool->bytes -= size;
