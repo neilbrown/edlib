@@ -40,6 +40,7 @@ enum {
 	N2_close_others,/* Last command was close-other, just a 1 can repeat */
 	N2_runmacro,	/* Last command was CX-e, just an 'e' can repeat */
 	N2_shift,	/* Last command was CX-< or CX-> */
+	N2_growx,	/* Last command was CX-{ or CX-} */
 	N2_uniquote,	/* Last command was :C-q inserting a unicode from name */
 };
 static inline int N2(const struct cmd_info *ci safe)
@@ -530,8 +531,6 @@ static struct simple_command {
 } simple_commands[] = {
 	{CMD(emacs_simple), "Window:next", "K:CX-o"},
 	{CMD(emacs_simple), "Window:prev", "K:CX-O"},
-	{CMD(emacs_simple), "Window:x+", "K:CX-}"},
-	{CMD(emacs_simple), "Window:x-", "K:CX-{"},
 	{CMD(emacs_simple), "Window:y+", "K:CX-^"},
 	{CMD(emacs_simple), "Window:split-y", "K:CX-2"},
 	{CMD(emacs_simple), "Window:split-x", "K:CX-3"},
@@ -2722,6 +2721,25 @@ DEF_CMD(emacs_shift_again)
 		return emacs_shift_func(ci);
 }
 
+DEF_CMD(emacs_growx)
+{
+	if (ci->key[strlen(ci->key)-1] == '}')
+		call("Window:x+", ci->focus, ci->num);
+	else
+		call("Window:x-", ci->focus, ci->num);
+	call("Mode:set-num2", ci->focus, N2_growx);
+	call("Message:modal", ci->focus, 0, NULL, "Type { or } to grow again");
+	return 1;
+}
+
+DEF_CMD(emacs_growx_again)
+{
+	if (N2(ci) != N2_growx)
+		return emacs_insert_func(ci);
+	else
+		return emacs_growx_func(ci);
+}
+
 DEF_CMD(emacs_curs_pos)
 {
 	struct mark *c;
@@ -3309,6 +3327,11 @@ static void emacs_init(void)
 	key_add(m, "K:CX->", &emacs_shift);
 	key_add(m, "K-<", &emacs_shift_again);
 	key_add(m, "K->", &emacs_shift_again);
+
+	key_add(m, "K:CX-{", &emacs_growx);
+	key_add(m, "K:CX-}", &emacs_growx);
+	key_add(m, "K-{", &emacs_growx_again);
+	key_add(m, "K-}", &emacs_growx_again);
 
 	key_add(m, "K:C-S", &emacs_start_search);
 	key_add(m, "K:C-R", &emacs_start_search);
