@@ -9,6 +9,10 @@ the file.
 
 ### Triage
 
+- [ ] How to run shell command in "44" window??
+- [X] In c-mode, if ) is at end of line then highlighting it causes the
+      line to wrap
+- [ ] mail compose should refuse to submit email with no valid 'to' address
 - [X] If a pane with shift-disabled has cursor past the right edge, the
       cursor gets positioned outside the window
 - [X] when find-file dialog shifts left, it doesn't shift back until

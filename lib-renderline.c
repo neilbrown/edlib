@@ -811,7 +811,7 @@ DEF_CMD(renderline)
 			}
 		}
 
-		if ((ret == WRAP || x >= p->w - mwidth) &&
+		if ((ret == WRAP || x >= p->w - (wrap ? mwidth : 0)) &&
 		    line[0] != soh && line[0] != ack) {
 			/* No room for more text */
 			if (wrap && *line && *line != '\n') {
