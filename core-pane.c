@@ -62,7 +62,6 @@ static void pane_init(struct pane *p safe, struct pane *par)
 	p->abs_z = 0;
 	p->focus = NULL;
 	p->handle = NULL;
-	p->data = safe_cast NULL;
 	p->damaged = 0;
 	p->attrs = NULL;
 	p->refs = 1;
