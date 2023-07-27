@@ -91,6 +91,7 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] Discard ccache ??
 - [ ] Ensure all panes that should use "Free" properly, and find some
       what to encourage its use.
 - [ ] Add optional unit-test interface for modules.  This should be

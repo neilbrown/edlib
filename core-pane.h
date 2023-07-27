@@ -121,8 +121,10 @@ static inline int do_call_val(enum target_type type, struct pane *home,
 		/* fall-through */
 	case TYPE_focus:
 		if (ccache) {
-			ci.home = ccache->home;
-			ci.comm = ccache->comm;
+			if ((void*)ccache->home)
+				ci.home = ccache->home;
+			if ((void*)ccache->comm)
+				ci.comm = ccache->comm;
 		}
 		ret = key_handle(&ci);
 		break;
