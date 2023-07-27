@@ -1737,7 +1737,11 @@ DEF_CB(shellcb)
 			return 2;
 	}
 	if (strcmp(ci->key, "cb:eof") != 0) {
-		struct pane *par = call_ret(pane, "OtherPane", ci->home);
+		struct pane *par;
+		if (ci->str && strchr(ci->str, 'P'))
+			par = call_ret(pane, "PopupTile", ci->home, 0, NULL, "MD3tsa");
+		else
+			par = call_ret(pane, "OtherPane", ci->home);
 		if (par)
 			home_call(ci->focus, "doc:attach-view", par, 1);
 		return 1;
@@ -1775,7 +1779,7 @@ DEF_CMD(emacs_shell)
 	struct pane *p, *doc, *par, *sc;
 	char *path, *input = NULL;
 	struct pcb cb;
-	int interpolate, pipe;
+	bool interpolate, pipe, popup;
 
 	if (strcmp(ci->key, "Shell Command") != 0) {
 		char *dirname;
@@ -1788,10 +1792,12 @@ DEF_CMD(emacs_shell)
 		dirname = call_ret(strsave, "get-attr", ci->focus, 0, NULL, "dirname");
 		attr_set_str(&p->attrs, "dirname", dirname ?: ".");
 		attr_set_str(&p->attrs, "prompt", "Shell command");
-		if (ci->num != NO_NUMERIC)
-			strcat(aux, "i");
+		if (ci->num == 0 || ci->num == 1)
+			strcat(aux, "i"); // interpolate
+		if (ci->num == 4)
+			strcat(aux, "P"); // popup
 		if (strcmp(ci->key, "K:A-|") == 0)
-			strcat(aux, "p");
+			strcat(aux, "p"); // pipe from selection
 		attr_set_str(&p->attrs, "popup-aux", aux);
 		attr_set_str(&p->attrs, "done-key", "Shell Command");
 		call("doc:set-name", p, 0, NULL, "Shell Command", -1);
@@ -1812,6 +1818,7 @@ DEF_CMD(emacs_shell)
 
 	interpolate = ci->str2 && strchr(ci->str2, 'i');
 	pipe = ci->str2 && strchr(ci->str2, 'p');
+	popup = ci->str2 && strchr(ci->str2, 'P');
 
 	if (pipe) {
 		struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
@@ -1864,10 +1871,14 @@ DEF_CMD(emacs_shell)
 			if (!interpolate)
 				home_call_comm(sc, "shellcmd:set-callback",
 					       ci->focus, &shellcb,
-					       500, NULL, NULL,
+					       500, NULL, popup ? "P": "",
 					       2);
 		} else {
-			par = call_ret(pane, "OtherPane", ci->focus);
+			if (popup)
+				par = call_ret(pane, "PopupTile", ci->focus,
+					       0, NULL, "MD3tsa");
+			else
+				par = call_ret(pane, "OtherPane", ci->focus);
 			if (!par)
 				return Efail;
 			home_call(doc, "doc:attach-view", par, 1);

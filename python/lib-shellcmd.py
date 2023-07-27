@@ -11,6 +11,7 @@ class ShellPane(edlib.Pane):
     def __init__(self, focus, reusable, add_footer=True):
         edlib.Pane.__init__(self, focus)
         self.callback = None
+        self.callback_arg = None
         self.cb_pane = None
         self.cb_lines = 0
         self.line = b''
@@ -120,7 +121,7 @@ class ShellPane(edlib.Pane):
             if self.cb_pane:
                 p = self.cb_pane
                 self.cb_pane = None
-                self.callback("cb:eof", p, ret, self)
+                self.callback("cb:eof", p, ret, self, self.callback_arg)
             if not self.add_footer:
                 pass
             elif not ret:
@@ -142,7 +143,7 @@ class ShellPane(edlib.Pane):
                     p = self.cb_pane
                     self.cb_pane = None
                     self.cb_lines = 0
-                    if self.callback("cb:lines", p, self) > 1:
+                    if self.callback("cb:lines", p, self, self.callback_arg) > 1:
                         # it still wants EOF
                         self.cb_pane = p
             self.call("doc:replace", l[:i+1].decode("utf-8", 'ignore'))
@@ -183,14 +184,16 @@ class ShellPane(edlib.Pane):
             self.call("doc:replace", "\nProcess signalled\n")
         return 1
 
-    def handle_callback(self, key, focus, num, num2, comm2, **a):
+    def handle_callback(self, key, focus, num, num2, str1, comm2, **a):
         "handle:shellcmd:set-callback"
         # comm2 is recorded as a callback to call on focus after
         # num msecs or num2 lines of output.  Callback is called
         # when command finishes if not before
+        # str1 saved and included in the callback
         if not focus or not comm2:
             return edlib.Einval
         self.callback = comm2
+        self.callback_arg = str1
         self.cb_pane = focus
         self.add_notify(focus, "Notify:Close")
         self.cb_lines = num2
@@ -202,7 +205,7 @@ class ShellPane(edlib.Pane):
         if self.cb_pane:
             p = self.cb_pane
             self.cb_pane = None
-            if self.callback("cb:timer", p, self) > 1:
+            if self.callback("cb:timer", p, self, self.callback_arg) > 1:
                 # still want moer
                 self.cb_pane = p
         return edlib.Efalse

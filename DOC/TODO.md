@@ -11,7 +11,7 @@ the file.
 
 - [X] factor our list-sort code.
 - [X] when cx-b and default doc name is v.long, shift gets confused
-- [ ] How to run shell command in "44" window??
+- [X] How to run shell command in "44" window??
 - [X] In c-mode, if ) is at end of line then highlighting it causes the
       line to wrap
 - [ ] mail compose should refuse to submit email with no valid 'to' address
