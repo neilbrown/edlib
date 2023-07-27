@@ -73,77 +73,11 @@ struct directory {
 
 static void get_stat(struct directory *dr safe, struct dir_ent *de safe);
 
-#define nm(le) (list_entry(le, struct dir_ent, lst)->name)
-
-/* Natural merge sort of the linked list of directory names */
-static void sort_list(struct list_head *lst safe)
+static char *key(struct list_head *le, const void *data)
 {
-	struct list_head *de[2];
-	struct list_head *l;
-
-	if (list_empty(lst))
-		return;
-	/* Convert to NULL terminated singly-linked list for sorting */
-	lst->prev->next = safe_cast NULL;
-
-	de[0] = lst->next;
-	de[1] = NULL;
-
-	do {
-		struct list_head ** safe dep[2];
-		struct list_head *d[2];
-		int curr = 0;
-		char *prev = "";
-		int next = 0;
-
-		dep[0] = &de[0];
-		dep[1] = &de[1];
-		d[0] = de[0];
-		d[1] = de[1];
-
-		/* d[0] and d[1] are two lists to be merged and split.
-		 * The results will be put in de[0] and de[1].
-		 * dep[0] and dep[1] are end pointers to de[0] and de[1] so far.
-		 *
-		 * Take least of d[0] and d[1].
-		 * If it is larger than prev, add to
-		 * dep[curr], else swap curr then add
-		 */
-		while (d[0] || d[1]) {
-			if (d[next] == NULL ||
-			    (d[1-next] != NULL &&
-			     !((strcmp(prev, nm(d[1-next])) <= 0)
-			       ^(strcmp(nm(d[1-next]), nm(d[next])) <= 0)
-			       ^(strcmp(nm(d[next]), prev) <= 0)))
-			)
-				next = 1 - next;
-
-			if (!d[next])
-				break;
-			if (strcmp(nm(d[next]), prev) < 0)
-				curr = 1 - curr;
-			prev = nm(d[next]);
-			*dep[curr] = d[next];
-			dep[curr] = &d[next]->next;
-			d[next] = d[next]->next;
-		}
-		*dep[0] = NULL;
-		*dep[1] = NULL;
-	} while (de[0] && de[1]);
-
-	/* Now re-assemble the doublely-linked list */
-	if (de[0])
-		lst->next = de[0];
-	else
-		lst->next = safe_cast de[1];
-	l = lst;
-
-	while ((void*)l->next) {
-		l->next->prev = l;
-		l = l->next;
-	}
-	l->next = lst;
-	lst->prev = l;
+	if (le == NULL)
+		return NULL;
+	return list_entry(le, struct dir_ent, lst)->name;
 }
 
 static bool add_ent(struct list_head *lst safe, struct dirent *de safe)
@@ -186,7 +120,7 @@ static void load_dir(struct list_head *lst safe, int fd)
 		return;
 	while ((res = readdir(dir)) != NULL)
 		add_ent(lst, res);
-	sort_list(lst);
+	sort_list(lst, key, NULL);
 	closedir(dir);
 }
 

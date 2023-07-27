@@ -701,4 +701,82 @@ static inline void tlist_del_init(struct tlist_head *entry safe)
 	     TLIST_TYPE(&pos->member) != (head_type);			\
 	     pos = tlist_prev_entry(pos, member))
 
+/* Natural merge sort of the linked list */
+static inline void sort_list(struct list_head *lst safe,
+			     char * (*key)(struct list_head *le, const void *data),
+			     const void *data)
+{
+	struct list_head *de[2];
+	struct list_head *l;
+
+	if (list_empty(lst))
+		return;
+	/* Convert to NULL terminated singly-linked list for sorting */
+	lst->prev->next = safe_cast NULL;
+
+	de[0] = lst->next;
+	de[1] = NULL;
+
+	do {
+		struct list_head ** safe dep[2];
+		struct list_head *d[2];
+		int curr = 0;
+		char *prev = "";
+		int next = 0;
+
+		dep[0] = &de[0];
+		dep[1] = &de[1];
+		d[0] = de[0];
+		d[1] = de[1];
+
+		/* d[0] and d[1] are two lists to be merged and split.
+		 * The results will be put in de[0] and de[1].
+		 * dep[0] and dep[1] are end pointers to de[0] and de[1] so far.
+		 *
+		 * Take least of d[0] and d[1].
+		 * If it is larger than prev, add to
+		 * dep[curr], else swap curr then add
+		 */
+		while (d[0] || d[1]) {
+			char *kn = key(d[next], data);
+			char *kp = key(d[1-next], data);
+			if (kn == NULL ||
+			    (kp != NULL &&
+			     !((strcmp(prev, kp) <= 0)
+			       ^(strcmp(kp, kn) <= 0)
+			       ^(strcmp(kn, prev) <= 0)))
+			) {
+				char *t = kn;
+				kn = kp;
+				kp = t;
+				next = 1 - next;
+			}
+
+			if (!d[next] || !kn)
+				break;
+			if (strcmp(kn, prev) < 0)
+				curr = 1 - curr;
+			prev = kn;
+			*dep[curr] = d[next];
+			dep[curr] = &d[next]->next;
+			d[next] = d[next]->next;
+		}
+		*dep[0] = NULL;
+		*dep[1] = NULL;
+	} while (de[0] && de[1]);
+
+	/* Now re-assemble the doublely-linked list */
+	if (de[0])
+		lst->next = de[0];
+	else
+		lst->next = safe_cast de[1];
+	l = lst;
+
+	while ((void*)l->next) {
+		l->next->prev = l;
+		l = l->next;
+	}
+	l->next = lst;
+	lst->prev = l;
+}
 #endif /* __LIST_H__ */

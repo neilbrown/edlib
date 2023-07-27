@@ -9,7 +9,7 @@ the file.
 
 ### Triage
 
-- [ ] factor our list-sort code.
+- [X] factor our list-sort code.
 - [X] when cx-b and default doc name is v.long, shift gets confused
 - [ ] How to run shell command in "44" window??
 - [X] In c-mode, if ) is at end of line then highlighting it causes the
