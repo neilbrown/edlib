@@ -728,6 +728,11 @@ DEF_CMD(renderline)
 	else
 		shift_left = 0;
 
+	mwidth = 0;
+	update_line_height_attr(p, focus, &line_height, &ascent, &mwidth,
+				"", "M", scale);
+	rd->curs_width = mwidth;
+
 	if (prefix) {
 		const char *s = prefix + strlen(prefix);
 		update_line_height_attr(p, focus, &line_height, &ascent, NULL,
@@ -754,8 +759,6 @@ DEF_CMD(renderline)
 	 */
 	buf_init(&attr);
 	buf_append(&attr, ',');
-
-	rd->curs_width = 0;
 
 	/* If findxy was requested, ci->x and ci->y tells us
 	 * what to look for, and we return index into line where this

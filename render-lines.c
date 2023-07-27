@@ -628,7 +628,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 
 		curs_width = pane_attr_get_int(
 			start->mdata, "curs_width", 1);
-		if (curs_width < 0)
+		if (curs_width <= 0)
 			curs_width = 1;
 		while (!rl->do_wrap && !rl->shift_locked &&
 		       hp->cx + curs_width >= p->w) {
