@@ -806,6 +806,16 @@ class compose_email(edlib.Pane):
                 except:
                     pass
 
+        if not msg['from']:
+            self.call("Message", "No From: line in message - cannot send")
+            return edlib.Efail
+        if not msg['subject']:
+            self.call("Message", "No Subject: line in message - cannot send")
+            return edlib.Efail
+        if not msg['to'] and not msg['cc']:
+            self.call("Message", "No recipients (To: or Cc:) in message - cannot send")
+            return edlib.Efail
+
         # Look for attachments
         while m.next():
             s = m.next()

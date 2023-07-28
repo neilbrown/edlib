@@ -14,7 +14,7 @@ the file.
 - [X] How to run shell command in "44" window??
 - [X] In c-mode, if ) is at end of line then highlighting it causes the
       line to wrap
-- [ ] mail compose should refuse to submit email with no valid 'to' address
+- [X] mail compose should refuse to submit email with no valid 'to' address
 - [X] If a pane with shift-disabled has cursor past the right edge, the
       cursor gets positioned outside the window
 - [X] when find-file dialog shifts left, it doesn't shift back until
@@ -42,6 +42,7 @@ the file.
 - [X] change :A-x menu to use doc-list - add sorting
 - [ ] Change render-lines to handle centring and right-align in flush_line
 - [ ] Teach render-lines to pad spaces to left/right align text
+- [ ] revise *Welcome* page
 
 ### Small
 
