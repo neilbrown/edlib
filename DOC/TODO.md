@@ -91,7 +91,7 @@ Requirements for a v1.0 release
 Core features
 -------------
 
-- [ ] Discard ccache ??
+- [X] Discard ccache ??
 - [ ] Ensure all panes that should use "Free" properly, and find some
       what to encourage its use.
 - [ ] Add optional unit-test interface for modules.  This should be
@@ -186,6 +186,21 @@ Core features
 
 Module features
 ---------------
+
+### render-stack
+
+   My idea is to have a generic rendering pane which draws row or column
+   of other panes.  Maybe a doc-list describes those panes with attrs
+   identifying the doc, the pos in the doc, the view.
+   Marks only identify the panes, not anything in the pane. (maybe).
+   I want to use this for:
+        - menu bar - as stack of menu triggers
+        - presenter thumbnails
+        - image thumbnails
+
+   However this *could* be render-lines which stacks lib-renderline
+   panes all on the same document.  This wouldn't use an attribute to
+   identify the location in the doc, so I'm not 100% sure of this
 
 ### lib-askpass
 

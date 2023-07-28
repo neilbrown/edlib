@@ -871,7 +871,7 @@ DEF_CB(docs_callback_lookup)
 			   ci->key, ci->focus,
 			   ci->num, ci->mark, ci->str,
 			   ci->num2, ci->mark2, ci->str2,
-			   ci->x, ci->y, ci->comm2, NULL);
+			   ci->x, ci->y, ci->comm2);
 }
 
 DEF_CMD(attach_docs)

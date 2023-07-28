@@ -863,7 +863,6 @@ DEF_CMD(doc_default_content)
 	 * accurate mark.
 	 */
 	struct mark *m = ci->mark;
-	struct commcache dchar = CCINIT;
 	int nxt;
 	char *cmd = "doc:char";
 
@@ -873,11 +872,11 @@ DEF_CMD(doc_default_content)
 	if (strcmp(ci->key, "doc:content-bytes") == 0)
 		cmd = "doc:byte";
 
-	nxt = ccall(&dchar, cmd, ci->home, 1, m);
+	nxt = call(cmd, ci->home, 1, m);
 	while (nxt > 0 && nxt != CHAR_RET(WEOF) &&
 	       (!ci->mark2 || mark_ordered_or_same(m, ci->mark2)) &&
 	       comm_call(ci->comm2, "consume", ci->home, (nxt & 0x1FFFF), m) > 0)
-		nxt = ccall(&dchar, cmd, ci->home, 1, m);
+		nxt = call(cmd, ci->home, 1, m);
 
 	mark_free(m);
 	return nxt < 0 ? nxt : 1;

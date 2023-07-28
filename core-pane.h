@@ -97,8 +97,7 @@ static inline int do_call_val(enum target_type type, struct pane *home,
 			      const char *key safe, struct pane *focus safe,
 			      int num,  struct mark *m,  const char *str,
 			      int num2, struct mark *m2, const char *str2,
-			      int x, int y, struct command *comm2b,
-			      struct commcache *ccache)
+			      int x, int y, struct command *comm2b)
 {
 	struct cmd_info ci = {.key = key, .focus = focus, .home = focus,
 			      .num = num, .mark = m, .str = str,
@@ -120,12 +119,6 @@ static inline int do_call_val(enum target_type type, struct pane *home,
 			ci.home = home;
 		/* fall-through */
 	case TYPE_focus:
-		if (ccache) {
-			if ((void*)ccache->home)
-				ci.home = ccache->home;
-			if ((void*)ccache->comm)
-				ci.comm = ccache->comm;
-		}
 		ret = key_handle(&ci);
 		break;
 	case TYPE_pane:
@@ -146,12 +139,7 @@ static inline int do_call_val(enum target_type type, struct pane *home,
 		ci.comm = comm2a;
 		ci.comm2 = comm2b;
 		ret = ci.comm->func(&ci);
-		ccache = NULL;
 		break;
-	}
-	if (ccache) {
-		ccache->comm = ci.comm;
-		ccache->home = ci.home;
 	}
 	return ret;
 }
