@@ -873,11 +873,11 @@ DEF_CMD(tile_window_scale_relative)
 	if (rpt > 10) rpt = 10;
 	if (rpt < -10) rpt = -10;
 	while (rpt > 0) {
-		scale = scale * 11/10;
+		scale = scale * 12/10;
 		rpt -= 1;
 	}
 	while (rpt < 0) {
-		scale = scale * 9 / 10;
+		scale = scale * 10/ 12;
 		rpt += 1;
 	}
 

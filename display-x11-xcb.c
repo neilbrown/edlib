@@ -336,7 +336,7 @@ static void parse_attrs(
 	char *fg = NULL, *bg = NULL;
 	bool ul = False;
 	bool inv = False;
-	int size = 10*1000;
+	int size = 12*1000;
 	PangoFontDescription *fd = NULL;
 	PangoStyle style = PANGO_STYLE_NORMAL;
 	PangoVariant variant = PANGO_VARIANT_NORMAL;
@@ -345,7 +345,7 @@ static void parse_attrs(
 	if (fdp) {
 		fd = pango_font_description_new();
 		*fdp = fd;
-		pango_font_description_set_family_static(fd, "mono");
+		pango_font_description_set_family_static(fd, "monospace");
 	}
 
 	while ((word = strsep(&ap, ",")) != NULL) {
@@ -415,7 +415,7 @@ static void parse_attrs(
 	} else if (bgp)
 		bgp->g = -1;
 	if (fd) {
-		pango_font_description_set_size(fd, size * scale / PANGO_SCALE);
+		pango_font_description_set_size(fd, PANGO_SCALE * size /1000 * scale / 1000);
 		if (style != PANGO_STYLE_NORMAL)
 			pango_font_description_set_style(fd, style);
 		if (variant != PANGO_VARIANT_NORMAL)
@@ -1839,7 +1839,7 @@ static struct pane *xcb_display_init(const char *d safe,
 	if (!fd)
 		goto abort;
 	xd->fd = fd;
-	pango_font_description_set_family(xd->fd, "mono");
+	pango_font_description_set_family(xd->fd, "monospace");
 	pango_font_description_set_size(xd->fd, 12 * PANGO_SCALE);
 
 	layout = pango_cairo_create_layout(xd->cairo);
