@@ -25,6 +25,8 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <wctype.h>
+
+#define PANE_DATA_TYPE struct rline_data
 #include "core.h"
 #include "misc.h"
 
@@ -50,6 +52,7 @@ struct rline_data {
 	const char	*line;
 	int		curspos;
 };
+#include "core-pane.h"
 
 enum {
 	OK = 0,
@@ -652,7 +655,7 @@ static void set_xypos(struct render_list *rlst,
 DEF_CMD(renderline)
 {
 	struct pane *p = ci->home;
-	struct rline_data *rd = p->data;
+	struct rline_data *rd = &p->data;
 	struct pane *focus = ci->focus;
 	const char *line = rd->line;
 	int dodraw = (strcmp(ci->key, "render-line:draw") == 0 ||
@@ -1091,7 +1094,7 @@ DEF_CMD(renderline)
 
 DEF_CMD(renderline_get)
 {
-	struct rline_data *rd = ci->home->data;
+	struct rline_data *rd = &ci->home->data;
 	char buf[20];
 	const char *val = buf;
 
@@ -1149,7 +1152,7 @@ static char *cvt(char *str safe)
 
 DEF_CMD(renderline_set)
 {
-	struct rline_data *rd = ci->home->data;
+	struct rline_data *rd = &ci->home->data;
 	const char *old = rd->line;
 	struct xy xyscale = pane_scale(ci->focus);
 
@@ -1170,7 +1173,7 @@ DEF_CMD(renderline_set)
 
 DEF_CMD(renderline_close)
 {
-	struct rline_data *rd = ci->home->data;
+	struct rline_data *rd = &ci->home->data;
 
 	free((void*)rd->xyattr);
 	free((void*)rd->line);
@@ -1183,7 +1186,6 @@ DEF_LOOKUP_CMD(renderline_handle, rl_map);
 
 DEF_CMD(renderline_attach)
 {
-	struct rline_data *rd;
 	struct pane *p;
 
 	if (!rl_map) {
@@ -1198,12 +1200,10 @@ DEF_CMD(renderline_attach)
 		key_add(rl_map, "Free", &edlib_do_free);
 	}
 
-	alloc(rd, pane);
-	p = pane_register(ci->focus, ci->num, &renderline_handle.c, rd);
-	if (!p) {
-		unalloc(rd, pane);
+	p = pane_register(ci->focus, ci->num, &renderline_handle.c);
+	if (!p)
 		return Efail;
-	}
+
 	return comm_call(ci->comm2, "cb", p);
 }
 
