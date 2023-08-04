@@ -182,21 +182,24 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe,
 
 /* Returns offset of posx,posy */
 static int find_xy_line(struct pane *p safe, struct pane *focus safe,
-			struct mark *mk safe, short posx, short posy)
+			struct mark *mk safe, short posx, short posy,
+			const char **xyattr)
 {
 	struct pane *hp = mk->mdata;
-	int ret = 0;
+	struct call_return cr;
 
-	if (hp) {
-		ret = pane_call(hp,
-				"render-line:findxy",
-				focus,
-				-1, NULL, NULL,
-				0, NULL, NULL,
-				posx - hp->x, posy - hp->y);
-	}
+	if (!hp)
+		return -1;
+	cr = pane_call_ret(all, hp,
+			   "render-line:findxy",
+			   focus,
+			   -1, NULL, NULL,
+			   0, NULL, NULL,
+			   posx - hp->x, posy - hp->y);
+	if (xyattr)
+		*xyattr = cr.s;
 	/* xypos */
-	return ret > 0 ? (ret - 1) : -1;
+	return cr.ret > 0 ? (cr.ret - 1) : -1;
 }
 
 static void draw_line(struct pane *p safe, struct pane *focus safe,
@@ -1494,6 +1497,7 @@ DEF_CMD(render_lines_set_cursor)
 	struct pane *focus = ci->focus;
 	struct rl_data *rl = p->data;
 	const char *action = ci->str;
+	const char *xyattr = NULL;
 	struct mark *m;
 	struct mark *m2 = NULL;
 	struct xy cih;
@@ -1523,7 +1527,7 @@ DEF_CMD(render_lines_set_cursor)
 			action = NULL;
 			cih.y = m->mdata->y;
 		}
-		xypos = find_xy_line(p, focus, m, cih.x, cih.y);
+		xypos = find_xy_line(p, focus, m, cih.x, cih.y, &xyattr);
 		if (xypos >= 0) {
 			m2 = call_render_line_offset(focus, m, xypos);
 			if (m2) {
@@ -1535,10 +1539,9 @@ DEF_CMD(render_lines_set_cursor)
 		}
 	}
 	if (m2) {
-		char *tag, *xyattr;
+		char *tag;
 
-		if (action) {
-			xyattr = pane_attr_get(m->mdata, "xyattr");
+		if (action && xyattr) {
 			tag = get_action_tag(action, xyattr);
 			if (tag) {
 				int x, y;
@@ -1741,7 +1744,7 @@ DEF_CMD(render_lines_move_line)
 		goto done;
 
 	xypos = find_xy_line(p, focus, start, rl->target_x,
-			     rl->target_y + start->mdata->y);
+			     rl->target_y + start->mdata->y, NULL);
 
 	if (xypos < 0)
 		goto done;

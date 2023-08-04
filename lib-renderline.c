@@ -44,7 +44,6 @@ struct render_list {
 
 struct rline_data {
 	short		prefix_len;
-	const char	*xyattr;
 	const char	*cursattr;
 	short		curs_width;
 	int		scale;
@@ -691,6 +690,7 @@ DEF_CMD(renderline)
 	const char *xypos = NULL;
 	const char *ret_xypos = NULL;
 	const char *xyattr = NULL;
+	char *ret_xyattr = NULL;
 	const char *cursattr = NULL;
 	/* want_xypos becomes 2 when the pos is found */
 	int want_xypos = strcmp(ci->key, "render-line:findxy") == 0;
@@ -770,10 +770,7 @@ DEF_CMD(renderline)
 	 * At that time ret_xypos is set, to be used to provide return value.
 	 * This might happen when y exceeds ypos, or we hit end-of-page.
 	 */
-	if (want_xypos) {
-		free((void*)rd->xyattr);
-		rd->xyattr = NULL;
-	}
+
 
 	while (*line && y < p->h && !end_of_page) {
 		if (mwidth <= 0) {
@@ -798,7 +795,7 @@ DEF_CMD(renderline)
 			posx = -1;
 
 		if (want_xypos == 1 && xypos) {
-			rd->xyattr = xyattr ? strdup(xyattr) : NULL;
+			ret_xyattr = xyattr ? strdup(xyattr) : NULL;
 			ret_xypos = xypos;
 			want_xypos = 2;
 		}
@@ -1044,7 +1041,7 @@ DEF_CMD(renderline)
 		   &wrap_margin, NULL,  &xypos, &xyattr, &cursattr);
 
 	if (want_xypos == 1) {
-		rd->xyattr = xyattr ? strdup(xyattr) : NULL;
+		ret_xyattr = xyattr ? strdup(xyattr) : NULL;
 		ret_xypos = xypos ?: line;
 		want_xypos = 2;
 	}
@@ -1084,10 +1081,13 @@ DEF_CMD(renderline)
 		free(r);
 	}
 	if (want_xypos) {
+		int pos = 0;
 		if (ret_xypos)
-			return ret_xypos - line_start + 1;
-		else
-			return 1;
+			pos = ret_xypos - line_start;
+		comm_call(ci->comm2, "cb", ci->focus, pos, NULL, ret_xyattr);
+		free(ret_xyattr);
+		return pos + 1;
+
 	} else
 		return end_of_page ? 2 : 1;
 }
@@ -1104,8 +1104,6 @@ DEF_CMD(renderline_get)
 		snprintf(buf, sizeof(buf), "%d", rd->prefix_len);
 	else if (strcmp(ci->str, "curs_width") == 0)
 		snprintf(buf, sizeof(buf), "%d", rd->curs_width);
-	else if (strcmp(ci->str, "xyattr") == 0)
-		val = rd->xyattr;
 	else if (strcmp(ci->str, "width") == 0)
 		snprintf(buf, sizeof(buf), "%d", rd->width);
 	else if (strcmp(ci->str, "cursattr") == 0)
@@ -1175,9 +1173,7 @@ DEF_CMD(renderline_close)
 {
 	struct rline_data *rd = &ci->home->data;
 
-	free((void*)rd->xyattr);
 	free((void*)rd->line);
-	rd->xyattr = NULL;
 	return 1;
 }
 
