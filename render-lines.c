@@ -165,19 +165,39 @@ static bool vmark_is_valid(struct mark *m safe)
 }
 
 /* Returns 'true' at end-of-page */
-static bool measure_line(struct pane *p safe, struct pane *focus safe,
-			 struct mark *mk safe, short cursor_offset)
+static bool _measure_line(struct pane *p safe, struct pane *focus safe,
+			  struct mark *mk safe, short cursor_offset,
+			  char **cursor_attr)
 {
 	struct pane *hp = mk->mdata;
-	int ret = 0;
+	struct call_return cr;
 
-	if (mark_valid(mk) && hp) {
-		pane_resize(hp, hp->x, hp->y, p->w, p->h);
-		ret = pane_call(hp, "render-line:measure",
-				focus, cursor_offset);
-	}
+	if (!mark_valid(mk) || !hp)
+		return False;
+	pane_resize(hp, hp->x, hp->y, p->w, p->h);
+	cr = pane_call_ret(all, hp, "render-line:measure",
+			   focus, cursor_offset);
+	if (cursor_attr)
+		*cursor_attr = cr.s;
 	/* end-of-page flag */
-	return ret == 2;
+	return cr.ret == 2;
+}
+#define measure_line(...) VFUNC(measure_line, __VA_ARGS__)
+static inline bool measure_line3(struct pane *p safe, struct pane *focus safe,
+				 struct mark *mk safe)
+{
+	return _measure_line(p, focus, mk, -1, NULL);
+}
+static inline bool measure_line4(struct pane *p safe, struct pane *focus safe,
+				 struct mark *mk safe, short cursor_offset)
+{
+	return _measure_line(p, focus, mk, cursor_offset, NULL);
+}
+static inline bool measure_line5(struct pane *p safe, struct pane *focus safe,
+				 struct mark *mk safe, short cursor_offset,
+				 char **cursor_attr)
+{
+	return _measure_line(p, focus, mk, cursor_offset, cursor_attr);
 }
 
 /* Returns offset of posx,posy */
@@ -382,7 +402,7 @@ static bool step_back(struct pane *p safe, struct pane *focus safe,
 		short h = 0;
 		start = m;
 		call_render_line(p, focus, start, endp);
-		measure_line(p, focus, start, -1);
+		measure_line(p, focus, start);
 		h = start->mdata ? start->mdata->h : 0;
 		if (h) {
 			*y_pre = h;
@@ -405,7 +425,7 @@ static bool step_fore(struct pane *p safe, struct pane *focus safe,
 	if (!end)
 		return True;
 	call_render_line(p, focus, end, startp);
-	measure_line(p, focus, end, -1);
+	measure_line(p, focus, end);
 	if (end->mdata)
 		*y_post = end->mdata->h;
 	if (*y_post > 0 && end->mdata)
@@ -1082,7 +1102,7 @@ static int revalidate_start(struct rl_data *rl safe,
 	if (rl->header) {
 		struct pane *hp = rl->header->mdata;
 		if (refresh_all) {
-			measure_line(p, focus, rl->header, -1);
+			measure_line(p, focus, rl->header);
 			if (hp)
 				pane_resize(hp, hp->x, y, hp->w, hp->h);
 		}
@@ -1096,7 +1116,7 @@ static int revalidate_start(struct rl_data *rl safe,
 		if (refresh_all)
 			vmark_invalidate(m);
 		call_render_line(p, focus, m, NULL);
-		found_end = measure_line(p, focus, m, -1);
+		found_end = measure_line(p, focus, m);
 		hp = m->mdata;
 		if (!mark_valid(m) || !hp)
 			break;
@@ -1247,7 +1267,7 @@ DEF_CMD(render_lines_revise)
 			rl->header = mark_new(focus);
 		if (rl->header) {
 			vmark_set(p, rl->header, hdr);
-			measure_line(p, focus, rl->header, -1);
+			measure_line(p, focus, rl->header);
 		}
 	} else if (rl->header) {
 		vmark_free(rl->header);
@@ -1417,7 +1437,7 @@ DEF_CMD(render_lines_move_view)
 					rpt = 0;
 					break;
 				}
-				measure_line(p, focus, m, -1);
+				measure_line(p, focus, m);
 				y += m->mdata->h;
 				m = vmark_next(m);
 			}
@@ -1427,7 +1447,7 @@ DEF_CMD(render_lines_move_view)
 	} else {
 		/* Need to remove lines from top */
 		call_render_line(p, focus, top, NULL);
-		measure_line(p, focus, top, -1);
+		measure_line(p, focus, top);
 		while (top && top->mdata && rpt > 0) {
 			short y = 0;
 
@@ -1442,7 +1462,7 @@ DEF_CMD(render_lines_move_view)
 			if (!top)
 				break;
 			call_render_line(p, focus, top, NULL);
-			measure_line(p, focus, top, -1);
+			measure_line(p, focus, top);
 		}
 		if (top && top->mdata) {
 			/* We didn't fall off the end, so it is OK to remove
@@ -1586,7 +1606,7 @@ DEF_CMD(render_lines_action)
 	struct pane *focus = ci->focus;
 	struct mark *v, *n;
 	int offset;
-	char *attr, *tag;
+	char *attr = NULL, *tag;
 
 	if (!m || !ci->str)
 		return Enoarg;
@@ -1601,8 +1621,9 @@ DEF_CMD(render_lines_action)
 	offset = call_render_line_to_point(focus, m, v);
 	if (offset < 0)
 		return Efallthrough;
-	measure_line(p, focus, v, offset);
-	attr = pane_attr_get(v->mdata, "cursattr");
+	measure_line(p, focus, v, offset, &attr);
+	if (!attr)
+		return Efallthrough;
 	tag = get_action_tag(ci->str, attr);
 	if (!tag)
 		return Efallthrough;

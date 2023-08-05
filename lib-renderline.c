@@ -44,7 +44,6 @@ struct render_list {
 
 struct rline_data {
 	short		prefix_len;
-	const char	*cursattr;
 	short		curs_width;
 	int		scale;
 	int		width;
@@ -1045,11 +1044,6 @@ DEF_CMD(renderline)
 		ret_xypos = xypos ?: line;
 		want_xypos = 2;
 	}
-	if (cursattr) {
-		free((void*)rd->cursattr);
-		rd->cursattr = strdup(cursattr);
-	}
-
 	if (offset >= 0 && line - line_start <= offset) {
 		if (y >= 0 && (y == 0 || y + line_height <= p->h)) {
 			cy = y;
@@ -1087,9 +1081,9 @@ DEF_CMD(renderline)
 		comm_call(ci->comm2, "cb", ci->focus, pos, NULL, ret_xyattr);
 		free(ret_xyattr);
 		return pos + 1;
-
-	} else
-		return end_of_page ? 2 : 1;
+	}
+	comm_call(ci->comm2, "cb", ci->focus, end_of_page, NULL, cursattr);
+	return end_of_page ? 2 : 1;
 }
 
 DEF_CMD(renderline_get)
@@ -1106,8 +1100,6 @@ DEF_CMD(renderline_get)
 		snprintf(buf, sizeof(buf), "%d", rd->curs_width);
 	else if (strcmp(ci->str, "width") == 0)
 		snprintf(buf, sizeof(buf), "%d", rd->width);
-	else if (strcmp(ci->str, "cursattr") == 0)
-		val = rd->cursattr;
 	else
 		return Einval;
 
