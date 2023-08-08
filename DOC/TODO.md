@@ -16,7 +16,7 @@ the file.
 - [ ] should pane ->cx,cy be a struct xy??
 - [X] revalidate_start shouldn't find cursor on line where it is known
       not to be
-- [ ] call_render_line_to_point() never returns negative - why do we check?
+- [X] call_render_line_to_point() never returns negative - why do we check?
 - [ ] should pane_resize() report if any change happened?
 - [ ] I think I want a "Workspaces" concept, maybe tabbed set of tile
       collections.  I would have one of mail and one for each project
