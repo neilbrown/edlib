@@ -471,7 +471,7 @@ void pane_reparent(struct pane *p safe, struct pane *newparent safe);
 void pane_move_after(struct pane *p safe, struct pane *after);
 void pane_subsume(struct pane *p safe, struct pane *parent safe);
 void pane_close(struct pane *p safe);
-void pane_resize(struct pane *p safe, int x, int y, int w, int h);
+bool pane_resize(struct pane *p safe, int x, int y, int w, int h);
 void pane_focus(struct pane *p);
 bool pane_has_focus(struct pane *p);
 void pane_damaged(struct pane *p, int type);

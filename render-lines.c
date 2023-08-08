@@ -821,9 +821,8 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	     m && m->mdata ; m = vmark_next(m)) {
 		struct pane *hp = m->mdata;
 		int cols;
-		hp->damaged &= ~DAMAGED_SIZE;
-		pane_resize(hp, hp->x, y, hp->w, hp->h);
-		if (hp->damaged & DAMAGED_SIZE && !rl->background_uniform)
+		if (pane_resize(hp, hp->x, y, hp->w, hp->h) &&
+		    !rl->background_uniform)
 			pane_damaged(hp, DAMAGED_REFRESH);
 		y += hp->h;
 		cols = pane_attr_get_int(hp, "width", 0);

@@ -637,7 +637,7 @@ void pane_free(struct pane *p safe)
 		unalloc_safe(p, pane);
 }
 
-void pane_resize(struct pane *p safe, int x, int y, int w, int h)
+bool pane_resize(struct pane *p safe, int x, int y, int w, int h)
 {
 	int damage = 0;
 
@@ -662,6 +662,7 @@ void pane_resize(struct pane *p safe, int x, int y, int w, int h)
 	pane_damaged(p, damage);
 	if (damage)
 		pane_notify("Notify:resize", p);
+	return !!damage;
 }
 
 void pane_reparent(struct pane *p safe, struct pane *newparent safe)
