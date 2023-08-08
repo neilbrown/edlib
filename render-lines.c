@@ -1148,7 +1148,8 @@ static int revalidate_start(struct rl_data *rl safe,
 					/* Cannot make more margin space */
 					on_screen = True;
 			}
-		} else if (pm && y >= p->h && m->seq < pm->seq) {
+		} else if (pm && m2 && y >= p->h && m->seq < pm->seq &&
+			   mark_ordered_not_same(pm, m2)) {
 			/* point might be in this line, but off end
 			 * of the screen
 			 */
@@ -1167,7 +1168,12 @@ static int revalidate_start(struct rl_data *rl safe,
 				}
 			}
 		} else if (pm && mark_ordered_or_same(m, pm) && m2 &&
-			   mark_ordered_or_same(pm, m2)) {
+			   (mark_ordered_not_same(pm, m2) ||
+			    (mark_same(pm, m2) && !is_eol(doc_prior(focus,m2))))
+			   ) {
+			/* Above doc_prior handles case when EOF is at the end
+			 * of a non-empty line.
+			 */
 			if (rl->margin == 0)
 				on_screen = True;
 			else {

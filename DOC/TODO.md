@@ -9,10 +9,12 @@ the file.
 
 ### Triage
 
+- [ ] find a better wat to handle "case when EOF is at the end" of
+      a non-empty line.
 - [X] call, not caLl in server.py
 - [X] lib-server received unexpected notification Close
 - [ ] should pane ->cx,cy be a struct xy??
-- [ ] revalidate_start shouldn't find cursor on line where it is known
+- [X] revalidate_start shouldn't find cursor on line where it is known
       not to be
 - [ ] call_render_line_to_point() never returns negative - why do we check?
 - [ ] should pane_resize() report if any change happened?
