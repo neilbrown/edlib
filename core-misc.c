@@ -363,12 +363,12 @@ void *safe do_alloc(struct mempool *pool safe, int size, int zero)
 	return ret;
 }
 
-void do_unalloc(struct mempool *pool safe, void *obj, int size)
+void do_unalloc(struct mempool *pool safe, const void *obj, int size)
 {
 	if (obj) {
 		pool->bytes -= size;
 		pool->allocations -= 1;
-		free(obj);
+		free((void*)obj);
 	}
 }
 

@@ -9,6 +9,34 @@ the file.
 
 ### Triage
 
+- [ ] call, not caLl in server.py
+- [ ] lib-server received unexpected notification Close
+- [ ] should pane ->cx,cy be a struct xy??
+- [ ] revalidate_start shouldn't find cursor on line where it is known
+      not to be
+- [ ] call_render_line_to_point() never returns negative - why do we check?
+- [ ] should pane_resize() report if any change happened?
+- [ ] I think I want a "Workspaces" concept, maybe tabbed set of tile
+      collections.  I would have one of mail and one for each project
+      that I might be looking in.  I have lots of documents, but few
+      projects so this would be easier to move between.
+      "grep" and "make" etc don't care which document in a project they
+      are in.
+      "nm" already gets me to the email project quickly.  Getting back
+      is not so easy.
+      Maybe some docs could be marked "project" and so be easy to find?
+- [ ] path completion in shell command.  If cannot find look for '/'
+      following punctuation (=) and try there.
+- [ ] resolve shift-left vs shift_left distinction.
+- [ ] should zoom affect whole window, not just pane?
+- [ ] ditch cached-size for images - store in pane data instead.
+- [ ] use foreach_attr for parsing image details
+- [ ] mergeview command to show diff between "found" and "replacement".
+- [ ] mergeview command to include both found and replacement, discard
+  expected
+- [ ] ./edlib -g doesn't work
+- [ ] pop up window to show selection as QR code
+- [ ] text qrcode (qr --ascii foo) don't look right in xcb display
 - [X] factor our list-sort code.
 - [X] when cx-b and default doc name is v.long, shift gets confused
 - [X] How to run shell command in "44" window??
@@ -92,6 +120,8 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] gather memory usage stats per-pane and allow a dump
+- [ ] show doc size in doc list - include undo size?
 - [X] Discard ccache ??
 - [ ] Ensure all panes that should use "Free" properly, and find some
       what to encourage its use.

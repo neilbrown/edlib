@@ -124,7 +124,7 @@ struct mempool {
 #define MEMPOOL_DECL(_name) struct mempool mem ## _name;
 
 void *safe do_alloc(struct mempool *pool safe, int size, int zero);
-void do_unalloc(struct mempool *pool safe, void *obj, int size);
+void do_unalloc(struct mempool *pool safe, const void *obj, int size);
 
 #define alloc(var, pool)						\
 	do { var = do_alloc(&mem##pool, sizeof((var)[0]), 1); } while (0)
@@ -138,10 +138,16 @@ void do_unalloc(struct mempool *pool safe, void *obj, int size);
 #define unalloc_buf(var, size, pool)					\
 	do { do_unalloc(&mem##pool, var, size); (var) = NULL; } while(0)
 
+#define unalloc_str(var, pool)						\
+	unalloc_buf(var, strlen(var)+1, pool)
+
 #define unalloc_safe(var, pool)						\
 	do { do_unalloc(&mem##pool, var, sizeof((var)[0])); (var)=safe_cast NULL; } while (0)
 
 #define unalloc_buf_safe(var, size, pool)				\
 	do { do_unalloc(&mem##pool, var, size); (var) = safe_cast NULL; } while(0)
+
+#define unalloc_str_safe(var, pool)						\
+	unalloc_buf_safe(var, strlen(var)+1, pool)
 
 #endif /* EDLIB_MISC */
