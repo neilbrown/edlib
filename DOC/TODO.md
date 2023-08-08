@@ -9,8 +9,8 @@ the file.
 
 ### Triage
 
-- [ ] call, not caLl in server.py
-- [ ] lib-server received unexpected notification Close
+- [X] call, not caLl in server.py
+- [X] lib-server received unexpected notification Close
 - [ ] should pane ->cx,cy be a struct xy??
 - [ ] revalidate_start shouldn't find cursor on line where it is known
       not to be

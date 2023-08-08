@@ -159,7 +159,7 @@ if sys.argv[0] == "":
                     return 1
                 if cmd == "sig-winch":
                     if self.term:
-                        self.term.caLl("Sig:Winch")
+                        self.term.call("Sig:Winch")
                         self.sock.send(b"OK")
                     else:
                         self.sock.send(b"Unknown")
@@ -439,7 +439,7 @@ else:
             break
         # probably a reply to sig-winch
     winch_ok = False
-    if ret and ret != b"Done" and ret != b"close":
+    if ret and ret != b"Done" and ret != b"Close":
         print("Received unexpected notification: ", ret.decode('utf-8', 'ignore'))
         s.send(b"close")
         s.recv(100)
