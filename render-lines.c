@@ -1130,63 +1130,49 @@ static int revalidate_start(struct rl_data *rl safe,
 		}
 		y += hp->h;
 		m2 = vmark_next(m);
-		if (pm && m == start && rl->skip_height > 0 && m2 &&
-		    mark_ordered_not_same(pm, m2)) {
-			/* Point might be in this line, but off top
-			 * of the screen
-			 */
+		/* The doc_prior handles case when EOF is at the end
+		 * of a non-empty line.
+		 */
+		if (pm && m2 && mark_ordered_or_same(m, pm) &&
+		    (mark_ordered_not_same(pm, m2) ||
+		     (mark_same(pm, m2) && !is_eol(doc_prior(focus,m2))))) {
+
+			/* Cursor is on this line */
 			int offset = call_render_line_to_point(focus,
 							       pm, m);
-			measure_line(p, focus, m, offset);
-			if (hp->cy >= rl->skip_height + rl->margin)
-				/* Cursor is visible on this line
-				 * and after margin from top.
-				 */
-				on_screen = True;
-			else if (start_of_file && rl->skip_height == 0)
-				/* Cannot make more margin space */
-				on_screen = True;
-		} else if (pm && m2 && y >= p->h && m->seq < pm->seq &&
-			   mark_ordered_not_same(pm, m2)) {
-			/* point might be in this line, but off end
-			 * of the screen
-			 */
-			int offset = call_render_line_to_point(focus,
-							       pm, m);
-			int lh;
-			measure_line(p, focus, m, offset);
-			lh = attr_find_int(hp->attrs,
-					   "line-height");
-			if (lh <= 0)
+			int lh = attr_find_int(hp->attrs,
+					       "line-height");
+			int cy = y - hp->h + hp->cy;
+			if (lh < 1)
 				lh = 1;
-			if (hp->cy >= 0 &&
-			    y - hp->h + hp->cy <= p->h - lh - rl->margin) {
-				/* Cursor is on screen */
-				on_screen = True;
-			}
-		} else if (pm && mark_ordered_or_same(m, pm) && m2 &&
-			   (mark_ordered_not_same(pm, m2) ||
-			    (mark_same(pm, m2) && !is_eol(doc_prior(focus,m2))))
-			   ) {
-			/* Above doc_prior handles case when EOF is at the end
-			 * of a non-empty line.
-			 */
-			if (rl->margin == 0)
-				on_screen = True;
-			else {
-				int offset = call_render_line_to_point(
-					focus, pm, m);
-				int lh;
-				int cy;
-				measure_line(p, focus, m, offset);
-				lh = attr_find_int(hp->attrs,
-						   "line-height");
-				cy = y - hp->h + hp->cy;
-				if (cy >= rl->margin &&
-				    cy <= p->h - rl->margin - lh)
-					/* Cursor at least margin from edge */
+			measure_line(p, focus, m, offset);
+			if (m == start && rl->skip_height > 0) {
+				/* Point might be in this line, but off top
+				 * of the screen
+				 */
+				if (hp->cy >= rl->skip_height + rl->margin)
+					/* Cursor is visible on this line
+					 * and after margin from top.
+					 */
 					on_screen = True;
-			}
+				else if (start_of_file && rl->skip_height == 0)
+					/* Cannot make more margin space */
+					on_screen = True;
+			} else if (y >= p->h) {
+				/* point might be in this line, but off end
+				 * of the screen
+				 */
+				if (hp->cy >= 0 &&
+				    y - hp->h + hp->cy <= p->h - lh - rl->margin) {
+					/* Cursor is on screen */
+					on_screen = True;
+				}
+			} else if (rl->margin == 0)
+				on_screen = True;
+			else if (cy >= rl->margin &&
+				 cy <= p->h - rl->margin - lh)
+				/* Cursor at least margin from edge */
+				on_screen = True;
 		}
 	}
 	if (y >= p->h)
