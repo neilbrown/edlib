@@ -127,7 +127,7 @@ DEF_CMD(messageline_refresh_size)
 				    ci->home->w, ci->home->h);
 	} else {
 		pane_resize(p, p->x, p->y, ci->home->w, ci->home->h/3);
-		call("render-line:measure", p);
+		call("render-line:measure", p, -1);
 		pane_resize(p, p->x, ci->home->h - p->h,
 			    ci->home->w, p->h);
 		if (mli->child && ci->home->h > p->h)
@@ -194,7 +194,7 @@ static void pane_str(struct pane *p safe, char *s, char *attr)
 	call("render-line:set", p, -1, NULL, l);
 	/* Allow message line to use up to 1/3 of total height */
 	pane_resize(p, p->x, p->y, p->w, p->parent->h/3);
-	call("render-line:measure", p);
+	call("render-line:measure", p, -1);
 	if (!mli->hidden) {
 		pane_resize(p, p->x, p->parent->h - p->h, p->w, p->h);
 		if (mli->child) {
