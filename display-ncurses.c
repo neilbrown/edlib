@@ -1527,6 +1527,8 @@ static struct namelist {
 	{ 00436, ":S:F10"},
 	{ 00437, ":S:F11"},
 	{ 00440, ":S:F12"},
+	{ 01114, ":Focus-in"},
+	{ 01115, ":Focus-out"},
 	{0, NULL}
 }, char_names[] = {
 	{'\e', ":ESC"},
@@ -1557,8 +1559,11 @@ static void send_key(int keytype, wint_t c, int alt, struct pane *p safe)
 
 	if (keytype == KEY_CODE_YES) {
 		n = find_name(key_names, c);
-		if (!n)
+		if (!n) {
+			LOG("Unknown ncurses key 0o%o", c);
 			sprintf(buf, "%sNcurs-%o", a, c);
+		} else if (strstarts(n, ":Focus-"))
+			/* Ignore focus changes for now */;
 		else
 			strcat(strcpy(buf, a), n);
 	} else {

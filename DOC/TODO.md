@@ -11,6 +11,7 @@ the file.
 
 - [ ] find a better wat to handle "case when EOF is at the end" of
       a non-empty line.
+- [ ] input uses 0 for Efallthrough!
 - [X] call, not caLl in server.py
 - [X] lib-server received unexpected notification Close
 - [ ] should pane ->cx,cy be a struct xy??
@@ -158,6 +159,8 @@ Core features
 - [ ] teach input to allow a repeat command to be registered so that e.g.
       search/replace and do a bit of work, then ask to be called again.
       input can cancel this on suitable input.
+- [ ] should input leave mode unchanged for key that isn't handled at
+      all
 - [ ] marks can be used after they go invalid too easily.  How to fix??
 - [ ] catching doc:replace in a pane doesn't catch doc:insert-file.
       I need a simple way to intercept any change.
@@ -355,6 +358,7 @@ Module features
 
 ### ncurses
 
+- [ ] What to do with Focus-in/out keys?
 - [ ] add full list of colour names (to lib-colourmap)
 - [ ] allow a pane to require 'true-colour' and discover number of colours available
       Colour map gets changed when it becomes the focus.
