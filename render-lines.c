@@ -145,12 +145,13 @@ static void vmark_free(struct mark *m safe)
 	mark_free(m);
 }
 
-static void vmark_set(struct pane *p safe, struct mark *m safe, char *line safe)
+static void vmark_set(struct pane *p safe, struct pane *focus safe,
+		      struct mark *m safe, char *line safe)
 {
 	if (!m->mdata)
 		m->mdata = call_ret(pane, "attach-renderline", p, -1);
 	if (m->mdata)
-		pane_call(m->mdata, "render-line:set", p, -1, NULL, line);
+		pane_call(m->mdata, "render-line:set", focus, -1, NULL, line);
 }
 
 static void vmark_invalidate(struct mark *m safe)
@@ -298,7 +299,7 @@ static void call_render_line(struct pane *home safe, struct pane *p safe,
 		return;
 	}
 	if (s)
-		vmark_set(home, start, s);
+		vmark_set(home, p, start, s);
 
 	m2 = vmark_matching(m);
 	if (m2)
@@ -1252,7 +1253,7 @@ DEF_CMD(render_lines_revise)
 		if (!rl->header)
 			rl->header = mark_new(focus);
 		if (rl->header) {
-			vmark_set(p, rl->header, hdr);
+			vmark_set(p, focus, rl->header, hdr);
 			measure_line(p, focus, rl->header);
 		}
 	} else if (rl->header) {
