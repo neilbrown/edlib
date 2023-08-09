@@ -13,16 +13,16 @@
  * :A-p - replace current line with previous line from history, if there is one
  * :A-n - replace current line with next line from history.  If none, restore
  *        saved line
- * :C-r - enter incremental search, looking back
- * :C-s - enter incremental search, looking forward
+ * :A-r - enter incremental search, looking back
+ * :A-s - enter incremental search, looking forward
  *
  * In incremental search mode the current search string appears in the
  * prompt and:
  *   -glyph appends to the search string and repeats search from start
  *          in current direction
  *   :Backspace strips a glyph and repeats search
- *   :C-r - sets prev line as search start and repeats search
- *   :C-s - sets next line as search start and repeats.
+ *   :A-r - sets prev line as search start and repeats search
+ *   :A-s - sets next line as search start and repeats.
  *   :Enter - drops out of search mode
  * Anything else drops out of search mode and repeats the command as normal
  */
@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "core.h"
 #include "misc.h"
@@ -334,7 +335,7 @@ DEF_CMD(history_search)
 	attr_set_str(&ci->focus->attrs, "prefix", prefix);
 	call("view:changed", ci->focus);
 
-	hi->search_back = (ci->key[4] == 'R');
+	hi->search_back = (toupper(ci->key[4]) == 'R');
 	return 1;
 }
 
@@ -423,7 +424,7 @@ DEF_CMD(history_search_repeat)
 
 	if (!hi->history)
 		return Enoarg;
-	hi->search_back = *suffix == 'R';
+	hi->search_back = toupper(*suffix) == 'R';
 	if (hi->search_back)
 		call("doc:EOL", hi->history, -2);
 	else
@@ -495,16 +496,16 @@ void edlib_init(struct pane *ed safe)
 	key_add(history_map, "doc:replaced", &history_notify_replace);
 	key_add(history_map, "K:A-p", &history_move);
 	key_add(history_map, "K:A-n", &history_move);
-	key_add(history_map, "K:C-R", &history_search);
-	key_add(history_map, "K:C-S", &history_search);
+	key_add(history_map, "K:A-r", &history_search);
+	key_add(history_map, "K:A-s", &history_search);
 	key_add_prefix(history_map, "K:History-search-", &history_search_again);
 	key_add_prefix(history_map, "K:History-search:",
 		       &history_search_retry);
 	key_add(history_map, "K:History-search:Backspace",
 		       &history_search_bs);
-	key_add(history_map, "K:History-search:C-R",
+	key_add(history_map, "K:History-search:A-r",
 		       &history_search_repeat);
-	key_add(history_map, "K:History-search:C-S",
+	key_add(history_map, "K:History-search:A-s",
 		       &history_search_repeat);
 	key_add(history_map, "K:History-search:Enter",
 		       &history_search_cancel);
