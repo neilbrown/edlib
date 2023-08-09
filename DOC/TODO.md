@@ -11,7 +11,7 @@ the file.
 
 - [ ] find a better wat to handle "case when EOF is at the end" of
       a non-empty line.
-- [ ] input uses 0 for Efallthrough!
+- [X] input uses 0 for Efallthrough!
 - [X] call, not caLl in server.py
 - [X] lib-server received unexpected notification Close
 - [ ] should pane ->cx,cy be a struct xy??

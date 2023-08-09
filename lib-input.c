@@ -216,12 +216,12 @@ DEF_CMD(keystroke)
 	key = strconcat(ci->home, "K", mode, ci->str);
 	time_starts(ci->home);
 	ret = call(key, p, num, m, NULL, num2);
-	if (ret == 0 && (alt = map_key(ci->str)) != NULL) {
+	if (ret == Efallthrough && (alt = map_key(ci->str)) != NULL) {
 		key = strconcat(ci->home, "K", mode, alt);
 		ret = call(key, p, num, m, NULL, num2);
 	}
 	time_ends(ci->home);
-	if (ret < 0)
+	if (ret <= Efail)
 		call("Message:default", ci->focus, 0, NULL,
 		     "** Command Failed **");
 	return Efallthrough;
