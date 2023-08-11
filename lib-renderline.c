@@ -288,9 +288,10 @@ static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 	/* Draw the wrap-tail */
 	if (wrap_pos && last_rl && dodraw) {
 		char *e = get_last_attr(last_rl->attr, "wrap-tail");
-		home_call(focus, "Draw:text", p, -1, NULL, e ?: "\\",
-			  scale, NULL, "underline,fg:blue",
-			  wrap_pos, y + ascent);
+		if (e || !last_wrap)
+			home_call(focus, "Draw:text", p, -1, NULL, e ?: "\\",
+				  scale, NULL, "underline,fg:blue",
+				  wrap_pos, y + ascent);
 		free(e);
 	}
 
