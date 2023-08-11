@@ -987,7 +987,7 @@ DEF_CMD(renderline)
 				in_lws = True;
 			ret = draw_some(p, focus, &rlst, &x, start, &line,
 					buf_final(&attr), in_lws,
-					wrap ? mwidth*2: 0,
+					wrap ? mwidth: 0,
 					offset == (start - line_start)
 					? in_tab : -1,
 					posx, scale);
