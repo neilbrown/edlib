@@ -269,7 +269,7 @@ static int tile_destroy(struct pane *p safe)
 {
 	struct tileinfo *ti = p->data;
 	struct pane *prev = NULL, *next = NULL;
-	struct pane *t, *remain;
+	struct pane *t, *remain = NULL;
 	int pos, prevpos, nextpos;
 	int remaining = 0;
 
