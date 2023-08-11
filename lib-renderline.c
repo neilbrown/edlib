@@ -1,3 +1,7 @@
+// always remeasure?
+// :xx is points: tab left_margin
+// what exactly is left margin for wrapping
+// wrap content with cursor should itself wrap if needed, appeared unwrapped if possible
 /*
  * Copyright Neil Brown ©2015-2023 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
@@ -25,30 +29,112 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <wctype.h>
+#include <stdint.h>
 
 #define PANE_DATA_TYPE struct rline_data
 #include "core.h"
 #include "misc.h"
 
-struct render_list {
-	struct render_list *next;
-	const char	*text_orig;
-	const char	*text safe, *attr safe; // both are allocated
-	bool		wrap; /* set for LWS when word-wrap enabled, and when
-			       * "wrap" attr seen.
+/* There is one render_item entry
+ * - each string of text with all the same attributes
+ * - each individual TAB
+ * - each unknown control character
+ * - the \n \f or \0 which ends the line
+ * When word-wrap is enabled, strings of linear white-space get
+ * different attributes, so a different render_item entry.
+ *
+ * attributes understood at this level are:
+ *  center or centre	- equal space on either end of flushed line
+ *  left:nn		- left margin - in "points"
+ *  right:nn		- right margin
+ *  tab:nn		- move to nn from left margin or -nn from right margin
+ *  rtab:nn		- from here to next tab or eol right-aligned at nn
+ *  ctab:nn		- from here to next tab or eol centered at nn
+ *  space-above:nn	- extra space before (wrapped) line
+ *  space-below:nn	- extra space after (wrapped) line
+ *  height:nn		- override height.  This effectively adds space above
+ *			  every individual line if the whole line is wrapped
+ *  wrap		- text with this attr can be hidden when used as a wrap
+ *			  point.
+ *  wrap-margin		- remember this x offset as left margin of wrapped lines
+ *  wrap-head=xx	- text is inserted at start of line when wrapped
+ *  wrap-tail=xx	- text to include at end of line when wrapped.  This
+ *			  determines how far before right margin that wrapp is
+ *			  triggered.
+ *  wrap-XXXX		- attrs to apply to wrap head/tail. Anything not recognised
+ *			  has "wrap-" stripped and is used for the head and tail.
+ *  hide		- Text is hidden if cursor is not within range.
+ *
+ * "nn" is measured in "points" which is 1/10 the nominal width of chars
+ * in the default font size, which is called "10".  A positive value is
+ * measured from the left margin or, which setting margins, from the
+ * left page edge.  A negative value is measures from the right margin
+ * or right page edge.
+ *
+ */
+
+/* When an entry is split for line-wrap:
+ *   'split_cnt' is count of splits (total lines - 1)
+ *   ' split_list' is offsets from start where split happens
+ *   'x' position of wrapped portions is wrap_marign or head_length
+ *   'y' position of wrapped portions increases line_height for each
+ */
+struct render_item {
+	struct render_item *next;
+	const char	*attr safe;
+	unsigned short	*split_list;
+	unsigned short	start, len; // in rd->line
+	unsigned short	height, width;
+	signed short	x,y; /* signed so x can go negative when shifted */
+	signed short	tab;
+	unsigned short	wrap_x;
+	uint8_t		split_cnt; /* wrap happens this many times at byte
+				    * positions in split_list */
+	uint8_t		wrap; /* this and consecutive render_items
+			       * with the same wrap number form an
+			       * optional wrap point.  It is only visible
+			       * when not wrapped, or when cursor is in
+			       * it.
 			       */
-	short		x, width;
-	short		cursorpos;
-	const char	*xypos;	/* location in text_orig where given x,y was found */
+	uint8_t		hide; /* This and consecutive render_items
+			       * with the same hide nmber form a
+			       * hidden extent which is visible when
+			       * the cursor is in it.
+			       */
+	bool		wrap_margin:1;
+	bool		hidden:1;
+	bool		eol:1;
+	unsigned int	tab_cols:4; /* For \t char */
+	enum tab_align {
+		TAB_LEFT = 0,	// No extra space (after tab stop)
+		TAB_RIGHT,	// Add extra space here so there no space at
+				// next tab stop or margin
+		TAB_CENTRE,	// Add extra space here, half of what TAB_RIGHT
+				// would insert
+	}		tab_align:2;
 };
+/* A "tab" value of 0 means left margin, and negative is measured from right
+ * margin, so we need some other value to say "no value here"
+ */
+static const short TAB_UNSET = (1<<(14-2));
 
 struct rline_data {
-	short		prefix_len;
+	unsigned short	prefix_bytes, prefix_pixels;
 	short		curs_width;
-	int		scale;
-	int		width;
-	const char	*line;
+	short		left_margin, right_margin;
+	short		space_above, space_below;
+	unsigned short	line_height, min_height;
+	unsigned short	scale;
+	unsigned short	width;
+	unsigned short	ascent;
+	char		*wrap_head, *wrap_tail, *wrap_attr;
+	int		head_length, tail_length;
+	char		*line safe;
+	bool		word_wrap;
+	bool		image;
 	int		curspos;
+
+	struct render_item *content;
 };
 #include "core-pane.h"
 
@@ -58,409 +144,835 @@ enum {
 	XYPOS,
 };
 
-static int draw_some(struct pane *p safe, struct pane *focus safe,
-		     struct render_list **rlp safe,
-		     int *x safe,
-		     const char *start safe, const char **endp safe,
-		     const char *attr safe, bool wrap,
-		     int margin, int cursorpos, int xpos,
-		     int scale)
+/* sequentially set _attr to the an attr name, and _val to
+ * either the val (following ":") or NULL.
+ * _attr is valid up to : or , or < space and _val is valid up to , or <space
+ * _c is the start which will be updates, and _end is the end which
+ * must point to , or nul or a control char
+ */
+#define foreach_attr(_attr, _val, _c, _end)			\
+	for (_attr = _c, _val = find_val(&_c, _end);		\
+	     _attr;						\
+	     _attr = _c, _val = find_val(&_c, _end))
+static const char *find_val(const char **cp safe, const char *end safe)
 {
-	/* Measure the text from 'start' to '*endp', expecting to
-	 * draw to p[x,?].
-	 * Update 'x' and 'endp' past what was drawn.
-	 * Everything will be drawn with the same attributes: attr.
-	 * If the text would get closer to right end than 'margin',
-	 * we stop drawing before then.  If this happens, WRAP is returned.
-	 * If drawing would pass xpos: stop there, record pointer
-	 * into 'endp', and return XYPOS.
-	 * If cursorpos is between 0 and len inclusive, a cursor is drawn there.
-	 * Don't actually draw anything, just append a new entry to the
-	 * render_list rlp.
-	 */
-	int len = *endp - start;
-	char *str;
-	struct call_return cr;
-	int max;
-	int ret = WRAP;
-	int rmargin = p->w - margin;
-	struct render_list *rl;
+	const char *c = *cp;
+	const char *ret;
 
-	if (cursorpos > len)
-		cursorpos = -1;
-	if (len == 0 && cursorpos < 0)
-		/* Nothing to do */
-		return OK;
-
-	if (!wrap && strstr(attr, ",wrap,"))
-		wrap = True;
-	if ((*rlp == NULL ||
-	     ((*rlp)->next == NULL && (*rlp)->text_orig == NULL)) &&
-	    wrap && cursorpos < 0)
-		/* The text in a <wrap> marker that causes a wrap is
-		 * suppressed unless the cursor is in it.
-		 * This will only ever be at start of line.  <wrap> text
-		 * elsewhere is not active.
-		 */
-		return OK;
-	str = strndup(start, len);
-	if (*str == '\t')
-		/* TABs are only sent one at a time, and are rendered as space */
-		*str = ' ';
-	if (xpos >= 0 && xpos >= *x && xpos < rmargin) {
-		/* reduce marking to given position, and record that
-		 * as xypos when we hit it.
-		 */
-		rmargin = xpos;
-		ret = XYPOS;
+	if (!c)
+		return NULL;
+	while (c < end && *c != ':' && *c != ',')
+		c++;
+	if (c == end) {
+		*cp = NULL;
+		return NULL;
 	}
-
-	rl = calloc(1, sizeof(*rl));
-	cr = home_call_ret(all, focus, "Draw:text-size", p,
-			   rmargin - *x, NULL, str,
-			   scale, NULL, attr);
-	max = cr.i;
-	if (max == 0 && ret == XYPOS) {
-		/* Must have already reported XY position, don't do it again */
-		rl->xypos = start;
-		ret = WRAP;
-		rmargin = p->w - margin;
-		cr = home_call_ret(all, focus, "Draw:text-size", p,
-				   rmargin - *x, NULL, str,
-				   scale, NULL, attr);
-		max = cr.i;
+	if (*c == ',') {
+		while (*c == ',' && c < end)
+			c++;
+		if (c == end) {
+			*cp = NULL;
+			return NULL;
+		}
+		*cp = c;
+		return NULL;
 	}
-	if (max < len) {
-		/* It didn't all fit, so trim the string and
-		 * try again.  It must fit this time.
-		 * I don't know what we expect to be different the second time..
-		 */
-		str[max] = 0;
-		cr = home_call_ret(all, focus, "Draw:text-size", p,
-				   rmargin - *x, NULL, str,
-				   scale, NULL, attr);
-	}
-
-	rl->text_orig = start;
-	rl->text = str;
-	rl->attr = strdup(attr);
-	rl->wrap = wrap;
-	rl->width = cr.x;
-	rl->x = *x;
-	*x += rl->width;
-	if (ret == XYPOS)
-		rl->xypos = start + strlen(str);
-
-	if (cursorpos >= 0 && cursorpos <= len && cursorpos <= max)
-		rl->cursorpos = cursorpos;
-	else
-		rl->cursorpos = -1;
-	while (*rlp)
-		rlp = &(*rlp)->next;
-	*rlp = rl;
-
-	if (max >= len)
-		return OK;
-	/* Didn't draw everything. */
-	*endp = start + max;
+	c += 1;
+	ret = c;
+	while (c < end && *c != ',')
+		c++;
+	while (c < end && *c == ',')
+		c++;
+	if (c == end)
+		c = NULL;
+	*cp = c;
 	return ret;
 }
 
-static char *get_last_attr(const char *attrs safe, const char *attr safe)
+static bool amatch(const char *a safe, const char *m safe)
 {
-	const char *com = attrs + strlen(attrs);
-	int len = strlen(attr);
-
-	for (; com >= attrs ; com--) {
-		int i = 1;
-		if (*com != ',' && com > attrs)
-			continue;
-		if (com == attrs)
-			i = 0;
-		if (strncmp(com+i, attr, len) != 0)
-			continue;
-		if (com[i+len] != ':')
-			continue;
-		com += i+len+1;
-		i = strcspn(com, ",");
-		return strndup(com, i);
+	while (*a && *a == *m) {
+		a += 1;
+		m += 1;
 	}
-	return NULL;
+	if (*m)
+		/* Didn't match all of m */
+		return False;
+	if (*a != ':' && *a != ',' && *a >= ' ')
+		/* Didn't match all of a */
+		return False;
+	return True;
 }
 
-static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
-		      struct render_list **rlp safe,
-		      int y, int ascent, int scale, int wrap_pos, int *wrap_margin safe,
-		      int *wrap_prefix_sizep,
-		      const char **xypos, const char **xyattr, const char **cursattr)
+static bool aprefix(const char *a safe, const char *m safe)
 {
-	/* Flush a render_list returning x-space used.
-	 * If wrap_pos is > 0, stop rendering before last entry with the
-	 * "wrap" attribute; draw the wrap-tail at wrap_pos, and insert
-	 * wrap_head into the render_list before the next line.
-	 * If any render_list entry reports xypos, store that in xypos with
-	 * matching attributes in xyattr.
-	 */
-	struct render_list *last_wrap = NULL, *end_wrap = NULL, *last_rl = NULL;
-	int in_wrap = 0;
-	int wrap_len = 0; /* length of text in final <wrap> section */
-	int wrap_prefix_size = 0; /* wrap margin plus prefix */
-	struct render_list *rl, *tofree;
-	int x = 0;
-	char *head;
+	while (*a && *a == *m) {
+		a += 1;
+		m += 1;
+	}
+	if (*m)
+		/* Didn't match all of m */
+		return False;
+	return True;
+}
 
-	if (!*rlp)
+static long anum(const char *v safe)
+{
+	char *end = NULL;
+	long ret = strtol(v, &end, 10);
+	if (end == v || !end ||
+	    (*end != ',' && *end >= ' '))
+		/* Not a valid number - use zero */
 		return 0;
-	for (rl = *rlp; wrap_pos && rl; rl = rl->next) {
-		if (rl->wrap && rl != *rlp) {
-			if (!in_wrap) {
-				last_wrap = rl;
-				in_wrap = 1;
-				wrap_len = 0;
-			}
-			wrap_len += strlen(rl->text);
-			end_wrap = rl->next;
-		} else {
-			if (in_wrap)
-				end_wrap = rl;
-			in_wrap = 0;
-		}
-		last_rl = rl;
-	}
-	if (last_wrap)
-		/* A wrap was found, so finish there */
-		last_rl = last_wrap;
-
-	for (rl = *rlp; rl && rl != last_wrap; rl = rl->next) {
-		int cp = rl->cursorpos;
-
-		if (!*wrap_margin && strstr(rl->attr, ",wrap-margin,"))
-			*wrap_margin = rl->x;
-
-		if (wrap_pos &&
-		    cp >= (int)strlen(rl->text) + wrap_len)
-			/* Don't want to place cursor at end of line before
-			 * the wrap, only on the next line after the
-			 * wrap.
-			 */
-			cp = -1;
-
-		x = rl->x;
-		if (dodraw)
-			home_call(focus, "Draw:text", p, cp, NULL, rl->text,
-				  scale, NULL, rl->attr,
-				  x, y + ascent);
-		if (xypos && rl->xypos) {
-			*xypos = rl->xypos;
-			if (xyattr) {
-				/* FIXME this is a bit of a hack.
-				 * We still the x,y co-ords of the start
-				 * of the current attr in front of the
-				 * attrs so render-lines can provide a
-				 * good location for a menu
-				 */
-				char buf[100];
-				struct render_list *rl2;
-				int ax = 0;
-				for (rl2 = *rlp; rl2 != rl; rl2 = rl2->next)
-					if (strcmp(rl2->attr, rl->attr) == 0)
-						ax = rl2->x;
-				snprintf(buf, sizeof(buf), "%dx%d,", ax, y);
-				*xyattr = strconcat(p, buf, rl->attr);
-			}
-		}
-		x += rl->width;
-		if (cp >= 0 && cursattr)
-			*cursattr = strsave(p, rl->attr);
-	}
-	/* Draw the wrap text if it contains the cursor */
-	for (; rl && rl != end_wrap; rl = rl->next) {
-		int cp = rl->cursorpos;
-		if (cp >= (int)strlen(rl->text))
-			cp = -1;
-
-		if (cp >= 0 && dodraw)
-			home_call(focus, "Draw:text", p, cp, NULL, rl->text,
-				  scale, NULL, rl->attr,
-				  rl->x, y + ascent);
-		x = rl->x + rl->width;
-	}
-	/* Draw the wrap-tail */
-	if (wrap_pos && last_rl && dodraw) {
-		char *e = get_last_attr(last_rl->attr, "wrap-tail");
-		if (e || !last_wrap)
-			home_call(focus, "Draw:text", p, -1, NULL, e ?: "\\",
-				  scale, NULL, "underline,fg:blue",
-				  wrap_pos, y + ascent);
-		free(e);
-	}
-
-	tofree = *rlp;
-	*rlp = end_wrap;
-
-	/* Queue the wrap-head for the next flush */
-	if (wrap_pos && last_rl) {
-		head = get_last_attr(last_rl->attr, "wrap-head");
-		if (head) {
-			struct call_return cr =
-				home_call_ret(all, focus, "Draw:text-size", p,
-					      p->w, NULL, head,
-					      scale, NULL, last_rl->attr);
-			rl = calloc(1, sizeof(*rl));
-			rl->text = head;
-			rl->attr = strdup(last_rl->attr); // FIXME underline,fg:blue ???
-			rl->width = cr.x;
-			rl->x = *wrap_margin;
-			rl->cursorpos = -1;
-			rl->next = *rlp;
-			*rlp = rl;
-			/* 'x' is how much to shift-left remaining rl entries,
-			 * Don't want to shift them over the wrap-head
-			 */
-			x -= cr.x;
-			wrap_prefix_size += cr.x;
-		}
-		x -= *wrap_margin;
-		wrap_prefix_size += *wrap_margin;
-	}
-	if (wrap_prefix_sizep)
-		*wrap_prefix_sizep = wrap_prefix_size;
-
-	for (rl = tofree; rl && rl != end_wrap; rl = tofree) {
-		tofree = rl->next;
-		free((void*)rl->text);
-		free((void*)rl->attr);
-		free(rl);
-	}
-
-	/* Shift remaining rl to the left */
-	for (rl = end_wrap; rl; rl = rl->next)
-		rl->x -= x;
-	return x;
+	return ret;
 }
 
-static void update_line_height_attr(struct pane *p safe,
-				    struct pane *focus safe,
-				    int *h safe,
-				    int *a safe,int *w, char *attr safe,
-				    char *str safe, int scale)
+static void aupdate(char **cp safe, const char *v)
 {
-	struct call_return cr = home_call_ret(all, focus, "Draw:text-size", p,
-					      -1, NULL, str,
-					      scale, NULL, attr);
-	if (cr.y > *h)
-		*h = cr.y;
-	if (cr.i2 > *a)
-		*a = cr.i2;
-	if (w)
-		*w += cr.x;
-}
-
-static void strip_ctrl(char *s safe)
-{
-	while (*s) {
-		if (*s < ' ' || ((unsigned)*s >= 128 && (unsigned)*s < 128+' '))
-			*s = 'M';
-		s += 1;
-	}
-}
-
-static void update_line_height(struct pane *p safe, struct pane *focus safe,
-			       int *h safe, int *a safe,
-			       int *w safe, int *center, const char *line safe,
-			       int scale)
-{
-	/* Extract general geometry information from the line.
-	 * Maximum height and ascent are extracted together with total
-	 * with and h-alignment info:
-	 * 0 - left, 1 = centered, >=2 = space-on-left, <=-2 = space from right
+	/* duplicate value at v and store in *cp, freeing what is there
+	 * first
 	 */
-	struct buf attr;
-	int attr_found = 0;
-	const char *segstart = line;
-	int above = 0, below = 0;
+	const char *end = v;
 
+	while (end && *end != ',' && *end >= ' ')
+		end += 1;
+
+	free(*cp);
+	if (v)
+		*cp = strndup(v, end-v);
+	else
+		*cp = NULL;
+}
+
+static void aappend(struct buf *b safe, char const *a safe)
+{
+	const char *end = a;
+	while (*end >= ' ' && *end != ',')
+		end++;
+	buf_concat_len(b, a, end-a);
+	buf_append(b, ',');
+}
+
+static void add_render(struct rline_data *rd safe, struct render_item **safe*rlp safe,
+		       const char *start safe, const char *end safe,
+		       char *attr safe,
+		       short tab, enum tab_align align,
+		       bool wrap_margin,
+		       short wrap, short hide)
+{
+	struct render_item *rl;
+	struct render_item **rlend = *rlp;
+
+	alloc(rl, pane);
+	rl->attr = strdup(attr);
+	rl->start = start - rd->line;
+	rl->len = end - start;
+	rl->tab_align = align;
+	rl->tab = tab;
+	rl->wrap = wrap;
+	rl->hide = hide;
+	rl->wrap_margin = wrap_margin;
+	rl->eol = !!strchr("\n\f\0", *start);
+	*rlend = rl;
+	rlend = &rl->next;
+	*rlp = rlend;
+}
+
+static inline bool is_ctrl(unsigned int c)
+{
+	return c < ' ' ||
+		(c >= 128 && c < 128 + ' ');
+}
+
+static void parse_line(struct rline_data *rd safe)
+{
+	/* Parse out markup in line into a renderlist with
+	 * global content directly in rd.
+	 */
+	struct buf attr, wrapattr;
+	struct render_item *rl = NULL, **rlend = &rl;
+	const char *line = rd->line;
+	bool wrap_margin = False;
+	int tab = TAB_UNSET, align = TAB_LEFT;
+	int hide = 0, hide_num = 0, hide_depth = 0;
+	int wrap = 0, wrap_num = 0, wrap_depth = 0;
+	unsigned char c;
+
+	rd->left_margin = rd->right_margin = 0;
+	rd->space_above = rd->space_below = 0;
+	rd->min_height = 0;
+	aupdate(&rd->wrap_head, NULL);
+	aupdate(&rd->wrap_tail, NULL);
+	aupdate(&rd->wrap_attr, NULL);
+
+	if (!line) {
+		rd->image = False;
+		return;
+	}
+	rd->image = strstarts(line, SOH "image:");
+	if (rd->image)
+		return;
 	buf_init(&attr);
-	buf_append(&attr, ',');
-	while (*line) {
-		char c = *line++;
+	buf_init(&wrapattr);
+
+	rl = rd->content;
+	rd->content = NULL;
+	while (rl) {
+		struct render_item *r = rl;
+		rl = r->next;
+		free(r->split_list);
+		unalloc_str_safe(r->attr, pane);
+		unalloc(r, pane);
+	}
+
+	do {
 		const char *st = line;
+		c = *line++;
 
-		if (c != soh && c != etx && c != ack)
-			continue;
+		while (c >= ' ' &&
+		       (!rd->word_wrap || c != ' '))
+			c = *line++;
 
-		if (line - 1 > segstart) {
-			char *l = strndup(segstart, line - 1 - segstart);
-			strip_ctrl(l);
-			update_line_height_attr(p, focus, h, a, w,
-						buf_final(&attr), l, scale);
-			free(l);
+		if (line - 1 > st) {
+			/* All text from st to line-1 has "attr' */
+			add_render(rd, &rlend, st, line-1, buf_final(&attr),
+				   tab, align, wrap_margin, wrap, hide);
+			align = TAB_LEFT;
+			tab = TAB_UNSET;
+			wrap_margin = False;
+			st = line - 1;
 		}
-		if (c == soh) {
-			char *c2;
-			char *b;
-			const char *aend;
-
-			/* move 'line' over the attrs */
+		switch (c) {
+		case soh: {
+			int old_len;
+			const char *a, *v;
+			st = line;
+			/* Move 'line' over the attrs */
 			while (*line && line[-1] != stx)
 				line += 1;
-			segstart = line;
 
-			/* attrs must not contain ",," */
-			aend = strstr(st, ",,");
-			if (aend)
-				aend += 1;
-			if (!aend || line < aend)
-				aend = line;
-
-			buf_concat_len(&attr, st, aend-st);
-			/* Replace trailing 'stx' with ',', and append ','
-			 * so ",," marks where to strip back to when we
-			 * find etx
+			/* A set of attrs begins and ends with ',' so that
+			 * ",," separates sets of attrs
+			 * An empty set will be precisely 1 ','.  We strip
+			 * "attr," as long as we can, then strip one more ',',
+			 * which should leave either a trailing comma, or an
+			 * empty string.
 			 */
-			attr.b[attr.len-1] = ',';
 			buf_append(&attr, ',');
-			b = buf_final(&attr);
-			if (center && strstr(b, ",center,"))
-				*center = 1;
-			if (center && (c2=strstr(b, ",left:")) != NULL)
-				*center = 2 + atoi(c2+6) * scale / 1000;
-			if (center && (c2=strstr(b, ",right:")) != NULL)
-				*center = -2 - atoi(c2+7) * scale / 1000;
-			if ((c2=strstr(b, ",space-above:")) != NULL)
-				above = atoi(c2+13) * scale / 1000;
-			if ((c2=strstr(b, ",space-below:")) != NULL)
-				below = atoi(c2+13) * scale / 1000;
-			if ((c2=strstr(b, ",tab:")) != NULL)
-				*w = atoi(c2+5) * scale / 1000;
-			attr_found = 1;
-			update_line_height_attr(p, focus, h, a, w, b, "",
-						scale);
-		} else if (c == etx) {
-			segstart = line;
-			/* strip back to ",," */
-			if (attr.len >= 2)
+			old_len = attr.len;
+			foreach_attr(a, v, st, line) {
+				if (amatch(a, "centre") || amatch(a, "center") ||
+				    amatch(a, "ctab")) {
+					if (v)
+						tab = anum(v);
+					align = TAB_CENTRE;
+				} else if (amatch(a, "tab") && v) {
+					tab = anum(v);
+					align = TAB_LEFT;
+				} else if (amatch(a, "rtab")) {
+					align = TAB_RIGHT;
+				} else if (amatch(a, "left") && v) {
+					rd->left_margin = anum(v);
+				} else if (amatch(a, "right") && v) {
+					rd->right_margin = anum(v);
+				} else if (amatch(a, "space-above") && v) {
+					rd->space_above = anum(v);
+				} else if (amatch(a, "space-below") && v) {
+					rd->space_below = anum(v);
+				} else if (amatch(a, "height") && v) {
+					rd->min_height = anum(v);
+				} else if (amatch(a, "wrap")) {
+					wrap = ++wrap_num;
+					wrap_depth = old_len;
+				} else if (amatch(a, "wrap-margin")) {
+					wrap_margin = True;
+				} else if (amatch(a, "wrap-head")) {
+					aupdate(&rd->wrap_head, v);
+				} else if (amatch(a, "wrap-tail")) {
+					aupdate(&rd->wrap_tail, v);
+				} else if (aprefix(a, "wrap-")) {
+					aappend(&wrapattr, a+5);
+				} else if (amatch(a, "hide")) {
+					hide = ++hide_num;
+					hide_depth = old_len;
+				} else
+					aappend(&attr, a);
+			}
+			break;
+			}
+		case etx:
+			/* strip last set of attrs */
+			while (attr.len >= 2 &&
+			attr.b[attr.len-1] == ',' &&
+			attr.b[attr.len-2] != ',') {
+				/* strip this attr */
 				attr.len -= 2;
-			while (attr.len > 0 &&
-			       (attr.b[attr.len] != ',' ||
-				attr.b[attr.len+1] != ','))
+				while (attr.len && attr.b[attr.len-1] != ',')
+					attr.len -= 1;
+			}
+			/* strip one more ',' */
+			if (attr.len > 0)
 				attr.len -= 1;
-		} else if (c == ack) {
-			segstart = line;
+			if (attr.len <= wrap_depth)
+				wrap = 0;
+			if (attr.len <= hide_depth)
+				hide = 0;
+			break;
+		case ack:
+			/* Just ignore this */
+			break;
+		case ' ':
+			/* This and following spaces are wrappable */
+			st = line;
+			while (*line == ' ')
+				line += 1;
+			wrap = ++wrap_num;
+			add_render(rd, &rlend, st - 1, line, buf_final(&attr),
+				   tab, align, wrap_margin, wrap, hide);
+			tab = TAB_UNSET;
+			align = TAB_LEFT;
+			wrap_margin = False;
+			wrap = 0;
+			break;
+		case '\0':
+		case '\n':
+		case '\f':
+		case '\t':
+		default:
+			/* Each tab gets an entry of its own, as does any
+			 * stray control character.
+			 * \f \n and even \0 do.  These are needed for
+			 * easy cursor placement.
+			 */
+			add_render(rd, &rlend, st, line, buf_final(&attr),
+				   tab, align, wrap_margin, wrap, hide);
+			tab = TAB_UNSET;
+			align = TAB_LEFT;
+			wrap_margin = False;
+			break;
+		}
+	} while (c);
+
+	rd->content = rl;
+	free(attr.b);
+	if (buf_final(&wrapattr)[0])
+		rd->wrap_attr = buf_final(&wrapattr);
+	else {
+		free(wrapattr.b);
+		rd->wrap_attr = strdup(",fg:blue,underline,");
+	}
+}
+
+static inline struct call_return do_measure(struct pane *p safe,
+					    char *str safe, int len,
+					    int offset, int scale,
+					    const char *attr)
+{
+	struct call_return cr;
+	char tmp;
+
+	if (len >= 0) {
+		tmp = str[len];
+		str[len] = 0;
+	}
+	cr = call_ret(all, "Draw:text-size", p,
+		      offset, NULL, str,
+		      scale, NULL, attr);
+	if (len >= 0)
+		str[len] = tmp;
+	return cr;
+}
+
+static inline void do_draw(struct pane *p safe,
+			   struct pane *focus safe,
+			   char *str safe, int len, int tab_cols,
+			   int offset, int scale,
+			   const char *attr, int x, int y)
+{
+	char tmp;
+	char tb[] = "         ";
+
+	if (strchr("\f\n\0", str[0])) {
+		/* end marker - len extends past end of string,
+		 * but mustn't write there.  Only need to draw if
+		 * cursor is here.
+		 */
+		if (offset == 0)
+			home_call(focus, "Draw:text", p, offset, NULL, "",
+				  scale, NULL, attr, x, y);
+		return;
+	}
+	if (str[0] == '\t') {
+		/* Tab needs special handling */
+		str = tb;
+		len = tab_cols;
+	}
+	if (len >= 0) {
+		tmp = str[len];
+		str[len] = 0;
+	}
+	home_call(focus, "Draw:text", p, offset, NULL, str,
+			   scale, NULL, attr, x, y);
+	if (len >= 0)
+		str[len] = tmp;
+}
+
+static void add_split(struct render_item *rl safe, int split)
+{
+	int i = rl->split_cnt;
+	rl->split_cnt += 1;
+	rl->split_list = realloc(rl->split_list,
+				 sizeof(rl->split_list[0]) * rl->split_cnt);
+	rl->split_list[i] = split;
+}
+
+static int calc_tab(int num, int margin, int scale)
+{
+	if (num > 0)
+		return num * scale / 1000;
+	if (-num > margin)
+		return 0;
+	return margin + num * scale / 1000;
+}
+
+static bool measure_line(struct pane *p safe, struct pane *focus safe, int offset)
+{
+	/* First measure each render_item entry setting
+	 * height, ascent, width.
+	 * Then use that with tab information to set 'x' position for
+	 * each unit.
+	 * Finally identify line-break locations if needed and set 'y'
+	 * positions
+	 */
+	struct rline_data *rd = &p->data;
+	struct render_item *rl, *wraprl;
+	int shift_left = pane_attr_get_int(focus, "shift_left", 0);
+	bool wrap = shift_left < 0;
+	int wrap_margin;
+	int right_margin = p->w - (rd->right_margin * rd->scale / 1000);
+	int xdiff, ydiff;
+	struct call_return cr;
+	int x, y;
+	bool eop = False;
+
+	if (!rd->content)
+		return eop;
+	cr = do_measure(p, "M", -1, -1, rd->scale,"");
+	rd->curs_width = cr.x;
+	rd->line_height = cr.y;
+	rd->ascent = cr.i2;
+	if (rd->min_height * rd->scale / 1000 > rd->line_height)
+		rd->line_height = rd->min_height * rd->scale / 1000;
+
+	if (rd->wrap_head) {
+		cr = do_measure(p, rd->wrap_head, -1, -1, rd->scale,
+				rd->wrap_attr);
+		rd->head_length = cr.x;
+	}
+	cr = do_measure(p, rd->wrap_tail ?: "\\", -1, -1, rd->scale,
+			rd->wrap_attr);
+	rd->tail_length = cr.x;
+
+	for (rl = rd->content; rl; rl = rl->next) {
+		char tmp[4] = "";
+		char *txt = tmp;
+		int len = -1;
+		if (!is_ctrl(rd->line[rl->start])) {
+			txt = rd->line + rl->start;
+			len = rl->len;
+		} else if (rl->eol) {
+			/* Ensure attributes of newline add to line height.
+			 * The width will be ignored. */
+			strcpy(tmp, "M");
+			if (rd->line[rl->start] == '\f')
+				eop = True;
+		} else if (rd->line[rl->start] == '\t') {
+			strcpy(tmp, " ");
+		} else {
+			strcpy(tmp, "^x");
+			tmp[1] = '@' + (rd->line[rl->start] & 31);
+		}
+		cr = do_measure(p, txt, len, -1, rd->scale, rl->attr);
+		if (cr.y > rd->line_height)
+			rd->line_height = cr.y;
+		rl->height = cr.y;
+		if (cr.i2 > rd->ascent)
+			rd->ascent = cr.i2;
+		rl->width = rl->eol ? 0 : cr.x;
+		rl->hidden = False;
+
+		if (rl->start <= offset && offset <= rl->start + rl->len) {
+			cr = do_measure(p, "M", -1, -1, rd->scale, rl->attr);
+			rd->curs_width = cr.x;
+		}
+
+		rl->split_cnt = 0;
+		free(rl->split_list);
+		rl->split_list = NULL;
+	}
+	/* Set 'x' position honouring tab stops, and set length
+	 * of "\t" characters.  Also handle \n and \f.
+	 */
+	x = (rd->left_margin * rd->scale / 1000) - (shift_left > 0 ? shift_left : 0);
+	y = rd->space_above * rd->scale / 1000;
+	rd->width = 0;
+	for (rl = rd->content; rl; rl = rl->next) {
+		int w, margin;
+		struct render_item *rl2;
+		rl->y = y;
+		if (rl->tab != TAB_UNSET)
+			x =  (rd->left_margin * rd->scale / 1000) + calc_tab(rl->tab, right_margin, rd->scale);
+		if (rl->eol) {
+			/* EOL */
+			if (x > rd->width)
+				rd->width = x;
+			rl->x = x;
+			x = 0; /* Don't include shift. probably not margin */
+			if (rd->line[rl->start])
+				y += rd->line_height;
+			continue;
+		}
+		if (rl->tab_align == TAB_LEFT) {
+			rl->x = x;
+			if (rd->line[rl->start] == '\t') {
+				int col = x / rl->width;
+				int cols= 8 - (col % 8);
+				rl->tab_cols = cols;
+				rl->width *= cols;
+			}
+			x += rl->width;
+			continue;
+		}
+		w = rl->width;
+		for (rl2 = rl->next;
+		     rl2 && rl2->tab_align == TAB_LEFT && rl2->tab == TAB_UNSET;
+		     rl2 = rl2->next)
+			w += rl2->width;
+		while (rl2 && rl2->tab == TAB_UNSET)
+			rl2 = rl2->next;
+		margin = right_margin;
+		if (rl2)
+			margin =  (rd->left_margin * rd->scale / 1000) + calc_tab(rl2->tab, right_margin, rd->scale);
+		if (rl->tab_align == TAB_RIGHT) {
+			margin -= rd->tail_length;// FIXME don't want this HACK
+			x = x + margin - x - w;
+		} else
+			x = x + (margin - x - w) / 2;
+		rl->x = x;
+		while (rl->next && rl->next->next && rl->next->tab_align == TAB_LEFT) {
+			x += rl->width;
+			rl = rl->next;
+			rl->x = x;
+			rl->y = y;
 		}
 	}
-	if (line > segstart && line[-1] == '\n')
-		line -= 1;
-	if (line > segstart || !attr_found) {
-		char *l = strndup(segstart, line - segstart);
-		strip_ctrl(l);
-		update_line_height_attr(p, focus, h, a, w,
-					buf_final(&attr), l, scale);
-		free(l);
+
+	/* Now we check to see if the line needs to be wrapped and
+	 * if so, adjust some y values and reduce x.  If we need to
+	 * split an individual entry we create an array of split points.
+	 */
+	xdiff = 0; ydiff = 0; y = 0;
+	wraprl = NULL;
+	wrap_margin = rd->head_length;
+	for (rl = rd->content ; wrap && rl ; rl = rl->next) {
+		int splitpos;
+		char *str;
+		int len;
+		char tb[] = "        ";
+		if (rl->wrap && (wraprl == NULL || rl->wrap != wraprl->wrap))
+			wraprl = rl;
+		if (rl->wrap_margin)
+			wrap_margin = rl->x;
+		rl->wrap_x = wrap_margin;
+		rl->x += xdiff;
+		rl->y += ydiff;
+		y = rl->y;
+		if (rl->eol) {
+			xdiff = 0;
+			continue;
+		}
+		if (rl->x + rl->width <= right_margin - rd->tail_length)
+			continue;
+		/* This doesn't fit here */
+		if (wraprl) {
+			/* Move wraprl to next line and hide it unless it contains cursor */
+			int xd = wraprl->x - wrap_margin;
+			struct render_item *wraprl2, *rl2;
+
+			/* Find last ritem in wrap region.*/
+			for (wraprl2 = wraprl ;
+			     wraprl2->next && wraprl2->next->wrap == wraprl->wrap ;
+			     wraprl2 = wraprl2->next)
+				;
+			if (wraprl2->next)
+				xd = wraprl2->next->x - wrap_margin;
+			if (offset >= 0 &&
+			    offset >= wraprl->start &&
+			    offset <= wraprl2->start + wraprl2->len) {
+				/* Cursor is here, so keep it visible.
+				 * If we are still in the wrap region, pretend
+				 * it didn't exist, else move first item
+				 * after it to next line
+				 */
+				if (rl->wrap == wraprl->wrap)
+					goto normal_wrap;
+			} else {
+				/* Hide the wrap region */
+				while (wraprl != wraprl2) {
+					wraprl->hidden = True;
+					wraprl = wraprl->next;
+				}
+				if (wraprl)
+					wraprl->hidden = True;
+				while (rl->next && rl->next->hidden)
+					rl = rl->next;
+			}
+			for (rl2 = wraprl2->next ; rl2 && rl2 != rl->next; rl2 = rl2->next) {
+				rl2->y += rd->line_height;
+				rl2->x -= xd;
+			}
+			xdiff -= xd;
+			ydiff += rd->line_height;
+			wraprl = NULL;
+			continue;
+		}
+	normal_wrap:
+		if (rl->x >= right_margin - rd->tail_length) {
+			/* This rl moves completely to next line */
+			xdiff -= rl->x - wrap_margin;
+			rl->x = wrap_margin;
+			ydiff += rd->line_height;
+			rl->y += rd->line_height;
+			wraprl = NULL;
+			continue;
+		}
+		/* Need to split this rl into two or more pieces */
+		x = rl->x;
+		splitpos = 0;
+		str = rd->line + rl->start;
+		len = rl->len;
+		if (*str == '\t') {
+			str = tb;
+			len = rl->tab_cols;
+		}
+		while (1) {
+			cr = do_measure(p, str + splitpos,
+					len - splitpos,
+					right_margin - rd->tail_length - x,
+					rd->scale, rl->attr);
+			if (cr.i >= len - splitpos)
+				/* Remainder fits now */
+				break;
+			/* re-measure the first part */
+			cr = do_measure(p, str + splitpos,
+					cr.i,
+					right_margin - rd->tail_length - x,
+					rd->scale, rl->attr);
+
+			ydiff += rd->line_height;
+			xdiff -= cr.x; // fixme where does wrap_margin fit in there
+			if (splitpos == 0)
+				xdiff -= rl->x;
+			splitpos += cr.i;
+			x = wrap_margin;
+			add_split(rl, splitpos);
+		}
 	}
-	*h += above + below;
-	*a += above;
-	free(buf_final(&attr));
+	/* We add rd->line_height for the EOL, whether a NL is present of not */
+	ydiff += rd->line_height;
+	pane_resize(p, p->x, p->y, p->w,
+		    (rd->space_above + rd->space_below) * rd->scale / 1000 +
+		    ydiff);
+	attr_set_int(&p->attrs, "line-height", rd->line_height);
+	return eop;
+}
+
+static void draw_line(struct pane *p safe, struct pane *focus safe, int offset)
+{
+	struct rline_data *rd = &p->data;
+	struct render_item *rl;
+	char *wrap_tail = rd->wrap_tail ?: "\\";
+	char *wrap_head = rd->wrap_head ?: "";
+
+	home_call(focus, "Draw:clear", p);
+
+	if (!rd->content)
+		return;
+	for (rl = rd->content ; rl; rl = rl->next) {
+		int split = 0;
+		short y = rl->y;
+		int cpos;
+
+		if (rl->hidden)
+			continue;
+		if (offset < 0 || offset >= rl->start + rl->len)
+			cpos = -1;
+		else if (offset < rl->start)
+			cpos = 0;
+		else
+			cpos = offset - rl->start;
+
+		do_draw(p, focus,
+			rd->line + rl->start, rl->split_list ? rl->split_list[0]: rl->len,
+			rl->split_list ? rl->split_list[0] : rl->tab_cols,
+			cpos, rd->scale, rl->attr,
+			rl->x, y + rd->ascent);
+		if (!rl->split_cnt && rl->next &&
+		    !rl->next->eol && rl->next->y != rl->y) {
+			/* we are about to wrap - draw the markers */
+			if (*wrap_tail)
+				do_draw(p, focus, wrap_tail, -1, 0, -1, rd->scale,
+					rd->wrap_attr,
+					p->w - rd->tail_length,
+					y + rd->ascent);
+			if (*wrap_head)
+				do_draw(p, focus, wrap_head, -1, 0, -1, rd->scale,
+					rd->wrap_attr,
+					0, y + rd->ascent + rd->line_height);
+		}
+
+		while (split < rl->split_cnt ||
+		       (rl->next && rl->next->next && rl->next->y > y)) {
+			/* line wrap here */
+			/* don't show head/tail for wrap-regions */
+			if (*wrap_tail /*&& !rl->wrap*/)
+				do_draw(p, focus, wrap_tail, -1, 0, -1, rd->scale,
+					rd->wrap_attr,
+					p->w - rd->tail_length,
+					y + rd->ascent);
+			y += rd->line_height;
+			if (*wrap_head /*&& !rl->wrap*/)
+				do_draw(p, focus, wrap_head, -1, 0, -1, rd->scale,
+					rd->wrap_attr,
+					0, y + rd->ascent);
+			if (rl->split_list && split < rl->split_cnt) {
+				int end = rl->len;
+				char *str = rd->line + rl->start + rl->split_list[split];
+				if (rd->line[rl->start] == '\t') {
+					end = rl->tab_cols;
+					str = "\t";
+				}
+				if (split+1 < rl->split_cnt)
+					end = rl->split_list[split+1];
+				do_draw(p, focus,
+					str,
+					end - rl->split_list[split],
+					end - rl->split_list[split],
+					cpos - rl->split_list[split],
+					rd->scale,
+					rl->attr, rd->left_margin + rd->head_length,
+					y + rd->ascent);
+				split += 1;
+			}
+		}
+		if (offset < rl->start + rl->len)
+			offset = -1;
+	}
+}
+
+static int find_xy(struct pane *p safe, struct pane *focus safe,
+		   short x, short y, const char **xyattr)
+{
+	/* Find the location in ->line that is best match for x,y.
+	 * If x,y is on the char at that location, when store attributes
+	 * for the char in xyattr
+	 * We always return a location, even if no xyattr.
+	 * We use the last render_item that is not definitely after x,y
+	 * We do not consider the eol render_item
+	 */
+	struct call_return cr;
+	struct rline_data *rd = &p->data;
+	struct render_item *r, *rl = NULL;
+
+	if (!rd->content)
+		return 0;
+	for (r = rd->content; r ; r = r->next) {
+		int split;
+		if (r->y <= y && r->x <= x)
+			rl = r;
+		for (split = 0; split < r->split_cnt; split++) {
+			if (r->y + (split + 1) * rd->line_height &&
+			    r->x <= r->wrap_x)
+				rl = r;
+		}
+	}
+	if (!rl)
+		return 0;
+	if (rl->eol)
+		/* newline or similar.  Can only be at start */
+		return rl->start;
+	if (rl->x + rl->width > x &&
+	    rl->y + rl->height > y &&
+	    xyattr)
+		*xyattr = rl->attr;
+	if (rd->line[rl->start] == '\t')
+		cr.i = 0;
+	else
+		cr = do_measure(p, rd->line + rl->start, rl->len,
+				x - rl->x, rd->scale, rl->attr);
+	return rl->start + cr.i;
+}
+
+static struct xy find_curs(struct pane *p safe, int offset, const char **cursattr)
+{
+	struct call_return cr;
+	struct xy xy = {0,0};
+	int split;
+	int st;
+	struct rline_data *rd = &p->data;
+	struct render_item *r, *rl = NULL;
+
+	for (r = rd->content; r; r = r->next) {
+		if (offset < r->start)
+			break;
+		rl = r;
+	}
+	if (!rl) {
+		/* This should be impossible as the eol goes past
+		 * the largest offset.
+		 */
+		return xy;
+	}
+	if (offset < rl->start)
+		/* in the attrs?? */
+		offset = 0;
+	else
+		offset -= rl->start;
+	/* offset now from rl->start */
+	if (rd->line[rl->start] == '\t' && offset)
+		offset = rl->tab_cols;
+	if (cursattr)
+		*cursattr = rl->attr;
+	st = 0;
+	for (split = 0; split < rl->split_cnt && rl->split_list; split ++) {
+		if (offset < rl->split_list[split])
+			break;
+		st = rl->split_list[split];
+	}
+	if (rl->eol)
+		cr.x = offset ? rl->width : 0;
+	else {
+		char *str = rd->line + rl->start + st;
+		char tb[] = "        ";
+		if (rd->line[rl->start] == '\t') {
+			str = tb;
+			if (offset)
+				offset = rl->tab_cols;
+		}
+		cr = do_measure(p, str, offset - st,
+				-1, rd->scale, rl->attr);
+	}
+	if (split)
+		xy.x = cr.x; /* FIXME margin?? */
+	else
+		xy.x = rl->x + cr.x;
+	xy.y = rl->y + split * rd->line_height;
+	if (rl->next == NULL && offset > rl->len) {
+		/* After the newline ? Go to next line */
+		xy.x = 0;
+		xy.y += rd->line_height;
+	}
+	return xy;
 }
 
 static void parse_map(const char *map safe, short *rowsp safe, short *colsp safe)
@@ -520,7 +1032,6 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 
 	while (*line && *line != stx && *line != etx) {
 		int len = strcspn(line, "," STX ETX);
-
 		if (strstarts(line, "image:")) {
 			fname = strndup(line+6, len-6);
 			if (!ssize ||
@@ -616,475 +1127,96 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 	return 1;
 }
 
-static void set_xypos(struct render_list *rlst,
-		      struct pane *p safe, struct pane *focus safe, int posx,
-		      int scale)
+DEF_CMD(renderline_draw)
 {
-	/* Find the text postition in the rlst which corresponds to
-	 * the screen position posx, and report attribtes there too.
-	 */
-	for (; rlst && rlst->x <= posx; rlst = rlst->next) {
-		if (rlst->x + rlst->width < posx)
-			continue;
+	struct rline_data *rd = &ci->home->data;
+	struct xy xy;
+	int offset = -1;
 
-		if (rlst->x == posx)
-			rlst->xypos = rlst->text_orig;
-		else {
-			struct call_return cr =
-				home_call_ret(all, focus, "Draw:text-size", p,
-					      posx - rlst->x, NULL, rlst->text,
-					      scale, NULL, rlst->attr);
-			rlst->xypos = rlst->text_orig + cr.i;
-		}
+	if (ci->num >= 0)
+		offset = rd->prefix_bytes + ci->num;
+
+	if (rd->image)
+		render_image(ci->home, ci->focus, rd->line, True,
+			     rd->scale, offset, False, 0, 0);
+	else
+		draw_line(ci->home, ci->focus, offset);
+
+	if (ci->num >= 0) {
+		xy = find_curs(ci->home, rd->prefix_bytes + ci->num, NULL);
+		ci->home->cx = xy.x;
+		ci->home->cy = xy.y;
 	}
+	return 1;
 }
 
-/* Render a line, with attributes and wrapping.
- * The marked-up text to be processed has already been provided with
- *   render-line:set.  It is in rd->line;
- * ->num is <0, or an index into ->str where the cursor is,
- *   but is ignored for Refresh. which uses ->curspos for any cursor.
- *   and the x,y co-ords will be stored in p->cx,p->cy
- * If key is "render-line:draw" or "Refresh" then send drawing commands,
- * otherwise just perform measurements.
- * If key is "render-line:findxy", then only measure until the position
- *   in x,y is reached, then return an index into ->str of where we reached.
- *   Store the attributes active at the time so they can be fetched later.
- */
-DEF_CMD(renderline)
+DEF_CMD(renderline_refresh)
 {
-	struct pane *p = ci->home;
-	struct rline_data *rd = &p->data;
-	struct pane *focus = ci->focus;
-	const char *line = rd->line;
-	int dodraw = (strcmp(ci->key, "render-line:draw") == 0 ||
-		      strcmp(ci->key, "Refresh") == 0);
-	short posx;
-	short offset = strcmp(ci->key, "Refresh") == 0 ? rd->curspos : ci->num;
-	int x = 0;
-	int y = 0;
-	const char *line_start;
-	const char *start;
-	struct buf attr;
-	unsigned char ch;
-	int wrap_offset = 0; /*number of columns displayed in earlier lines,
-			      * use for calculating TAB size. */
-	int wrap_margin = 0; /* left margin for wrap - carried forward from
-			      * line to line. */
-	int in_tab = 0;
-	int shift_left = pane_attr_get_int(focus, "shift_left", 0);
-	bool word_wrap = pane_attr_get_int(focus, "word-wrap", 0) != 0;
-	bool in_lws = False;
-	bool seen_non_space = False;
-	int wrap = shift_left < 0;
-	char *prefix = pane_attr_get(focus, "prefix");
-	int line_height = 0;
-	int ascent = -1;
-	int mwidth = -1;
-	int ret = OK;
-	int twidth = 0;
-	int center = 0;
-	int margin;
-	int end_of_page = 0;
-	struct render_list *rlst = NULL;
-	const char *xypos = NULL;
-	const char *ret_xypos = NULL;
-	const char *xyattr = NULL;
-	char *ret_xyattr = NULL;
-	const char *cursattr = NULL;
-	/* want_xypos becomes 2 when the pos is found */
-	int want_xypos = strcmp(ci->key, "render-line:findxy") == 0;
-	struct xy xyscale = pane_scale(focus);
-	int scale = xyscale.x;
-	short cx = -1, cy = -1;
+	struct rline_data *rd = &ci->home->data;
+	int offset = -1;
 
-	if (!line)
-		return Enoarg;
-	/* line_start doesn't change
-	 * start is the start of the current segment(since attr)
-	 *    is update after we call draw_some()
-	 * line is where we are now up to.
-	 */
-	start = line_start = line;
-
-	rd->scale = scale;
-
-	if (dodraw)
-		home_call(focus, "Draw:clear", p);
-
-	if (strstarts(line, SOH "image:"))
-		/* For now an <image> must be on a line by itself.
-		 * Maybe this can be changed later if I decide on
-		 * something that makes sense.
-		 */
-		return render_image(p, focus, line, dodraw, scale,
-				    offset, want_xypos, ci->x, ci->y);
-
-	update_line_height(p, focus, &line_height, &ascent, &twidth, &center,
-			   line, scale);
-
-	if (line_height <= 0)
-		return Einval;
-
-	if (!wrap)
-		x -= shift_left;
-	else
-		shift_left = 0;
-
-	mwidth = 0;
-	update_line_height_attr(p, focus, &line_height, &ascent, &mwidth,
-				"", "M", scale);
-	rd->curs_width = mwidth;
-
-	if (prefix) {
-		const char *s = prefix + strlen(prefix);
-		update_line_height_attr(p, focus, &line_height, &ascent, NULL,
-					"bold", prefix, scale);
-		draw_some(p, focus, &rlst, &x, prefix, &s, ",bold,", False,
-			  0, -1, -1, scale);
-		rd->prefix_len = x + shift_left;
-	} else
-		rd->prefix_len = 0;
-
-	if (center == 1)
-		x += (p->w - x - twidth) / 2;
-	if (center >= 2)
-		x += center - 2;
-	if (center <= -2)
-		x = p->w - x - twidth + (center + 2);
-	/* tabs are measured against this margin */
-	margin = x;
-
-	/* The attr string starts and ends with ',' and
-	 * attrs are separated by commas.
-	 * Groups of attrs to be popped by the next </>
-	 * are separated by ",,"
-	 */
-	buf_init(&attr);
-	buf_append(&attr, ',');
-
-	/* If findxy was requested, ci->x and ci->y tells us
-	 * what to look for, and we return index into line where this
-	 * co-ordinate was reached.
-	 * want_xypos will be set to 2 when we pass the co-ordinate
-	 * At that time ret_xypos is set, to be used to provide return value.
-	 * This might happen when y exceeds ypos, or we hit end-of-page.
-	 */
-
-
-	while (*line && y < p->h && !end_of_page) {
-		if (mwidth <= 0) {
-			/* mwidth is recalculated whenever attrs change */
-			struct call_return cr = home_call_ret(all, focus,
-							      "Draw:text-size", p,
-							      -1, NULL, "M",
-							      scale, NULL,
-							      buf_final(&attr));
-			mwidth = cr.x;
-			if (mwidth <= 0)
-				mwidth = 1;
-			if (!rd->curs_width)
-				rd->curs_width = mwidth;
-		}
-
-		if (want_xypos == 1 &&
-		    y > ci->y - line_height &&
-		    y <= ci->y)
-			posx = ci->x;
-		else
-			posx = -1;
-
-		if (want_xypos == 1 && xypos) {
-			ret_xyattr = xyattr ? strdup(xyattr) : NULL;
-			ret_xypos = xypos;
-			want_xypos = 2;
-		}
-
-		if (offset >= 0 && start - line_start <= offset) {
-			if (y >= 0 && (y == 0 || y + line_height <= p->h)) {
-				/* Don't update cursor pos while in a TAB
-				 * as we want to leave cursor at the start.
-				 */
-				if (!in_tab) {
-					cy = y;
-					cx = x;
-				}
-			} else {
-				cy = cx = -1;
-			}
-		}
-
-		if ((ret == WRAP || x >= p->w - (wrap ? mwidth : 0)) &&
-		    line[0] != soh && line[0] != ack) {
-			/* No room for more text */
-			if (wrap && *line && *line != '\n') {
-				int wrap_prefix_size;
-				int len = flush_line(p, focus, dodraw, &rlst,
-						     y, ascent, scale,
-						     p->w - mwidth, &wrap_margin,
-						     &wrap_prefix_size,
-						     &xypos, &xyattr, &cursattr);
-				if (len + wrap_prefix_size <= cx && cy == y) {
-					cx -= len;
-					cy += line_height;
-				}
-				wrap_offset += len;
-				x -= len;
-				if (x < 0)
-					x = 0;
-				y += line_height;
-				if (want_xypos == 1 &&
-				    y >= ci->y - line_height &&
-				    y <= ci->y)
-					/* cursor is in the tail of rlst that
-					 * was relocated - reassess xypos
-					 */
-					set_xypos(rlst, p, focus, ci->x, scale);
-			} else {
-				/* truncate: skip over normal text, but
-				 * stop at newline.
-				 */
-				line += strcspn(line, "\n");
-				start = line;
-			}
-		}
-
-		ret = OK;
-		ch = *line;
-		if (line == line_start + offset)
-			rd->curs_width = mwidth;
-		if (ch >= ' ') {
-			bool was_in_lws = in_lws;
-			line += 1;
-			/* Only flush out if string is getting a bit long.
-			 * i.e.  if we have reached the offset we are
-			 * measuring to, or if we could have reached the
-			 * right margin.
-			 * Alternately, if we are doing word-wrap and we
-			 * have found start or end of a word.
-			 */
-			if ((*line & 0xc0) == 0x80)
-				/* In the middle of a UTF-8 */
-				continue;
-			if (word_wrap) {
-				wint_t wch = ch;
-				const char *trimmed_line = line - 1;
-				if (ch & 0x80) {
-					const char *l = start + utf8_round_len(start, trimmed_line-start);
-					trimmed_line = l;
-					wch = get_utf8(&l, NULL);
-				}
-				if (!iswspace(wch)) {
-					seen_non_space = True;
-					if (in_lws)
-						line = trimmed_line;
-					in_lws = False;
-				} else if (!in_lws&& seen_non_space && iswspace(wch)) {
-					in_lws = True;
-					line = trimmed_line;
-				}
-			}
-			if (offset == (line - line_start) ||
-			    (line-start) * mwidth >= p->w - x ||
-			    (posx > x && (line - start)*mwidth > posx - x) ||
-			    was_in_lws != in_lws
-			) {
-				ret = draw_some(p, focus, &rlst, &x, start,
-						&line,
-						buf_final(&attr),
-						was_in_lws,
-						wrap ? mwidth : 0,
-						offset - (start - line_start),
-						posx, scale);
-				start = line;
-			}
-			continue;
-		}
-		ret = draw_some(p, focus, &rlst, &x, start, &line,
-				buf_final(&attr), in_lws,
-				wrap ? mwidth : 0,
-				in_tab ?:offset - (start - line_start),
-				posx, scale);
-		start = line;
-		if (ret != OK || !ch)
-			continue;
-		line += 1;
-		switch (ch) {
-		case soh: {
-			const char *a = line;
-			char *tb;
-			const char *aend;
-			int ln;
-
-			while (*line && line[-1] != stx)
-				line += 1;
-
-			ln = attr.len;
-
-			/* attrs must not contain ",," */
-			aend = strstr(a, ",,");
-			if (aend)
-				aend += 1;
-			if (!aend || line < aend)
-				aend = line;
-
-			buf_concat_len(&attr, a, aend-a);
-			/* Replace trailing stx with ',', and
-			 * append ',' so ",," marks where to
-			 * strip back to when we find etx.
-			 */
-			attr.b[attr.len-1] = ',';
-			buf_append(&attr, ',');
-			tb = strstr(buf_final(&attr)+ln,
-				    "tab:");
-			if (tb)
-				x = margin +
-					atoi(tb+4) * scale / 1000;
-			if (offset == start - line_start)
-				offset += line-start;
-			start = line;
-			mwidth = -1;
-			break;
-			}
-		case etx:
-			/* strip back to ",," */
-			if (attr.len > 0)
-				attr.len -= 2;
-			while (attr.len >=2 &&
-			       (attr.b[attr.len-1] != ',' ||
-				attr.b[attr.len-2] != ','))
-				attr.len -= 1;
-			if (attr.len == 1)
-				attr.len = 0;
-			if (offset == start - line_start)
-				offset += line-start;
-			start = line;
-			mwidth = -1;
-			break;
-		case ack:
-			start = line;
-			break;
-		case '\n':
-			xypos = line-1;
-			flush_line(p, focus, dodraw, &rlst, y, ascent, scale, 0,
-				   &wrap_margin, NULL, &xypos, &xyattr, &cursattr);
-			y += line_height;
-			x = 0;
-			wrap_offset = 0;
-			start = line;
-			break;
-		case '\f':
-			x = 0;
-			start = line;
-			wrap_offset = 0;
-			end_of_page = 1;
-			break;
-		case '\t': {
-			int xc = (wrap_offset + x) / mwidth;
-			/* Note xc might be negative, so "xc % 8" won't work here */
-			int w = 8 - (xc & 7);
-			if (seen_non_space)
-				in_lws = True;
-			ret = draw_some(p, focus, &rlst, &x, start, &line,
-					buf_final(&attr), in_lws,
-					wrap ? mwidth: 0,
-					offset == (start - line_start)
-					? in_tab : -1,
-					posx, scale);
-			if (ret == WRAP)
-				;
-			else if (w > 1) {
-				line -= 1;
-				in_tab = -1; // suppress extra cursors
-			} else
-				in_tab = 0;
-			start = line;
-			break;
-			}
-		default:{
-			char buf[4];
-			const char *b;
-			int l = attr.len;
-			buf[0] = '^';
-			buf[1] = ch + '@';
-			buf[2] = 0;
-			b = buf+2;
-			buf_concat(&attr, ",inverse,fg:red,");
-			in_lws = False;
-			ret = draw_some(p, focus, &rlst, &x, buf, &b,
-					buf_final(&attr), in_lws,
-					wrap ? mwidth*2: 0,
-					offset - (start - line_start),
-					posx, scale);
-			attr.len = l;
-			start = line;
-			break;
-			}
-		}
+	if (rd->curspos >= 0)
+		offset = rd->prefix_bytes + rd->curspos;
+	if (rd->image)
+		render_image(ci->home, ci->focus, rd->line, True,
+			     rd->scale, offset, False, 0, 0);
+	else {
+		measure_line(ci->home, ci->focus, offset);
+		draw_line(ci->home, ci->focus, offset);
 	}
-	if (!*line && (line > start || offset == start - line_start)) {
-		/* Some more to draw */
-		if (want_xypos == 1 &&
-		    y > ci->y - line_height &&
-		    y <= ci->y)
-			posx = ci->x;
-		else
-			posx = -1;
+	return 1;
+}
 
-		draw_some(p, focus, &rlst, &x, start, &line,
-			  buf_final(&attr), False,
-			  wrap ? mwidth : 0, offset - (start - line_start),
-			  posx, scale);
-	}
+DEF_CMD(renderline_measure)
+{
+	struct rline_data *rd = &ci->home->data;
+	bool end_of_page;
+	if (rd->image)
+		return render_image(ci->home, ci->focus, rd->line,
+				    False, rd->scale, ci->num, False, 0, 0);
 
-	flush_line(p, focus, dodraw, &rlst, y, ascent, scale, 0,
-		   &wrap_margin, NULL,  &xypos, &xyattr, &cursattr);
-
-	if (want_xypos == 1) {
-		ret_xyattr = xyattr ? strdup(xyattr) : NULL;
-		ret_xypos = xypos ?: line;
-		want_xypos = 2;
+	end_of_page = measure_line(ci->home, ci->focus,
+				   ci->num < 0 ? -1 : rd->prefix_bytes + ci->num);
+	rd->prefix_pixels = 0;
+	if (rd->prefix_bytes) {
+		struct xy xy = find_curs(ci->home, rd->prefix_bytes, NULL);
+		rd->prefix_pixels = xy.x;
 	}
-	if (offset >= 0 && line - line_start <= offset) {
-		if (y >= 0 && (y == 0 || y + line_height <= p->h)) {
-			cy = y;
-			cx = x;
-		} else {
-			cy = cx = -1;
-		}
+	if (ci->num >= 0) {
+		/* Find cursor and report x,y pos and attributes */
+		const char *cursattr = NULL;
+		struct xy xy;
+		xy = find_curs(ci->home, rd->prefix_bytes + ci->num, &cursattr);
+		comm_call(ci->comm2, "cb", ci->focus, end_of_page, NULL,
+			  cursattr);
+		ci->home->cx = xy.x;
+		ci->home->cy = xy.y;
 	}
-	if (x > 0 || y == 0)
-		/* No newline at the end .. but we must render as whole lines */
-		y += line_height;
-	free(buf_final(&attr));
-	if (offset >= 0) {
-		p->cx = cx;
-		p->cy = cy;
-	}
-	if (!dodraw)
-		/* Mustn't resize after clearing the pane, or we'll
-		 * be out-of-sync with display manager.
-		 */
-		pane_resize(p, p->x, p->y, p->w, y);
-	rd->width = margin + twidth;
-	attr_set_int(&p->attrs, "line-height", line_height);
-	while (rlst) {
-		struct render_list *r = rlst;
-		rlst = r->next;
-		free((void*)r->text);
-		free((void*)r->attr);
-		free(r);
-	}
-	if (want_xypos) {
-		int pos = 0;
-		if (ret_xypos)
-			pos = ret_xypos - line_start;
-		comm_call(ci->comm2, "cb", ci->focus, pos, NULL, ret_xyattr);
-		free(ret_xyattr);
-		return pos + 1;
-	}
-	comm_call(ci->comm2, "cb", ci->focus, end_of_page, NULL, cursattr);
 	return end_of_page ? 2 : 1;
+}
+
+DEF_CMD(renderline_findxy)
+{
+	struct rline_data *rd = &ci->home->data;
+	const char *xyattr = NULL;
+	int pos;
+
+	if (rd->image)
+		return render_image(ci->home, ci->focus, rd->line,
+				    False, rd->scale, -1, True,
+				    ci->x, ci->y);
+
+	measure_line(ci->home, ci->focus,
+		     ci->num < 0 ? -1 : rd->prefix_bytes + ci->num);
+	pos = find_xy(ci->home, ci->focus, ci->x, ci->y, &xyattr);
+	if (pos >= rd->prefix_bytes)
+		pos -= rd->prefix_bytes;
+	else {
+		pos = 0;
+		xyattr = NULL;
+	}
+	comm_call(ci->comm2, "cb", ci->focus, pos, NULL, xyattr);
+	return pos+1;
 }
 
 DEF_CMD(renderline_get)
@@ -1096,7 +1228,7 @@ DEF_CMD(renderline_get)
 	if (!ci->str)
 		return Enoarg;
 	if (strcmp(ci->str, "prefix_len") == 0)
-		snprintf(buf, sizeof(buf), "%d", rd->prefix_len);
+		snprintf(buf, sizeof(buf), "%d", rd->prefix_pixels);
 	else if (strcmp(ci->str, "curs_width") == 0)
 		snprintf(buf, sizeof(buf), "%d", rd->curs_width);
 	else if (strcmp(ci->str, "width") == 0)
@@ -1146,16 +1278,30 @@ DEF_CMD(renderline_set)
 	struct rline_data *rd = &ci->home->data;
 	const char *old = rd->line;
 	struct xy xyscale = pane_scale(ci->focus);
+	char *prefix = pane_attr_get(ci->focus, "prefix");
+	bool word_wrap = pane_attr_get_int(ci->focus, "word-wrap", 0) != 0;
 
-	if (ci->str)
-		rd->line = cvt(strdup(ci->str));
+	if (!ci->str)
+		return -Enoarg;
+	if (prefix)
+		prefix = cvt(strconcat(ci->home, "<bold>", prefix, "</>"));
+
+	if (prefix)
+		rd->line = strconcat(NULL, prefix, ci->str);
 	else
-		rd->line = NULL;
+		rd->line = strdup(ci->str);
+	rd->prefix_bytes = strlen(prefix?:"");
+	cvt(rd->line + rd->prefix_bytes);
+
 	rd->curspos = ci->num;
-	if (strcmp(rd->line ?:"", old ?:"") != 0 ||
-	    (old && xyscale.x != rd->scale)) {
+	if (strcmp(rd->line, old) != 0 ||
+	    (old && xyscale.x != rd->scale) ||
+	    (old && word_wrap != rd->word_wrap)) {
 		pane_damaged(ci->home, DAMAGED_REFRESH);
 		pane_damaged(ci->home->parent, DAMAGED_REFRESH);
+		rd->scale = xyscale.x;
+		rd->word_wrap = word_wrap;
+		parse_line(rd);
 	}
 	free((void*)old);
 	ci->home->damaged &= ~DAMAGED_VIEW;
@@ -1176,13 +1322,14 @@ DEF_LOOKUP_CMD(renderline_handle, rl_map);
 DEF_CMD(renderline_attach)
 {
 	struct pane *p;
+	struct rline_data *rd;
 
 	if (!rl_map) {
 		rl_map = key_alloc();
-		key_add(rl_map, "render-line:draw", &renderline);
-		key_add(rl_map, "Refresh", &renderline);
-		key_add(rl_map, "render-line:measure", &renderline);
-		key_add(rl_map, "render-line:findxy", &renderline);
+		key_add(rl_map, "render-line:draw", &renderline_draw);
+		key_add(rl_map, "Refresh", &renderline_refresh);
+		key_add(rl_map, "render-line:measure", &renderline_measure);
+		key_add(rl_map, "render-line:findxy", &renderline_findxy);
 		key_add(rl_map, "get-attr", &renderline_get);
 		key_add(rl_map, "render-line:set", &renderline_set);
 		key_add(rl_map, "Close", &renderline_close);
@@ -1192,6 +1339,8 @@ DEF_CMD(renderline_attach)
 	p = pane_register(ci->focus, ci->num, &renderline_handle.c);
 	if (!p)
 		return Efail;
+	rd = &p->data;
+	rd->line = strdup("");
 
 	return comm_call(ci->comm2, "cb", p);
 }

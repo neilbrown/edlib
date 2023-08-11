@@ -329,7 +329,7 @@ of attributes remains in effect until a balance "</>" or until the end
 of the line is reached.  A less-than size can be included in the text
 by doubling it "<<".
 
-Some attribute are understood by renderline, others are passed to the
+Some attributes are understood by renderline, others are passed to the
 display to affect drawing of the text.  Attributes understood by
 "renderline" are:
 
@@ -412,7 +412,7 @@ errors.  Properties 200-299 are for less stable results like search
 results of a selection.  Priorities larger than 65534 are all treated
 identically, as are priorities less than 1.
 
-Importantly and attribute which affects spacing, like 'tab' or 'centre'
+Importantly any attribute which affects spacing, like 'tab' or 'centre'
 and which cannot be closed and re-opened must have priority of 0.
 Conversely the attribute "hide" is implicitly disabled when any other
 attribute has a higher priority, and so it should typically have the
