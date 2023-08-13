@@ -9,12 +9,30 @@ the file.
 
 ### Triage
 
+
+- [ ] check formatting in x11 display.  Wrap causes problems 474/476 of
+      render-present.py and elsewhere
+- [ ] check notmuch formatting.  wrap-margin isn't right!
+- [ ] email display: image positioning is wrong.  Maybe they don't get
+      erased when moved.
+- [ ] remove tab_right hack by not requiring tail_length after
+      final non-eol item
+- [ ] resolve fixme around wrap_margin when splitting
+- [ ] resolve fixme reguarding margin in find_curs
 - [ ] search "\brl([123]*|end)\b" replace "ri\1" does rlend -> rirlend
+- [ ] when should lib-renderline call measure_line? Only when asked?
+      Or whenever content, width, scale change?
+- [ ] When is left_margin used?  Can I use it for hanging indent?  If
+      not, how do I do that?  Can I tab out, set margin, tab back for
+      text?  Am I using points properly?
+- [ ] review all of lib-renderline for clarity, consistency, and good comments.
 - [X] \t handling in lib-renderlines got very ugly..
 - [ ] find a better way to handle "case when EOF is at the end" of
       a non-empty line.
 - [ ] as renderline changes result if cursor is present, cursor pos
       must ALWAYS be given.
+- [ ] write test view mode that treats each line in document as markup
+      so markup can be tested more directly.
 - [ ] in search-replace if you repeat :A-Enter, chars get deleted
 - [X] input uses 0 for Efallthrough!
 - [X] call, not caLl in server.py

@@ -1,6 +1,3 @@
-// always remeasure?
-// :xx is points: tab left_margin
-// what exactly is left margin for wrapping
 /*
  * Copyright Neil Brown ©2015-2023 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
