@@ -9,8 +9,9 @@ the file.
 
 ### Triage
 
+- [ ] search "\brl([123]*|end)\b" replace "ri\1" does rlend -> rirlend
 - [ ] \t handling in lib-renderlines got very ugly..
-- [ ] find a better wat to handle "case when EOF is at the end" of
+- [ ] find a better way to handle "case when EOF is at the end" of
       a non-empty line.
 - [ ] as renderline changes result if cursor is present, cursor pos
       must ALWAYS be given.
@@ -34,7 +35,7 @@ the file.
       Maybe some docs could be marked "project" and so be easy to find?
 - [ ] path completion in shell command.  If cannot find look for '/'
       following punctuation (=) and try there.
-- [ ] resolve shift-left vs shift_left distinction.
+- [ ] resolve shift-left vs shift_left distinction - add a "fixed" suffix?
 - [ ] should zoom affect whole window, not just pane?
 - [ ] ditch cached-size for images - store in pane data instead.
 - [ ] use foreach_attr for parsing image details

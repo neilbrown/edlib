@@ -260,22 +260,22 @@ static void add_render(struct rline_data *rd safe, struct render_item **safe*rlp
 		       bool wrap_margin,
 		       short wrap, short hide)
 {
-	struct render_item *rl;
-	struct render_item **rlend = *rlp;
+	struct render_item *ri;
+	struct render_item **riend = *rlp;
 
-	alloc(rl, pane);
-	rl->attr = strdup(attr);
-	rl->start = start - rd->line;
-	rl->len = end - start;
-	rl->tab_align = align;
-	rl->tab = tab;
-	rl->wrap = wrap;
-	rl->hide = hide;
-	rl->wrap_margin = wrap_margin;
-	rl->eol = !!strchr("\n\f\0", *start);
-	*rlend = rl;
-	rlend = &rl->next;
-	*rlp = rlend;
+	alloc(ri, pane);
+	ri->attr = strdup(attr);
+	ri->start = start - rd->line;
+	ri->len = end - start;
+	ri->tab_align = align;
+	ri->tab = tab;
+	ri->wrap = wrap;
+	ri->hide = hide;
+	ri->wrap_margin = wrap_margin;
+	ri->eol = !!strchr("\n\f\0", *start);
+	*riend = ri;
+	riend = &ri->next;
+	*rlp = riend;
 }
 
 static inline bool is_ctrl(unsigned int c)
@@ -290,7 +290,7 @@ static void parse_line(struct rline_data *rd safe)
 	 * global content directly in rd.
 	 */
 	struct buf attr, wrapattr;
-	struct render_item *rl = NULL, **rlend = &rl;
+	struct render_item *ri = NULL, **riend = &ri;
 	const char *line = rd->line;
 	bool wrap_margin = False;
 	int tab = TAB_UNSET, align = TAB_LEFT;
@@ -315,11 +315,11 @@ static void parse_line(struct rline_data *rd safe)
 	buf_init(&attr);
 	buf_init(&wrapattr);
 
-	rl = rd->content;
+	ri = rd->content;
 	rd->content = NULL;
-	while (rl) {
-		struct render_item *r = rl;
-		rl = r->next;
+	while (ri) {
+		struct render_item *r = ri;
+		ri = r->next;
 		free(r->split_list);
 		unalloc_str_safe(r->attr, pane);
 		unalloc(r, pane);
@@ -335,7 +335,7 @@ static void parse_line(struct rline_data *rd safe)
 
 		if (line - 1 > st) {
 			/* All text from st to line-1 has "attr' */
-			add_render(rd, &rlend, st, line-1, buf_final(&attr),
+			add_render(rd, &riend, st, line-1, buf_final(&attr),
 				   tab, align, wrap_margin, wrap, hide);
 			align = TAB_LEFT;
 			tab = TAB_UNSET;
@@ -427,7 +427,7 @@ static void parse_line(struct rline_data *rd safe)
 			while (*line == ' ')
 				line += 1;
 			wrap = ++wrap_num;
-			add_render(rd, &rlend, st - 1, line, buf_final(&attr),
+			add_render(rd, &riend, st - 1, line, buf_final(&attr),
 				   tab, align, wrap_margin, wrap, hide);
 			tab = TAB_UNSET;
 			align = TAB_LEFT;
@@ -444,7 +444,7 @@ static void parse_line(struct rline_data *rd safe)
 			 * \f \n and even \0 do.  These are needed for
 			 * easy cursor placement.
 			 */
-			add_render(rd, &rlend, st, line, buf_final(&attr),
+			add_render(rd, &riend, st, line, buf_final(&attr),
 				   tab, align, wrap_margin, wrap, hide);
 			tab = TAB_UNSET;
 			align = TAB_LEFT;
@@ -453,7 +453,7 @@ static void parse_line(struct rline_data *rd safe)
 		}
 	} while (c);
 
-	rd->content = rl;
+	rd->content = ri;
 	free(attr.b);
 	if (buf_final(&wrapattr)[0])
 		rd->wrap_attr = buf_final(&wrapattr);
@@ -517,13 +517,13 @@ static inline void do_draw(struct pane *p safe,
 		str[len] = tmp;
 }
 
-static void add_split(struct render_item *rl safe, int split)
+static void add_split(struct render_item *ri safe, int split)
 {
-	int i = rl->split_cnt;
-	rl->split_cnt += 1;
-	rl->split_list = realloc(rl->split_list,
-				 sizeof(rl->split_list[0]) * rl->split_cnt);
-	rl->split_list[i] = split;
+	int i = ri->split_cnt;
+	ri->split_cnt += 1;
+	ri->split_list = realloc(ri->split_list,
+				 sizeof(ri->split_list[0]) * ri->split_cnt);
+	ri->split_list[i] = split;
 }
 
 static int calc_tab(int num, int margin, int scale)
@@ -545,7 +545,7 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 	 * positions
 	 */
 	struct rline_data *rd = &p->data;
-	struct render_item *rl, *wraprl;
+	struct render_item *ri, *wraprl;
 	int shift_left = pane_attr_get_int(focus, "shift_left", 0);
 	bool wrap = shift_left < 0;
 	int wrap_margin;
@@ -573,42 +573,42 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 			rd->wrap_attr);
 	rd->tail_length = cr.x;
 
-	for (rl = rd->content; rl; rl = rl->next) {
+	for (ri = rd->content; ri; ri = ri->next) {
 		char tmp[4] = "";
 		char *txt = tmp;
 		int len = -1;
-		if (!is_ctrl(rd->line[rl->start])) {
-			txt = rd->line + rl->start;
-			len = rl->len;
-		} else if (rl->eol) {
+		if (!is_ctrl(rd->line[ri->start])) {
+			txt = rd->line + ri->start;
+			len = ri->len;
+		} else if (ri->eol) {
 			/* Ensure attributes of newline add to line height.
 			 * The width will be ignored. */
 			strcpy(tmp, "M");
-			if (rd->line[rl->start] == '\f')
+			if (rd->line[ri->start] == '\f')
 				eop = True;
-		} else if (rd->line[rl->start] == '\t') {
+		} else if (rd->line[ri->start] == '\t') {
 			strcpy(tmp, " ");
 		} else {
 			strcpy(tmp, "^x");
-			tmp[1] = '@' + (rd->line[rl->start] & 31);
+			tmp[1] = '@' + (rd->line[ri->start] & 31);
 		}
-		cr = do_measure(p, txt, len, -1, rd->scale, rl->attr);
+		cr = do_measure(p, txt, len, -1, rd->scale, ri->attr);
 		if (cr.y > rd->line_height)
 			rd->line_height = cr.y;
-		rl->height = cr.y;
+		ri->height = cr.y;
 		if (cr.i2 > rd->ascent)
 			rd->ascent = cr.i2;
-		rl->width = rl->eol ? 0 : cr.x;
-		rl->hidden = False;
+		ri->width = ri->eol ? 0 : cr.x;
+		ri->hidden = False;
 
-		if (rl->start <= offset && offset <= rl->start + rl->len) {
-			cr = do_measure(p, "M", -1, -1, rd->scale, rl->attr);
+		if (ri->start <= offset && offset <= ri->start + ri->len) {
+			cr = do_measure(p, "M", -1, -1, rd->scale, ri->attr);
 			rd->curs_width = cr.x;
 		}
 
-		rl->split_cnt = 0;
-		free(rl->split_list);
-		rl->split_list = NULL;
+		ri->split_cnt = 0;
+		free(ri->split_list);
+		ri->split_list = NULL;
 	}
 	/* Set 'x' position honouring tab stops, and set length
 	 * of "\t" characters.  Also handle \n and \f.
@@ -616,54 +616,54 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 	x = (rd->left_margin * rd->scale / 1000) - (shift_left > 0 ? shift_left : 0);
 	y = rd->space_above * rd->scale / 1000;
 	rd->width = 0;
-	for (rl = rd->content; rl; rl = rl->next) {
+	for (ri = rd->content; ri; ri = ri->next) {
 		int w, margin;
-		struct render_item *rl2;
-		rl->y = y;
-		if (rl->tab != TAB_UNSET)
-			x =  (rd->left_margin * rd->scale / 1000) + calc_tab(rl->tab, right_margin, rd->scale);
-		if (rl->eol) {
+		struct render_item *ri2;
+		ri->y = y;
+		if (ri->tab != TAB_UNSET)
+			x =  (rd->left_margin * rd->scale / 1000) + calc_tab(ri->tab, right_margin, rd->scale);
+		if (ri->eol) {
 			/* EOL */
 			if (x > rd->width)
 				rd->width = x;
-			rl->x = x;
+			ri->x = x;
 			x = 0; /* Don't include shift. probably not margin */
-			if (rd->line[rl->start])
+			if (rd->line[ri->start])
 				y += rd->line_height;
 			continue;
 		}
-		if (rl->tab_align == TAB_LEFT) {
-			rl->x = x;
-			if (rd->line[rl->start] == '\t') {
-				int col = x / rl->width;
+		if (ri->tab_align == TAB_LEFT) {
+			ri->x = x;
+			if (rd->line[ri->start] == '\t') {
+				int col = x / ri->width;
 				int cols= 8 - (col % 8);
-				rl->tab_cols = cols;
-				rl->width *= cols;
+				ri->tab_cols = cols;
+				ri->width *= cols;
 			}
-			x += rl->width;
+			x += ri->width;
 			continue;
 		}
-		w = rl->width;
-		for (rl2 = rl->next;
-		     rl2 && rl2->tab_align == TAB_LEFT && rl2->tab == TAB_UNSET;
-		     rl2 = rl2->next)
-			w += rl2->width;
-		while (rl2 && rl2->tab == TAB_UNSET)
-			rl2 = rl2->next;
+		w = ri->width;
+		for (ri2 = ri->next;
+		     ri2 && ri2->tab_align == TAB_LEFT && ri2->tab == TAB_UNSET;
+		     ri2 = ri2->next)
+			w += ri2->width;
+		while (ri2 && ri2->tab == TAB_UNSET)
+			ri2 = ri2->next;
 		margin = right_margin;
-		if (rl2)
-			margin =  (rd->left_margin * rd->scale / 1000) + calc_tab(rl2->tab, right_margin, rd->scale);
-		if (rl->tab_align == TAB_RIGHT) {
+		if (ri2)
+			margin =  (rd->left_margin * rd->scale / 1000) + calc_tab(ri2->tab, right_margin, rd->scale);
+		if (ri->tab_align == TAB_RIGHT) {
 			margin -= rd->tail_length;// FIXME don't want this HACK
 			x = x + margin - x - w;
 		} else
 			x = x + (margin - x - w) / 2;
-		rl->x = x;
-		while (rl->next && rl->next->next && rl->next->tab_align == TAB_LEFT) {
-			x += rl->width;
-			rl = rl->next;
-			rl->x = x;
-			rl->y = y;
+		ri->x = x;
+		while (ri->next && ri->next->next && ri->next->tab_align == TAB_LEFT) {
+			x += ri->width;
+			ri = ri->next;
+			ri->x = x;
+			ri->y = y;
 		}
 	}
 
@@ -674,30 +674,30 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 	xdiff = 0; ydiff = 0; y = 0;
 	wraprl = NULL;
 	wrap_margin = rd->head_length;
-	for (rl = rd->content ; wrap && rl ; rl = rl->next) {
+	for (ri = rd->content ; wrap && ri ; ri = ri->next) {
 		int splitpos;
 		char *str;
 		int len;
 		char tb[] = "        ";
-		if (rl->wrap && (wraprl == NULL || rl->wrap != wraprl->wrap))
-			wraprl = rl;
-		if (rl->wrap_margin)
-			wrap_margin = rl->x;
-		rl->wrap_x = wrap_margin;
-		rl->x += xdiff;
-		rl->y += ydiff;
-		y = rl->y;
-		if (rl->eol) {
+		if (ri->wrap && (wraprl == NULL || ri->wrap != wraprl->wrap))
+			wraprl = ri;
+		if (ri->wrap_margin)
+			wrap_margin = ri->x;
+		ri->wrap_x = wrap_margin;
+		ri->x += xdiff;
+		ri->y += ydiff;
+		y = ri->y;
+		if (ri->eol) {
 			xdiff = 0;
 			continue;
 		}
-		if (rl->x + rl->width <= right_margin - rd->tail_length)
+		if (ri->x + ri->width <= right_margin - rd->tail_length)
 			continue;
 		/* This doesn't fit here */
 		if (wraprl) {
 			/* Move wraprl to next line and hide it unless it contains cursor */
 			int xd = wraprl->x - wrap_margin;
-			struct render_item *wraprl2, *rl2;
+			struct render_item *wraprl2, *ri2;
 
 			/* Find last ritem in wrap region.*/
 			for (wraprl2 = wraprl ;
@@ -714,7 +714,7 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 				 * it didn't exist, else move first item
 				 * after it to next line
 				 */
-				if (rl->wrap == wraprl->wrap)
+				if (ri->wrap == wraprl->wrap)
 					goto normal_wrap;
 			} else {
 				/* Hide the wrap region */
@@ -724,12 +724,12 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 				}
 				if (wraprl)
 					wraprl->hidden = True;
-				while (rl->next && rl->next->hidden)
-					rl = rl->next;
+				while (ri->next && ri->next->hidden)
+					ri = ri->next;
 			}
-			for (rl2 = wraprl2->next ; rl2 && rl2 != rl->next; rl2 = rl2->next) {
-				rl2->y += rd->line_height;
-				rl2->x -= xd;
+			for (ri2 = wraprl2->next ; ri2 && ri2 != ri->next; ri2 = ri2->next) {
+				ri2->y += rd->line_height;
+				ri2->x -= xd;
 			}
 			xdiff -= xd;
 			ydiff += rd->line_height;
@@ -737,29 +737,29 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 			continue;
 		}
 	normal_wrap:
-		if (rl->x >= right_margin - rd->tail_length) {
-			/* This rl moves completely to next line */
-			xdiff -= rl->x - wrap_margin;
-			rl->x = wrap_margin;
+		if (ri->x >= right_margin - rd->tail_length) {
+			/* This ri moves completely to next line */
+			xdiff -= ri->x - wrap_margin;
+			ri->x = wrap_margin;
 			ydiff += rd->line_height;
-			rl->y += rd->line_height;
+			ri->y += rd->line_height;
 			wraprl = NULL;
 			continue;
 		}
-		/* Need to split this rl into two or more pieces */
-		x = rl->x;
+		/* Need to split this ri into two or more pieces */
+		x = ri->x;
 		splitpos = 0;
-		str = rd->line + rl->start;
-		len = rl->len;
+		str = rd->line + ri->start;
+		len = ri->len;
 		if (*str == '\t') {
 			str = tb;
-			len = rl->tab_cols;
+			len = ri->tab_cols;
 		}
 		while (1) {
 			cr = do_measure(p, str + splitpos,
 					len - splitpos,
 					right_margin - rd->tail_length - x,
-					rd->scale, rl->attr);
+					rd->scale, ri->attr);
 			if (cr.i >= len - splitpos)
 				/* Remainder fits now */
 				break;
@@ -767,15 +767,15 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 			cr = do_measure(p, str + splitpos,
 					cr.i,
 					right_margin - rd->tail_length - x,
-					rd->scale, rl->attr);
+					rd->scale, ri->attr);
 
 			ydiff += rd->line_height;
 			xdiff -= cr.x; // fixme where does wrap_margin fit in there
 			if (splitpos == 0)
-				xdiff -= rl->x;
+				xdiff -= ri->x;
 			splitpos += cr.i;
 			x = wrap_margin;
-			add_split(rl, splitpos);
+			add_split(ri, splitpos);
 		}
 	}
 	/* We add rd->line_height for the EOL, whether a NL is present of not */
@@ -790,7 +790,7 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 static void draw_line(struct pane *p safe, struct pane *focus safe, int offset)
 {
 	struct rline_data *rd = &p->data;
-	struct render_item *rl;
+	struct render_item *ri;
 	char *wrap_tail = rd->wrap_tail ?: "\\";
 	char *wrap_head = rd->wrap_head ?: "";
 
@@ -798,27 +798,27 @@ static void draw_line(struct pane *p safe, struct pane *focus safe, int offset)
 
 	if (!rd->content)
 		return;
-	for (rl = rd->content ; rl; rl = rl->next) {
+	for (ri = rd->content ; ri; ri = ri->next) {
 		int split = 0;
-		short y = rl->y;
+		short y = ri->y;
 		int cpos;
 
-		if (rl->hidden)
+		if (ri->hidden)
 			continue;
-		if (offset < 0 || offset >= rl->start + rl->len)
+		if (offset < 0 || offset >= ri->start + ri->len)
 			cpos = -1;
-		else if (offset < rl->start)
+		else if (offset < ri->start)
 			cpos = 0;
 		else
-			cpos = offset - rl->start;
+			cpos = offset - ri->start;
 
 		do_draw(p, focus,
-			rd->line + rl->start, rl->split_list ? rl->split_list[0]: rl->len,
-			rl->split_list ? rl->split_list[0] : rl->tab_cols,
-			cpos, rd->scale, rl->attr,
-			rl->x, y + rd->ascent);
-		if (!rl->split_cnt && rl->next &&
-		    !rl->next->eol && rl->next->y != rl->y) {
+			rd->line + ri->start, ri->split_list ? ri->split_list[0]: ri->len,
+			ri->split_list ? ri->split_list[0] : ri->tab_cols,
+			cpos, rd->scale, ri->attr,
+			ri->x, y + rd->ascent);
+		if (!ri->split_cnt && ri->next &&
+		    !ri->next->eol && ri->next->y != ri->y) {
 			/* we are about to wrap - draw the markers */
 			if (*wrap_tail)
 				do_draw(p, focus, wrap_tail, -1, 0, -1, rd->scale,
@@ -831,41 +831,41 @@ static void draw_line(struct pane *p safe, struct pane *focus safe, int offset)
 					0, y + rd->ascent + rd->line_height);
 		}
 
-		while (split < rl->split_cnt ||
-		       (rl->next && rl->next->next && rl->next->y > y)) {
+		while (split < ri->split_cnt ||
+		       (ri->next && ri->next->next && ri->next->y > y)) {
 			/* line wrap here */
 			/* don't show head/tail for wrap-regions */
-			if (*wrap_tail /*&& !rl->wrap*/)
+			if (*wrap_tail /*&& !ri->wrap*/)
 				do_draw(p, focus, wrap_tail, -1, 0, -1, rd->scale,
 					rd->wrap_attr,
 					p->w - rd->tail_length,
 					y + rd->ascent);
 			y += rd->line_height;
-			if (*wrap_head /*&& !rl->wrap*/)
+			if (*wrap_head /*&& !ri->wrap*/)
 				do_draw(p, focus, wrap_head, -1, 0, -1, rd->scale,
 					rd->wrap_attr,
 					0, y + rd->ascent);
-			if (rl->split_list && split < rl->split_cnt) {
-				int end = rl->len;
-				char *str = rd->line + rl->start + rl->split_list[split];
-				if (rd->line[rl->start] == '\t') {
-					end = rl->tab_cols;
+			if (ri->split_list && split < ri->split_cnt) {
+				int end = ri->len;
+				char *str = rd->line + ri->start + ri->split_list[split];
+				if (rd->line[ri->start] == '\t') {
+					end = ri->tab_cols;
 					str = "\t";
 				}
-				if (split+1 < rl->split_cnt)
-					end = rl->split_list[split+1];
+				if (split+1 < ri->split_cnt)
+					end = ri->split_list[split+1];
 				do_draw(p, focus,
 					str,
-					end - rl->split_list[split],
-					end - rl->split_list[split],
-					cpos - rl->split_list[split],
+					end - ri->split_list[split],
+					end - ri->split_list[split],
+					cpos - ri->split_list[split],
 					rd->scale,
-					rl->attr, rd->left_margin + rd->head_length,
+					ri->attr, rd->left_margin + rd->head_length,
 					y + rd->ascent);
 				split += 1;
 			}
 		}
-		if (offset < rl->start + rl->len)
+		if (offset < ri->start + ri->len)
 			offset = -1;
 	}
 }
@@ -882,35 +882,35 @@ static int find_xy(struct pane *p safe, struct pane *focus safe,
 	 */
 	struct call_return cr;
 	struct rline_data *rd = &p->data;
-	struct render_item *r, *rl = NULL;
+	struct render_item *r, *ri = NULL;
 
 	if (!rd->content)
 		return 0;
 	for (r = rd->content; r ; r = r->next) {
 		int split;
 		if (r->y <= y && r->x <= x)
-			rl = r;
+			ri = r;
 		for (split = 0; split < r->split_cnt; split++) {
 			if (r->y + (split + 1) * rd->line_height &&
 			    r->x <= r->wrap_x)
-				rl = r;
+				ri = r;
 		}
 	}
-	if (!rl)
+	if (!ri)
 		return 0;
-	if (rl->eol)
+	if (ri->eol)
 		/* newline or similar.  Can only be at start */
-		return rl->start;
-	if (rl->x + rl->width > x &&
-	    rl->y + rl->height > y &&
+		return ri->start;
+	if (ri->x + ri->width > x &&
+	    ri->y + ri->height > y &&
 	    xyattr)
-		*xyattr = rl->attr;
-	if (rd->line[rl->start] == '\t')
+		*xyattr = ri->attr;
+	if (rd->line[ri->start] == '\t')
 		cr.i = 0;
 	else
-		cr = do_measure(p, rd->line + rl->start, rl->len,
-				x - rl->x, rd->scale, rl->attr);
-	return rl->start + cr.i;
+		cr = do_measure(p, rd->line + ri->start, ri->len,
+				x - ri->x, rd->scale, ri->attr);
+	return ri->start + cr.i;
 }
 
 static struct xy find_curs(struct pane *p safe, int offset, const char **cursattr)
@@ -920,54 +920,54 @@ static struct xy find_curs(struct pane *p safe, int offset, const char **cursatt
 	int split;
 	int st;
 	struct rline_data *rd = &p->data;
-	struct render_item *r, *rl = NULL;
+	struct render_item *r, *ri = NULL;
 
 	for (r = rd->content; r; r = r->next) {
 		if (offset < r->start)
 			break;
-		rl = r;
+		ri = r;
 	}
-	if (!rl) {
+	if (!ri) {
 		/* This should be impossible as the eol goes past
 		 * the largest offset.
 		 */
 		return xy;
 	}
-	if (offset < rl->start)
+	if (offset < ri->start)
 		/* in the attrs?? */
 		offset = 0;
 	else
-		offset -= rl->start;
-	/* offset now from rl->start */
-	if (rd->line[rl->start] == '\t' && offset)
-		offset = rl->tab_cols;
+		offset -= ri->start;
+	/* offset now from ri->start */
+	if (rd->line[ri->start] == '\t' && offset)
+		offset = ri->tab_cols;
 	if (cursattr)
-		*cursattr = rl->attr;
+		*cursattr = ri->attr;
 	st = 0;
-	for (split = 0; split < rl->split_cnt && rl->split_list; split ++) {
-		if (offset < rl->split_list[split])
+	for (split = 0; split < ri->split_cnt && ri->split_list; split ++) {
+		if (offset < ri->split_list[split])
 			break;
-		st = rl->split_list[split];
+		st = ri->split_list[split];
 	}
-	if (rl->eol)
-		cr.x = offset ? rl->width : 0;
+	if (ri->eol)
+		cr.x = offset ? ri->width : 0;
 	else {
-		char *str = rd->line + rl->start + st;
+		char *str = rd->line + ri->start + st;
 		char tb[] = "        ";
-		if (rd->line[rl->start] == '\t') {
+		if (rd->line[ri->start] == '\t') {
 			str = tb;
 			if (offset)
-				offset = rl->tab_cols;
+				offset = ri->tab_cols;
 		}
 		cr = do_measure(p, str, offset - st,
-				-1, rd->scale, rl->attr);
+				-1, rd->scale, ri->attr);
 	}
 	if (split)
 		xy.x = cr.x; /* FIXME margin?? */
 	else
-		xy.x = rl->x + cr.x;
-	xy.y = rl->y + split * rd->line_height;
-	if (rl->next == NULL && offset > rl->len) {
+		xy.x = ri->x + cr.x;
+	xy.y = ri->y + split * rd->line_height;
+	if (ri->next == NULL && offset > ri->len) {
 		/* After the newline ? Go to next line */
 		xy.x = 0;
 		xy.y += rd->line_height;
