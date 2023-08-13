@@ -465,9 +465,9 @@ static void parse_line(struct rline_data *rd safe)
 
 static inline struct call_return do_measure(struct pane *p safe,
 					    char *str safe, int len,
-					    int offset, int scale,
-					    const char *attr)
+					    int offset, const char *attr)
 {
+	struct rline_data *rd = &p->data;
 	struct call_return cr;
 	char tmp;
 
@@ -477,7 +477,7 @@ static inline struct call_return do_measure(struct pane *p safe,
 	}
 	cr = call_ret(all, "Draw:text-size", p,
 		      offset, NULL, str,
-		      scale, NULL, attr);
+		      rd->scale, NULL, attr);
 	if (len >= 0)
 		str[len] = tmp;
 	return cr;
@@ -587,7 +587,7 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 
 	if (!rd->content)
 		return eop;
-	cr = do_measure(p, "M", -1, -1, rd->scale,"");
+	cr = do_measure(p, "M", -1, -1, "");
 	rd->curs_width = cr.x;
 	rd->line_height = cr.y;
 	rd->ascent = cr.i2;
@@ -595,11 +595,11 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 		rd->line_height = rd->min_height * rd->scale / 1000;
 
 	if (rd->wrap_head) {
-		cr = do_measure(p, rd->wrap_head, -1, -1, rd->scale,
+		cr = do_measure(p, rd->wrap_head, -1, -1,
 				rd->wrap_attr);
 		rd->head_length = cr.x;
 	}
-	cr = do_measure(p, rd->wrap_tail ?: "\\", -1, -1, rd->scale,
+	cr = do_measure(p, rd->wrap_tail ?: "\\", -1, -1,
 			rd->wrap_attr);
 	rd->tail_length = cr.x;
 
@@ -622,7 +622,7 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 			strcpy(tmp, "^x");
 			tmp[1] = '@' + (rd->line[ri->start] & 31);
 		}
-		cr = do_measure(p, txt, len, -1, rd->scale, ri->attr);
+		cr = do_measure(p, txt, len, -1, ri->attr);
 		if (cr.y > rd->line_height)
 			rd->line_height = cr.y;
 		ri->height = cr.y;
@@ -632,7 +632,7 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 		ri->hidden = False;
 
 		if (ri->start <= offset && offset <= ri->start + ri->len) {
-			cr = do_measure(p, "M", -1, -1, rd->scale, ri->attr);
+			cr = do_measure(p, "M", -1, -1, ri->attr);
 			rd->curs_width = cr.x;
 		}
 
@@ -789,7 +789,7 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 			cr = do_measure(p, str + splitpos,
 					len - splitpos,
 					right_margin - rd->tail_length - x,
-					rd->scale, ri->attr);
+					ri->attr);
 			if (cr.i >= len - splitpos)
 				/* Remainder fits now */
 				break;
@@ -797,7 +797,7 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 			cr = do_measure(p, str + splitpos,
 					cr.i,
 					right_margin - rd->tail_length - x,
-					rd->scale, ri->attr);
+					ri->attr);
 
 			ydiff += rd->line_height;
 			xdiff -= cr.x; // fixme where does wrap_margin fit in there
@@ -916,7 +916,7 @@ static int find_xy(struct pane *p safe, struct pane *focus safe,
 		cr.i = 0;
 	else
 		cr = do_measure(p, rd->line + ri->start, ri->len,
-				x - ri->x, rd->scale, ri->attr);
+				x - ri->x, ri->attr);
 	return ri->start + cr.i;
 }
 
@@ -967,7 +967,7 @@ static struct xy find_curs(struct pane *p safe, int offset, const char **cursatt
 				offset = ri->tab_cols;
 		}
 		cr = do_measure(p, str, offset - st,
-				-1, rd->scale, ri->attr);
+				-1, ri->attr);
 	}
 	if (split)
 		xy.x = cr.x; /* FIXME margin?? */
