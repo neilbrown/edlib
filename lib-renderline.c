@@ -485,14 +485,18 @@ static inline struct call_return do_measure(struct pane *p safe,
 
 static inline void do_draw(struct pane *p safe,
 			   struct pane *focus safe,
-			   struct render_item *ri,
-			   char *str safe, int len, int tab_cols,
+			   struct render_item *ri safe, int split,
 			   int offset,
 			   int x, int y)
 {
 	struct rline_data *rd = &p->data;
 	char tmp;
+	char *str;
+	int len;
 	char tb[] = "         ";
+
+	str = rd->line + ri->start;
+	len = ri->len;
 
 	y += rd->ascent;
 	if (strchr("\f\n\0", str[0])) {
@@ -506,18 +510,28 @@ static inline void do_draw(struct pane *p safe,
 		return;
 	}
 	if (str[0] == '\t') {
-		/* Tab needs special handling */
+		len = ri->tab_cols;
+		if (split)
+			offset = -1;
+	}
+	if (ri->split_list && split < ri->split_cnt)
+		len = ri->split_list[split];
+
+	if (str[0] == '\t')
+		/* Tab need a list of spaces */
 		str = tb;
-		len = tab_cols;
-	}
-	if (len >= 0) {
-		tmp = str[len];
-		str[len] = 0;
-	}
+	else
+		if (split > 0 && split <= ri->split_cnt && ri->split_list) {
+			str += ri->split_list[split-1];
+			offset -= ri->split_list[split];
+		}
+
+	tmp = str[len];
+	str[len] = 0;
+
 	home_call(focus, "Draw:text", p, offset, NULL, str,
 			   rd->scale, NULL, ri->attr, x, y);
-	if (len >= 0)
-		str[len] = tmp;
+	str[len] = tmp;
 }
 
 static inline void draw_wrap(struct pane *p safe,
@@ -828,11 +842,7 @@ static void draw_line(struct pane *p safe, struct pane *focus safe, int offset)
 		else
 			cpos = offset - ri->start;
 
-		do_draw(p, focus, ri,
-			rd->line + ri->start, ri->split_list ? ri->split_list[0]: ri->len,
-			ri->split_list ? ri->split_list[0] : ri->tab_cols,
-			cpos,
-			ri->x, y);
+		do_draw(p, focus, ri, 0, cpos, ri->x, y);
 		if (!ri->split_cnt && ri->next &&
 		    !ri->next->eol && ri->next->y != ri->y) {
 			/* we are about to wrap - draw the markers */
@@ -856,22 +866,10 @@ static void draw_line(struct pane *p safe, struct pane *focus safe, int offset)
 				draw_wrap(p, focus, wrap_head,
 					  0, y);
 			if (ri->split_list && split < ri->split_cnt) {
-				int end = ri->len;
-				char *str = rd->line + ri->start + ri->split_list[split];
-				if (rd->line[ri->start] == '\t') {
-					end = ri->tab_cols;
-					str = "\t";
-				}
-				if (split+1 < ri->split_cnt)
-					end = ri->split_list[split+1];
-				do_draw(p, focus, ri,
-					str,
-					end - ri->split_list[split],
-					end - ri->split_list[split],
-					cpos - ri->split_list[split],
+				split += 1;
+				do_draw(p, focus, ri, split, cpos,
 					rd->left_margin + rd->head_length,
 					y);
-				split += 1;
 			}
 		}
 		if (offset < ri->start + ri->len)

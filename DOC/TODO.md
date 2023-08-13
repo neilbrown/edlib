@@ -10,7 +10,7 @@ the file.
 ### Triage
 
 - [ ] search "\brl([123]*|end)\b" replace "ri\1" does rlend -> rirlend
-- [ ] \t handling in lib-renderlines got very ugly..
+- [X] \t handling in lib-renderlines got very ugly..
 - [ ] find a better way to handle "case when EOF is at the end" of
       a non-empty line.
 - [ ] as renderline changes result if cursor is present, cursor pos
