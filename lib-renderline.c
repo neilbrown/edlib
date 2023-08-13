@@ -464,8 +464,9 @@ static void parse_line(struct rline_data *rd safe)
 }
 
 static inline struct call_return do_measure(struct pane *p safe,
+					    struct render_item *ri safe,
 					    char *str safe, int len,
-					    int offset, const char *attr)
+					    int offset)
 {
 	struct rline_data *rd = &p->data;
 	struct call_return cr;
@@ -476,7 +477,7 @@ static inline struct call_return do_measure(struct pane *p safe,
 
 	cr = call_ret(all, "Draw:text-size", p,
 		      offset, NULL, str,
-		      rd->scale, NULL, attr);
+		      rd->scale, NULL, ri->attr);
 
 	str[len] = tmp;
 	return cr;
@@ -613,8 +614,8 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 
 	for (ri = rd->content; ri; ri = ri->next) {
 		if (!is_ctrl(rd->line[ri->start])) {
-			cr = do_measure(p, rd->line + ri->start,
-					ri->len, -1, ri->attr);
+			cr = do_measure(p, ri, rd->line + ri->start,
+					ri->len, -1);
 		} else {
 			char tmp[4];
 			if (ri->eol) {
@@ -795,18 +796,16 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 			len = ri->tab_cols;
 		}
 		while (1) {
-			cr = do_measure(p, str + splitpos,
+			cr = do_measure(p, ri, str + splitpos,
 					len - splitpos,
-					right_margin - rd->tail_length - x,
-					ri->attr);
+					right_margin - rd->tail_length - x);
 			if (cr.i >= len - splitpos)
 				/* Remainder fits now */
 				break;
 			/* re-measure the first part */
-			cr = do_measure(p, str + splitpos,
+			cr = do_measure(p, ri, str + splitpos,
 					cr.i,
-					right_margin - rd->tail_length - x,
-					ri->attr);
+					right_margin - rd->tail_length - x);
 
 			ydiff += rd->line_height;
 			xdiff -= cr.x; // fixme where does wrap_margin fit in there
@@ -924,8 +923,8 @@ static int find_xy(struct pane *p safe, struct pane *focus safe,
 	if (rd->line[ri->start] == '\t')
 		cr.i = 0;
 	else
-		cr = do_measure(p, rd->line + ri->start, ri->len,
-				x - ri->x, ri->attr);
+		cr = do_measure(p, ri, rd->line + ri->start, ri->len,
+				x - ri->x);
 	return ri->start + cr.i;
 }
 
@@ -975,8 +974,7 @@ static struct xy find_curs(struct pane *p safe, int offset, const char **cursatt
 			if (offset)
 				offset = ri->tab_cols;
 		}
-		cr = do_measure(p, str, offset - st,
-				-1, ri->attr);
+		cr = do_measure(p, ri, str, offset - st, -1);
 	}
 	if (split)
 		xy.x = cr.x; /* FIXME margin?? */
