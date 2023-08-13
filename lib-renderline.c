@@ -471,16 +471,26 @@ static inline struct call_return do_measure(struct pane *p safe,
 	struct call_return cr;
 	char tmp;
 
-	if (len >= 0) {
-		tmp = str[len];
-		str[len] = 0;
-	}
+	tmp = str[len];
+	str[len] = 0;
+
 	cr = call_ret(all, "Draw:text-size", p,
 		      offset, NULL, str,
 		      rd->scale, NULL, attr);
-	if (len >= 0)
-		str[len] = tmp;
+
+	str[len] = tmp;
 	return cr;
+}
+
+static inline struct call_return measure_str(struct pane *p safe,
+					     char *str safe,
+					     const char *attr)
+{
+	struct rline_data *rd = &p->data;
+
+	return call_ret(all, "Draw:text-size", p,
+			-1, NULL, str,
+			rd->scale, NULL, attr);
 }
 
 static inline void do_draw(struct pane *p safe,
@@ -587,7 +597,7 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 
 	if (!rd->content)
 		return eop;
-	cr = do_measure(p, "M", -1, -1, "");
+	cr = measure_str(p, "M", "");
 	rd->curs_width = cr.x;
 	rd->line_height = cr.y;
 	rd->ascent = cr.i2;
@@ -595,34 +605,33 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 		rd->line_height = rd->min_height * rd->scale / 1000;
 
 	if (rd->wrap_head) {
-		cr = do_measure(p, rd->wrap_head, -1, -1,
-				rd->wrap_attr);
+		cr = measure_str(p, rd->wrap_head, rd->wrap_attr);
 		rd->head_length = cr.x;
 	}
-	cr = do_measure(p, rd->wrap_tail ?: "\\", -1, -1,
-			rd->wrap_attr);
+	cr = measure_str(p, rd->wrap_tail ?: "\\", rd->wrap_attr);
 	rd->tail_length = cr.x;
 
 	for (ri = rd->content; ri; ri = ri->next) {
-		char tmp[4] = "";
-		char *txt = tmp;
-		int len = -1;
 		if (!is_ctrl(rd->line[ri->start])) {
-			txt = rd->line + ri->start;
-			len = ri->len;
-		} else if (ri->eol) {
-			/* Ensure attributes of newline add to line height.
-			 * The width will be ignored. */
-			strcpy(tmp, "M");
-			if (rd->line[ri->start] == '\f')
-				eop = True;
-		} else if (rd->line[ri->start] == '\t') {
-			strcpy(tmp, " ");
+			cr = do_measure(p, rd->line + ri->start,
+					ri->len, -1, ri->attr);
 		} else {
-			strcpy(tmp, "^x");
-			tmp[1] = '@' + (rd->line[ri->start] & 31);
+			char tmp[4];
+			if (ri->eol) {
+				/* Ensure attributes of newline add to line
+				 * height. The width will be ignored. */
+				strcpy(tmp, "M");
+				if (rd->line[ri->start] == '\f')
+					eop = True;
+			} else if (rd->line[ri->start] == '\t') {
+				strcpy(tmp, " ");
+			} else {
+				strcpy(tmp, "^x");
+				tmp[1] = '@' + (rd->line[ri->start] & 31);
+			}
+			cr = measure_str(p, tmp, ri->attr);
 		}
-		cr = do_measure(p, txt, len, -1, ri->attr);
+
 		if (cr.y > rd->line_height)
 			rd->line_height = cr.y;
 		ri->height = cr.y;
@@ -632,7 +641,7 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 		ri->hidden = False;
 
 		if (ri->start <= offset && offset <= ri->start + ri->len) {
-			cr = do_measure(p, "M", -1, -1, ri->attr);
+			cr = measure_str(p, "M", ri->attr);
 			rd->curs_width = cr.x;
 		}
 
