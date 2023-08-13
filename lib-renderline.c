@@ -519,6 +519,19 @@ static inline void do_draw(struct pane *p safe,
 		str[len] = tmp;
 }
 
+static inline void draw_wrap(struct pane *p safe,
+			     struct pane *focus safe,
+			     char *str safe,
+			     int x, int y)
+{
+	struct rline_data *rd = &p->data;
+
+	home_call(focus, "Draw:text", p,
+		  -1, NULL, str,
+		  rd->scale, NULL, rd->wrap_attr,
+		  x, y + rd->ascent);
+}
+
 static void add_split(struct render_item *ri safe, int split)
 {
 	int i = ri->split_cnt;
@@ -823,14 +836,11 @@ static void draw_line(struct pane *p safe, struct pane *focus safe, int offset)
 		    !ri->next->eol && ri->next->y != ri->y) {
 			/* we are about to wrap - draw the markers */
 			if (*wrap_tail)
-				do_draw(p, focus, wrap_tail, -1, 0, -1,
-					rd->wrap_attr,
-					p->w - rd->tail_length,
-					y);
+				draw_wrap(p, focus, wrap_tail,
+					  p->w - rd->tail_length, y);
 			if (*wrap_head)
-				do_draw(p, focus, wrap_head, -1, 0, -1,
-					rd->wrap_attr,
-					0, y + rd->line_height);
+				draw_wrap(p, focus, wrap_head,
+					  0, y + rd->line_height);
 		}
 
 		while (split < ri->split_cnt ||
@@ -838,15 +848,12 @@ static void draw_line(struct pane *p safe, struct pane *focus safe, int offset)
 			/* line wrap here */
 			/* don't show head/tail for wrap-regions */
 			if (*wrap_tail /*&& !ri->wrap*/)
-				do_draw(p, focus, wrap_tail, -1, 0, -1,
-					rd->wrap_attr,
-					p->w - rd->tail_length,
-					y);
+				draw_wrap(p, focus, wrap_tail,
+					  p->w - rd->tail_length, y);
 			y += rd->line_height;
 			if (*wrap_head /*&& !ri->wrap*/)
-				do_draw(p, focus, wrap_head, -1, 0, -1,
-					rd->wrap_attr,
-					0, y);
+				draw_wrap(p, focus, wrap_head,
+					  0, y);
 			if (ri->split_list && split < ri->split_cnt) {
 				int end = ri->len;
 				char *str = rd->line + ri->start + ri->split_list[split];
