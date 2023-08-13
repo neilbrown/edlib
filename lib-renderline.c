@@ -1,7 +1,6 @@
 // always remeasure?
 // :xx is points: tab left_margin
 // what exactly is left margin for wrapping
-// wrap content with cursor should itself wrap if needed, appeared unwrapped if possible
 /*
  * Copyright Neil Brown ©2015-2023 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
@@ -465,21 +464,34 @@ static void parse_line(struct rline_data *rd safe)
 
 static inline struct call_return do_measure(struct pane *p safe,
 					    struct render_item *ri safe,
-					    char *str safe, int len,
-					    int offset)
+					    int splitpos, int len,
+					    int maxwidth)
 {
 	struct rline_data *rd = &p->data;
 	struct call_return cr;
+	char tb[] = "        ";
+	char *str = rd->line + ri->start + splitpos;
 	char tmp;
 
+	if (rd->line[ri->start] == '\t') {
+		str = tb;
+		if (len < 0)
+			len = ri->tab_cols - splitpos;
+	} else
+		if (len < 0)
+			len = ri->len - splitpos;
 	tmp = str[len];
 	str[len] = 0;
 
 	cr = call_ret(all, "Draw:text-size", p,
-		      offset, NULL, str,
+		      maxwidth, NULL, str,
 		      rd->scale, NULL, ri->attr);
 
 	str[len] = tmp;
+	if (cr.ret == 1 && maxwidth >= 0 &&
+	    cr.i >= len)
+		/* All fits in maxwidth */
+		cr.ret = 2;
 	return cr;
 }
 
@@ -614,8 +626,7 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 
 	for (ri = rd->content; ri; ri = ri->next) {
 		if (!is_ctrl(rd->line[ri->start])) {
-			cr = do_measure(p, ri, rd->line + ri->start,
-					ri->len, -1);
+			cr = do_measure(p, ri, 0, -1, -1);
 		} else {
 			char tmp[4];
 			if (ri->eol) {
@@ -716,9 +727,6 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 	wrap_margin = rd->head_length;
 	for (ri = rd->content ; wrap && ri ; ri = ri->next) {
 		int splitpos;
-		char *str;
-		int len;
-		char tb[] = "        ";
 		if (ri->wrap && (wraprl == NULL || ri->wrap != wraprl->wrap))
 			wraprl = ri;
 		if (ri->wrap_margin)
@@ -789,21 +797,14 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 		/* Need to split this ri into two or more pieces */
 		x = ri->x;
 		splitpos = 0;
-		str = rd->line + ri->start;
-		len = ri->len;
-		if (*str == '\t') {
-			str = tb;
-			len = ri->tab_cols;
-		}
 		while (1) {
-			cr = do_measure(p, ri, str + splitpos,
-					len - splitpos,
+			cr = do_measure(p, ri, splitpos, -1,
 					right_margin - rd->tail_length - x);
-			if (cr.i >= len - splitpos)
+			if (cr.ret == 2)
 				/* Remainder fits now */
 				break;
 			/* re-measure the first part */
-			cr = do_measure(p, ri, str + splitpos,
+			cr = do_measure(p, ri, splitpos,
 					cr.i,
 					right_margin - rd->tail_length - x);
 
@@ -923,8 +924,7 @@ static int find_xy(struct pane *p safe, struct pane *focus safe,
 	if (rd->line[ri->start] == '\t')
 		cr.i = 0;
 	else
-		cr = do_measure(p, ri, rd->line + ri->start, ri->len,
-				x - ri->x);
+		cr = do_measure(p, ri, 0, -1, x - ri->x);
 	return ri->start + cr.i;
 }
 
@@ -966,16 +966,9 @@ static struct xy find_curs(struct pane *p safe, int offset, const char **cursatt
 	}
 	if (ri->eol)
 		cr.x = offset ? ri->width : 0;
-	else {
-		char *str = rd->line + ri->start + st;
-		char tb[] = "        ";
-		if (rd->line[ri->start] == '\t') {
-			str = tb;
-			if (offset)
-				offset = ri->tab_cols;
-		}
-		cr = do_measure(p, ri, str, offset - st, -1);
-	}
+	else
+		cr = do_measure(p, ri, st, offset - st, -1);
+
 	if (split)
 		xy.x = cr.x; /* FIXME margin?? */
 	else
