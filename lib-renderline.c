@@ -485,9 +485,10 @@ static inline struct call_return do_measure(struct pane *p safe,
 
 static inline void do_draw(struct pane *p safe,
 			   struct pane *focus safe,
+			   struct render_item *ri,
 			   char *str safe, int len, int tab_cols,
 			   int offset,
-			   const char *attr, int x, int y)
+			   int x, int y)
 {
 	struct rline_data *rd = &p->data;
 	char tmp;
@@ -501,7 +502,7 @@ static inline void do_draw(struct pane *p safe,
 		 */
 		if (offset == 0)
 			home_call(focus, "Draw:text", p, offset, NULL, "",
-				  rd->scale, NULL, attr, x, y);
+				  rd->scale, NULL, ri->attr, x, y);
 		return;
 	}
 	if (str[0] == '\t') {
@@ -514,7 +515,7 @@ static inline void do_draw(struct pane *p safe,
 		str[len] = 0;
 	}
 	home_call(focus, "Draw:text", p, offset, NULL, str,
-			   rd->scale, NULL, attr, x, y);
+			   rd->scale, NULL, ri->attr, x, y);
 	if (len >= 0)
 		str[len] = tmp;
 }
@@ -827,10 +828,10 @@ static void draw_line(struct pane *p safe, struct pane *focus safe, int offset)
 		else
 			cpos = offset - ri->start;
 
-		do_draw(p, focus,
+		do_draw(p, focus, ri,
 			rd->line + ri->start, ri->split_list ? ri->split_list[0]: ri->len,
 			ri->split_list ? ri->split_list[0] : ri->tab_cols,
-			cpos, ri->attr,
+			cpos,
 			ri->x, y);
 		if (!ri->split_cnt && ri->next &&
 		    !ri->next->eol && ri->next->y != ri->y) {
@@ -863,12 +864,12 @@ static void draw_line(struct pane *p safe, struct pane *focus safe, int offset)
 				}
 				if (split+1 < ri->split_cnt)
 					end = ri->split_list[split+1];
-				do_draw(p, focus,
+				do_draw(p, focus, ri,
 					str,
 					end - ri->split_list[split],
 					end - ri->split_list[split],
 					cpos - ri->split_list[split],
-					ri->attr, rd->left_margin + rd->head_length,
+					rd->left_margin + rd->head_length,
 					y);
 				split += 1;
 			}
