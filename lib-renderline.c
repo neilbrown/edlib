@@ -493,6 +493,7 @@ static inline void do_draw(struct pane *p safe,
 	char tmp;
 	char tb[] = "         ";
 
+	y += rd->ascent;
 	if (strchr("\f\n\0", str[0])) {
 		/* end marker - len extends past end of string,
 		 * but mustn't write there.  Only need to draw if
@@ -817,7 +818,7 @@ static void draw_line(struct pane *p safe, struct pane *focus safe, int offset)
 			rd->line + ri->start, ri->split_list ? ri->split_list[0]: ri->len,
 			ri->split_list ? ri->split_list[0] : ri->tab_cols,
 			cpos, ri->attr,
-			ri->x, y + rd->ascent);
+			ri->x, y);
 		if (!ri->split_cnt && ri->next &&
 		    !ri->next->eol && ri->next->y != ri->y) {
 			/* we are about to wrap - draw the markers */
@@ -825,11 +826,11 @@ static void draw_line(struct pane *p safe, struct pane *focus safe, int offset)
 				do_draw(p, focus, wrap_tail, -1, 0, -1,
 					rd->wrap_attr,
 					p->w - rd->tail_length,
-					y + rd->ascent);
+					y);
 			if (*wrap_head)
 				do_draw(p, focus, wrap_head, -1, 0, -1,
 					rd->wrap_attr,
-					0, y + rd->ascent + rd->line_height);
+					0, y + rd->line_height);
 		}
 
 		while (split < ri->split_cnt ||
@@ -840,12 +841,12 @@ static void draw_line(struct pane *p safe, struct pane *focus safe, int offset)
 				do_draw(p, focus, wrap_tail, -1, 0, -1,
 					rd->wrap_attr,
 					p->w - rd->tail_length,
-					y + rd->ascent);
+					y);
 			y += rd->line_height;
 			if (*wrap_head /*&& !ri->wrap*/)
 				do_draw(p, focus, wrap_head, -1, 0, -1,
 					rd->wrap_attr,
-					0, y + rd->ascent);
+					0, y);
 			if (ri->split_list && split < ri->split_cnt) {
 				int end = ri->len;
 				char *str = rd->line + ri->start + ri->split_list[split];
@@ -861,7 +862,7 @@ static void draw_line(struct pane *p safe, struct pane *focus safe, int offset)
 					end - ri->split_list[split],
 					cpos - ri->split_list[split],
 					ri->attr, rd->left_margin + rd->head_length,
-					y + rd->ascent);
+					y);
 				split += 1;
 			}
 		}
