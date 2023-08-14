@@ -13,7 +13,7 @@ the file.
 - [ ] check formatting in x11 display.  Wrap causes problems 474/476 of
       render-present.py and elsewhere
 - [ ] check notmuch formatting.  wrap-margin isn't right!
-- [ ] email display: image positioning is wrong.  Maybe they don't get
+- [X] email display: image positioning is wrong.  Maybe they don't get
       erased when moved.
 - [ ] remove tab_right hack by not requiring tail_length after
       final non-eol item

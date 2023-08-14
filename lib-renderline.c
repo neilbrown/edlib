@@ -1028,6 +1028,9 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 	char *ssize = attr_find(p->attrs, "cached-size");
 	struct xy size= {-1, -1};
 
+	if (dodraw)
+		home_call(focus, "Draw:clear", p);
+
 	width = p->parent->w/2;
 	height = p->parent->h/2;
 
