@@ -10,7 +10,7 @@ the file.
 ### Triage
 
 
-- [ ] check formatting in x11 display.  Wrap causes problems 474/476 of
+- [X] check formatting in x11 display.  Wrap causes problems 474/476 of
       render-present.py and elsewhere
 - [ ] check notmuch formatting.  wrap-margin isn't right!
 - [X] email display: image positioning is wrong.  Maybe they don't get

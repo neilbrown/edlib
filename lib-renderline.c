@@ -534,8 +534,12 @@ static inline void do_draw(struct pane *p safe,
 		if (split)
 			offset = -1;
 	}
-	if (ri->split_list && split < ri->split_cnt)
-		len = ri->split_list[split];
+	if (ri->split_list) {
+		if (split < ri->split_cnt)
+			len = ri->split_list[split];
+		if (split)
+			len -= ri->split_list[split-1];
+	}
 
 	if (str[0] == '\t')
 		/* Tab need a list of spaces */
