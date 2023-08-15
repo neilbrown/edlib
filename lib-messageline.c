@@ -232,8 +232,7 @@ DEF_CMD(messageline_refresh)
 			strftime(buf, sizeof(buf), "%H:%M %d-%b-%Y", tm);
 		else
 			buf[0] = 0;
-		/* justify 10pt (1 char) from right to avoid triggering a wrap */
-		pane_str(mli->line, buf, "bold,fg:blue,right:10,rtab");
+		pane_str(mli->line, buf, "bold,fg:blue,rtab");
 	}
 	return 1;
 }
