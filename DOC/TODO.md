@@ -10,12 +10,14 @@ the file.
 ### Triage
 
 
+- [ ] if cursor position causes pane size to change, this doesn't
+      propagate.
 - [X] check formatting in x11 display.  Wrap causes problems 474/476 of
       render-present.py and elsewhere
 - [X] check notmuch formatting.  wrap-margin isn't right!
 - [X] email display: image positioning is wrong.  Maybe they don't get
       erased when moved.
-- [ ] remove tab_right hack by not requiring tail_length after
+- [X] remove tab_right hack by not requiring tail_length after
       final non-eol item
 - [X] resolve fixme around wrap_margin when splitting
 - [X] resolve fixme reguarding margin in find_curs

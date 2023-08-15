@@ -608,6 +608,7 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 	struct call_return cr;
 	int x, y;
 	bool eop = False;
+	bool seen_rtab = False;
 
 	if (!rd->content)
 		return eop;
@@ -695,6 +696,8 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 			x += ri->width;
 			continue;
 		}
+		if (ri->tab_align == TAB_RIGHT)
+			seen_rtab = True;
 		w = ri->width;
 		for (ri2 = ri->next;
 		     ri2 && ri2->tab_align == TAB_LEFT && ri2->tab == TAB_UNSET;
@@ -705,10 +708,9 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 		margin = right_margin;
 		if (ri2)
 			margin =  (rd->left_margin * rd->scale / 1000) + calc_tab(ri2->tab, right_margin, rd->scale);
-		if (ri->tab_align == TAB_RIGHT) {
-			margin -= rd->tail_length;// FIXME don't want this HACK
+		if (ri->tab_align == TAB_RIGHT)
 			x = x + margin - x - w;
-		} else
+		else
 			x = x + (margin - x - w) / 2;
 		ri->x = x;
 		while (ri->next && ri->next->next && ri->next->tab_align == TAB_LEFT) {
@@ -741,6 +743,15 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 			continue;
 		}
 		if (ri->x + ri->width <= right_margin - rd->tail_length)
+			continue;
+		if ((ri->next == NULL || ri->next->eol) &&
+		    ri->x + ri->width <= right_margin &&
+		    seen_rtab)
+			/* Don't need any tail space for last item.
+			 * This allows rtab to fully right-justify,
+			 * but leaves no-where for the cursor.  So
+			 * only do it if rtab is present.
+			 */
 			continue;
 		/* This doesn't fit here */
 		if (wraprl) {
