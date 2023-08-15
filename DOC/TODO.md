@@ -21,7 +21,7 @@ the file.
       final non-eol item
 - [X] resolve fixme around wrap_margin when splitting
 - [X] resolve fixme reguarding margin in find_curs
-- [ ] search "\brl([123]*|end)\b" replace "ri\1" does rlend -> rirlend
+- [X] search "\brl([123]*|end)\b" replace "ri\1" does rlend -> rirlend
 - [ ] when should lib-renderline call measure_line? Only when asked?
       Or whenever content, width, scale change?
 - [ ] When is left_margin used?  Can I use it for hanging indent?  If

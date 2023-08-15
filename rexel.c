@@ -1966,8 +1966,8 @@ static int parse_prefix(struct parse_state *st safe)
 
 static bool parse_re(struct parse_state *st safe, int capture_flag)
 {
-	int re_start = st->next;
-	int start = re_start;
+	int re_start;
+	int start;
 	int save_mod = st->mod;
 	int ret;
 	int capture = st->capture;
@@ -2000,6 +2000,8 @@ static bool parse_re(struct parse_state *st safe, int capture_flag)
 		st->capture += 1;
 	}
 	capture_start = capture_max = st->capture;
+	start = re_start = st->next;
+
 	while ((ret = parse_branch(st)) != 0 && *st->patn == '|') {
 		st->patn += 1;
 		relocate(st, start, 1);
@@ -2505,6 +2507,8 @@ static struct test {
 	{ "a[^\\s123]+b", " a b a12b axyb ", 0, 10, 4},
 	{ "([\\w\\d]+)\\s*=\\s*(.*[^\\s])", " name = some value ", 0, 1, 17,
 	 "\\1,\\2", "name,some value"},
+	{ "\\brl([123]*|end)\\b", " ->rlend = ", 0, 3, 5,
+	 "->ri\\1 = ", "->riend = "},
 	{ "?|foo(bar)|(bat)foo", "foobar", 0, 0, 6, "\\1", "bar"},
 	{ "?|foo(bar)|(bat)foo", "batfoo", 0, 0, 6, "\\1", "bat"},
 	// compare greedy and non-greedy
