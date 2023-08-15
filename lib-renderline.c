@@ -731,7 +731,7 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 		if (ri->wrap && (wraprl == NULL || ri->wrap != wraprl->wrap))
 			wraprl = ri;
 		if (ri->wrap_margin)
-			wrap_margin = ri->x;
+			wrap_margin = ri->x + xdiff;
 		ri->wrap_x = wrap_margin;
 		ri->x += xdiff;
 		ri->y += ydiff;
@@ -745,7 +745,7 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 		/* This doesn't fit here */
 		if (wraprl) {
 			/* Move wraprl to next line and hide it unless it contains cursor */
-			int xd = wraprl->x - wrap_margin;
+			int xd;
 			struct render_item *wraprl2, *ri2;
 
 			/* Find last ritem in wrap region.*/
@@ -753,8 +753,11 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 			     wraprl2->next && wraprl2->next->wrap == wraprl->wrap ;
 			     wraprl2 = wraprl2->next)
 				;
+			wrap_margin = wraprl2->wrap_x;
 			if (wraprl2->next)
 				xd = wraprl2->next->x - wrap_margin;
+			else
+				xd = wraprl2->x - wrap_margin;
 			if (offset >= 0 &&
 			    offset >= wraprl->start &&
 			    offset <= wraprl2->start + wraprl2->len) {
@@ -779,23 +782,19 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 			for (ri2 = wraprl2->next ; ri2 && ri2 != ri->next; ri2 = ri2->next) {
 				ri2->y += rd->line_height;
 				ri2->x -= xd;
+				if (ri2->wrap_margin)
+					wrap_margin = ri2->x;
+				ri2->wrap_x = wrap_margin;
 			}
 			xdiff -= xd;
 			ydiff += rd->line_height;
 			wraprl = NULL;
-			continue;
+			if (ri->hidden ||
+			    ri->x + ri->width <= right_margin - rd->tail_length)
+				continue;
 		}
 	normal_wrap:
-		if (ri->x >= right_margin - rd->tail_length) {
-			/* This ri moves completely to next line */
-			xdiff -= ri->x - wrap_margin;
-			ri->x = wrap_margin;
-			ydiff += rd->line_height;
-			ri->y += rd->line_height;
-			wraprl = NULL;
-			continue;
-		}
-		/* Need to split this ri into two or more pieces */
+		/* Might need to split this ri into two or more pieces */
 		x = ri->x;
 		splitpos = 0;
 		while (1) {
@@ -804,17 +803,31 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 			if (cr.ret == 2)
 				/* Remainder fits now */
 				break;
+			if (cr.i == 0 && splitpos == 0) {
+				/* None of this fits here, move to next line */
+				xdiff -= ri->x - wrap_margin;
+				ri->x = wrap_margin;
+				x = ri->x;
+				ydiff += rd->line_height;
+				ri->y += rd->line_height;
+				wraprl = NULL;
+			}
+			if (cr.i == 0)
+				/* Nothing fits and we already split - give up */
+				break;
 			/* re-measure the first part */
 			cr = do_measure(p, ri, splitpos,
 					cr.i,
 					right_margin - rd->tail_length - x);
-
 			ydiff += rd->line_height;
-			xdiff -= cr.x; // fixme where does wrap_margin fit in there
-			if (splitpos == 0)
-				xdiff -= ri->x;
+			xdiff -= cr.x;
+			if (splitpos == 0) {
+				xdiff -= ri->x - wrap_margin;
+				x = wrap_margin;
+			}
 			splitpos += cr.i;
-			x = wrap_margin;
+			if (ri->split_cnt > 250)
+				break;
 			add_split(ri, splitpos);
 		}
 	}
@@ -878,7 +891,7 @@ static void draw_line(struct pane *p safe, struct pane *focus safe, int offset)
 			if (ri->split_list && split < ri->split_cnt) {
 				split += 1;
 				do_draw(p, focus, ri, split, cpos,
-					rd->left_margin + rd->head_length,
+					ri->wrap_x,
 					y);
 			}
 		}
@@ -971,7 +984,7 @@ static struct xy find_curs(struct pane *p safe, int offset, const char **cursatt
 		cr = do_measure(p, ri, st, offset - st, -1);
 
 	if (split)
-		xy.x = cr.x; /* FIXME margin?? */
+		xy.x = ri->wrap_x + cr.x;
 	else
 		xy.x = ri->x + cr.x;
 	xy.y = ri->y + split * rd->line_height;

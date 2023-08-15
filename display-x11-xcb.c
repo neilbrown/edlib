@@ -383,8 +383,12 @@ static void parse_attrs(
 			bg = word + 3;
 		if (strcmp(word, "inverse") == 0)
 			inv = True;
+		if (strcmp(word, "noinverse") == 0)
+			inv = False;
 		if (strcmp(word, "underline") == 0)
 			ul = True;
+		if (strcmp(word, "nounderline") == 0)
+			ul = False;
 	}
 
 	if (inv) {

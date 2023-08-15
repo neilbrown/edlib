@@ -841,7 +841,7 @@ class notmuch_query(edlib.Doc):
                                "<tab:130> <fg:blue>%TM-authors</>" +
                                "<tab:350>%TM-size%TM-threadinfo<%TM-hilite>" +
                                "<fg:red,bold>%TM-flag</>" +
-                               "<wrap-tail:,wrap-head:         ,wrap> </>" +
+                               "<wrap-tail:,wrap-nounderline,wrap-head:         ,wrap> </>" +
                                "<wrap-margin><fg:#FF8C00-40,action-activate:notmuch:select-1>%TM-subject</></></>")
         self.add_notify(self.maindoc, "Notify:Tag")
         self.add_notify(self.maindoc, "Notify:Close")

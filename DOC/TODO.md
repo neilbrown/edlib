@@ -12,13 +12,13 @@ the file.
 
 - [X] check formatting in x11 display.  Wrap causes problems 474/476 of
       render-present.py and elsewhere
-- [ ] check notmuch formatting.  wrap-margin isn't right!
+- [X] check notmuch formatting.  wrap-margin isn't right!
 - [X] email display: image positioning is wrong.  Maybe they don't get
       erased when moved.
 - [ ] remove tab_right hack by not requiring tail_length after
       final non-eol item
-- [ ] resolve fixme around wrap_margin when splitting
-- [ ] resolve fixme reguarding margin in find_curs
+- [X] resolve fixme around wrap_margin when splitting
+- [X] resolve fixme reguarding margin in find_curs
 - [ ] search "\brl([123]*|end)\b" replace "ri\1" does rlend -> rirlend
 - [ ] when should lib-renderline call measure_line? Only when asked?
       Or whenever content, width, scale change?
