@@ -188,17 +188,34 @@ refresh_one() {
     rm -f tests.d/.in
 }
 
-refresh_tests() {
-    if [ $# -gt 1 ]; then
-	echo >&2 "$0: please provide at most one test to refresh"
-	exit 1
+refresh_one_fast() {
+    b=$1
+    f=tests.d/$b
+    if [ ! -f "$f" ]; then
+	echo >&2 "Cannot find test $f"
+	return
     fi
-    if [ $# -eq 0 ]; then
+    setup_test_dir
+    runtest run tests.d/.out "tests.d/$1"
+    mv tests.d/.out tests.d/"$1"
+}
+
+refresh_tests() {
+    case "$#:$1:$2" in
+        1:-f:* ) tst=""; cmd=refresh_one_fast ;;
+	1:* ) tst=$1; cmd=refresh_one ;;
+        2:*:-f ) tst=$1; cmd=refresh_one_fast ;;
+	0: ) tst=""; cmd=refresh_one ;;
+        * )
+	   echo >&2 "$0: please provide at most one test to refresh"
+	   exit 1
+    esac
+    if [ -z "$tst" ]; then
 	for f in tests.d/[A-Za-z0-9]*; do
-	    refresh_one ${f#tests.d/}
+	    $cmd ${f#tests.d/}
 	done
     else
-	refresh_one "$1"
+	$cmd "$tst"
     fi
 }
 
