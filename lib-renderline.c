@@ -604,6 +604,7 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 	bool wrap = shift_left < 0;
 	int wrap_margin;
 	int right_margin = p->w - (rd->right_margin * rd->scale / 1000);
+	int left_margin = rd->left_margin * rd->scale / 1000;
 	int xdiff, ydiff;
 	struct call_return cr;
 	int x, y;
@@ -666,7 +667,7 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 	/* Set 'x' position honouring tab stops, and set length
 	 * of "\t" characters.  Also handle \n and \f.
 	 */
-	x = (rd->left_margin * rd->scale / 1000) - (shift_left > 0 ? shift_left : 0);
+	x = left_margin - (shift_left > 0 ? shift_left : 0);
 	y = rd->space_above * rd->scale / 1000;
 	rd->width = 0;
 	for (ri = rd->content; ri; ri = ri->next) {
@@ -674,7 +675,8 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 		struct render_item *ri2;
 		ri->y = y;
 		if (ri->tab != TAB_UNSET)
-			x =  (rd->left_margin * rd->scale / 1000) + calc_tab(ri->tab, right_margin, rd->scale);
+			x =  left_margin + calc_tab(ri->tab, right_margin,
+						    rd->scale);
 		if (ri->eol) {
 			/* EOL */
 			if (x > rd->width)
@@ -707,7 +709,8 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 			ri2 = ri2->next;
 		margin = right_margin;
 		if (ri2)
-			margin =  (rd->left_margin * rd->scale / 1000) + calc_tab(ri2->tab, right_margin, rd->scale);
+			margin =  left_margin + calc_tab(ri2->tab, right_margin,
+							 rd->scale);
 		if (ri->tab_align == TAB_RIGHT)
 			x = x + margin - x - w;
 		else
@@ -727,7 +730,7 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 	 */
 	xdiff = 0; ydiff = 0; y = 0;
 	wraprl = NULL;
-	wrap_margin = rd->head_length;
+	wrap_margin = left_margin + rd->head_length;
 	for (ri = rd->content ; wrap && ri ; ri = ri->next) {
 		int splitpos;
 		if (ri->wrap && (wraprl == NULL || ri->wrap != wraprl->wrap))

@@ -10,6 +10,13 @@ the file.
 ### Triage
 
 
+- [ ] favourites...  I want some favourite documents that are easy to
+      find, favourite directories, favourite make or shell commands.
+      Maybe that are found by moving "down" in history?  Maybe alt-*
+      flags them?
+- [ ] merge command 9-A-m could work as one command.  If there is an
+      active selection, the patch is moved to that selection.
+- [ ] merge command 9 must ensure selection is full lines.
 - [ ] if cursor position causes pane size to change, this doesn't
       propagate.
 - [X] check formatting in x11 display.  Wrap causes problems 474/476 of
@@ -96,7 +103,7 @@ the file.
 
 - [X] Change times_up() to use pane_too_long()
 - [X] change :A-x menu to use doc-list - add sorting
-- [ ] Change render-lines to handle centring and right-align in flush_line
+- [X] Change render-lines to handle centring and right-align in flush_line
 - [ ] Teach render-lines to pad spaces to left/right align text
 - [ ] revise *Welcome* page
 
