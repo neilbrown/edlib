@@ -10,6 +10,8 @@ the file.
 ### Triage
 
 
+- [ ] in xcb, find-file draws result a pixel high, then moves done
+      when cursor moves
 - [ ] favourites...  I want some favourite documents that are easy to
       find, favourite directories, favourite make or shell commands.
       Maybe that are found by moving "down" in history?  Maybe alt-*
@@ -29,7 +31,7 @@ the file.
 - [X] resolve fixme around wrap_margin when splitting
 - [X] resolve fixme reguarding margin in find_curs
 - [X] search "\brl([123]*|end)\b" replace "ri\1" does rlend -> rirlend
-- [ ] when should lib-renderline call measure_line? Only when asked?
+- [X] when should lib-renderline call measure_line? Only when asked?
       Or whenever content, width, scale change?
 - [ ] When is left_margin used?  Can I use it for hanging indent?  If
       not, how do I do that?  Can I tab out, set margin, tab back for

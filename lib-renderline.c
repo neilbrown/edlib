@@ -130,6 +130,10 @@ struct rline_data {
 	bool		image;
 	int		curspos;
 
+	/* These used to check is measuring is needed, or to record
+	 * results of last measurement */
+	unsigned short measure_width, measure_height;
+	short measure_offset, measure_shift_left;
 	struct render_item *content;
 };
 #include "core-pane.h"
@@ -313,6 +317,7 @@ static void parse_line(struct rline_data *rd safe)
 
 	ri = rd->content;
 	rd->content = NULL;
+	rd->measure_width = 0; // force re-measure
 	while (ri) {
 		struct render_item *r = ri;
 		ri = r->next;
@@ -603,8 +608,9 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 	int shift_left = pane_attr_get_int(focus, "shift_left", 0);
 	bool wrap = shift_left < 0;
 	int wrap_margin;
-	int right_margin = p->w - (rd->right_margin * rd->scale / 1000);
-	int left_margin = rd->left_margin * rd->scale / 1000;
+	int right_margin;
+	int left_margin;
+	struct xy xyscale = pane_scale(focus);
 	int xdiff, ydiff;
 	struct call_return cr;
 	int x, y;
@@ -613,6 +619,24 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 
 	if (!rd->content)
 		return eop;
+	if (xyscale.x == rd->scale && p->w == rd->measure_width &&
+	    shift_left == rd->measure_shift_left &&
+	    offset == rd->measure_offset) {
+		/* No change */
+		for (ri = rd->content ; ri ; ri = ri->next)
+			if (ri->eol && rd->line[ri->start] == '\f')
+				eop = True;
+		pane_resize(p, p->x, p->y, p->w, rd->measure_height);
+		return eop;
+	}
+	rd->scale = xyscale.x;
+	rd->measure_width = p->w;
+	rd->measure_offset = offset;
+	rd->measure_shift_left = shift_left;
+
+	right_margin = p->w - (rd->right_margin * rd->scale / 1000);
+	left_margin = rd->left_margin * rd->scale / 1000;
+
 	cr = measure_str(p, "M", "");
 	rd->curs_width = cr.x;
 	rd->line_height = cr.y;
@@ -847,9 +871,10 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 	}
 	/* We add rd->line_height for the EOL, whether a NL is present of not */
 	ydiff += rd->line_height;
-	pane_resize(p, p->x, p->y, p->w,
-		    (rd->space_above + rd->space_below) * rd->scale / 1000 +
-		    ydiff);
+	rd->measure_height =
+		(rd->space_above + rd->space_below) * rd->scale / 1000 +
+		ydiff;
+	pane_resize(p, p->x, p->y, p->w, rd->measure_height);
 	attr_set_int(&p->attrs, "line-height", rd->line_height);
 	return eop;
 }
@@ -1047,7 +1072,7 @@ static void parse_map(const char *map safe, short *rowsp safe, short *colsp safe
 
 static int render_image(struct pane *p safe, struct pane *focus safe,
 			const char *line safe,
-			int dodraw, int scale,
+			int dodraw,
 			int offset, int want_xypos, short x, short y)
 {
 	char *fname = NULL;
@@ -1056,6 +1081,8 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 	short rows = -1, cols = -1;
 	int map_offset = 0;
 	int ioffset;
+	struct xy xyscale = pane_scale(focus);
+	int scale = xyscale.x;
 	char *ssize = attr_find(p->attrs, "cached-size");
 	struct xy size= {-1, -1};
 
@@ -1176,7 +1203,7 @@ DEF_CMD(renderline_draw)
 
 	if (rd->image)
 		render_image(ci->home, ci->focus, rd->line, True,
-			     rd->scale, offset, False, 0, 0);
+			     offset, False, 0, 0);
 	else
 		draw_line(ci->home, ci->focus, offset);
 
@@ -1197,7 +1224,7 @@ DEF_CMD(renderline_refresh)
 		offset = rd->prefix_bytes + rd->curspos;
 	if (rd->image)
 		render_image(ci->home, ci->focus, rd->line, True,
-			     rd->scale, offset, False, 0, 0);
+			     offset, False, 0, 0);
 	else {
 		measure_line(ci->home, ci->focus, offset);
 		draw_line(ci->home, ci->focus, offset);
@@ -1211,7 +1238,7 @@ DEF_CMD(renderline_measure)
 	bool end_of_page;
 	if (rd->image)
 		return render_image(ci->home, ci->focus, rd->line,
-				    False, rd->scale, ci->num, False, 0, 0);
+				    False, ci->num, False, 0, 0);
 
 	end_of_page = measure_line(ci->home, ci->focus,
 				   ci->num < 0 ? -1 : rd->prefix_bytes + ci->num);
@@ -1241,7 +1268,7 @@ DEF_CMD(renderline_findxy)
 
 	if (rd->image)
 		return render_image(ci->home, ci->focus, rd->line,
-				    False, rd->scale, -1, True,
+				    False, -1, True,
 				    ci->x, ci->y);
 
 	measure_line(ci->home, ci->focus,
@@ -1315,7 +1342,6 @@ DEF_CMD(renderline_set)
 {
 	struct rline_data *rd = &ci->home->data;
 	const char *old = rd->line;
-	struct xy xyscale = pane_scale(ci->focus);
 	char *prefix = pane_attr_get(ci->focus, "prefix");
 	bool word_wrap = pane_attr_get_int(ci->focus, "word-wrap", 0) != 0;
 
@@ -1333,11 +1359,9 @@ DEF_CMD(renderline_set)
 
 	rd->curspos = ci->num;
 	if (strcmp(rd->line, old) != 0 ||
-	    (old && xyscale.x != rd->scale) ||
 	    (old && word_wrap != rd->word_wrap)) {
 		pane_damaged(ci->home, DAMAGED_REFRESH);
 		pane_damaged(ci->home->parent, DAMAGED_REFRESH);
-		rd->scale = xyscale.x;
 		rd->word_wrap = word_wrap;
 		parse_line(rd);
 	}
@@ -1378,7 +1402,7 @@ DEF_CMD(renderline_attach)
 	if (!p)
 		return Efail;
 	rd = &p->data;
-	rd->line = strdup("");
+	rd->line = strdup(ETX); // Imposible string
 
 	return comm_call(ci->comm2, "cb", p);
 }
