@@ -10,9 +10,9 @@ the file.
 ### Triage
 
 
-- [ ] tabs can wrap around a newline - with part of tab at end of one
+- [X] tabs can wrap around a newline - with part of tab at end of one
       line and part at start of the next.  Do I want that?  do_measure()
-      decides.
+      decides. YES.
 - [X] in xcb, find-file draws result a pixel high, then moves done
       when cursor moves
 - [ ] favourites...  I want some favourite documents that are easy to

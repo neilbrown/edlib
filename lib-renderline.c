@@ -481,6 +481,13 @@ static inline struct call_return do_measure(struct pane *p safe,
 	    cr.i >= len)
 		/* All fits in maxwidth */
 		cr.ret = 2;
+	/* Report position in rd->line */
+	if (str == tb) {
+		cr.s = rd->line + ri->start;
+		if (splitpos + cr.i >= ri->tab_cols)
+			cr.s += 1;
+	} else
+		cr.s = str + cr.i;
 	return cr;
 }
 
@@ -968,12 +975,8 @@ static int find_xy(struct pane *p safe, struct pane *focus safe,
 	    ri->y + rd->line_height * splitpos > y &&
 	    xyattr)
 		*xyattr = ri->attr;
-	if (rd->line[ri->start] == '\t')
-		/* do_measure reports how many spaces, we don't care */
-		/* FIXME but should do_measure report that?  Do I *want*
-		 * a tab to wrap around a newline??
-		 */
-		cr.i = 0;
+	if (cr.s)
+		return cr.s - rd->line;
 	return start + cr.i;
 }
 
