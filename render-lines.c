@@ -1115,15 +1115,31 @@ static int revalidate_start(struct rl_data *rl safe,
 	start_of_file = doc_prior(focus, start) == WEOF;
 	for (m = start; m && !found_end && y < p->h; m = vmark_next(m)) {
 		struct pane *hp;
-		int found;
+		int found = 0;
+		int offset = -1;
 		if (refresh_all)
 			vmark_invalidate(m);
 		call_render_line(p, focus, m, NULL);
-		found = measure_line(p, focus, m);
-		found_end = found & 2;
+		m2 = vmark_next(m);
+		/* The "found & 1" handles case when EOF is at the end
+		 * of a non-empty line.
+		 */
+		if (pm && m2 && mark_same(pm, m2))
+			/* Cursor at end shouldn't affect appearance */
+			found = measure_line(p, focus, m);
+		if (pm && m2 && mark_ordered_or_same(m, pm) &&
+		    (mark_ordered_not_same(pm, m2) ||
+		     (mark_same(pm, m2) && !(found & 1))))
+			/* Cursor is on this line */
+			offset = call_render_line_to_point(focus,
+							   pm, m);
+		found = measure_line(p, focus, m, offset);
+
 		hp = m->mdata;
 		if (!mark_valid(m) || !hp)
 			break;
+
+		found_end = found & 2;
 
 		if (y != hp->y) {
 			pane_damaged(p, DAMAGED_REFRESH);
@@ -1133,23 +1149,13 @@ static int revalidate_start(struct rl_data *rl safe,
 				pane_damaged(hp, DAMAGED_REFRESH);
 		}
 		y += hp->h;
-		m2 = vmark_next(m);
-		/* The "found & 1" handles case when EOF is at the end
-		 * of a non-empty line.
-		 */
-		if (pm && m2 && mark_ordered_or_same(m, pm) &&
-		    (mark_ordered_not_same(pm, m2) ||
-		     (mark_same(pm, m2) && !(found & 1)))) {
-
+		if (offset >= 0) {
 			/* Cursor is on this line */
-			int offset = call_render_line_to_point(focus,
-							       pm, m);
 			int lh = attr_find_int(hp->attrs,
 					       "line-height");
 			int cy = y - hp->h + hp->cy;
 			if (lh < 1)
 				lh = 1;
-			measure_line(p, focus, m, offset);
 			if (m == start && rl->skip_height > 0) {
 				/* Point might be in this line, but off top
 				 * of the screen

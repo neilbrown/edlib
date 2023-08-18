@@ -22,14 +22,14 @@ the file.
 - [X] merge command 9-A-m could work as one command.  If there is an
       active selection, the patch is moved to that selection.
 - [X] merge command 9 must ensure selection is full lines.
-- [ ] if cursor position causes pane size to change, this doesn't
+- [X] if cursor position causes pane size to change, this doesn't
       propagate.
 - [ ] When is left_margin used?  Can I use it for hanging indent?  If
       not, how do I do that?  Can I tab out, set margin, tab back for
       text?  Am I using points properly?
 - [X] find a better way to handle "case when EOF is at the end" of
       a non-empty line.
-- [ ] as renderline changes result if cursor is present, cursor pos
+- [X] as renderline changes result if cursor is present, cursor pos
       must ALWAYS be given.
 - [ ] write test view mode that treats each line in document as markup
       so markup can be tested more directly.
