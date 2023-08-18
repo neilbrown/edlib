@@ -109,19 +109,25 @@ extend_test() {
 	exit 1
     fi
     rm -f tests.d/.tmp tests.d/.tmp2
-    sed -e '/^Close/d' $tt > tests.d/.tmp2
+    # find :C-X :C-C that closes the editor.
+    n=$(grep -n 'Key ":C-X"' $tt | tail -n 1| sed 's/:.*//')
+    if [ -z "$n" ]; then
+	echo >&2 "$0: cannot find tailing :C-X"
+	exit 1;
+    fi
+    head -n $[n-1] $tt > tests.d/.tmp2
     runtest extend tests.d/.tmp tests.d/.tmp2
     if ! grep -s '^Close' tests.d/.tmp > /dev/null ; then
 	echo >&2 "$0: test file not Closed - probably crash"
 	exit 1
     fi
-    mv tests.d/.tmp2 $tt
     setup_test_dir
     runtest run $tt tests.d/.tmp
-    diff -u tests.d/.tmp $tt
-    #rm tests.d/.tmp
+    #diff -u tests.d/.tmp $tt
+    rm -f tests.d/.tmp tests.d/.tmp2
     exit 0
 }
+
 run_one_test() {
     if [ ! -f "tests.d/$1" ]; then
 	echo "$cmd: test $1 doesn't exist"
