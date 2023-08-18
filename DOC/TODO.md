@@ -33,7 +33,8 @@ the file.
       must ALWAYS be given.
 - [ ] write test view mode that treats each line in document as markup
       so markup can be tested more directly.
-- [ ] in search-replace if you repeat :A-Enter, chars get deleted
+- [X] in search-replace if you repeat :A-Enter, chars get deleted - if
+       replacement string is shorter.  If longer, they get added.
 - [ ] I think I want a "Workspaces" concept, maybe tabbed set of tile
       collections.  I would have one of mail and one for each project
       that I might be looking in.  I have lots of documents, but few

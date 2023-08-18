@@ -44,6 +44,7 @@ struct es_info {
 	short wrapped;
 	short backwards;
 	short case_sensitive;
+	short replaced;
 };
 
 static struct map *es_map, *er_map;
@@ -316,6 +317,7 @@ DEF_CMD(search_again)
 
 	call("search:highlight", esi->target);
 	esi->matched = 0;
+	esi->replaced = 0;
 	m = mark_dup(esi->start);
 	str = call_ret(str, "doc:get-str", ci->home);
 	if (str == NULL || strlen(str) == 0)
@@ -503,10 +505,13 @@ DEF_CMD(do_replace)
 
 	if (!new)
 		return Enoarg;
-	if (esi->matched <= 0)
+	if (len < 0)
 		return Efail;
+	if (esi->replaced)
+		return 1;
 	if (!esi->target)
 		return Efail;
+	esi->replaced = 1;
 	m = mark_dup(esi->end);
 	if (esi->backwards) {
 		while (len > 0 && doc_next(esi->target, m) != WEOF)
@@ -708,6 +713,7 @@ DEF_CMD(emacs_search)
 	esi->s = NULL;
 	esi->matched = 1;
 	esi->wrapped = 0;
+	esi->replaced = 0;
 	esi->backwards = ci->num & 1;
 
 	p = pane_register(ci->focus, 0, &search_handle.c, esi);
