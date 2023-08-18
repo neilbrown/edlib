@@ -89,6 +89,35 @@ class MergePane(edlib.Pane):
         self.marks = None
         focus.call("view:changed", self.done_marks[0], self.done_marks[1])
 
+    def apply_copied_merge(self, focus):
+        # If we have a selection and last copy was a patch, insert it
+        pt = focus.call("doc:point", ret='mark')
+        if pt and pt['selection:active'] == "1":
+            mk = focus.call("doc:point", ret='mark2')
+        else:
+            mk = None
+        if mk:
+            diff = focus.call("copy:get", ret='str')
+            if not diff or not diff.startswith("|||||||"):
+                diff = None
+        if diff:
+            # selection must be full lines
+            focus.call("doc:EOL", -1, pt)
+            focus.call("doc:EOL", -1, mk)
+            strt,end = pt.dup(),mk.dup()
+            if strt > end:
+                strt,end = end,strt
+            focus.call("select:commit")
+
+            # move strt before region
+            strt.step(0)
+            focus.call("doc:replace", strt, strt, "<<<<<<< found\n")
+            # move end after region
+            end.step(1)
+            focus.call("doc:replace", end, end, diff, 0, 1)
+            return strt
+        return None
+
     def handle_alt_m(self, key, focus, num, mark, **a):
         "handle:K:A-m"
 
@@ -150,35 +179,21 @@ class MergePane(edlib.Pane):
                 focus.call("copy:save", diff)
                 focus.call("doc:replace", 0, 1, self.marks[1], m)
                 self.marks = None
-
-            return 1
+                # we have an active selection, insert the merge there.
+                mark = self.apply_copied_merge(focus)
+                if not mark:
+                    return 1
+                num = 1
+            else:
+                return 1
 
         if num == 9:
             # paste from copy-buf if it is a diff
-            pt = focus.call("doc:point", ret='mark')
-            if pt and pt['selection:active'] == "1":
-                mk = focus.call("doc:point", ret='mark2')
-            else:
-                mk = None
-            if mk:
-                # selection must be full lines
-                focus.call("doc:EOL", -1, pt)
-                focus.call("doc:EOL", -1, mk)
-                strt,end = pt.dup(),mk.dup()
-                if strt > end:
-                    strt,end = end,strt
-                focus.call("select:commit")
-                diff = focus.call("copy:get", ret='str')
-                if diff and diff.startswith("|||||||"):
-                    # move strt before region
-                    strt.step(0)
-                    focus.call("doc:replace", strt, strt, "<<<<<<< found\n")
-                    # move end after region
-                    end.step(1)
-                    focus.call("doc:replace", end, end, diff, 0, 1)
-                    # Leave pt,mk - use 'strt' to find merge
-                    mark = strt
-                # fall through to "Find" the merge
+            m = self.apply_copied_merge(focus)
+            if not m:
+                return 1
+            mark = m
+            # fall through to "Find" the merge
 
         if self.marks:
             focus.call("doc:set-attr", "render:merge-same",

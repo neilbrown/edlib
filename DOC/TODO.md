@@ -19,7 +19,7 @@ the file.
       find, favourite directories, favourite make or shell commands.
       Maybe that are found by moving "down" in history?  Maybe alt-*
       flags them?
-- [ ] merge command 9-A-m could work as one command.  If there is an
+- [X] merge command 9-A-m could work as one command.  If there is an
       active selection, the patch is moved to that selection.
 - [X] merge command 9 must ensure selection is full lines.
 - [ ] if cursor position causes pane size to change, this doesn't
