@@ -10,6 +10,9 @@ the file.
 ### Triage
 
 
+- [ ] tabs can wrap around a newline - with part of tab at end of one
+      line and part at start of the next.  Do I want that?  do_measure()
+      decides.
 - [ ] in xcb, find-file draws result a pixel high, then moves done
       when cursor moves
 - [ ] favourites...  I want some favourite documents that are easy to
@@ -36,7 +39,7 @@ the file.
 - [ ] When is left_margin used?  Can I use it for hanging indent?  If
       not, how do I do that?  Can I tab out, set margin, tab back for
       text?  Am I using points properly?
-- [ ] review all of lib-renderline for clarity, consistency, and good comments.
+- [X] review all of lib-renderline for clarity, consistency, and good comments.
 - [X] \t handling in lib-renderlines got very ugly..
 - [ ] find a better way to handle "case when EOF is at the end" of
       a non-empty line.
@@ -48,7 +51,7 @@ the file.
 - [X] input uses 0 for Efallthrough!
 - [X] call, not caLl in server.py
 - [X] lib-server received unexpected notification Close
-- [ ] should pane ->cx,cy be a struct xy??
+- [X] NO should pane ->cx,cy be a struct xy??
 - [X] revalidate_start shouldn't find cursor on line where it is known
       not to be
 - [X] call_render_line_to_point() never returns negative - why do we check?
@@ -440,8 +443,8 @@ Module features
 
 ### lib-markup
 
-- [ ] Disable <hide> if cursor is in the hidden region.
-
+- [ ] Move <hide> handling to lib-renderline so we can disable <hide>
+      if cursor is in the hidden region.
 
 ### lib-macro
 

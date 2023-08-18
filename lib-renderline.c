@@ -9,16 +9,18 @@
  *
  * The render-lines pane will place multiple renderline panes and use
  * them to do the drawing - resizing and moving them as necessary to fit
- * the size of the text.
+ * the size of the text.  Other panes can use renderline for similar
+ * purposes.  messageline uses just one renderline.
  *
- * A renderline normally is only active when the render-lines (or other)
- * parent pane is being refreshed - that pane hands over some of the
- * task to the renderline pane.
- * Specifically a "draw-markup" command provides a marked-up line of
- * text, a scale, and other details.  The resulting image in measured
- * and possibly drawn
+ * A renderline pane can sit in the normal stack and receive Refresh
+ * messages to trigger drawing, or can sit "beside" the stack with a negative
+ * 'z' value. In that can the owner need to explicitly request refresh.
  *
- *
+ * "render-line:set" will set the content of the line
+ * "render-line:measure" will determine layout and size given the available
+ *    width and other parameters
+ * "render-line:draw" will send drawing commands.
+ * "Refresh" does both the measure and the draw.
  */
 
 #define _GNU_SOURCE /*  for asprintf */
@@ -31,41 +33,42 @@
 #include "core.h"
 #include "misc.h"
 
-/* There is one render_item entry
+/* There is one render_item entry for
  * - each string of text with all the same attributes
  * - each individual TAB
  * - each unknown control character
  * - the \n \f or \0 which ends the line
- * When word-wrap is enabled, strings of linear white-space get
+ * When word-wrap is enabled, strings of spaces get
  * different attributes, so a different render_item entry.
  *
  * attributes understood at this level are:
- *  center or centre	- equal space on either end of flushed line
- *  left:nn		- left margin - in "points"
+ *  left:nn		- left margin - in "points" (10 points per char normally)
  *  right:nn		- right margin
  *  tab:nn		- move to nn from left margin or -nn from right margin
- *  rtab:nn		- from here to next tab or eol right-aligned at nn
- *  ctab:nn		- from here to next tab or eol centered at nn
+ *  rtab		- from here to next tab or eol right-aligned
+ *  center or centre	- equal space inserted here and before next
+ *  or ctab		  tab-stop or margin
  *  space-above:nn	- extra space before (wrapped) line
  *  space-below:nn	- extra space after (wrapped) line
  *  height:nn		- override height.  This effectively adds space above
  *			  every individual line if the whole line is wrapped
  *  wrap		- text with this attr can be hidden when used as a wrap
- *			  point.
+ *			  point.  Not hidden if cursor in the region.
  *  wrap-margin		- remember this x offset as left margin of wrapped lines
  *  wrap-head=xx	- text is inserted at start of line when wrapped
  *  wrap-tail=xx	- text to include at end of line when wrapped.  This
- *			  determines how far before right margin that wrapp is
+ *			  determines how far before right margin the wrap is
  *			  triggered.
- *  wrap-XXXX		- attrs to apply to wrap head/tail. Anything not recognised
- *			  has "wrap-" stripped and is used for the head and tail.
+ *  wrap-XXXX		- attrs to apply to wrap head/tail. Anything not
+ *			  recognised has "wrap-" stripped and is used for the
+ *			  head and tail. Default is fg:blue,underline
  *  hide		- Text is hidden if cursor is not within range.
+ *			  NOT YET IMPLEMENTED
  *
  * "nn" is measured in "points" which is 1/10 the nominal width of chars
  * in the default font size, which is called "10".  A positive value is
  * measured from the left margin or, which setting margins, from the
- * left page edge.  A negative value is measures from the right margin
- * or right page edge.
+ * relevant page edge.  A negative value is measures from the right margin.
  *
  */
 
@@ -83,20 +86,20 @@ struct render_item {
 	unsigned short	height, width;
 	signed short	x,y; /* signed so x can go negative when shifted */
 	signed short	tab;
-	unsigned short	wrap_x;
-	uint8_t		split_cnt; /* wrap happens this many times at byte
+	unsigned short	wrap_x;	/* If this item wraps, wrap_x is the margin */
+	uint8_t		split_cnt; /* Wrap happens this many times at byte
 				    * positions in split_list */
-	uint8_t		wrap; /* this and consecutive render_items
-			       * with the same wrap number form an
-			       * optional wrap point.  It is only visible
-			       * when not wrapped, or when cursor is in
-			       * it.
-			       */
-	uint8_t		hide; /* This and consecutive render_items
-			       * with the same hide nmber form a
-			       * hidden extent which is visible when
-			       * the cursor is in it.
-			       */
+	uint8_t		wrap;	/* This and consecutive render_items
+				 * with the same wrap number form an
+				 * optional wrap point.  It is only visible
+				 * when not wrapped, or when cursor is in
+				 * it.
+				 */
+	uint8_t		hide;	/* This and consecutive render_items
+				 * with the same hide nmber form a
+				 * hidden extent which is visible when
+				 * the cursor is in it.
+				 */
 	bool		wrap_margin:1;
 	bool		hidden:1;
 	bool		eol:1;
@@ -138,13 +141,7 @@ struct rline_data {
 };
 #include "core-pane.h"
 
-enum {
-	OK = 0,
-	WRAP,
-	XYPOS,
-};
-
-/* sequentially set _attr to the an attr name, and _val to
+/* Sequentially set _attr to the an attr name, and _val to
  * either the val (following ":") or NULL.
  * _attr is valid up to : or , or < space and _val is valid up to , or <space
  * _c is the start which will be updates, and _end is the end which
@@ -253,35 +250,33 @@ static void aappend(struct buf *b safe, char const *a safe)
 	buf_append(b, ',');
 }
 
-static void add_render(struct rline_data *rd safe, struct render_item **safe*rlp safe,
+static void add_render(struct rline_data *rd safe,
+		       struct render_item **safe*rip safe,
 		       const char *start safe, const char *end safe,
 		       char *attr safe,
-		       short tab, enum tab_align align,
-		       bool wrap_margin,
+		       short *tab safe, enum tab_align *align safe,
+		       bool *wrap_margin safe,
 		       short wrap, short hide)
 {
 	struct render_item *ri;
-	struct render_item **riend = *rlp;
+	struct render_item **riend = *rip;
 
 	alloc(ri, pane);
 	ri->attr = strdup(attr);
 	ri->start = start - rd->line;
 	ri->len = end - start;
-	ri->tab_align = align;
-	ri->tab = tab;
+	ri->tab_align = *align;
+	ri->tab = *tab;
 	ri->wrap = wrap;
 	ri->hide = hide;
-	ri->wrap_margin = wrap_margin;
+	ri->wrap_margin = *wrap_margin;
 	ri->eol = !!strchr("\n\f\0", *start);
+	*tab = TAB_UNSET;
+	*align = TAB_LEFT;
+	*wrap_margin = False;
 	*riend = ri;
 	riend = &ri->next;
-	*rlp = riend;
-}
-
-static inline bool is_ctrl(unsigned int c)
-{
-	return c < ' ' ||
-		(c >= 128 && c < 128 + ' ');
+	*rip = riend;
 }
 
 static void parse_line(struct rline_data *rd safe)
@@ -293,7 +288,8 @@ static void parse_line(struct rline_data *rd safe)
 	struct render_item *ri = NULL, **riend = &ri;
 	const char *line = rd->line;
 	bool wrap_margin = False;
-	int tab = TAB_UNSET, align = TAB_LEFT;
+	short tab = TAB_UNSET;
+	enum tab_align align = TAB_LEFT;
 	int hide = 0, hide_num = 0, hide_depth = 0;
 	int wrap = 0, wrap_num = 0, wrap_depth = 0;
 	unsigned char c;
@@ -337,10 +333,7 @@ static void parse_line(struct rline_data *rd safe)
 		if (line - 1 > st) {
 			/* All text from st to line-1 has "attr' */
 			add_render(rd, &riend, st, line-1, buf_final(&attr),
-				   tab, align, wrap_margin, wrap, hide);
-			align = TAB_LEFT;
-			tab = TAB_UNSET;
-			wrap_margin = False;
+				   &tab, &align, &wrap_margin, wrap, hide);
 			st = line - 1;
 		}
 		switch (c) {
@@ -429,10 +422,7 @@ static void parse_line(struct rline_data *rd safe)
 				line += 1;
 			wrap = ++wrap_num;
 			add_render(rd, &riend, st - 1, line, buf_final(&attr),
-				   tab, align, wrap_margin, wrap, hide);
-			tab = TAB_UNSET;
-			align = TAB_LEFT;
-			wrap_margin = False;
+				   &tab, &align, &wrap_margin, wrap, hide);
 			wrap = 0;
 			break;
 		case '\0':
@@ -446,10 +436,7 @@ static void parse_line(struct rline_data *rd safe)
 			 * easy cursor placement.
 			 */
 			add_render(rd, &riend, st, line, buf_final(&attr),
-				   tab, align, wrap_margin, wrap, hide);
-			tab = TAB_UNSET;
-			align = TAB_LEFT;
-			wrap_margin = False;
+				   &tab, &align, &wrap_margin, wrap, hide);
 			break;
 		}
 	} while (c);
@@ -552,7 +539,7 @@ static inline void do_draw(struct pane *p safe,
 	else
 		if (split > 0 && split <= ri->split_cnt && ri->split_list) {
 			str += ri->split_list[split-1];
-			offset -= ri->split_list[split];
+			offset -= ri->split_list[split-1];
 		}
 
 	tmp = str[len];
@@ -576,13 +563,16 @@ static inline void draw_wrap(struct pane *p safe,
 		  x, y + rd->ascent);
 }
 
-static void add_split(struct render_item *ri safe, int split)
+static bool add_split(struct render_item *ri safe, int split)
 {
 	int i = ri->split_cnt;
+	if (i > 250)
+		return False;
 	ri->split_cnt += 1;
 	ri->split_list = realloc(ri->split_list,
 				 sizeof(ri->split_list[0]) * ri->split_cnt);
 	ri->split_list[i] = split;
+	return True;
 }
 
 static int calc_tab(int num, int margin, int scale)
@@ -652,7 +642,7 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 	rd->tail_length = cr.x;
 
 	for (ri = rd->content; ri; ri = ri->next) {
-		if (!is_ctrl(rd->line[ri->start])) {
+		if ((unsigned char)rd->line[ri->start] >= ' ') {
 			cr = do_measure(p, ri, 0, -1, -1);
 		} else {
 			char tmp[4];
@@ -864,16 +854,13 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 				x = wrap_margin;
 			}
 			splitpos += cr.i;
-			if (ri->split_cnt > 250)
+			if (!add_split(ri, splitpos))
 				break;
-			add_split(ri, splitpos);
 		}
 	}
-	/* We add rd->line_height for the EOL, whether a NL is present of not */
-	ydiff += rd->line_height;
 	rd->measure_height =
 		(rd->space_above + rd->space_below) * rd->scale / 1000 +
-		ydiff;
+		ydiff + rd->line_height;
 	pane_resize(p, p->x, p->y, p->w, rd->measure_height);
 	attr_set_int(&p->attrs, "line-height", rd->line_height);
 	return eop;
@@ -905,19 +892,9 @@ static void draw_line(struct pane *p safe, struct pane *focus safe, int offset)
 			cpos = offset - ri->start;
 
 		do_draw(p, focus, ri, 0, cpos, ri->x, y);
-		if (!ri->split_cnt && ri->next &&
-		    !ri->next->eol && ri->next->y != ri->y) {
-			/* we are about to wrap - draw the markers */
-			if (*wrap_tail)
-				draw_wrap(p, focus, wrap_tail,
-					  p->w - rd->tail_length, y);
-			if (*wrap_head)
-				draw_wrap(p, focus, wrap_head,
-					  0, y + rd->line_height);
-		}
 
 		while (split < ri->split_cnt ||
-		       (ri->next && ri->next->next && ri->next->y > y)) {
+		       (ri->next && !ri->next->eol && ri->next->y > y)) {
 			/* line wrap here */
 			/* don't show head/tail for wrap-regions */
 			if (*wrap_tail /*&& !ri->wrap*/)
@@ -932,7 +909,8 @@ static void draw_line(struct pane *p safe, struct pane *focus safe, int offset)
 				do_draw(p, focus, ri, split, cpos,
 					ri->wrap_x,
 					y);
-			}
+			} else
+				break;
 		}
 		if (offset < ri->start + ri->len)
 			offset = -1;
@@ -952,33 +930,41 @@ static int find_xy(struct pane *p safe, struct pane *focus safe,
 	struct call_return cr;
 	struct rline_data *rd = &p->data;
 	struct render_item *r, *ri = NULL;
+	int splitpos = 0;
+	int start = 0;
 
-	if (!rd->content)
-		return 0;
 	for (r = rd->content; r ; r = r->next) {
 		int split;
-		if (r->y <= y && r->x <= x)
+		if (r->y <= y && r->x <= x) {
 			ri = r;
+			start = r->start;
+		}
 		for (split = 0; split < r->split_cnt; split++) {
-			if (r->y + (split + 1) * rd->line_height &&
-			    r->x <= r->wrap_x)
+			if (r->y + (split + 1) * rd->line_height <= y &&
+			    r->wrap_x <= x && r->split_list) {
 				ri = r;
+				splitpos = r->split_list[split];
+				start = r->start + splitpos;
+			}
 		}
 	}
 	if (!ri)
 		return 0;
 	if (ri->eol)
 		/* newline or similar.  Can only be at start */
-		return ri->start;
-	if (ri->x + ri->width > x &&
-	    ri->y + ri->height > y &&
+		return start;
+	cr = do_measure(p, ri, splitpos, -1, x - ri->x);
+	if ((splitpos ? ri->wrap_x : ri->x ) + cr.x > x &&
+	    ri->y + rd->line_height * splitpos > y &&
 	    xyattr)
 		*xyattr = ri->attr;
 	if (rd->line[ri->start] == '\t')
+		/* do_measure reports how many spaces, we don't care */
+		/* FIXME but should do_measure report that?  Do I *want*
+		 * a tab to wrap around a newline??
+		 */
 		cr.i = 0;
-	else
-		cr = do_measure(p, ri, 0, -1, x - ri->x);
-	return ri->start + cr.i;
+	return start + cr.i;
 }
 
 static struct xy find_curs(struct pane *p safe, int offset, const char **cursattr)
@@ -1373,8 +1359,19 @@ DEF_CMD(renderline_set)
 DEF_CMD(renderline_close)
 {
 	struct rline_data *rd = &ci->home->data;
+	struct render_item *ri = rd->content;
 
 	free((void*)rd->line);
+	while (ri) {
+		struct render_item *r = ri;
+		ri = r->next;
+		free(r->split_list);
+		unalloc_str_safe(r->attr, pane);
+		unalloc(r, pane);
+	}
+	aupdate(&rd->wrap_head, NULL);
+	aupdate(&rd->wrap_tail, NULL);
+	aupdate(&rd->wrap_attr, NULL);
 	return 1;
 }
 
