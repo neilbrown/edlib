@@ -666,6 +666,8 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		line_height_pre = attr_find_int(start->mdata->attrs, "line-height");
 		if (line_height_pre < 1)
 			line_height_pre = 1;
+		/* We now have a better estimate than '1' */
+		line_height_post = line_height_pre;
 		y_pre = start->mdata->cy + line_height_pre;
 		y_post = start->mdata->h - y_pre;
 	} else {

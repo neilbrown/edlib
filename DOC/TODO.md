@@ -13,7 +13,7 @@ the file.
 - [ ] tabs can wrap around a newline - with part of tab at end of one
       line and part at start of the next.  Do I want that?  do_measure()
       decides.
-- [ ] in xcb, find-file draws result a pixel high, then moves done
+- [X] in xcb, find-file draws result a pixel high, then moves done
       when cursor moves
 - [ ] favourites...  I want some favourite documents that are easy to
       find, favourite directories, favourite make or shell commands.
