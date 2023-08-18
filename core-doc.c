@@ -350,19 +350,29 @@ DEF_CMD(doc_eol)
 		while ((ch = doc_next(f, m)) != WEOF &&
 		       !is_eol(ch))
 			;
-		rpt -= 1;
+		if (ch != WEOF)
+			rpt -= 1;
 	}
 	while (rpt < 0 && ch != WEOF) {
 		while ((ch = doc_prev(f, m)) != WEOF &&
 		       !is_eol(ch))
 			;
-		rpt += 1;
+		if (ch != WEOF)
+			rpt += 1;
 	}
-	if (!one_more && is_eol(ch)) {
-		if (RPT_NUM(ci) > 0)
-			doc_prev(f, m);
-		else if (RPT_NUM(ci) < 0)
-			doc_next(f, m);
+	if (!one_more) {
+		if (is_eol(ch)) {
+			if (RPT_NUM(ci) > 0)
+				doc_prev(f, m);
+			else if (RPT_NUM(ci) < 0)
+				doc_next(f, m);
+		}
+		if (ch == WEOF) {
+			if (RPT_NUM(ci) > 0)
+				rpt -= 1;
+			else if (RPT_NUM(ci) < 0)
+				rpt += 1;
+		}
 	}
 	return rpt == 0 ? 1 : Efalse;
 }
@@ -522,7 +532,7 @@ DEF_CMD(doc_append)
 	if (!val || !val[0])
 		return Enoarg;
 	/* Append the string to the attr.  It attr doesn't
-	 * exists, string first char of val and use that.
+	 * exists, strip first char of val and use that.
 	 */
 	old = attr_find(p->attrs, attr);
 	if (!old) {

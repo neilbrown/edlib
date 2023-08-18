@@ -25,10 +25,15 @@
  *   :A-s - sets next line as search start and repeats.
  *   :Enter - drops out of search mode
  * Anything else drops out of search mode and repeats the command as normal
+ *
+ * For each history document a number of "favourites" can be registered.
+ * These are accessed by moving "down" from the start point rather than "up"
+ * for previous history items.
  */
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -41,6 +46,7 @@ struct history_info {
 	char		*prompt;
 	struct buf	search;
 	int		search_back;
+	int		favourite;
 	struct si {
 		int i;
 		struct si *prev;
@@ -188,15 +194,62 @@ DEF_CMD(history_move)
 {
 	struct history_info *hi = ci->home->data;
 	const char *suffix = ksuffix(ci, "K:A-");
+	char attr[sizeof("doc:favourite-") + 12];
 
 	if (!hi->history)
 		return Enoarg;
-	if (*suffix == 'p')
-		call("doc:EOL", hi->history, -2);
-	else
-		call("doc:EOL", hi->history, 1, NULL, NULL, 1);
-
+	if (*suffix == 'p') {
+		if (hi->favourite > 0)
+			hi->favourite -= 1;
+		else
+			call("doc:EOL", hi->history, -2);
+	} else {
+		if (hi->favourite > 0)
+			hi->favourite += 1;
+		else if (call("doc:EOL", hi->history, 1, NULL, NULL, 1) < 0)
+			hi->favourite = 1;
+	}
+	while (hi->favourite > 0) {
+		char *f;
+		struct mark *m;
+		snprintf(attr, sizeof(attr)-1, "doc:favourite-%d",
+			 hi->favourite);
+		f = pane_attr_get(hi->history, attr);
+		if (!f) {
+			hi->favourite -= 1;
+			continue;
+		}
+		call("doc:EOL", ci->focus, -1);
+		m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
+		call("doc:EOL", ci->focus, 1, m);
+		call("Replace", ci->focus, 1, m, f);
+		mark_free(m);
+		return 1;
+	}
 	recall_line(ci->home, ci->focus, *suffix == 'n');
+	return 1;
+}
+
+DEF_CMD(history_add_favourite)
+{
+	struct history_info *hi = ci->home->data;
+	char attr[sizeof("doc:favourite-") + 10];
+	int f;
+	char *l;
+
+	if (!hi->history)
+		return 1;
+	l = call_ret(strsave, "doc:get-str", ci->focus);
+	if (!l || !*l)
+		return 1;
+	for (f = 1; f < 100; f++) {
+		snprintf(attr, sizeof(attr)-1, "doc:favourite-%d", f);
+		if (pane_attr_get(hi->history, attr))
+			continue;
+		call("doc:set:", hi->history, 0, NULL, l, 0, NULL, attr);
+		call("Message:modal", ci->focus, 0, NULL, "Added as favourite");
+		break;
+	}
 	return 1;
 }
 
@@ -498,6 +551,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(history_map, "K:A-n", &history_move);
 	key_add(history_map, "K:A-r", &history_search);
 	key_add(history_map, "K:A-s", &history_search);
+	key_add(history_map, "K:A-*", &history_add_favourite);
 	key_add_prefix(history_map, "K:History-search-", &history_search_again);
 	key_add_prefix(history_map, "K:History-search:",
 		       &history_search_retry);

@@ -15,7 +15,7 @@ the file.
       decides. YES.
 - [X] in xcb, find-file draws result a pixel high, then moves done
       when cursor moves
-- [ ] favourites...  I want some favourite documents that are easy to
+- [X] favourites...  I want some favourite documents that are easy to
       find, favourite directories, favourite make or shell commands.
       Maybe that are found by moving "down" in history?  Maybe alt-*
       flags them?
@@ -44,6 +44,8 @@ the file.
       "nm" already gets me to the email project quickly.  Getting back
       is not so easy.
       Maybe some docs could be marked "project" and so be easy to find?
+      Maybe docs could be associated with a session, and are preferred
+      for select-new-document operations.
 - [ ] path completion in shell command.  If cannot find look for '/'
       following punctuation (=) and try there.
 - [ ] resolve shift-left vs shift_left distinction - add a "fixed" suffix?
@@ -60,6 +62,9 @@ the file.
       I want.  Maybe have a menu of choices to remind me
 - [ ] Teach render-lines to pad spaces to left/right align text
 - [ ] revise *Welcome* page
+- [ ] history doesn't restore initial default (or empty) string when
+      returning after excursion into history or favourites.
+- [ ] how can we save history-favourites back to a config file?
 
 ### Small
 

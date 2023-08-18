@@ -76,12 +76,17 @@ struct config_data {
 	struct pane *root safe;
 	struct trigger {
 		char *path safe;
+		enum {
+			TRIGGER_FILE,
+			TRIGGER_DOC,
+		} type;
 		struct attrset *attrs;
 		struct trigger *next;
 	} *triggers, *last_trigger;
 };
 
-static void add_trigger(struct config_data *cd safe, char *path safe,
+static void add_trigger(struct config_data *cd safe, unsigned int type,
+			char *path safe,
 			char *name safe, char *val safe, int append)
 {
 	struct trigger *t = cd->last_trigger;
@@ -96,10 +101,11 @@ static void add_trigger(struct config_data *cd safe, char *path safe,
 			return;
 		name += 10;
 	}
-	if (!t || strcmp(t->path, path) != 0) {
+	if (!t || strcmp(t->path, path) != 0 || t->type != type) {
 		alloc(t, pane);
 		t->path = strdup(path);
 		t->next = NULL;
+		t->type = type;
 		if (cd->last_trigger)
 			cd->last_trigger->next = t;
 		else
@@ -118,13 +124,14 @@ static void add_trigger(struct config_data *cd safe, char *path safe,
 		attr_set_str(&t->attrs, name, val);
 }
 
-static void config_file(char *path safe, struct pane *doc safe,
+static void config_file(char *path safe, unsigned int type,
+			struct pane *doc safe,
 			struct config_data *cd safe)
 {
 	struct trigger *t;
 
 	for (t = cd->triggers; t; t = t->next)
-		if (glob_match(t->path, path)) {
+		if (t->type == type && glob_match(t->path, path)) {
 			const char *val;
 			const char *k = "";
 			while ((k = attr_get_next_key(t->attrs, k, -1, &val)) != NULL) {
@@ -209,7 +216,11 @@ static void handle(void *data, char *section safe, char *name safe, char *value 
 	}
 
 	if (strstarts(section, "file:")) {
-		add_trigger(cd, section+5, name, value, append);
+		add_trigger(cd, TRIGGER_FILE, section+5, name, value, append);
+		return;
+	}
+	if (strstarts(section, "doc:")) {
+		add_trigger(cd, TRIGGER_DOC, section+4, name, value, append);
 		return;
 	}
 }
@@ -251,9 +262,15 @@ DEF_CMD(config_appeared)
 {
 	struct config_data *cd = container_of(ci->comm, struct config_data, appeared);
 	char *path = pane_attr_get(ci->focus, "filename");
-	if (!path)
+	if (path) {
+		config_file(path, TRIGGER_FILE, ci->focus, cd);
 		return Efallthrough;
-	config_file(path, ci->focus, cd);
+	}
+	path = pane_attr_get(ci->focus, "doc-name");
+	if (path) {
+		config_file(path, TRIGGER_DOC, ci->focus, cd);
+		return Efallthrough;
+	}
 	return Efallthrough;
 }
 
