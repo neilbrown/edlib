@@ -24,23 +24,9 @@ the file.
 - [ ] merge command 9 must ensure selection is full lines.
 - [ ] if cursor position causes pane size to change, this doesn't
       propagate.
-- [X] check formatting in x11 display.  Wrap causes problems 474/476 of
-      render-present.py and elsewhere
-- [X] check notmuch formatting.  wrap-margin isn't right!
-- [X] email display: image positioning is wrong.  Maybe they don't get
-      erased when moved.
-- [X] remove tab_right hack by not requiring tail_length after
-      final non-eol item
-- [X] resolve fixme around wrap_margin when splitting
-- [X] resolve fixme reguarding margin in find_curs
-- [X] search "\brl([123]*|end)\b" replace "ri\1" does rlend -> rirlend
-- [X] when should lib-renderline call measure_line? Only when asked?
-      Or whenever content, width, scale change?
 - [ ] When is left_margin used?  Can I use it for hanging indent?  If
       not, how do I do that?  Can I tab out, set margin, tab back for
       text?  Am I using points properly?
-- [X] review all of lib-renderline for clarity, consistency, and good comments.
-- [X] \t handling in lib-renderlines got very ugly..
 - [ ] find a better way to handle "case when EOF is at the end" of
       a non-empty line.
 - [ ] as renderline changes result if cursor is present, cursor pos
@@ -48,14 +34,6 @@ the file.
 - [ ] write test view mode that treats each line in document as markup
       so markup can be tested more directly.
 - [ ] in search-replace if you repeat :A-Enter, chars get deleted
-- [X] input uses 0 for Efallthrough!
-- [X] call, not caLl in server.py
-- [X] lib-server received unexpected notification Close
-- [X] NO should pane ->cx,cy be a struct xy??
-- [X] revalidate_start shouldn't find cursor on line where it is known
-      not to be
-- [X] call_render_line_to_point() never returns negative - why do we check?
-- [X] should pane_resize() report if any change happened?
 - [ ] I think I want a "Workspaces" concept, maybe tabbed set of tile
       collections.  I would have one of mail and one for each project
       that I might be looking in.  I have lots of documents, but few
@@ -77,38 +55,8 @@ the file.
 - [ ] ./edlib -g doesn't work
 - [ ] pop up window to show selection as QR code
 - [ ] text qrcode (qr --ascii foo) don't look right in xcb display
-- [X] factor our list-sort code.
-- [X] when cx-b and default doc name is v.long, shift gets confused
-- [X] How to run shell command in "44" window??
-- [X] In c-mode, if ) is at end of line then highlighting it causes the
-      line to wrap
-- [X] mail compose should refuse to submit email with no valid 'to' address
-- [X] If a pane with shift-disabled has cursor past the right edge, the
-      cursor gets positioned outside the window
-- [X] when find-file dialog shifts left, it doesn't shift back until
-      cursor is v.close to left, even when the rest of the line is blank
-- [X] line-count in make output is weird.  Second line can be thousands
-- [X] Make sometimes doesn't follow output, though usually it does
-- [X] If dynamic-complete only finds one completion, does it still want
-      a menu?
-- [X] When merge makes a change, highlight the new content.
 - [ ] Review the options for editing a merge - it doesn't always do what
       I want.  Maybe have a menu of choices to remind me
-- [X] cursor is sometimes off-screen when it shouldn't be.  I don't know
-      what cause this yet, but I will try to remember to take notes next
-      time.
-      When searching backwards and result is just above display, the
-      result doesn't get shown.  Sometimes.
-- [X] visiting a new file from a 44 popup is weird.
-- [X] search in history always finds a new history line.  It doesn't
-      check if new patterns still matches this line.
-- [X] in notmuch cursor should go to query result when changing
-      messages.
-- [X] menu for address completions in email-compose
-
-- [X] Change times_up() to use pane_too_long()
-- [X] change :A-x menu to use doc-list - add sorting
-- [X] Change render-lines to handle centring and right-align in flush_line
 - [ ] Teach render-lines to pad spaces to left/right align text
 - [ ] revise *Welcome* page
 
@@ -162,7 +110,6 @@ Core features
 
 - [ ] gather memory usage stats per-pane and allow a dump
 - [ ] show doc size in doc list - include undo size?
-- [X] Discard ccache ??
 - [ ] Ensure all panes that should use "Free" properly, and find some
       what to encourage its use.
 - [ ] Add optional unit-test interface for modules.  This should be
@@ -370,9 +317,6 @@ Module features
       chars.
 - [ ] split some generic functionality like arrows and mouse clicks
       into a separate module to be shared with other edit modes.
-- [X] sort the command names for command-completion?
-       Currently lines are inserted into buffer.  I need to store in
-       an array first, then qsort()
 - [ ] Do I want a 'truncated' marker at start/end of line when not
       wrapping, and does the '\' go away properly when I start shifting.
 - [ ] change shift left/right to work in characters rather than pixels
