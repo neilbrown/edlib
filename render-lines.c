@@ -166,7 +166,7 @@ static bool vmark_is_valid(struct mark *m safe)
 }
 
 /* Returns 'true' at end-of-page */
-static bool _measure_line(struct pane *p safe, struct pane *focus safe,
+static int _measure_line(struct pane *p safe, struct pane *focus safe,
 			  struct mark *mk safe, short cursor_offset,
 			  char **cursor_attr)
 {
@@ -181,20 +181,20 @@ static bool _measure_line(struct pane *p safe, struct pane *focus safe,
 	if (cursor_attr)
 		*cursor_attr = cr.s;
 	/* end-of-page flag */
-	return cr.ret == 2;
+	return cr.ret & 3;
 }
 #define measure_line(...) VFUNC(measure_line, __VA_ARGS__)
-static inline bool measure_line3(struct pane *p safe, struct pane *focus safe,
+static inline int measure_line3(struct pane *p safe, struct pane *focus safe,
 				 struct mark *mk safe)
 {
 	return _measure_line(p, focus, mk, -1, NULL);
 }
-static inline bool measure_line4(struct pane *p safe, struct pane *focus safe,
+static inline int measure_line4(struct pane *p safe, struct pane *focus safe,
 				 struct mark *mk safe, short cursor_offset)
 {
 	return _measure_line(p, focus, mk, cursor_offset, NULL);
 }
-static inline bool measure_line5(struct pane *p safe, struct pane *focus safe,
+static inline int measure_line5(struct pane *p safe, struct pane *focus safe,
 				 struct mark *mk safe, short cursor_offset,
 				 char **cursor_attr)
 {
@@ -648,7 +648,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	if (start->mdata) {
 		struct pane *hp = start->mdata;
 		int curs_width;
-		found_end = measure_line(p, focus, start, offset);
+		found_end = measure_line(p, focus, start, offset) & 2;
 
 		curs_width = pane_attr_get_int(
 			start->mdata, "curs_width", 1);
@@ -1115,10 +1115,12 @@ static int revalidate_start(struct rl_data *rl safe,
 	start_of_file = doc_prior(focus, start) == WEOF;
 	for (m = start; m && !found_end && y < p->h; m = vmark_next(m)) {
 		struct pane *hp;
+		int found;
 		if (refresh_all)
 			vmark_invalidate(m);
 		call_render_line(p, focus, m, NULL);
-		found_end = measure_line(p, focus, m);
+		found = measure_line(p, focus, m);
+		found_end = found & 2;
 		hp = m->mdata;
 		if (!mark_valid(m) || !hp)
 			break;
@@ -1132,12 +1134,12 @@ static int revalidate_start(struct rl_data *rl safe,
 		}
 		y += hp->h;
 		m2 = vmark_next(m);
-		/* The doc_prior handles case when EOF is at the end
+		/* The "found & 1" handles case when EOF is at the end
 		 * of a non-empty line.
 		 */
 		if (pm && m2 && mark_ordered_or_same(m, pm) &&
 		    (mark_ordered_not_same(pm, m2) ||
-		     (mark_same(pm, m2) && !is_eol(doc_prior(focus,m2))))) {
+		     (mark_same(pm, m2) && !(found & 1)))) {
 
 			/* Cursor is on this line */
 			int offset = call_render_line_to_point(focus,

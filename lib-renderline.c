@@ -584,7 +584,7 @@ static int calc_tab(int num, int margin, int scale)
 	return margin + num * scale / 1000;
 }
 
-static bool measure_line(struct pane *p safe, struct pane *focus safe, int offset)
+static int measure_line(struct pane *p safe, struct pane *focus safe, int offset)
 {
 	/* First measure each render_item entry setting
 	 * height, ascent, width.
@@ -592,6 +592,11 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 	 * each unit.
 	 * Finally identify line-break locations if needed and set 'y'
 	 * positions
+	 *
+	 * Return 1 if there is an EOL ('\n')
+	 * 2 if there is an end-of-page ('\f')
+	 * 3 if both.
+	 * 0 if neither
 	 */
 	struct rline_data *rd = &p->data;
 	struct render_item *ri, *wraprl;
@@ -604,20 +609,23 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 	int xdiff, ydiff;
 	struct call_return cr;
 	int x, y;
-	bool eop = False;
+	int ret = 0;
 	bool seen_rtab = False;
 
 	if (!rd->content)
-		return eop;
+		return ret;
 	if (xyscale.x == rd->scale && p->w == rd->measure_width &&
 	    shift_left == rd->measure_shift_left &&
 	    offset == rd->measure_offset) {
 		/* No change */
-		for (ri = rd->content ; ri ; ri = ri->next)
+		for (ri = rd->content ; ri ; ri = ri->next) {
+			if (ri->eol && rd->line[ri->start] == '\n')
+				ret |= 1;
 			if (ri->eol && rd->line[ri->start] == '\f')
-				eop = True;
+				ret |= 2;
+		}
 		pane_resize(p, p->x, p->y, p->w, rd->measure_height);
-		return eop;
+		return ret;
 	}
 	rd->scale = xyscale.x;
 	rd->measure_width = p->w;
@@ -650,8 +658,10 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 				/* Ensure attributes of newline add to line
 				 * height. The width will be ignored. */
 				strcpy(tmp, "M");
+				if (rd->line[ri->start] == '\n')
+					ret |= 1;
 				if (rd->line[ri->start] == '\f')
-					eop = True;
+					ret |= 2;
 			} else if (rd->line[ri->start] == '\t') {
 				strcpy(tmp, " ");
 			} else {
@@ -863,7 +873,7 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe, int offse
 		ydiff + rd->line_height;
 	pane_resize(p, p->x, p->y, p->w, rd->measure_height);
 	attr_set_int(&p->attrs, "line-height", rd->line_height);
-	return eop;
+	return ret;
 }
 
 static void draw_line(struct pane *p safe, struct pane *focus safe, int offset)
@@ -1221,13 +1231,14 @@ DEF_CMD(renderline_refresh)
 DEF_CMD(renderline_measure)
 {
 	struct rline_data *rd = &ci->home->data;
-	bool end_of_page;
+	int ret;
+
 	if (rd->image)
 		return render_image(ci->home, ci->focus, rd->line,
 				    False, ci->num, False, 0, 0);
 
-	end_of_page = measure_line(ci->home, ci->focus,
-				   ci->num < 0 ? -1 : rd->prefix_bytes + ci->num);
+	ret = measure_line(ci->home, ci->focus,
+			   ci->num < 0 ? -1 : rd->prefix_bytes + ci->num);
 	rd->prefix_pixels = 0;
 	if (rd->prefix_bytes) {
 		struct xy xy = find_curs(ci->home, rd->prefix_bytes, NULL);
@@ -1238,12 +1249,12 @@ DEF_CMD(renderline_measure)
 		const char *cursattr = NULL;
 		struct xy xy;
 		xy = find_curs(ci->home, rd->prefix_bytes + ci->num, &cursattr);
-		comm_call(ci->comm2, "cb", ci->focus, end_of_page, NULL,
+		comm_call(ci->comm2, "cb", ci->focus, ret, NULL,
 			  cursattr);
 		ci->home->cx = xy.x;
 		ci->home->cy = xy.y;
 	}
-	return end_of_page ? 2 : 1;
+	return ret | 4;
 }
 
 DEF_CMD(renderline_findxy)

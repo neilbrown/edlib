@@ -27,7 +27,7 @@ the file.
 - [ ] When is left_margin used?  Can I use it for hanging indent?  If
       not, how do I do that?  Can I tab out, set margin, tab back for
       text?  Am I using points properly?
-- [ ] find a better way to handle "case when EOF is at the end" of
+- [X] find a better way to handle "case when EOF is at the end" of
       a non-empty line.
 - [ ] as renderline changes result if cursor is present, cursor pos
       must ALWAYS be given.
