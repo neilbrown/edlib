@@ -161,6 +161,9 @@ class MergePane(edlib.Pane):
             else:
                 mk = None
             if mk:
+                # selection must be full lines
+                focus.call("doc:EOL", -1, pt)
+                focus.call("doc:EOL", -1, mk)
                 strt,end = pt.dup(),mk.dup()
                 if strt > end:
                     strt,end = end,strt

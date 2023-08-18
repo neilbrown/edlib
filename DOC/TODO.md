@@ -21,7 +21,7 @@ the file.
       flags them?
 - [ ] merge command 9-A-m could work as one command.  If there is an
       active selection, the patch is moved to that selection.
-- [ ] merge command 9 must ensure selection is full lines.
+- [X] merge command 9 must ensure selection is full lines.
 - [ ] if cursor position causes pane size to change, this doesn't
       propagate.
 - [ ] When is left_margin used?  Can I use it for hanging indent?  If
