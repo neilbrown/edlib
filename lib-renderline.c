@@ -799,10 +799,15 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 			     wraprl2 = wraprl2->next)
 				;
 			wrap_margin = wraprl2->wrap_x;
-			if (wraprl2->next)
+			if (wraprl2->next) {
 				xd = wraprl2->next->x - wrap_margin;
-			else
+				if (wraprl2->next->start > ri->start)
+					xd += xdiff;
+			} else {
 				xd = wraprl2->x - wrap_margin;
+				if (wraprl2->start > ri->start)
+					xd += xdiff;
+			}
 			if (offset >= 0 &&
 			    offset >= wraprl->start &&
 			    offset <= wraprl2->start + wraprl2->len) {
