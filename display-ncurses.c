@@ -1559,7 +1559,8 @@ static void send_key(int keytype, wint_t c, int alt, struct pane *p safe)
 			LOG("Unknown ncurses key 0o%o", c);
 			sprintf(buf, "%sNcurs-%o", a, c);
 		} else if (strstarts(n, ":Focus-"))
-			/* Ignore focus changes for now */;
+			/* Ignore focus changes for now */
+			buf[0] = 0;
 		else
 			strcat(strcpy(buf, a), n);
 	} else {
@@ -1574,8 +1575,10 @@ static void send_key(int keytype, wint_t c, int alt, struct pane *p safe)
 	}
 
 	dd->last_event = time(NULL);
-	record_key(p, buf);
-	call("Keystroke", p, 0, NULL, buf);
+	if (buf[0]) {
+		record_key(p, buf);
+		call("Keystroke", p, 0, NULL, buf);
+	}
 }
 
 static void do_send_mouse(struct pane *p safe, int x, int y, char *cmd safe,
