@@ -1229,15 +1229,18 @@ static char *cvt(char *str safe)
 		if (c[0] != '<')
 			continue;
 		if (c[1] == '/') {
-			c[0] = ack;
-			c[1] = ack;
-			c[2] = etx;
-			c += 2;
+			while (*c && *c != '>')
+				*c++ = ack;
+			if (!*c)
+				break;
+			*c = etx;
 			continue;
 		}
 		c[0] = soh;
 		while (c[0] && c[1] != '>')
 			c++;
+		if (!c[0])
+			break;
 		c[1] = stx;
 	}
 	return str;
