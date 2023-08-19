@@ -549,3 +549,97 @@ bool debugger_is_present(void)
 	}
 	return _debugger_present;
 }
+
+/* attr parsing */
+const char *afind_val(const char **cp safe, const char *end)
+{
+	const char *c = *cp;
+	const char *ret;
+
+	if (!c)
+		return NULL;
+	if (!end)
+		end = c + strlen(c);
+	while (c < end && *c != ':' && *c != ',')
+		c++;
+	if (c == end) {
+		*cp = NULL;
+		return NULL;
+	}
+	if (*c == ',') {
+		while (*c == ',' && c < end)
+			c++;
+		if (c == end) {
+			*cp = NULL;
+			return NULL;
+		}
+		*cp = c;
+		return NULL;
+	}
+	c += 1;
+	ret = c;
+	while (c < end && *c != ',')
+		c++;
+	while (c < end && *c == ',')
+		c++;
+	if (c == end)
+		c = NULL;
+	*cp = c;
+	return ret;
+}
+
+char *aupdate(char **cp safe, const char *v)
+{
+	/* duplicate value at v and store in *cp, freeing what is there
+	 * first
+	 */
+	const char *end = v;
+
+	while (end && *end != ',' && *end >= ' ')
+		end += 1;
+
+	free(*cp);
+	if (v)
+		*cp = strndup(v, end-v);
+	else
+		*cp = NULL;
+	return *cp;
+}
+
+bool amatch(const char *a safe, const char *m safe)
+{
+	while (*a && *a == *m) {
+		a += 1;
+		m += 1;
+	}
+	if (*m)
+		/* Didn't match all of m */
+		return False;
+	if (*a != ':' && *a != ',' && *a >= ' ')
+		/* Didn't match all of a */
+		return False;
+	return True;
+}
+
+bool aprefix(const char *a safe, const char *m safe)
+{
+	while (*a && *a == *m) {
+		a += 1;
+		m += 1;
+	}
+	if (*m)
+		/* Didn't match all of m */
+		return False;
+	return True;
+}
+
+long anum(const char *v safe)
+{
+	char *end = NULL;
+	long ret = strtol(v, &end, 10);
+	if (end == v || !end ||
+	    (*end != ',' && *end >= ' '))
+		/* Not a valid number - use zero */
+		return 0;
+	return ret;
+}

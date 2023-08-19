@@ -804,8 +804,8 @@ static int cvt_attrs(struct pane *p safe, struct pane *home safe,
 {
 	struct display_data *dd = &home->data;
 	int attr = 0;
-	char tmp[40];
-	const char *a;
+	const char *a, *v;
+	char *col = NULL;
 	PANEL *pan = NULL;
 	int fg = COLOR_BLACK;
 	int bg = COLOR_WHITE+8;
@@ -825,39 +825,35 @@ static int cvt_attrs(struct pane *p safe, struct pane *home safe,
 		if (dbg >= 0)
 			bg = dbg;
 	}
-	a = attrs;
-	while (a && *a) {
-		const char *c;
-		if (*a == ',') {
-			a++;
-			continue;
-		}
-		c = strchr(a, ',');
-		if (!c)
-			c = a+strlen(a);
-		strncpy(tmp, a, c-a);
-		tmp[c-a] = 0;
-		if (strcmp(tmp, "inverse")==0) attr |= A_STANDOUT;
-		else if (strcmp(tmp, "noinverse")==0) attr &= ~A_STANDOUT;
-		else if (strcmp(tmp, "bold")==0) attr |= A_BOLD;
-		else if (strcmp(tmp, "nobold")==0) attr &= ~A_BOLD;
-		else if (strcmp(tmp, "underline")==0) attr |= A_UNDERLINE;
-		else if (strcmp(tmp, "nounderline")==0) attr &= ~A_UNDERLINE;
-		else if (strstarts(tmp, "fg:")) {
+
+	foreach_attr(a, v, attrs, NULL) {
+		if (amatch(a, "inverse"))
+			attr |= A_STANDOUT;
+		else if (amatch(a, "noinverse"))
+			attr &= ~A_STANDOUT;
+		else if (amatch(a, "bold"))
+			attr |= A_BOLD;
+		else if (amatch(a, "nobold"))
+			attr &= ~A_BOLD;
+		else if (amatch(a, "underline"))
+			attr |= A_UNDERLINE;
+		else if (amatch(a, "nounderline"))
+			attr &= ~A_UNDERLINE;
+		else if (amatch(a, "fg") && v) {
 			struct call_return cr =
 				call_ret(all, "colour:map", home,
-					 0, NULL, tmp+3);
+					 0, NULL, aupdate(&col, v));
 			int rgb[3] = {cr.i, cr.i2, cr.x};
 			fg = find_col(dd, rgb);
-		} else if (strstarts(tmp, "bg:")) {
+		} else if (amatch(a, "bg") && v) {
 			struct call_return cr =
 				call_ret(all, "colour:map", home,
-					 0, NULL, tmp+3);
+					 0, NULL, aupdate(&col, v));
 			int rgb[3] = {cr.i, cr.i2, cr.x};
 			bg = find_col(dd, rgb);
 		}
-		a = c;
 	}
+	free(col);
 	if (fg != COLOR_BLACK || bg != COLOR_WHITE+8)
 		*pairp = to_pair(dd, fg, bg);
 	return attr;

@@ -150,4 +150,22 @@ void do_unalloc(struct mempool *pool safe, const void *obj, int size);
 #define unalloc_str_safe(var, pool)						\
 	unalloc_buf_safe(var, strlen(var)+1, pool)
 
+/* attrs parsing */
+
+/* Sequentially set _attr to the an attr name, and _val to
+ * either the val (following ":") or NULL.
+ * _attr is valid up to : or , or < space and _val is valid up to , or <space
+ * _c is the start which will be updates, and _end is the end which
+ * must point to , or nul or a control char
+ */
+#define foreach_attr(_attr, _val, _c, _end)			\
+	for (_attr = _c, _val = afind_val(&_c, _end);		\
+	     _attr;						\
+	     _attr = _c, _val = afind_val(&_c, _end))
+const char *afind_val(const char **cp safe, const char *end);
+char *aupdate(char **cp safe, const char *v);
+bool amatch(const char *a safe, const char *m safe);
+bool aprefix(const char *a safe, const char *m safe);
+long anum(const char *v safe);
+
 #endif /* EDLIB_MISC */
