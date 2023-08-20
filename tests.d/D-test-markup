@@ -1,4 +1,8 @@
 <space-above:40,space-below:10,20,fg:blue,bg:yellow,center>This is my test file for markup</>
 <word-wrap,wrap-tail:,wrap-head:-),wrap-,right:400,left:70>Now is the time for all good men to come to the aid of the party</a>
 
-<wrap-tail:,wrap-head:-),wrap-,right:400,left:70>Now is the time for all good men to come to the aid of the party</a>
+<wrap-tail:,wrap-head:-\>,wrap-,right:300,left:70>Now is the time for all good men to come to the aid of the party</a>
+
+LEFT<ctab,bg:green>MIDDLE</><rtab>RIGHT
+
+<word-wrap,tab:40,wrap-margin,right:300><tab:0>This is a line that should wrap to form a paragraph with hanging indent</>

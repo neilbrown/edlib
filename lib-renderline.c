@@ -1229,7 +1229,7 @@ static char *cvt(char *str safe)
 	 *    < stuff > to soh stuff stx
 	 *    </> to ack ack etx
 	 */
-	char *c;
+	char *c, *c1;
 	for (c = str; *c; c += 1) {
 		if (c[0] == soh || c[0] == ack)
 			break;
@@ -1249,11 +1249,19 @@ static char *cvt(char *str safe)
 			continue;
 		}
 		c[0] = soh;
-		while (c[0] && c[1] != '>')
-			c++;
-		if (!c[0])
+		c += 1;
+		c1 = c;
+		while (*c && *c != '>') {
+			if (*c == '\\' &&
+			    (c[1] == '\\' || c[1] == '>'))
+				c++;
+			*c1++ = *c++;
+		}
+		while (c1 < c)
+			*c1++ = ack;
+		if (!*c)
 			break;
-		c[1] = stx;
+		*c = stx;
 	}
 	return str;
 }
