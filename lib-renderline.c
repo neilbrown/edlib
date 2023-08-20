@@ -563,7 +563,8 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 	rd->tail_length = cr.x;
 
 	left_margin = calc_pos(rd->left_margin, p->w, rd->curs_width);
-	right_margin = p->w - calc_pos(rd->right_margin, p->w, rd->curs_width);
+	/* 0 means right edge for right_margin, and left edge for all others */
+	right_margin = p->w - calc_pos(-rd->right_margin, p->w, rd->curs_width);
 
 	for (ri = rd->content; ri; ri = ri->next) {
 		if ((unsigned char)rd->line[ri->start] >= ' ') {
