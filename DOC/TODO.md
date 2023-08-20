@@ -35,17 +35,6 @@ the file.
       so markup can be tested more directly.
 - [X] in search-replace if you repeat :A-Enter, chars get deleted - if
        replacement string is shorter.  If longer, they get added.
-- [ ] I think I want a "Workspaces" concept, maybe tabbed set of tile
-      collections.  I would have one of mail and one for each project
-      that I might be looking in.  I have lots of documents, but few
-      projects so this would be easier to move between.
-      "grep" and "make" etc don't care which document in a project they
-      are in.
-      "nm" already gets me to the email project quickly.  Getting back
-      is not so easy.
-      Maybe some docs could be marked "project" and so be easy to find?
-      Maybe docs could be associated with a session, and are preferred
-      for select-new-document operations.
 - [ ] path completion in shell command.  If cannot find look for '/'
       following punctuation (=) and try there.
 - [ ] resolve shift-left vs shift_left distinction - add a "fixed" suffix?
@@ -55,9 +44,7 @@ the file.
 - [ ] mergeview command to show diff between "found" and "replacement".
 - [ ] mergeview command to include both found and replacement, discard
   expected
-- [ ] ./edlib -g doesn't work
-- [ ] pop up window to show selection as QR code
-- [ ] text qrcode (qr --ascii foo) don't look right in xcb display
+- [X] ./edlib -g doesn't work
 - [ ] Review the options for editing a merge - it doesn't always do what
       I want.  Maybe have a menu of choices to remind me
 - [ ] Teach render-lines to pad spaces to left/right align text
@@ -212,6 +199,25 @@ Core features
 
 Module features
 ---------------
+
+### lib-qrcode
+
+- [ ] pop up window to show selection as QR code
+- [ ] text qrcode (qr --ascii foo) don't look right in xcb display
+
+### workspaces
+
+- [ ] I think I want a "Workspaces" concept, maybe tabbed set of tile
+      collections.  I would have one of mail and one for each project
+      that I might be looking in.  I have lots of documents, but few
+      projects so this would be easier to move between.
+      "grep" and "make" etc don't care which document in a project they
+      are in.
+      "nm" already gets me to the email project quickly.  Getting back
+      is not so easy.
+      Maybe some docs could be marked "project" and so be easy to find?
+      Maybe docs could be associated with a session, and are preferred
+      for select-new-document operations.
 
 ### render-stack
 

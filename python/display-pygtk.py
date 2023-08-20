@@ -754,7 +754,7 @@ def new_display(key, focus, comm2, str1, **a):
     disp = EdDisplay(ed, display)
     p = disp.call("editor:activate-display", ret='pane')
     if p and focus != ed:
-        p = focus.call("doc:attach-view", p, 1)
+        p = focus.call("doc:attach-view", p, 1, ret='pane')
     if comm2:
         comm2('callback', p)
     return 1
