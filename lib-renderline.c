@@ -1005,6 +1005,8 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 	struct xy xyscale = pane_scale(focus);
 	int scale = xyscale.x;
 	struct xy size= {-1, -1};
+	const char *a, *v;
+	const char *end;
 
 	if (dodraw)
 		home_call(focus, "Draw:clear", p);
@@ -1015,10 +1017,10 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 	while (*line == soh)
 		line += 1;
 
-	while (*line && *line != stx && *line != etx) {
-		int len = strcspn(line, "," STX ETX);
-		if (strstarts(line, "image:")) {
-			fname = strndup(line+6, len-6);
+	end = line + strcspn(line, STX);
+	foreach_attr(a, v, line, end) {
+		if (amatch(a, "image") && v) {
+			aupdate(&fname, v);
 			if (rd->image_size.x <= 0) {
 				struct call_return cr =
 					home_call_ret(all, focus,
@@ -1031,20 +1033,18 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 				}
 			} else
 				size = rd->image_size;
-		} else if (strstarts(line, "width:")) {
-			width = atoi(line + 6);
-			width = width * scale / 1000;
-		} else if (strstarts(line, "height:")) {
-			height = atoi(line + 7);
-			height = height * scale / 1000;
-		} else if (strstarts(line, "noupscale") &&
+		} else if (amatch(a, "width") && v) {
+			width = anum(v) * scale / 1000;
+		} else if (amatch(a, "height") && v) {
+			height = anum(v) * scale / 1000;
+		} else if (amatch(a, "noupscale") &&
 			   fname && size.x > 0) {
 			if (size.x < p->parent->w)
 				width = size.x;
 			if (size.y < p->parent->h)
 				height = size.y;
 		} else if ((offset >= 0 || want_xypos) &&
-			   strstarts(line, "map:")) {
+			   amatch(a, "map") && v) {
 			/*
 			 * A map is map:LxxxLxxxLxxxLxxx or similar
 			 * Where each "Lxxx" recognised by a CAP followed
@@ -1056,11 +1056,9 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 			 * If offset is in the map, then set ->cx,->cy to
 			 * the appropriate location.
 			 */
-			map_offset = line+4 - orig_line;
-			parse_map(line+4, &rows, &cols);
+			map_offset = v - orig_line;
+			parse_map(v, &rows, &cols);
 		}
-		line += len;
-		line += strspn(line, ",");
 	}
 	pane_resize(p, (p->parent->w - width)/2, p->y, width, height);
 
