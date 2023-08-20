@@ -452,6 +452,8 @@ static inline void do_draw(struct pane *p safe,
 	tmp = str[len];
 	str[len] = 0;
 
+	if (offset >= len)
+		offset = -1;
 	home_call(focus, "Draw:text", p, offset, NULL, str,
 			   rd->scale, NULL, ri->attr, x, y);
 	str[len] = tmp;
