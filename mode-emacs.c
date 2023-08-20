@@ -1490,9 +1490,17 @@ REDEF_CMD(emacs_file_complete)
 	if (wholebuf) {
 		d = str;
 	} else {
+		/* Need guess which part of the buf is the file name.
+		 * This probably needs to be configurable, but lets
+		 * decide the file name starts immediately after a
+		 * space, or a '=' or ':' which is followed by a
+		 * '/'.
+		 */
 		initial = "";
 		d = str + strlen(str);
-		while (d > str && d[-1] != ' ')
+		while (d > str &&
+		       !(d[-1] == ' ' ||
+			 (strchr(":=", d[-1]) && d[0] == '/')))
 			d -= 1;
 	}
 	d = file_normalize(ci->focus, d, initial);
@@ -1506,6 +1514,8 @@ REDEF_CMD(emacs_file_complete)
 	}
 	fd = open(d, O_DIRECTORY|O_RDONLY);
 	if (fd < 0) {
+		call("Message:modal", ci->focus, 0, NULL,
+		     strconcat(ci->focus, "Cannot open directory \"", d, "\""));
 		return Efail;
 	}
 	/* 32 means quiet */
@@ -1550,6 +1560,10 @@ REDEF_CMD(emacs_file_complete)
 		call("doc:char", ci->focus, -strlen(b), start);
 		call("Replace", ci->focus, 1, start, cr.s);
 		mark_free(start);
+	} else {
+		call("Message:modal", ci->focus, 0, NULL,
+		     strconcat(ci->focus, "No completion found for \"", b, "\"",
+			       " in \"", d, "\""));
 	}
 	/* Now need to close the popup */
 	pane_close(pop);

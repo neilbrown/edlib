@@ -35,7 +35,7 @@ the file.
       so markup can be tested more directly.
 - [X] in search-replace if you repeat :A-Enter, chars get deleted - if
        replacement string is shorter.  If longer, they get added.
-- [ ] path completion in shell command.  If cannot find look for '/'
+- [X] path completion in shell command.  If cannot find look for '/'
       following punctuation (=) and try there.
 - [ ] resolve shift-left vs shift_left distinction - add a "fixed" suffix?
 - [ ] should zoom affect whole window, not just pane?
