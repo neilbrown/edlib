@@ -230,7 +230,7 @@ static void parse_line(struct rline_data *rd safe)
 		       (!rd->word_wrap || c != ' '))
 			c = *line++;
 
-		if (line - 1 > st) {
+		if (line - 1 > st || tab != TAB_UNSET) {
 			/* All text from st to line-1 has "attr' */
 			add_render(rd, &riend, st, line-1, buf_final(&attr),
 				   &tab, &align, &wrap_margin, wrap, hide);
@@ -367,7 +367,7 @@ static inline struct call_return do_measure(struct pane *p safe,
 	char *str = rd->line + ri->start + splitpos;
 	char tmp;
 
-	if (rd->line[ri->start] == '\t') {
+	if (ri->len && rd->line[ri->start] == '\t') {
 		str = tb;
 		if (len < 0)
 			len = ri->tab_cols - splitpos;
@@ -423,7 +423,7 @@ static inline void do_draw(struct pane *p safe,
 	len = ri->len;
 
 	y += rd->ascent;
-	if (strchr("\f\n\0", str[0])) {
+	if (ri->len && strchr("\f\n\0", str[0])) {
 		/* end marker - len extends past end of string,
 		 * but mustn't write there.  Only need to draw if
 		 * cursor is here.
@@ -433,7 +433,7 @@ static inline void do_draw(struct pane *p safe,
 				  rd->scale, NULL, ri->attr, x, y);
 		return;
 	}
-	if (str[0] == '\t') {
+	if (ri->len && str[0] == '\t') {
 		len = ri->tab_cols;
 		if (split)
 			offset = -1;
@@ -445,7 +445,7 @@ static inline void do_draw(struct pane *p safe,
 			len -= ri->split_list[split-1];
 	}
 
-	if (str[0] == '\t')
+	if (ri->len && str[0] == '\t')
 		/* Tab need a list of spaces */
 		str = tb;
 	else
@@ -567,7 +567,8 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 	right_margin = p->w - calc_pos(-rd->right_margin, p->w, rd->curs_width);
 
 	for (ri = rd->content; ri; ri = ri->next) {
-		if ((unsigned char)rd->line[ri->start] >= ' ') {
+		if (ri->len == 0 ||
+		    (unsigned char)rd->line[ri->start] >= ' ') {
 			cr = do_measure(p, ri, 0, -1, -1);
 		} else {
 			char tmp[4];
@@ -631,7 +632,7 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 		}
 		if (ri->tab_align == TAB_LEFT) {
 			ri->x = x;
-			if (rd->line[ri->start] == '\t') {
+			if (ri->len && rd->line[ri->start] == '\t') {
 				int col = x / ri->width;
 				int cols= 8 - (col % 8);
 				ri->tab_cols = cols;
@@ -923,7 +924,7 @@ static struct xy find_curs(struct pane *p safe, int offset, const char **cursatt
 	else
 		offset -= ri->start;
 	/* offset now from ri->start */
-	if (rd->line[ri->start] == '\t' && offset)
+	if (ri->len && rd->line[ri->start] == '\t' && offset)
 		offset = ri->tab_cols;
 	if (cursattr)
 		*cursattr = ri->attr;
