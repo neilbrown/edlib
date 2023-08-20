@@ -286,6 +286,11 @@ static void parse_line(struct rline_data *rd safe)
 					aupdate(&rd->wrap_tail, v);
 				} else if (aprefix(a, "wrap-")) {
 					aappend(&wrapattr, a+5);
+				} else if (amatch(a, "word-wrap")) {
+					if (!v || *v == '1')
+						rd->word_wrap = 1;
+					else if (*v == '0')
+						rd->word_wrap = 0;
 				} else if (amatch(a, "hide")) {
 					hide = ++hide_num;
 					hide_depth = old_len;
