@@ -482,13 +482,13 @@ static bool add_split(struct render_item *ri safe, int split)
 	return True;
 }
 
-static int calc_tab(int num, int margin, int scale)
+static int calc_pos(int num, int margin, int width)
 {
-	if (num > 0)
-		return num * scale / 1000;
-	if (-num > margin)
+	if (num >= 0)
+		return num * width / 10;
+	if (-num * width / 10 > margin)
 		return 0;
-	return margin + num * scale / 1000;
+	return margin + num * width / 10;
 }
 
 static int measure_line(struct pane *p safe, struct pane *focus safe, int offset)
@@ -513,6 +513,7 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 	int right_margin;
 	int left_margin;
 	struct xy xyscale = pane_scale(focus);
+	int curs_height;
 	int xdiff, ydiff;
 	struct call_return cr;
 	int x, y;
@@ -539,15 +540,13 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 	rd->measure_offset = offset;
 	rd->measure_shift_left = shift_left;
 
-	right_margin = p->w - (rd->right_margin * rd->scale / 1000);
-	left_margin = rd->left_margin * rd->scale / 1000;
-
 	cr = measure_str(p, "M", "");
 	rd->curs_width = cr.x;
+	curs_height = cr.y;
 	rd->line_height = cr.y;
 	rd->ascent = cr.i2;
-	if (rd->min_height * rd->scale / 1000 > rd->line_height)
-		rd->line_height = rd->min_height * rd->scale / 1000;
+	if (rd->min_height > 10)
+		rd->line_height = rd->line_height * rd->min_height / 10;
 
 	if (rd->wrap_head) {
 		cr = measure_str(p, rd->wrap_head, rd->wrap_attr);
@@ -555,6 +554,9 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 	}
 	cr = measure_str(p, rd->wrap_tail ?: "\\", rd->wrap_attr);
 	rd->tail_length = cr.x;
+
+	left_margin = calc_pos(rd->left_margin, p->w, rd->curs_width);
+	right_margin = p->w - calc_pos(rd->right_margin, p->w, rd->curs_width);
 
 	for (ri = rd->content; ri; ri = ri->next) {
 		if ((unsigned char)rd->line[ri->start] >= ' ') {
@@ -599,15 +601,16 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 	 * of "\t" characters.  Also handle \n and \f.
 	 */
 	x = left_margin - (shift_left > 0 ? shift_left : 0);
-	y = rd->space_above * rd->scale / 1000;
+	y = rd->space_above * curs_height / 10;
 	rd->width = 0;
 	for (ri = rd->content; ri; ri = ri->next) {
 		int w, margin;
 		struct render_item *ri2;
 		ri->y = y;
 		if (ri->tab != TAB_UNSET)
-			x =  left_margin + calc_tab(ri->tab, right_margin,
-						    rd->scale);
+			x =  left_margin + calc_pos(ri->tab,
+						    right_margin - left_margin,
+						    rd->curs_width);
 		if (ri->eol) {
 			/* EOL */
 			if (x > rd->width)
@@ -638,10 +641,11 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 			w += ri2->width;
 		while (ri2 && ri2->tab == TAB_UNSET)
 			ri2 = ri2->next;
-		margin = right_margin;
+		margin = right_margin - left_margin;
 		if (ri2)
-			margin =  left_margin + calc_tab(ri2->tab, right_margin,
-							 rd->scale);
+			margin =  left_margin + calc_pos(ri2->tab,
+							 right_margin - left_margin,
+							 rd->curs_width);
 		if (ri->tab_align == TAB_RIGHT)
 			x = x + margin - x - w;
 		else
@@ -781,7 +785,7 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 		}
 	}
 	rd->measure_height =
-		(rd->space_above + rd->space_below) * rd->scale / 1000 +
+		(rd->space_above + rd->space_below) * curs_height / 10 +
 		ydiff + rd->line_height;
 	pane_resize(p, p->x, p->y, p->w, rd->measure_height);
 	attr_set_int(&p->attrs, "line-height", rd->line_height);
