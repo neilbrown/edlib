@@ -311,9 +311,6 @@ The pane also sets some attributes when handling these messages:
    the letter "m".
 - "xyattr" - when "render-line:findxy" is handled, the attributes that
   were in effect that the found position are made available as "xyattr".
-- "cached-size" - when measuring an image with the "noupscale" attribute
-  this will be set to "width"x"height".  This is primarily for internal
-  use.
 - "line-height" - when measuring text, this is set to the height of the
   line.  When the line is wrapped this will be an integer submultiple of
   the resulting pane height.  When text is not wrapped it will be

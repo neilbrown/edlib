@@ -133,6 +133,7 @@ struct rline_data {
 	bool		image;
 	int		curspos;
 
+	struct xy	image_size;
 	/* These used to check is measuring is needed, or to record
 	 * results of last measurement */
 	unsigned short measure_width, measure_height;
@@ -206,8 +207,10 @@ static void parse_line(struct rline_data *rd safe)
 		return;
 	}
 	rd->image = strstarts(line, SOH "image:");
-	if (rd->image)
+	if (rd->image) {
+		rd->image_size.x = 0;
 		return;
+	}
 	buf_init(&attr);
 	buf_init(&wrapattr);
 
@@ -992,6 +995,7 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 			int dodraw,
 			int offset, int want_xypos, short x, short y)
 {
+	struct rline_data *rd = &p->data;
 	char *fname = NULL;
 	const char *orig_line = line;
 	short width, height;
@@ -1000,7 +1004,6 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 	int ioffset;
 	struct xy xyscale = pane_scale(focus);
 	int scale = xyscale.x;
-	char *ssize = attr_find(p->attrs, "cached-size");
 	struct xy size= {-1, -1};
 
 	if (dodraw)
@@ -1016,8 +1019,7 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 		int len = strcspn(line, "," STX ETX);
 		if (strstarts(line, "image:")) {
 			fname = strndup(line+6, len-6);
-			if (!ssize ||
-			    sscanf(ssize, "%hdx%hd", &size.x, &size.y) != 2) {
+			if (rd->image_size.x <= 0) {
 				struct call_return cr =
 					home_call_ret(all, focus,
 						      "Draw:image-size",
@@ -1025,12 +1027,10 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 				if (cr.x > 0 && cr.y > 0) {
 					size.x = cr.x;
 					size.y = cr.y;
-					asprintf(&ssize, "%hdx%hd",
-						 cr.x, cr.y);
-					attr_set_str(&p->attrs,
-						     "cached-size", ssize);
+					rd->image_size = size;
 				}
-			}
+			} else
+				size = rd->image_size;
 		} else if (strstarts(line, "width:")) {
 			width = atoi(line + 6);
 			width = width * scale / 1000;
