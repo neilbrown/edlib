@@ -125,7 +125,7 @@ static void menu_init_map(void)
 	key_add(menu_map, "render:reposition", &menu_reposition);
 
 	key_add(menu_map, "menu-add", &menu_add);
-	key_add(menu_map, "K:ESC", &menu_abort);
+	key_add(menu_map, "Cancel", &menu_abort);
 	key_add(menu_map, "K:Enter", &menu_done);
 	key_add(menu_map, "menu-select", &menu_done);
 }

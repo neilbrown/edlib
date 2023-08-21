@@ -52,6 +52,7 @@ the file.
 - [ ] history doesn't restore initial default (or empty) string when
       returning after excursion into history or favourites.
 - [ ] how can we save history-favourites back to a config file?
+- [X] K:ESC should cancel any current selection.
 
 ### Small
 

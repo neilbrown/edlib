@@ -669,7 +669,7 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "K:A-r", &search_replace);
 	key_add(es_map, "K:S:Tab", &search_replace);
 	key_add(es_map, "K:A-%", &search_replace);
-	key_add(es_map, "K:ESC", &search_escape);
+	key_add(es_map, "Cancel", &search_escape);
 
 	key_add(es_map, "search:replace", &do_replace);
 	key_add(es_map, "Notify:Close", &search_notify_close);
@@ -683,7 +683,7 @@ static void emacs_search_init_map(void)
 	key_add(er_map, "K:C-S", &replace_forward);
 	key_add(er_map, "K:C-R", &replace_forward);
 	key_add(er_map, "K:C-L", &replace_forward);
-	key_add(er_map, "K:ESC", &replace_escape);
+	key_add(er_map, "Cancel", &replace_escape);
 	key_add(er_map, "K:Up", &replace_prev);
 	key_add(er_map, "K:Down", &replace_next);
 	key_add(er_map, "doc:reundo", &replace_undo);
