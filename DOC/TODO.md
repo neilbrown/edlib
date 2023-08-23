@@ -9,7 +9,7 @@ the file.
 
 ### Triage
 
-
+- [ ] clicking on link is BROKEN
 - [X] tabs can wrap around a newline - with part of tab at end of one
       line and part at start of the next.  Do I want that?  do_measure()
       decides. YES.
@@ -48,11 +48,18 @@ the file.
 - [ ] Review the options for editing a merge - it doesn't always do what
       I want.  Maybe have a menu of choices to remind me
 - [ ] Teach render-lines to pad spaces to left/right align text
+- [ ] Store welcome page in a separate document
 - [ ] revise *Welcome* page
 - [ ] history doesn't restore initial default (or empty) string when
       returning after excursion into history or favourites.
 - [ ] how can we save history-favourites back to a config file?
 - [X] K:ESC should cancel any current selection.
+- [ ] multi-file search-replace.  Find files with 'git-grep'
+- [ ] rexel term for "expression" with balanced brackets.
+      Also quotes and maybe <>.  Possibly a list of pairs?
+- [ ] python command to shift indent of range.
+- [ ] lib-diff : self.which should be used to determine which filename
+      to grab.
 
 ### Small
 
@@ -62,6 +69,8 @@ the file.
 - [ ] fill mode to handle all punctuation at start of this line
 - [ ] Enable lib-menu to show short-cut keys
 - [ ] Add menu-bar to lib-menu.  Pop it up on F10 with simple commands
+- [ ] attach an extensible menu to the selection
+        copy, paste-in, QR, git-view
 
 ### Medium
 
@@ -82,7 +91,7 @@ the file.
 Requirements for a v1.0 release
 -------------------------------
 
-- [ ] logo!!!  to use as icon in X11 for example.  Building blocks?
+- [X] logo!!!  to use as icon in X11 for example.  Building blocks?
       Window pane?
       Maybe a pencil in a window pane
 - [ ] configuration
@@ -91,8 +100,10 @@ Requirements for a v1.0 release
 - [ ] nano mode(?)
 - [ ] multiple front ends: elvi, elma, elnm, eled?
 - [ ] introspection
-- [ ] markdown editor with PDF output
-- [ ] non-line-based render, such as a tabular render for spreadsheet.
+- [ ] markdown editor (with PDF output)
+- [ ] non-line-based render, such as a tabular render for spreadsheet,
+       or side-scrolling horiz row of thumbnails for presentation,
+       or even a menu-bar with row of menus.
 - [ ] documentation reader
 - [ ] block-dev (mmap) doc type, and some hex-mode support
 - [ ] user documentation
@@ -717,6 +728,9 @@ Module features
      - code, quoted, images
      - urls and other references?
 - [ ] Make sure editing causes quick re-rendering
+- [ ] inline images - so welcome can have a logo
+- [ ] consider following MyST
+        https://jupyterbook.org/en/stable/content/myst.html
 
 ### C-mode
 
@@ -942,6 +956,8 @@ New Modules
     - C-f find/replace C-S-f - search again
     - C-z undo C-y redo
     - A-x for menu x
+    -  attach an extensible menu to the selection
+        copy, paste-in, QR, git-view
 
 - [ ] info browser
 
