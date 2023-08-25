@@ -94,9 +94,10 @@ SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
 XOBJ = O/rexel.o
 WOBJ = O/libwiggle.a
 
-BIN = edlib elc el-askpass
+BIN = edlib elma elc el-askpass
 
 bin/edlib : edlib
+bin/elma : edlib
 bin/elc : python/lib-server.py
 bin/el-askpass : python/lib-server.py
 

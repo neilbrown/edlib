@@ -1953,7 +1953,7 @@ static struct pane *xcb_display_init(const char *d safe,
 			XCB_MOD_MASK_LOCK |
 			XCB_MOD_MASK_CONTROL);
 
-	xcb_load_icon(focus, xd, "edlib-icon.png");
+	xcb_load_icon(focus, xd, "{COMM}-icon.png");
 	xcb_map_window(conn, xd->win);
 	xcb_flush(conn);
 	pane_resize(p, 0, 0, xd->charwidth*80, xd->lineheight*26);

@@ -630,7 +630,9 @@ static char *set_bin_path(struct pane *p safe)
 DEF_CMD(global_find_file)
 {
 	/*
-	 * ->str is a file basename.
+	 * ->str is a file basename.  If it contains {COMM}, that will
+	 * be replaced with the "command-name" attr from root, or
+	 * "edlib" if nothing can be found.
 	 * ->str2 is one of "data", "config", "bin"
 	 * We find a file with basename in a known location following
 	 * the XDG Base Directory Specificaton.
@@ -649,8 +651,11 @@ DEF_CMD(global_find_file)
 	 * For bin we look in $HERE/../bin and $PATH
 	 */
 	char *path = NULL;
+	const char *base[2] = {ci->str, NULL};
+	int i;
+	char *cn;
 
-	if (ci->str == NULL || ci->str2 == NULL)
+	if (base[0] == NULL || ci->str2 == NULL)
 		return -Enoarg;
 	if (strcmp(ci->str2, "data") == 0)
 		path = set_data_path(ci->home);
@@ -661,25 +666,38 @@ DEF_CMD(global_find_file)
 
 	if (!path)
 		return Einval;
-	for (; path && *path; path += strlen(path)+1) {
-		char *p = strconcat(NULL, path, ci->str);
-		int fd;
-		if (!p)
-			continue;
-		fd = open(p, O_RDONLY);
-		if (fd < 0) {
+	cn = strstr(base[0], "{COMM}");
+	if (cn) {
+		char *p = strndup(base[0], cn - base[0]);
+		char *comm = attr_find(ci->home->attrs, "command-name");
+		if (!comm)
+			comm = "edlib";
+		base[0] = strconcat(ci->home, p, comm, cn+6);
+		if (strcmp(comm, "edlib") != 0)
+			base[1] = strconcat(ci->home, p, "edlib", cn+6);
+	}
+	for (i = 0; i < 2 && base[i] ; i++) {
+		char *pth;
+		for (pth = path; pth && *pth; pth += strlen(pth)+1) {
+			char *p = strconcat(NULL, pth, base[i]);
+			int fd;
+			if (!p)
+				continue;
+			fd = open(p, O_RDONLY);
+			if (fd < 0) {
+				free(p);
+				continue;
+			}
+			close(fd);
+			comm_call(ci->comm2, "cb", ci->focus, 0, NULL, p);
 			free(p);
-			continue;
+			return 1;
 		}
-		close(fd);
-		comm_call(ci->comm2, "cb", ci->focus, 0, NULL, p);
-		free(p);
-		return 1;
 	}
 	return Efalse;
 }
 
-struct pane *editor_new(void)
+struct pane *editor_new(const char *comm_name)
 {
 	struct pane *ed;
 	struct ed_info *ei;
@@ -708,6 +726,7 @@ struct pane *editor_new(void)
 		return NULL;
 	ei = &ed->data;
 	ei->magic = ED_MAGIC;
+	attr_set_str(&ed->attrs, "command-name", comm_name ?: "edlib");
 	ei->testing = (getenv("EDLIB_TESTING") != NULL);
 	ei->map = key_alloc();
 	key_add_chain(ei->map, ed_map);

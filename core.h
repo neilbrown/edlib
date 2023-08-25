@@ -111,7 +111,7 @@ int do_pane_notify(struct pane *home, const char *notification safe,
 		   struct command *comm2);
 void pane_drop_notifiers(struct pane *p safe, char *notification);
 
-struct pane *editor_new(void);
+struct pane *editor_new(const char *comm_name);
 void * safe memsave(struct pane *p safe, const char *buf, int len);
 char *strsave(struct pane *p safe, const char *buf);
 char *strnsave(struct pane *p safe, const char *buf, int len);

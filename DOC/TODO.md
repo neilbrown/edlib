@@ -98,7 +98,7 @@ Requirements for a v1.0 release
 - [ ] vi mode
 - [ ] CUA mode
 - [ ] nano mode(?)
-- [ ] multiple front ends: elvi, elma, elnm, eled?
+- [ ] multiple front ends: elvi, elma, elnm, eled, elpnt?
 - [ ] introspection
 - [ ] markdown editor (with PDF output)
 - [ ] non-line-based render, such as a tabular render for spreadsheet,

@@ -21,11 +21,21 @@ static const char shortopt[] = "gtx";
 
 int main(int argc, char *argv[])
 {
-	struct pane *ed = editor_new();
+	struct pane *ed;
 	struct pane *first_window = NULL;
 	struct pane *p, *doc = NULL;
 	bool gtk = False, term = False, x11 = False;
 	int opt;
+	char *base = NULL;
+
+	if (argv[0]) {
+		base = strrchr(argv[0], '/');
+		if (base)
+			base += 1;
+		else
+			base = argv[0];
+	}
+	ed = editor_new(base);
 
 	if (!ed)
 		exit(1);
@@ -50,7 +60,7 @@ int main(int argc, char *argv[])
 	setlocale(LC_CTYPE, "enUS.UTF-8");
 
 	call("global-load-module", ed, 0, NULL, "lib-config");
-	call("config-load", ed, 0, NULL, "edlib.ini");
+	call("config-load", ed, 0, NULL, "{COMM}.ini");
 
 	call("attach-doc-docs", ed);
 
@@ -68,7 +78,7 @@ int main(int argc, char *argv[])
 
 	if (!doc) {
 		char *welcome_file = call_ret(str, "xdg-find-edlib-file", ed,
-					      0, NULL, "Welcome-edlib.txt",
+					      0, NULL, "Welcome-{COMM}.txt",
 					      0, NULL, "data");
 		char *WelcomeText = NULL;
 		if (welcome_file) {
