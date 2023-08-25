@@ -204,7 +204,7 @@ O/.exists:
 lib/.exists:
 	@mkdir -p lib
 	@ln -s ../python lib/python
-	@ln -s .. lib/edlib
+	@ln -s ../data lib/edlib
 	@touch $@
 
 .PHONY: lib bin
@@ -258,5 +258,5 @@ checksym: edlib
 
 .PHONY: clean
 clean:
-	rm -f edlib edlib-static
+	rm -f edlib edlib-static rexel
 	rm -rf lib O bin
