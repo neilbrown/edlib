@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
 			     0, NULL, getenv("XAUTHORITY"));
 			if (!first_window)
 				first_window = p;
-			call("Display:set-noclose", p, 1, NULL,
+			call("Display:set:no-close", p, 1, NULL,
 			     "Cannot close primary display");
 		}
 	}

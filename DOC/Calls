@@ -152,7 +152,7 @@ display can be awkward.
 This is a request for the display to close - may be rejected if it is
 the only display left.
 
-## Display:set-noclose
+## Display:set:no-close
 
 This comes with a reason in str1.  If a Display:close request arrives
 when the most recent set-noclose request contained a non-empty string,

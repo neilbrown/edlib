@@ -58,7 +58,6 @@ class EdDisplay(edlib.Pane):
         self.w = int(self.charwidth * 80.0)
         self.h = int(self.lineheight * 24.0)
         self.call("editor:request:all-displays")
-        self.noclose = None
         self.last_event = 0
         self.win.show()
 
@@ -74,8 +73,9 @@ class EdDisplay(edlib.Pane):
 
     def handle_close_window(self, key, focus, **a):
         "handle:Display:close"
-        if self.noclose:
-            focus.call("Message", self.noclose)
+        nc = self['no-close']
+        if nc:
+            focus.call("Message", nc)
             return 1
         x = []
         focus.call("editor:notify:all-displays", lambda key,**a:x.append(1))
@@ -85,9 +85,9 @@ class EdDisplay(edlib.Pane):
             focus.call("Message", "Cannot close only window.")
         return 1
 
-    def handle_set_noclose(self, key, str, **a):
-        "handle:Display:set-noclose"
-        self.noclose = str
+    def handle_set_noclose(self, key, str1, **a):
+        "handle:Display:set:no-close"
+        self['no-close'] = str1
         return 1
 
     def handle_fullscreen(self, key, num, **a):

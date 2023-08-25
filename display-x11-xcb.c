@@ -195,7 +195,6 @@ struct xcb_data {
 	cairo_t			*cairo safe;
 	cairo_surface_t		*surface safe;
 	PangoFontDescription	*fd safe;
-	char			*noclose;
 	int			charwidth, lineheight;
 	cairo_region_t		*need_update;
 
@@ -447,10 +446,10 @@ DEF_CMD(xcb_close_display)
 {
 	/* If this is only display, then refuse to close this one */
 	struct call_return cr;
-	struct xcb_data *xd = &ci->home->data;
+	char *nc = attr_find(ci->home->attrs, "no-close");
 
-	if (xd->noclose) {
-		call("Message", ci->focus, 0, NULL, xd->noclose);
+	if (nc) {
+		call("Message", ci->focus, 0, NULL, nc);
 		return 1;
 	}
 	cr.c = cnt_disp;
@@ -466,12 +465,7 @@ DEF_CMD(xcb_close_display)
 
 DEF_CMD(xcb_set_noclose)
 {
-	struct xcb_data *xd = &ci->home->data;
-
-	free(xd->noclose);
-	xd->noclose = NULL;
-	if (ci->str)
-		xd->noclose = strdup(ci->str);
+	attr_set_str(&ci->home->attrs, "no-close", ci->str);
 	return 1;
 }
 
@@ -589,7 +583,6 @@ DEF_CMD(xcb_free)
 	cairo_surface_destroy(xd->surface);
 	free(xd->display);
 	free(xd->disp_auth);
-	free(xd->noclose);
 	xcb_disconnect(xd->conn);
 	if (xd->need_update)
 		cairo_region_destroy(xd->need_update);
@@ -2010,7 +2003,7 @@ void edlib_init(struct pane *ed safe)
 	xcb_map = key_alloc();
 
 	key_add(xcb_map, "Display:close", &xcb_close_display);
-	key_add(xcb_map, "Display:set-noclose", &xcb_set_noclose);
+	key_add(xcb_map, "Display:set:no-close", &xcb_set_noclose);
 	key_add(xcb_map, "Display:external-viewer", &xcb_external_viewer);
 	key_add(xcb_map, "Display:fullscreen", &xcb_fullscreen);
 	key_add(xcb_map, "Display:new", &xcb_new_display);

@@ -64,7 +64,6 @@ struct display_data {
 	SCREEN			*scr;
 	FILE			*scr_file;
 	int			is_xterm;
-	char			*noclose;
 	struct col_hash		*col_hash;
 	int			report_position;
 	long			last_event;
@@ -442,10 +441,10 @@ DEF_CMD(nc_close_display)
 {
 	/* If this is only display, then refuse to close this one */
 	struct call_return cr;
-	struct display_data *dd = &ci->home->data;
+	char *nc = attr_find(ci->home->attrs, "no-close");
 
-	if (dd->noclose) {
-		call("Message", ci->focus, 0, NULL, dd->noclose);
+	if (nc) {
+		call("Message", ci->focus, 0, NULL, nc);
 		return 1;
 	}
 
@@ -466,12 +465,7 @@ DEF_CMD(nc_close_display)
 
 DEF_CMD(nc_set_noclose)
 {
-	struct display_data *dd = &ci->home->data;
-
-	free(dd->noclose);
-	dd->noclose = NULL;
-	if (ci->str)
-		dd->noclose = strdup(ci->str);
+	attr_set_str(&ci->home->attrs, "no-close", ci->str);
 	return 1;
 }
 
@@ -1824,7 +1818,7 @@ void edlib_init(struct pane *ed safe)
 	nc_map = key_alloc();
 	key_add(nc_map, "Display:refresh", &force_redraw);
 	key_add(nc_map, "Display:close", &nc_close_display);
-	key_add(nc_map, "Display:set-noclose", &nc_set_noclose);
+	key_add(nc_map, "Display:set:no-close", &nc_set_noclose);
 	key_add(nc_map, "Display:external-viewer", &nc_external_viewer);
 	key_add(nc_map, "Close", &nc_close);
 	key_add(nc_map, "Draw:clear", &nc_clear);
