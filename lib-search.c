@@ -14,7 +14,7 @@
  *
  * "text-match" is similar to text-search forwards, but requires that
  * the match starts at ->mark.  ->mark is moved to the end of the
- * match is the text does, in fact, match.
+ * match if the text does, in fact, match.
  * If the match fails, Efalse is returned (different to "text-search")
  */
 

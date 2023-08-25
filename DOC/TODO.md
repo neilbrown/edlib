@@ -42,24 +42,12 @@ the file.
 - [X] should zoom affect whole window, not just pane?
 - [X] ditch cached-size for images - store in pane data instead.
 - [X] use foreach_attr for parsing image details
-- [ ] mergeview command to show diff between "found" and "replacement".
-- [ ] mergeview command to include both found and replacement, discard
   expected
 - [X] ./edlib -g doesn't work
-- [ ] Review the options for editing a merge - it doesn't always do what
-      I want.  Maybe have a menu of choices to remind me
-- [ ] Teach render-lines to pad spaces to left/right align text
 - [X] Store welcome page in a separate document
 - [ ] revise *Welcome* page
-- [ ] history doesn't restore initial default (or empty) string when
-      returning after excursion into history or favourites.
-- [ ] how can we save history-favourites back to a config file?
 - [X] K:ESC should cancel any current selection.
-- [ ] multi-file search-replace.  Find files with 'git-grep'
-- [ ] rexel term for "expression" with balanced brackets.
-      Also quotes and maybe <>.  Possibly a list of pairs?
-- [ ] python command to shift indent of range.
-- [ ] lib-diff : self.which should be used to determine which filename
+- [X] lib-diff : self.which should be used to determine which filename
       to grab.
 
 ### Small
@@ -306,6 +294,8 @@ Module features
       returned if a flag allowed a match, but the char didn't.
 - [ ] support backward search by compiling expression backwards
 - [ ] make prefix-fast-search work for case-insensitive matches??
+- [ ] rexel term for "expression" with balanced brackets.
+      Also quotes and maybe <>.  Possibly a list of pairs?
 
 ### popup
 
@@ -329,12 +319,16 @@ Module features
 
 ### lib-mergeview
 
+- [ ] Menu of options somewhere to remind me.
+- [ ] mergeview command to show diff between "found" and "replacement".
+- [ ] mergeview command to include both found and replacement, discard
 - [ ] Consider what else can be done with < and > on other markers.
 - [ ] Capture a new doc-reappeared for when reloaded, and search again
       for markers.
 
 ### emacs
 
+- [ ] multi-file search-replace.  Find files with 'git-grep'
 - [ ] there is no way to count characters in a range, or find how many
       characters into the document I am.  Maybe bytes would be good too.
 - [ ] :CX-= to look-up unicode name of character if not ASCII
@@ -361,6 +355,10 @@ Module features
        Surely everything.  Prefix if present, string if active, point always.
 
 #### history
+
+- [ ] history doesn't restore initial default (or empty) string when
+      returning after excursion into history or favourites.
+- [ ] how can we save history-favourites back to a config file?
 
 ### ncurses
 
@@ -401,6 +399,7 @@ Module features
 
 ### lib-renderline
 
+- [ ] Teach render-lines to pad spaces to left/right align text
 - [ ] Maybe "word-wrap" should be a list of characters to wrap on??
       But I might want "comma and following spaces".  How do I say that?
       Possibly declare some chars that cause a map-attr callback??
@@ -744,6 +743,7 @@ Module features
 
 - [ ] configuration: use tabs or spaces for indent
 - [ ] configuration: use only spaces for bracket-alignment indents - or tabs as well.
+- [ ] python command to shift indent of range.
 - [ ] python-mode: when changing indent, make same change to the whole block.
       Not sure how to handle 'else:' which looks like the next block.
 - [ ] in python mode, a comment at the end of an 'if' block confuses indenting.

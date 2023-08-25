@@ -272,10 +272,18 @@ class DiffPane(edlib.Pane):
         except edlib.commandfailed:
             focus.call("Message", "Not on a diff hunk! No +++ line found")
             return 1
+        if self.which > 0:
+            # Need the "pre" file name - hopefully on previous line.
+            m2 = m.dup()
+            focus.call("doc:EOL", -2, m2)
+            if focus.call("text-match", "^---", m2) > 0:
+                # found it.  need to return to start of line
+                focus.call("doc:EOL", -1, m2)
+                m.to_mark(m2)
         ms = m.dup()
         focus.call("doc:EOL", 1, m)
         fname = focus.call("doc:get-str", ms, m, ret='str')
-        fname = fname.lstrip('+ ')
+        fname = fname.lstrip('-+ ')
 
         # quilt adds timestamp info after a tab
         tb = fname.find('\t')
