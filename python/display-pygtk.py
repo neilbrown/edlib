@@ -85,9 +85,12 @@ class EdDisplay(edlib.Pane):
             focus.call("Message", "Cannot close only window.")
         return 1
 
-    def handle_set_noclose(self, key, str1, **a):
-        "handle:Display:set:no-close"
-        self['no-close'] = str1
+    def handle_set_noclose(self, key, str1, str2, **a):
+        "handle-prefix:Display:set:"
+        attr = str2
+        if not attr:
+            attr = key[12:]
+        self[attr] = str1
         return 1
 
     def handle_fullscreen(self, key, num, **a):

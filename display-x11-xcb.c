@@ -463,9 +463,13 @@ DEF_CMD(xcb_close_display)
 	return 1;
 }
 
-DEF_CMD(xcb_set_noclose)
+DEF_CMD(xcb_set_attr)
 {
-	attr_set_str(&ci->home->attrs, "no-close", ci->str);
+	const char *attr = ci->str2;
+
+	if (!attr)
+		attr = ksuffix(ci, "Display:set:");
+	attr_set_str(&ci->home->attrs, attr, ci->str);
 	return 1;
 }
 
@@ -2003,7 +2007,7 @@ void edlib_init(struct pane *ed safe)
 	xcb_map = key_alloc();
 
 	key_add(xcb_map, "Display:close", &xcb_close_display);
-	key_add(xcb_map, "Display:set:no-close", &xcb_set_noclose);
+	key_add_prefix(xcb_map, "Display:set:", &xcb_set_attr);
 	key_add(xcb_map, "Display:external-viewer", &xcb_external_viewer);
 	key_add(xcb_map, "Display:fullscreen", &xcb_fullscreen);
 	key_add(xcb_map, "Display:new", &xcb_new_display);

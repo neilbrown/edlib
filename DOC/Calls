@@ -152,12 +152,13 @@ display can be awkward.
 This is a request for the display to close - may be rejected if it is
 the only display left.
 
-## Display:set:no-close
+## Display:set:ATTR
 
-This comes with a reason in str1.  If a Display:close request arrives
-when the most recent set-noclose request contained a non-empty string,
-that string should be reported via a message, an the close should be
-rejected.
+Set any attribute on the display pane.  
+
+The attribute "no-close" affects closing.  If a Display:close request
+arrives when "no-close" attribute is a non-empty string, that string
+should be reported via a message, and the close should be rejected.
 
 ## Display:external-viewer
 
