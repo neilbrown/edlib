@@ -876,6 +876,7 @@ static int find_xy(struct pane *p safe, struct pane *focus safe,
 		if (r->y <= y && r->x <= x) {
 			ri = r;
 			start = r->start;
+			splitpos = 0;
 		}
 		for (split = 0; split < r->split_cnt; split++) {
 			if (r->y + (split + 1) * rd->line_height <= y &&
@@ -893,7 +894,7 @@ static int find_xy(struct pane *p safe, struct pane *focus safe,
 		return start;
 	cr = do_measure(p, ri, splitpos, -1, x - ri->x);
 	if ((splitpos ? ri->wrap_x : ri->x ) + cr.x > x &&
-	    ri->y + rd->line_height * splitpos > y &&
+	    ri->y + rd->line_height * (1 + splitpos) > y &&
 	    xyattr)
 		*xyattr = ri->attr;
 	if (cr.s)

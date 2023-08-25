@@ -9,7 +9,7 @@ the file.
 
 ### Triage
 
-- [ ] clicking on link is BROKEN
+- [X] clicking on link is BROKEN
 - [X] tabs can wrap around a newline - with part of tab at end of one
       line and part at start of the next.  Do I want that?  do_measure()
       decides. YES.
