@@ -48,7 +48,7 @@ the file.
 - [ ] Review the options for editing a merge - it doesn't always do what
       I want.  Maybe have a menu of choices to remind me
 - [ ] Teach render-lines to pad spaces to left/right align text
-- [ ] Store welcome page in a separate document
+- [X] Store welcome page in a separate document
 - [ ] revise *Welcome* page
 - [ ] history doesn't restore initial default (or empty) string when
       returning after excursion into history or favourites.

@@ -17,34 +17,6 @@
 #include "core.h"
 #include "misc.h"
 
-static const char WelcomeText[] =
-	"\n"
-	"Welcome to 'edlib' - a document editor that comes in well defined pieces.\n"
-	"\n"
-	"Current functionality includes:\n"
-	"  splitting and closing windows (C-x 0,1,2,3)\n"
-	"  Resize current window (C-x },{,^)\n"
-	"  Move among windows (C-x o,O  or mouse click)\n"
-	"  Opening a file or directory (C-x C-f)\n"
-	"    TAB performs file-name completion in a menu\n"
-	"  Save files - current one (C-x C-s) or all (C-x s)\n"
-	"  Open a document by name (C-x b) - with TAB completion\n"
-	"  Open a file or document in another pane (C-x 4 C-f,b)\n"
-	"  Kill the current document (C-x k)\n"
-	"  Movement by char, word, line, page, start/end file (standard emacs keys)\n"
-	"  Insert/delete text\n"
-	"  C-_ to undo and redo changes\n"
-	"  C-s to search (incrementally) in text document\n"
-	"  Visit list of documents (C-x C-b)\n"
-	"  Open file from directory list, or document from document list ('f').\n"
-	"  Open file in 'hex' view from directory listing ('h').\n"
-	"  Numeric prefixes with M-0 to M-9.\n"
-	"  Run make (C-c C-m) or grep (M-x grep Return)\n"
-	"\n"
-	"And C-x C-c to close - type 's' to save or '%' to not save in the pop-up\n"
-	"Mouse clicks move the cursor, and clicking on the scroll bar scrolls\n"
-	;
-
 static const char shortopt[] = "gtx";
 
 int main(int argc, char *argv[])
@@ -94,9 +66,33 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (!doc)
+	if (!doc) {
+		char *welcome_file = call_ret(str, "xdg-find-edlib-file", ed,
+					      0, NULL, "Welcome-edlib.txt",
+					      0, NULL, "data");
+		char *WelcomeText = NULL;
+		if (welcome_file) {
+			int fd = open(welcome_file, O_RDONLY);
+			if (fd >= 0) {
+				int len = lseek(fd, 0, SEEK_END);
+				lseek(fd, 0, SEEK_SET);
+				if (len > 0 && len < 10000) {
+					WelcomeText = malloc(len+1);
+					read(fd, WelcomeText, len);
+					WelcomeText[len] = 0;
+				}
+				close(fd);
+			}
+			free(welcome_file);
+		}
+
+		if (!WelcomeText)
+			WelcomeText = strdup("Welcome.\n");
+
 		doc = call_ret(pane, "doc:from-text", ed, 0, NULL,
 			       "*Welcome*", 0, NULL, WelcomeText);
+		free(WelcomeText);
+	}
 	if (!doc) {
 		fprintf(stderr, "edlib: cannot create default document.\n");
 		exit(1);
