@@ -124,20 +124,6 @@ DEF_CMD(tile_clone)
 	return 1;
 }
 
-static int get_scale(struct pane *p)
-{
-	char *sc = pane_attr_get(p, "scale");
-	int scale;
-
-	if (!sc)
-		return 1000;
-
-	scale = atoi(sc);
-	if (scale > 3)
-		return scale;
-	return 1000;
-}
-
 DEF_CMD(tile_attach)
 {
 	struct pane *display = ci->focus;
@@ -212,9 +198,6 @@ static struct pane *tile_split(struct pane **pp safe, int horiz, int after,
 		list_for_each_entry_safe(child, t, &p->children, siblings)
 			if (child != p2)
 				pane_reparent(child, p2);
-		/* Move attrs "scale" attr to the new pane */
-		attr_set_str(&p2->attrs, "scale", attr_find(p->attrs, "scale"));
-		attr_set_str(&p->attrs, "scale", NULL);
 		p = p2;
 	}
 	alloc(ti2, pane);
@@ -232,7 +215,6 @@ static struct pane *tile_split(struct pane **pp safe, int horiz, int after,
 	if (!ret)
 		return NULL;
 
-	attr_set_str(&ret->attrs, "scale", attr_find(p->attrs, "scale"));
 	ti2->p = ret;
 	if (after)
 		pane_move_after(ret, p);
@@ -374,9 +356,6 @@ static int tile_destroy(struct pane *p safe)
 		ti->direction = tmp;
 		ti2->p = remain;
 
-		attr_set_str(&p->attrs, "scale",
-			     attr_find(remain->attrs, "scale"));
-		attr_set_str(&remain->attrs, "scale", NULL);
 		pane_subsume(remain, p);
 	}
 	return 1;
@@ -861,31 +840,6 @@ DEF_CMD(tile_window_close_others)
 	return ti->direction != Neither ? 1 : Efalse;
 }
 
-DEF_CMD(tile_window_scale_relative)
-{
-	struct pane *p = ci->home;
-	int scale = get_scale(p);
-	int rpt = RPT_NUM(ci);
-
-	if (wrong_pane(ci))
-		return Efallthrough;
-
-	if (rpt > 10) rpt = 10;
-	if (rpt < -10) rpt = -10;
-	while (rpt > 0) {
-		scale = scale * 12/10;
-		rpt -= 1;
-	}
-	while (rpt < 0) {
-		scale = scale * 10/ 12;
-		rpt += 1;
-	}
-
-	attr_set_int(&p->attrs, "scale", scale);
-	call("view:changed", ci->focus);
-	return 1;
-}
-
 DEF_CMD(tile_other)
 {
 	/* Choose some other tile.  If there aren't any, make one.
@@ -1095,7 +1049,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(tile_map, "Window:split-y", &tile_window_splity);
 	key_add(tile_map, "Window:close", &tile_window_close);
 	key_add(tile_map, "Window:close-others", &tile_window_close_others);
-	key_add(tile_map, "Window:scale-relative", &tile_window_scale_relative);
 	key_add(tile_map, "Window:bury", &tile_window_bury);
 
 	key_add(tile_map, "OtherPane", &tile_other);

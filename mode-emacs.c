@@ -521,7 +521,6 @@ DEF_CMD(emacs_recenter)
 }
 
 REDEF_CMD(emacs_simple);
-REDEF_CMD(emacs_simple_neg);
 REDEF_CMD(emacs_simple_num);
 REDEF_CMD(emacs_simple_str);
 static struct simple_command {
@@ -535,8 +534,6 @@ static struct simple_command {
 	{CMD(emacs_simple), "Window:split-y", "K:CX-2"},
 	{CMD(emacs_simple), "Window:split-x", "K:CX-3"},
 	{CMD(emacs_simple), "Window:close", "K:CX-0"},
-	{CMD(emacs_simple), "Window:scale-relative", "K:CX:C-="},
-	{CMD(emacs_simple_neg), "Window:scale-relative", "K:CX:C--"},
 	{CMD(emacs_simple), "Window:bury", "K:A-B"},
 	{CMD(emacs_simple), "Display:new", "K:CX5-2"},
 	{CMD(emacs_simple), "Display:close", "K:CX5-0"},
@@ -564,16 +561,6 @@ REDEF_CMD(emacs_simple)
 		return Enoarg;
 
 	return call(sc->type, ci->focus, ci->num, ci->mark);
-}
-
-REDEF_CMD(emacs_simple_neg)
-{
-	struct simple_command *sc = container_of(ci->comm, struct simple_command, cmd);
-
-	if (!ci->mark)
-		return Enoarg;
-
-	return call(sc->type, ci->focus, -RPT_NUM(ci), ci->mark);
 }
 
 REDEF_CMD(emacs_simple_num)
@@ -2771,6 +2758,38 @@ DEF_CMD(emacs_growx_again)
 		return emacs_growx_func(ci);
 }
 
+DEF_CMD(emacs_scale_relative)
+{
+	struct pane *p = ci->focus;
+	char *sc = pane_attr_get(p, "scale:M");
+	int scale = 0;
+	char num[20];
+
+	if (!sc) {
+		call("Message:modal", p, 0, NULL,
+		     "Cannot zoom display with fixed-sized font");
+		return 1;
+	}
+	sc = pane_attr_get(p, "scale");
+	if (sc && strchr(sc, 'x')) {
+		call("Message:modal", p, 0, NULL,
+		     "Cannot zoom display with fixed layout");
+		return 1;
+	}
+
+	if (sc)
+		scale = atoi(sc);
+	if (scale <= 0)
+		scale = 1000;
+	if (ci->key[strlen(ci->key)-1] == '-')
+		scale = 10 * scale / 12;
+	else
+		scale = 12 * scale / 10;
+	snprintf(num, sizeof(num)-1, "%d", scale);
+	call("Display:set:scale", p, 0, NULL, num);
+	return 1;
+}
+
 DEF_CMD(emacs_curs_pos)
 {
 	struct mark *c;
@@ -3361,6 +3380,9 @@ static void emacs_init(void)
 	key_add(m, "K:CX-}", &emacs_growx);
 	key_add(m, "K-{", &emacs_growx_again);
 	key_add(m, "K-}", &emacs_growx_again);
+
+	key_add(m, "K:CX:C-=", &emacs_scale_relative);
+	key_add(m, "K:CX:C--", &emacs_scale_relative);
 
 	key_add(m, "K:C-S", &emacs_start_search);
 	key_add(m, "K:C-R", &emacs_start_search);

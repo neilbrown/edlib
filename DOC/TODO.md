@@ -39,7 +39,7 @@ the file.
       following punctuation (=) and try there.
 - [X] resolve shift-left vs shift_left distinction - add a "fixed"
       suffix? Also consider render-wrap
-- [ ] should zoom affect whole window, not just pane?
+- [X] should zoom affect whole window, not just pane?
 - [X] ditch cached-size for images - store in pane data instead.
 - [X] use foreach_attr for parsing image details
 - [ ] mergeview command to show diff between "found" and "replacement".

@@ -260,10 +260,13 @@ appearing in the pane stack:
 - "scale" - should be a pair of values in format WIDTHxHEIGHT.  If
    given, content will be scaled so that this many "points" will fit
    within the window.  A "point" is one tenth of the size of an "M"
-   which is stored (in the same WxH format) in the "scale:M" attrbiute
+   which is stored (in the same WxH format) in the "scale:M" attribute
    which is set by the display pane.
    So if "scale" is "800x250" then text is scales so that least 80 M's
    fit across and 25 M's fit down.
+
+   Alternately "scale" can be a single integer in which can the standard
+   scaling is multiplied by 1/1000th of that number.
 
 
 ### lib-renderline
