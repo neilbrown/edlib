@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <fcntl.h>
 #include <string.h>
 #include <xcb/xcb.h>
@@ -154,6 +155,7 @@ enum my_atoms {
 	a_WM_ICON_NAME, a_NET_WM_ICON_NAME,
 	a_WM_PROTOCOLS, a_WM_DELETE_WINDOW,
 	a_NET_WM_PING,
+	a_NET_WM_ICON,
 	a_WM_CLIENT_MACHINE,
 	a_UTF8_STRING,
 	NR_ATOMS
@@ -169,6 +171,7 @@ static const char *atom_names[NR_ATOMS] = {
 	[a_WM_PROTOCOLS]	= "WM_PROTOCOLS",
 	[a_WM_DELETE_WINDOW]	= "WM_DELETE_WINDOW",
 	[a_NET_WM_PING]		= "_NET_WM_PING",
+	[a_NET_WM_ICON]		= "_NET_WM_ICON",
 	[a_WM_CLIENT_MACHINE]	= "WM_CLIENT_MACHINE",
 	[a_UTF8_STRING]		= "UTF8_STRING",
 };
@@ -1725,6 +1728,17 @@ static void set_utf8_prop(struct xcb_data *xd safe,
 			    8, strlen(str), str);
 }
 
+static void set_card32_property(struct xcb_data *xd safe,
+				enum my_atoms a,
+				const uint32_t *data, int cnt)
+{
+	xcb_change_property(xd->conn,
+			    XCB_PROP_MODE_REPLACE,
+			    xd->win, xd->atoms[a],
+			    XCB_ATOM_CARDINAL, 32,
+			    cnt, data);
+}
+
 static void set_atom_prop(struct xcb_data *xd safe,
 			  enum my_atoms prop, enum my_atoms alist, ...)
 {
@@ -1744,6 +1758,48 @@ static void set_atom_prop(struct xcb_data *xd safe,
 			    xd->win, xd->atoms[prop],
 			    XCB_ATOM_ATOM,
 			    32, anum, atoms);
+}
+
+static void xcb_load_icon(struct pane *p safe,
+			  struct xcb_data *xd safe,
+			  char *file safe)
+{
+	char *path;
+	int h, w, n;
+	unsigned int *data;
+	MagickBooleanType status;
+	MagickWand *wd;
+	uint32_t fmt[2];
+
+	path = call_ret(str, "xdg-find-edlib-file", p, 0, NULL,
+			file, 0, NULL, "data");
+	if (!path)
+		return;
+
+	wd = NewMagickWand();
+	status = MagickReadImage(wd, path);
+	free(path);
+	if (status == MagickFalse)
+		goto done;
+
+	h = MagickGetImageHeight(wd);
+	w = MagickGetImageWidth(wd);
+	n = 2 + w*h;
+	data = malloc(sizeof(data[0]) * n);
+	if (!data)
+		goto done;
+	data[0] = w;
+	data[1] = h;
+	/* Need host-endian ARGB data */
+	fmt[0] = ('A'<<24) | ('R' << 16) | ('G' << 8) | ('B' << 0);
+	fmt[1] = 0;
+	MagickExportImagePixels(wd, 0, 0, w, h, (char*)fmt,
+				CharPixel, data+2);
+	set_card32_property(xd, a_NET_WM_ICON, data, n);
+	free(data);
+done:
+	DestroyMagickWand(wd);
+	return;
 }
 
 static struct pane *xcb_display_init(const char *d safe,
@@ -1897,6 +1953,7 @@ static struct pane *xcb_display_init(const char *d safe,
 			XCB_MOD_MASK_LOCK |
 			XCB_MOD_MASK_CONTROL);
 
+	xcb_load_icon(focus, xd, "edlib-icon.png");
 	xcb_map_window(conn, xd->win);
 	xcb_flush(conn);
 	pane_resize(p, 0, 0, xd->charwidth*80, xd->lineheight*26);
