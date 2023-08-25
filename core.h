@@ -495,7 +495,7 @@ static inline int pane_attr_get_int(struct pane *p safe, const char *key safe,
 	if (!c)
 		return dflt;
 	rv = strtol(c, &end, 10);
-	if (end == c || !end || *end)
+	if (end == c || !end || (*end && *end != ' '))
 		return dflt;
 	return rv;
 }

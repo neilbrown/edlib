@@ -40,7 +40,7 @@ DEF_CMD(askpass_refresh_view)
 	call("render-line:set", ci->focus, b.len, NULL, buf_final(&b));
 	for (i = 0; i < 10; i++) {
 		int cw;
-		attr_set_int(&ci->focus->attrs, "shift_left", shift);
+		attr_set_int(&ci->focus->attrs, "render-wrap", shift);
 		call("render-line:measure", ci->focus, b.len);
 		cw = pane_attr_get_int(ci->focus, "curs_width", 1);
 		if (ci->home->parent->cx < ci->home->parent->w - cw)

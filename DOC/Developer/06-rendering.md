@@ -245,8 +245,12 @@ appearing in the pane stack:
        perform detailed drawing of the background
     + "color:COLOUR" - fills the background with the given colour.
     + "image:IMAGE" - the image is drawn to fill the pane
-- "render-wrap" - if set to any value other than "yes", text is not
-   wrapped.
+- "render-wrap" - How to handle lines wider than the pane:
+       - if "yes" wrap the line onto multiple lines.
+       - if "NN" shift the line "NN" character spaces (in standard font) to left.
+       - if "NN auto", update as needed so that cursor is displayed.
+       - if not set, treat as "yes"
+       - if any other value, treat as "0 auto"
 - "render-vmargin" - if set to a number of lines, "render-lines" will
    attempt to keep the cursor at least this far from the top or bottom
    of the display.
@@ -291,11 +295,9 @@ redraw as needed.
 The pane's behaviour can be modified by several attributes that can be
 found in the stack:
 
-- "shift_left" - this should be in integer.  If less than zero the line
-  will be wrapped if it is too wide to display completely in the pane.
-  If it is non-negative then the display will not be wrapped and the
-  display will be shifted to the left this far so later parts of the
-  line can be seen.
+- "render:wrap" - this is processed the same way that render-lines
+  understands it, though no "auto" adjustment is made.  It either
+  requests wrap or sets the shift size.
 
 - "prefix" - This marked-up text will be display first.  It will not be
   shifted even when the main text is shifted left.

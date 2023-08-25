@@ -200,7 +200,11 @@ Several pane attributes can affect the pane as a whole:
  - "scale" - width/height values to aim for - in "points" which are 1/10 for an M
           e.g. if 800x240, then text is scaled so that at least 80 M's fit across,
           and 24 M's fit down.
- - "render-wrap" - if define but not "yes", don't wrap long lines, else shift left to
-          fit cursor on pane.
+ - "render-wrap" - How to handle lines wider than the pane:
+       - if "yes" wrap the line onto multiple lines.
+       - if "NN" shift the line "NN" character spaces (in standard font) to left.
+       - if "NN auto", update as needed so that cursor is displayed.
+       - if not set, treat as "yes"
+       - if any other value, treat as "0 auto"
  - "prefix" - text to place at start of each line.  This can be used as a prompt in a
           dialogue box.

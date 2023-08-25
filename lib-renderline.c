@@ -517,7 +517,7 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 	 */
 	struct rline_data *rd = &p->data;
 	struct render_item *ri, *wraprl;
-	int shift_left = pane_attr_get_int(focus, "shift_left", 0);
+	int shift_left = pane_attr_get_int(focus, "render-wrap", -1);
 	bool wrap = shift_left < 0;
 	int wrap_margin;
 	int right_margin;

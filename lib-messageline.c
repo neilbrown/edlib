@@ -260,7 +260,7 @@ static struct pane *do_messageline_attach(struct pane *p safe)
 		return NULL;
 	}
 	/* Support wrapping */
-	attr_set_int(&mlp->attrs, "shift_left", -1);
+	attr_set_str(&mlp->attrs, "render:wrap", "yes");
 	pane_damaged(ret, DAMAGED_VIEW);
 	mli->line = mlp;
 	pane_focus(ret);

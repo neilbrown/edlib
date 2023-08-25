@@ -2704,7 +2704,7 @@ DEF_CMD(emacs_shift)
 	int rpt = ci->num;
 	int shift;
 
-	shift = pane_attr_get_int(ci->focus, "shift-left", -1);
+	shift = pane_attr_get_int(ci->focus, "render-wrap", -1);
 	if (strcmp(ci->key, "K:CX->") == 0 || strcmp(ci->key, "K->") == 0)
 		rpt = -rpt;
 	if (rpt == NO_NUMERIC) {
@@ -2730,9 +2730,14 @@ DEF_CMD(emacs_shift)
 			shift += rpt;
 	}
 	if (shift < 0)
-		attr_set_str(&ci->focus->attrs, "shift-left", "");
+		attr_set_str(&ci->focus->attrs, "render-wrap", "yes");
+	else if (shift > 0)
+		attr_set_int(&ci->focus->attrs, "render-wrap", shift);
+	else if (rpt > 0)
+		attr_set_str(&ci->focus->attrs, "render-wrap", "0 auto");
 	else
-		attr_set_int(&ci->focus->attrs, "shift-left", shift);
+		/* When reducing shift to zero, don't enable auto */
+		attr_set_int(&ci->focus->attrs, "render-wrap", 0);
 	call("view:changed", ci->focus);
 	call("Mode:set-num2", ci->focus, N2_shift);
 	call("Message:modal", ci->focus, 0, NULL, "Type < or > to shift again");

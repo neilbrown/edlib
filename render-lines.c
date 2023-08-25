@@ -170,12 +170,22 @@ static int _measure_line(struct pane *p safe, struct pane *focus safe,
 			  struct mark *mk safe, short cursor_offset,
 			  char **cursor_attr)
 {
+	struct rl_data *rl = p->data;
 	struct pane *hp = mk->mdata;
 	struct call_return cr;
 
 	if (!mark_valid(mk) || !hp)
 		return False;
 	pane_resize(hp, hp->x, hp->y, p->w, p->h);
+	if (!rl->shift_locked) {
+		int sl = pane_attr_get_int(focus, "render-wrap", -2);
+		if (sl != rl->shift_left) {
+			char *sla = NULL;
+			asprintf(&sla, "%d auto", rl->shift_left);
+			attr_set_str(&focus->attrs, "render-wrap", sla);
+			free(sla);
+		}
+	}
 	cr = pane_call_ret(all, hp, "render-line:measure",
 			   focus, cursor_offset);
 	if (cursor_attr)
@@ -990,21 +1000,6 @@ static int render(struct mark *pm, struct pane *p safe,
 	return y;
 }
 
-DEF_CMD(render_lines_get_attr)
-{
-	struct rl_data *rl = ci->home->data;
-
-	if (ci->str && strcmp(ci->str, "shift_left") == 0) {
-		char ret[10];
-		if (rl->do_wrap && !rl->shift_locked)
-			return comm_call(ci->comm2, "cb", ci->focus,
-					 0, NULL, "-1");
-		snprintf(ret, sizeof(ret), "%d", rl->shift_left);
-		return comm_call(ci->comm2, "cb", ci->focus, 0, NULL, ret);
-	}
-	return Efallthrough;
-}
-
 DEF_CMD(render_lines_point_moving)
 {
 	struct pane *p = ci->home;
@@ -1222,27 +1217,46 @@ DEF_CMD(render_lines_revise)
 	struct mark *pm = NULL;
 	struct mark *m1, *m2;
 	bool refresh_all = False;
+	bool wrap;
 	char *hdr;
 	char *a;
 	int shift;
 
 	a = pane_attr_get(focus, "render-wrap");
-	if (rl->do_wrap != (!a || strcmp(a, "yes") ==0)) {
-		rl->do_wrap = (!a || strcmp(a, "yes") ==0);
+	wrap = (!a || strcmp(a, "yes") == 0);
+	if (rl->do_wrap != wrap) {
+		rl->do_wrap = wrap;
 		refresh_all = True;
+		rl->shift_left = 0;
 	}
+	if (wrap)
+		rl->shift_locked = True;
+	if (!a)
+		/* avoid any ambiguity */
+		attr_set_str(&focus->attrs, "render-wrap", "yes");
 
-	shift = pane_attr_get_int(focus, "shift-left", -1);
-	if (shift >= 0) {
+	if (a) {
+		char *end;
+		shift = strtol(a, &end, 10);
+		if (end == a || (end && *end && *end != ' '))
+			shift = -1;
+	}
+	else
+		shift = -1;
+
+	if (a && shift >= 0) {
 		if (rl->shift_left != shift)
 			refresh_all = True;
 
 		rl->shift_left = shift;
-		rl->shift_locked = 1;
-	} else {
+		rl->shift_locked = strstr(a, "auto") == NULL;
+	} else if (!wrap) {
+		/* unrecognised - no wrap, not locked */
 		if (rl->shift_locked)
 			refresh_all = True;
+		rl->shift_left = 0;
 		rl->shift_locked = 0;
+		attr_set_str(&focus->attrs, "render-wrap", "0 auto");
 	}
 	if (refresh_all) {
 		struct mark *v;
@@ -1966,7 +1980,6 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "Refresh:view", &render_lines_revise);
 	key_add(rl_map, "Refresh:size", &render_lines_resize);
 	key_add(rl_map, "Notify:clip", &render_lines_clip);
-	key_add(rl_map, "get-attr", &render_lines_get_attr);
 	key_add(rl_map, "mark:moving", &render_lines_point_moving);
 
 	key_add(rl_map, "doc:replaced", &render_lines_notify_replace);
