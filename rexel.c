@@ -2641,6 +2641,14 @@ static void run_tests(bool trace)
 	}
 }
 
+static void usage(void)
+{
+	fprintf(stderr, "Usage: rexel -itvB pattern target\n");
+	fprintf(stderr, "     : rexel -itvB -f pattern file\n");
+	fprintf(stderr, "     : rexel -T  # run tests\n");
+	fprintf(stderr, "     : -i=ignore case, -t=trace -v=verbatim pattern, -B=backtrack\n");
+}
+
 int main(int argc, char *argv[])
 {
 	unsigned short *rxl;
@@ -2655,13 +2663,14 @@ int main(int argc, char *argv[])
 	int ccnt = 0;
 	int ignore_case = 0;
 	int verbatim = 0;
+	int backtrack = 0;
 	int opt;
 	int trace = False;
 	const char *patn, *target, *t;
 	char prefix[100];
 	int plen;
 
-	while ((opt = getopt(argc, argv, "itvlTf")) > 0)
+	while ((opt = getopt(argc, argv, "itvTfB")) > 0)
 		switch (opt) {
 		case 'f':
 			use_file = 1; break;
@@ -2671,21 +2680,19 @@ int main(int argc, char *argv[])
 			verbatim = 1; break;
 		case 't':
 			trace = True; break;
+		case 'B':
+			backtrack = RXLF_BACKTRACK; break;
 		case 'T':
 			run_tests(trace);
 			printf("All tests passed successfully\n");
 			exit(0);
 		default:
-			fprintf(stderr, "Usage: rexel -itvl pattern target\n");
-			fprintf(stderr, "     : rexel -itvl -f pattern file\n");
-			fprintf(stderr, "     : rexel -T\n");
+			usage();
 			exit(1);
 		}
 
 	if (optind + 2 != argc) {
-		fprintf(stderr,
-			"Usage: rexel -ivl pattern target\n"
-			"   or: rexel -T\n");
+		usage();
 		exit(1);
 	}
 	patn = argv[optind];
@@ -2722,7 +2729,7 @@ int main(int argc, char *argv[])
 	else
 		printf("No static prefix\n");
 
-	st = rxl_prepare(rxl, 0);
+	st = rxl_prepare(rxl, backtrack);
 	st->trace = trace;
 	t = target;
 	flags = RXL_SOL|RXL_SOD;
