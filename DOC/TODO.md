@@ -9,12 +9,14 @@ the file.
 
 ### Triage
 
+- [ ] search hangs when seeking "^( *)"
+
 ### Small
 
-- [ ] notmuch addresses in From: list to have menu to add address to
-      any from-* query
+- [ ] notmuch addresses in From: list to have menu to add address to any
+      from-* query
 - [ ] Disable <hide> if cursor is in the hidden region.
-- [ ] fill mode to handle all punctuation at start of this line
+- [X] fill mode to handle all punctuation at start of this line
 - [ ] Enable lib-menu to show short-cut keys
 - [ ] Add menu-bar to lib-menu.  Pop it up on F10 with simple commands
 - [ ] attach an extensible menu to the selection
@@ -23,7 +25,7 @@ the file.
 ### Medium
 
 - [ ] split range management out of autospell so it can be used by other
-  modules.
+      modules.
 - [ ] make it easy for a make-search command to search backwards
 - [ ] Make a start on CUA mode with mouse/menu/selection support.
       Also Function keys: help, close, refresh
@@ -50,8 +52,8 @@ Requirements for a v1.0 release
 - [ ] introspection
 - [ ] markdown editor (with PDF output)
 - [ ] non-line-based render, such as a tabular render for spreadsheet,
-       or side-scrolling horiz row of thumbnails for presentation,
-       or even a menu-bar with row of menus.
+      or side-scrolling horiz row of thumbnails for presentation, or
+      even a menu-bar with row of menus.
 - [ ] documentation reader
 - [ ] block-dev (mmap) doc type, and some hex-mode support
 - [ ] user documentation
@@ -66,12 +68,11 @@ Core features
 - [ ] Ensure all panes that should use "Free" properly, and find some
       what to encourage its use.
 - [ ] Add optional unit-test interface for modules.  This should be
-      implemented at least by lib-search, doc-text and probably
-      many others.  It is particularly for things that are awkward
-      to test with the ncurses/replay test approach.
-- [ ] Send global notify before/after refresh.  LOG must suspend
-      logging (or notifications at least) during refresh if is visible
-      anywhere
+      implemented at least by lib-search, doc-text and probably many
+      others.  It is particularly for things that are awkward to test
+      with the ncurses/replay test approach.
+- [ ] Send global notify before/after refresh.  LOG must suspend logging
+      (or notifications at least) during refresh if is visible anywhere
 - [ ] Do I want "Display" as in "Display:close", or "window" as in
       "window:notify".  Decide, and make everything consistent.
 - [ ] Do I really need global-multicall- or can I just use
@@ -224,9 +225,9 @@ Module features
 
 ### lib-textfill
 
-- [ ] auto-wrap on a line like this one doesn't recognize all the
+- [X] auto-wrap on a line like this one doesn't recognize all the
   punctuation a the start of the line ... should it?
-- [ ] fill mode to handle all punctuation at start of this line
+- [X] fill mode to handle all punctuation at start of this line
 
 ### render-format
 

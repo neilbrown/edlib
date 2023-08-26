@@ -134,22 +134,33 @@ def find_start(focus, mark):
         re = "^[^a-zA-Z0-9\n]*$"
     focus.call("doc:EOL", -100, m)
     try:
-        leng = focus.call("text-search", re, mark, m, 1, 1)
-        # leng is length + 1, we want +1 to kill '\n'
-        focus.call("Move-Char", leng, mark)
+        leng = focus.call("text-search", re, mark, m, 0, 1)
+        # leng is length + 1.  It might match a whole line or
+        # just a prefix. So we move "length + 1" chars, then back
+        # to start of line.  If it matched a whole line we will be on
+        # start of next line.  If just a prefix, we will be on start of
+        # that line.
+        last = focus.call("doc:char", leng, mark, -1, ret='char')
+        focus.call("doc:EOL", -1, mark)
     except edlib.commandfailed:
         if focus.prior(m) != None:
             # Went back 100 lines and found no suitable para-separator line
             return None
+        # at start of file - must be start of para.
+        last = "\n"
         mark.to_mark(m)
     # mark is at start of para - not indented yet.
 
-    # Now choose a prefix, which is non-alphanum or quotes.
-    # Possibly open brackets should be included too?
-    l = focus.call("text-match", "^[^a-zA-Z0-9'\"\n]*", mark.dup())
-    while l > 1:
-        focus.next(mark)
-        l -= 1
+    # Now choose a prefix.  If the re identified one, use that,
+    # otherwise use all non-alphanum or quotes.
+    #
+    if last != '\n':
+        # re found a prefix
+        l = leng
+    else:
+        l = focus.call("text-match", "^[^a-zA-Z0-9'\"\n]*", mark.dup())
+    if l > 0:
+        focus.call("doc:char", l-1, mark)
     return mark
 
 def find_end(focus, mark):
