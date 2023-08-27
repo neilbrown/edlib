@@ -746,10 +746,12 @@ static void do_searches(struct pane *p safe,
 {
 	int ret;
 	struct highlight_info *hi = owner->data;
+	struct mark *start;
 
 	if (!m)
 		return;
 	m = mark_dup(m);
+	start = mark_dup(m);
 	while ((ret = call("text-search", p, ci, m, patn, 0, end)) >= 1) {
 		struct mark *m2, *m3;
 		int len = ret - 1;
@@ -779,10 +781,14 @@ static void do_searches(struct pane *p safe,
 					     0);
 			}
 		}
-		if (len == 0)
+
+		if (len == 0 || mark_ordered_or_same(m, start))
 			/* Need to move forward, or we'll just match here again*/
 			doc_next(p, m);
+		mark_free(start);
+		start = mark_dup(m);
 	}
+	mark_free(start);
 	mark_free(m);
 }
 

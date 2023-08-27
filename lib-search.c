@@ -125,7 +125,7 @@ DEF_CB(search_test)
 		    mark_ordered_not_same(ss->end, ci->mark)) {
 			/* Mark is *after* the char, so if end and mark
 			 * are the same, we haven't passed the 'end' yet,
-			 * we it is too early to abort.  Hence 'not' above
+			 * and it is too early to abort.  Hence 'not' above
 			 */
 			if (ss->anchor_at_end) {
 				found = rxl_advance(ss->st, RXL_ANCHOR);

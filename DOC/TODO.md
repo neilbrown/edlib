@@ -9,7 +9,7 @@ the file.
 
 ### Triage
 
-- [ ] search hangs when seeking "^( *)"
+- [X] search hangs when seeking "^( *)"
 
 ### Small
 
