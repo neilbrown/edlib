@@ -252,6 +252,7 @@ Module features
 - [ ] move to separate git repo and document well.
 - [ ] review return code of rxl_advance().  What should be
       returned if a flag allowed a match, but the char didn't.
+- [ ] add self-tests which ensure that the return value is correct.
 - [ ] support backward search by compiling expression backwards
 - [ ] make prefix-fast-search work for case-insensitive matches??
 - [ ] rexel term for "expression" with balanced brackets.

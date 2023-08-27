@@ -843,6 +843,9 @@ enum rxl_found rxl_advance(struct match_state *st safe, wint_t ch)
 			printf(" ... -> NOMATCH\n");
 	}
 	#endif
+	/* 'ret' is the result of an flags, or RXL_NOMATCH. */
+	if (ret >= RXL_MATCH && !flag && st->match >= 0)
+		return RXL_MATCH;
 	if (ret >= RXL_MATCH_FLAG || (st->match >= 0 && flag))
 		return RXL_MATCH_FLAG;
 	if (ret >= RXL_MATCH || st->match >= 0)
