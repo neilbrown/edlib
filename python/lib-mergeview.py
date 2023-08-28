@@ -100,6 +100,8 @@ class MergePane(edlib.Pane):
             diff = focus.call("copy:get", ret='str')
             if not diff or not diff.startswith("|||||||"):
                 diff = None
+        else:
+            diff = None
         if diff:
             # selection must be full lines
             focus.call("doc:EOL", -1, pt)
