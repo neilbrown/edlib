@@ -832,7 +832,7 @@ static bool handle_rfc822(struct pane *email safe,
 		goto out;
 
 	/* copy some headers to the header temp document */
-	home_call(h2, "get-header", hdrdoc, 0, point, "From", 1);
+	home_call(h2, "get-header", hdrdoc, 0, point, "From", 1, NULL, "list");
 	home_call(h2, "get-header", hdrdoc, 0, point, "Date", 1);
 	home_call(h2, "get-header", hdrdoc, 0, point, "Subject", 1, NULL, "text");
 	home_call(h2, "get-header", hdrdoc, 0, point, "To", 1, NULL, "list");

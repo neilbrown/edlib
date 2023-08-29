@@ -245,6 +245,35 @@ static char *safe charset_word(struct pane *doc safe, struct mark *m safe)
 	return last;
 }
 
+static void add_addr(struct pane *p safe, struct mark *m safe,
+		     struct mark *pnt safe, int len,
+		     const char *hdr)
+{
+	char buf[2*sizeof(int)*8/3 + 3 + 20];
+	char *addr;
+	int tag;
+
+	if (len <= 0)
+		return;
+	tag = attr_find_int(p->attrs, "rfc822-addr-cnt");
+	if (tag < 0)
+		tag = 0;
+	tag += 1;
+	snprintf(buf, sizeof(buf), "%d,%d,%s", len, tag, hdr);
+	call("doc:set-attr", p, 1, m,
+	     "render:rfc822header-addr", 0, NULL, buf);
+
+	addr = call_ret(str,"doc:get-str", p, 0, m, NULL, 0, pnt);
+	while (addr && utf8_strlen(addr) > len) {
+		int l = utf8_round_len(addr, strlen(addr)-1);
+		addr[l] = 0;
+	}
+	snprintf(buf, sizeof(buf), "addr-%d", tag);
+	attr_set_str(&p->attrs, buf, addr);
+
+	attr_set_int(&p->attrs, "rfc822-addr-cnt", tag);
+}
+
 static void copy_header(struct pane *doc safe,
 			const char *hdr safe, const char *hdr_found safe,
 			const char *type,
@@ -269,6 +298,9 @@ static void copy_header(struct pane *doc safe,
 	char attr[100];
 	char *a;
 	int is_list = type && strcmp(type, "list") == 0;
+	struct mark *istart = NULL;
+	int ilen = 0, isince = 0;
+	bool seen_colon = False;
 
 	m = mark_dup(start);
 	hstart = mark_dup(point);
@@ -285,10 +317,11 @@ static void copy_header(struct pane *doc safe,
 		}
 		if (sol && (ch == ' ' || ch == '\t'))
 			continue;
-		if (sol) {
+		if (sol && !(is_list && ilen == 0)) {
 			call("doc:replace", p, 1, NULL, " ", 0, point);
-			sol = 0;
+			isince += 1;
 		}
+		sol = 0;
 		buf[0] = ch;
 		buf[1] = 0;
 		if (ch == '=' && doc_following(doc, m) == '?')
@@ -298,7 +331,24 @@ static void copy_header(struct pane *doc safe,
 		for (i = 0; b[i]; i++)
 			if (b[i] > 0 && b[i] < ' ')
 				b[i] = ' ';
+		if (is_list && seen_colon && !istart && b[0] != ',' &&
+		    (b[0] != ' ' || b[1] != '\0')) {
+			/* This looks like the start of a list item. */
+			istart = mark_dup(point);
+			mark_step(istart, 0);
+			ilen = isince = 0;
+		}
+		if (b[0] == ':')
+			seen_colon = True;
 		call("doc:replace", p, 1, NULL, b, 0, point);
+		if (ch == ',' && istart) {
+			add_addr(p, istart, point, ilen, hdr);
+			mark_free(istart);
+			istart = NULL;
+		}
+		isince += utf8_strlen(b);
+		if (b[0] != ' ')
+			ilen = isince;
 		if (ch == ',' && is_list) {
 			/* This comma is not in a quoted word, so it really marks
 			 * part of a list, and so is a wrap-point.  Consume any
@@ -309,11 +359,20 @@ static void copy_header(struct pane *doc safe,
 			doc_prev(p, p2);
 			while ((ch = doc_following(doc, m)) == ' ')
 				doc_next(doc, m);
+
 			call("doc:replace", p, 1, NULL, " ", 0, point);
 			call("doc:set-attr", p, 1, p2,
 			     "render:rfc822header-wrap", 0, NULL, "2");
 			mark_free(p2);
+
+			istart = mark_dup(point);
+			mark_step(istart, 0);
+			ilen = isince = 0;
 		}
+	}
+	if (istart) {
+		add_addr(p, istart, point, ilen, hdr);
+		mark_free(istart);
 	}
 	call("doc:replace", p, 1, NULL, "\n", 0, point);
 	snprintf(buf, sizeof(buf), "%zd", strlen(hdr_found)+1);
