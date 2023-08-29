@@ -26,6 +26,8 @@
 #  in the "search list" together with a count of 'current' and 'current/new' messages.
 # "query.misc-list" is a subset of current-list for which query:current should not
 # be assumed.
+# "query.from-list" is a list of other queries for which it is meaningful
+#   to add "from:address" clauses for some address.
 
 import edlib
 
@@ -761,6 +763,12 @@ class notmuch_main(edlib.Doc):
             self.searches.slist["-ad hoc-"] = str
         else:
             self.searches.slist["-ad hoc-"] = ""
+        return 1
+
+    def handle_get_query(self, key, focus, str1, comm2, **a):
+        "handle:doc:notmuch:get-query"
+        if str1 and str1 in self.searches.slist:
+            comm2("cb", focus, self.searches.slist[str1])
         return 1
 
     def tick(self, key, **a):
@@ -3115,6 +3123,8 @@ class notmuch_message_view(edlib.Pane):
         self.prev_point = None
         self.have_prev = False
         self.call("doc:request:mark:moving")
+        self.menu = None
+        self.addr = None
 
         self['word-wrap'] = '1' # Should this be different in different parts?
 
@@ -3462,6 +3472,13 @@ class notmuch_message_view(edlib.Pane):
             comm2("attr:callback", focus, 0, mark, "wrap-tail: ,wrap-head:    ",
                   121)
             return 1
+        if str == "render:rfc822header-addr":
+            w=str2.split(",")
+            if "From" in w:
+                comm2("attr:callback", focus, int(w[0]), mark,
+                      "underline,action-menu:notmuch-addr-menu,addr-tag:"+w[1],
+                      200)
+            return 1
         if str == "render:rfc822header-wrap":
             comm2("attr:callback", focus, int(str2), mark, "wrap", 120)
             return 1
@@ -3518,6 +3535,45 @@ class notmuch_message_view(edlib.Pane):
                 if bg:
                     comm2("cb", focus, mark, 0, "bg:"+bg, 102)
             return edlib.Efallthrough
+
+    def handle_menu(self, key, focus, mark, xy, str1, **a):
+        "handle:notmuch-addr-menu"
+        if self.menu:
+            self.menu.call("Cancel")
+        for at in str1.split(','):
+            if at.startswith("addr-tag:"):
+                t = at[9:]
+                addr = focus.call("doc:get-attr", 0, mark, "addr-"+t, ret='str')
+        if not addr:
+            return 1
+        focus.call("Message", "Menu for address %s" % addr)
+        mp = self.call("attach-menu", "", "notmuch-addr-choice", xy, ret='pane')
+        mp.call("menu-add", "C", "Compose")
+        q = focus.call("doc:notmuch:get-query", "from-list", ret='str')
+        if q:
+            for t in q.split():
+                if t.startswith("query:"):
+                    t = t[6:]
+                    mp.call("menu-add", t, 'Add to "%s"' % t)
+        mp.call("doc:file", -1)
+        self.menu = mp
+        self.addr = addr
+        self.add_notify(mp, "Notify:Close")
+        return 1
+
+    def handle_notify_close(self, key, focus, **a):
+        "handle:Notify:Close"
+        if focus == self.menu:
+            self.menu = None
+            return 1
+        return edlib.Efallthrough
+
+    def handle_addr_choice(self, key, focus, mark, str1, **a):
+        "handle:notmuch-addr-choice"
+        if not str1 or not self.addr:
+            return None
+        edlib.LOG("Addr menu Chose", str1, "for", self.addr)
+        return 1
 
     def handle_render_line(self, key, focus, num, mark, mark2, comm2, **a):
         "handle:doc:render-line"
