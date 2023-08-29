@@ -3458,21 +3458,21 @@ class notmuch_message_view(edlib.Pane):
     def handle_map_attr(self, key, focus, mark, str, str2, comm2, **a):
         "handle:map-attr"
         if str == "render:rfc822header":
-            comm2("attr:callback", focus, int(str2), mark, "fg:#6495ed", 121)
+            comm2("attr:callback", focus, int(str2), mark, "fg:#6495ed,nobold", 121)
             comm2("attr:callback", focus, 0, mark, "wrap-tail: ,wrap-head:    ",
-                  119)
+                  121)
             return 1
         if str == "render:rfc822header-wrap":
             comm2("attr:callback", focus, int(str2), mark, "wrap", 120)
             return 1
-        if str == "render:rfc822header-subject":
-            comm2("attr:callback", focus, int(str2), mark, "fg:blue,bold", 120)
+        if str == "render:rfc822header:subject":
+            comm2("attr:callback", focus, 10000, mark, "fg:blue,bold", 120)
             return 1
-        if str == "render:rfc822header-to":
-            comm2("attr:callback", focus, int(str2), mark, "fg:blue,bold", 120)
+        if str == "render:rfc822header:to":
+            comm2("attr:callback", focus, 10000, mark, "fg:blue,bold", 120)
             return 1
         if str == "render:hide":
-            comm2("attr:callback", focus, int(str2), mark, "hide", 100000)
+            comm2("attr:callback", focus, 10000, mark, "hide", 100000)
         if str == "render:bold":
             comm2("attr:callback", focus, 100000 if str2 == "1" else -1,
                   mark, "bold", 120)

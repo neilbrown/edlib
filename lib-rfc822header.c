@@ -267,6 +267,7 @@ static void copy_header(struct pane *doc safe,
 	char buf[20];
 	wint_t ch;
 	char attr[100];
+	char *a;
 	int is_list = type && strcmp(type, "list") == 0;
 
 	m = mark_dup(start);
@@ -321,12 +322,13 @@ static void copy_header(struct pane *doc safe,
 	call("doc:replace", p, 1, NULL, "\n", 0, point);
 	snprintf(buf, sizeof(buf), "%zd", strlen(hdr_found)+1);
 	call("doc:set-attr", p, 1, hstart, "render:rfc822header", 0, NULL, buf);
-	if (strlen(hdr) == strlen(hdr_found))
-		/* Refer canonical name, if no 'Resent-' */
-		snprintf(attr, sizeof(attr), "render:rfc822header-%s", hdr);
-	else
-		snprintf(attr, sizeof(attr), "render:rfc822header-%s", hdr_found);
-	call("doc:set-attr", p, 1, hstart, attr, 0, NULL, "10000");
+	snprintf(attr, sizeof(attr), "render:rfc822header:%s", hdr_found);
+	/* make header name lowercase */
+	for (a = attr; *a; a++) {
+		if ((unsigned char)(*a) < 128 && isupper(*a))
+			*a = tolower(*a);
+	}
+	call("doc:set-attr", p, 1, hstart, attr, 0, NULL, type);
 
 	mark_free(hstart);
 	mark_free(m);
