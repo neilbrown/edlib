@@ -202,6 +202,7 @@ class autospell_view(edlib.Pane):
         # visible region
         self.vstart = None
         self.vend = None
+        self.menu = None
         self.call("doc:request:spell:recheck")
         self.call("doc:request:doc:replaced")
         # trigger render-lines refresh notification
@@ -232,6 +233,8 @@ class autospell_view(edlib.Pane):
 
     def handle_click(self, key, focus, mark, xy, str1, **a):
         "handle:autospell-menu"
+        if self.menu:
+            self.menu.call("Cancel")
         mp = self.call("attach-menu", "", "autospell-choice", xy, ret='pane')
         self.wordend = mark.dup()
         st = mark.dup()
@@ -244,6 +247,13 @@ class autospell_view(edlib.Pane):
         self.menu = mp
         self.add_notify(mp, "Notify:Close")
         return 1
+
+    def handle_notify_close(self, key, focus, **a):
+        "handle:Notify:Close"
+        if focus == self.menu:
+            self.menu = None
+            return 1
+        return edlib.Efallthrough
 
     def handle_choice(self, key, focus, mark, str1, **a):
         "handle:autospell-choice"
