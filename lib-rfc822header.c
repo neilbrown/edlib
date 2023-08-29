@@ -255,7 +255,7 @@ static void copy_header(struct pane *doc safe,
 	 * the document 'p' at 'point'.
 	 * 'type' can be:
 	 *  NULL : no explicit wrapping
-	 *  "text": add wrap points between words
+	 *  "text": no explicit wrapping
 	 *  "list": convert commas to wrap points.
 	 * 'hdr' is the name of the header -  before the ':'.
 	 * '\n', '\r' are copied as a single space, and subsequent
@@ -267,7 +267,6 @@ static void copy_header(struct pane *doc safe,
 	char buf[20];
 	wint_t ch;
 	char attr[100];
-	int is_text = type && strcmp(type, "text") == 0;
 	int is_list = type && strcmp(type, "list") == 0;
 
 	m = mark_dup(start);
@@ -286,8 +285,7 @@ static void copy_header(struct pane *doc safe,
 		if (sol && (ch == ' ' || ch == '\t'))
 			continue;
 		if (sol) {
-			call("doc:replace", p, 1, NULL, " ", 0, point,
-			     is_text ? ",render:rfc822header-wrap=1" : NULL);
+			call("doc:replace", p, 1, NULL, " ", 0, point);
 			sol = 0;
 		}
 		buf[0] = ch;
@@ -318,29 +316,6 @@ static void copy_header(struct pane *doc safe,
 			snprintf(buf, sizeof(buf), "%d", cnt);
 			call("doc:set-attr", p, 1, p2, "render:rfc822header-wrap", 0, NULL, buf);
 			mark_free(p2);
-		}
-	}
-	if (is_text) {
-		/* flag all space as wrapping.  We didn't do this before
-		 * as they might have been hiding in quoted words.
-		 */
-		struct mark *m2 = mark_dup(hstart);
-		while (mark_ordered_not_same(m2, point)) {
-			struct mark *ms;
-			int cnt = 1;
-			int c = doc_next(p, m2);
-			if (c != ' ' && c != '\t')
-				continue;
-			ms = mark_dup(m2);
-			doc_prev(p, ms);
-			while ((c = doc_following(p, m2)) == ' ' ||
-			       c == '\t') {
-				cnt += 1;
-				doc_next(p, m2);
-			}
-			snprintf(buf, sizeof(buf), "%d", cnt);
-			call("doc:set-attr", p, 1, ms, "render:rfc822header-wrap",
-			     0, NULL, buf);
 		}
 	}
 	call("doc:replace", p, 1, NULL, "\n", 0, point);
