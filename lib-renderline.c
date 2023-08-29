@@ -895,8 +895,22 @@ static int find_xy(struct pane *p safe, struct pane *focus safe,
 	cr = do_measure(p, ri, splitpos, -1, x - ri->x);
 	if ((splitpos ? ri->wrap_x : ri->x ) + cr.x > x &&
 	    ri->y + rd->line_height * (1 + splitpos) > y &&
-	    xyattr)
-		*xyattr = ri->attr;
+	    xyattr) {
+		/* This is a bit of a hack.
+		 * We stick the x,y co-ords of the start
+		 * of the current attr in front of the
+		 * attrs so render-lines can provide a
+		 * good location for a menu
+		 */
+		char buf[100];
+		struct render_item *ri2;
+		int ax = ri->x;
+		for (ri2 = rd->content; ri2 != ri; ri2 = ri2->next)
+			if (strcmp(ri2->attr, ri->attr) == 0)
+				ax = ri2->x;
+		snprintf(buf, sizeof(buf), "%dx%d,", ax, y);
+		*xyattr = strconcat(p, buf, ri->attr);
+	}
 	if (cr.s)
 		return cr.s - rd->line;
 	return start + cr.i;
