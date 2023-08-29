@@ -300,22 +300,18 @@ static void copy_header(struct pane *doc safe,
 				b[i] = ' ';
 		call("doc:replace", p, 1, NULL, b, 0, point);
 		if (ch == ',' && is_list) {
-			/* This comma is no in a quoted word, so it really marks
-			 * part of a list, and together with following spaces
-			 * is a wrap-point.
+			/* This comma is not in a quoted word, so it really marks
+			 * part of a list, and so is a wrap-point.  Consume any
+			 * following spaces and include just one space in
+			 * the result.
 			 */
 			struct mark *p2 = mark_dup(point);
-			int cnt = 1;
 			doc_prev(p, p2);
-			while ((ch = doc_following(doc, m)) == ' ') {
-				call("doc:replace", p, 1, NULL, " ", 0, point);
+			while ((ch = doc_following(doc, m)) == ' ')
 				doc_next(doc, m);
-				cnt += 1;
-			}
-			if (ch == '\n' || ch == '\r')
-				cnt += 1;
-			snprintf(buf, sizeof(buf), "%d", cnt);
-			call("doc:set-attr", p, 1, p2, "render:rfc822header-wrap", 0, NULL, buf);
+			call("doc:replace", p, 1, NULL, " ", 0, point);
+			call("doc:set-attr", p, 1, p2,
+			     "render:rfc822header-wrap", 0, NULL, "2");
 			mark_free(p2);
 		}
 	}
