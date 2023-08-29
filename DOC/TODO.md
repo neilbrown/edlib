@@ -13,7 +13,7 @@ the file.
 
 ### Small
 
-- [ ] notmuch addresses in From: list to have menu to add address to any
+- [X] notmuch addresses in From: list to have menu to add address to any
       from-* query
 - [ ] Disable <hide> if cursor is in the hidden region.
 - [X] fill mode to handle all punctuation at start of this line

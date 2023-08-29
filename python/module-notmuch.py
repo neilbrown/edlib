@@ -38,6 +38,7 @@ import os, fcntl
 import json
 import time
 import mimetypes
+import email.utils
 
 def cvt_size(n):
     if n < 1000:
@@ -769,6 +770,24 @@ class notmuch_main(edlib.Doc):
         "handle:doc:notmuch:get-query"
         if str1 and str1 in self.searches.slist:
             comm2("cb", focus, self.searches.slist[str1])
+        return 1
+
+    def handle_set_query(self, key, focus, str1, str2, **a):
+        "handle:doc:notmuch:set-query"
+        if not (str1 and str2):
+            return edlib.Enoarg
+        self.searches.slist[str1] = str2
+        p = Popen(["/usr/bin/notmuch", "config", "set",
+                   "query."+str1, str2],
+                  stdout = DEVNULL, stderr=DEVNULL, stdin=DEVNULL)
+        try:
+            p.communicate(timeout=5)
+        except TimeoutExpired:
+            p.kill()
+            p.communicate()
+            return edlib.Efalse
+        if p.returncode != 0:
+            return edlib.Efalse
         return 1
 
     def tick(self, key, **a):
@@ -1899,6 +1918,7 @@ class notmuch_master_view(edlib.Pane):
             return edlib.Efail
         prev = self.recursed
         self.recursed = key
+        # FIXME catch exception to return failure state properly
         ret = self.list_pane.call(key, **a)
         self.recursed = prev
         return ret
@@ -3546,6 +3566,9 @@ class notmuch_message_view(edlib.Pane):
                 addr = focus.call("doc:get-attr", 0, mark, "addr-"+t, ret='str')
         if not addr:
             return 1
+        ad = email.utils.getaddresses([addr])
+        if ad and ad[0] and len(ad[0]) == 2:
+            addr = ad[0][1]
         focus.call("Message", "Menu for address %s" % addr)
         mp = self.call("attach-menu", "", "notmuch-addr-choice", xy, ret='pane')
         mp.call("menu-add", "C", "Compose")
@@ -3554,7 +3577,11 @@ class notmuch_message_view(edlib.Pane):
             for t in q.split():
                 if t.startswith("query:"):
                     t = t[6:]
-                    mp.call("menu-add", t, 'Add to "%s"' % t)
+                    qq = focus.call("doc:notmuch:get-query", t, ret='str')
+                    if qq and ("from:"+addr) in qq:
+                        mp.call("menu-add", "-" + t, 'Already in "%s"' % t)
+                    else:
+                        mp.call("menu-add", t, 'Add to "%s"' % t)
         mp.call("doc:file", -1)
         self.menu = mp
         self.addr = addr
@@ -3572,7 +3599,18 @@ class notmuch_message_view(edlib.Pane):
         "handle:notmuch-addr-choice"
         if not str1 or not self.addr:
             return None
-        edlib.LOG("Addr menu Chose", str1, "for", self.addr)
+        if str1.startswith('-'):
+            # already in this query
+            return None
+        q = focus.call("doc:notmuch:get-query", str1, ret='str')
+        if type(q) == str:
+            q = q + " from:" + self.addr
+            if focus.call("doc:notmuch:set-query", str1, q) > 0:
+                focus.call("Message",
+                           "Updated query.%s with %s" % (str1, self.addr))
+            else:
+                focus.call("Message",
+                           "Update for query.%s failed." % str1)
         return 1
 
     def handle_render_line(self, key, focus, num, mark, mark2, comm2, **a):
