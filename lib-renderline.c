@@ -315,9 +315,9 @@ static void parse_line(struct rline_data *rd safe)
 			/* strip one more ',' */
 			if (attr.len > 0)
 				attr.len -= 1;
-			if (attr.len <= wrap_depth)
+			if (wrap && attr.len <= wrap_depth)
 				wrap = 0;
-			if (attr.len <= hide_depth)
+			if (hide && attr.len <= hide_depth)
 				hide = 0;
 			break;
 		case ack:
@@ -529,6 +529,7 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 	int x, y;
 	int ret = 0;
 	bool seen_rtab = False;
+	unsigned int offset_hide = 0;
 
 	if (!rd->content)
 		return ret;
@@ -537,6 +538,8 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 	    offset == rd->measure_offset) {
 		/* No change */
 		for (ri = rd->content ; ri ; ri = ri->next) {
+			if (ri->hidden)
+				continue;
 			if (ri->eol && rd->line[ri->start] == '\n')
 				ret |= 1;
 			if (ri->eol && rd->line[ri->start] == '\f')
@@ -569,7 +572,19 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 	/* 0 means right edge for right_margin, and left edge for all others */
 	right_margin = p->w - calc_pos(-rd->right_margin, p->w, rd->curs_width);
 
+	if (offset >= 0)
+		for (ri = rd->content ; ri ; ri = ri->next)
+			if (offset < ri->start + ri->len) {
+				offset_hide = ri->hide;
+				break;
+			}
+
 	for (ri = rd->content; ri; ri = ri->next) {
+		ri->hidden = (ri->hide && ri->hide != offset_hide);
+		if (ri->hidden) {
+			ri->width = 0;
+			continue;
+		}
 		if (ri->len == 0 ||
 		    (unsigned char)rd->line[ri->start] >= ' ') {
 			cr = do_measure(p, ri, 0, -1, -1);
@@ -598,7 +613,6 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 		if (cr.i2 > rd->ascent)
 			rd->ascent = cr.i2;
 		ri->width = ri->eol ? 0 : cr.x;
-		ri->hidden = False;
 
 		if (ri->start <= offset && offset <= ri->start + ri->len) {
 			cr = measure_str(p, "M", ri->attr);
@@ -619,6 +633,10 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 		int w, margin;
 		struct render_item *ri2;
 		ri->y = y;
+		if (ri->hidden) {
+			ri->x = x;
+			continue;
+		}
 		if (ri->tab != TAB_UNSET)
 			x =  left_margin + calc_pos(ri->tab,
 						    right_margin - left_margin,
@@ -680,6 +698,8 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 	wrap_margin = left_margin + rd->head_length;
 	for (ri = rd->content ; wrap && ri ; ri = ri->next) {
 		int splitpos;
+		if (ri->hidden)
+			continue;
 		if (ri->wrap && (wraprl == NULL || ri->wrap != wraprl->wrap))
 			wraprl = ri;
 		if (ri->wrap_margin)
@@ -873,6 +893,8 @@ static int find_xy(struct pane *p safe, struct pane *focus safe,
 
 	for (r = rd->content; r ; r = r->next) {
 		int split;
+		if (r->hidden)
+			continue;
 		if (r->y <= y && r->x <= x) {
 			ri = r;
 			start = r->start;
@@ -926,6 +948,8 @@ static struct xy find_curs(struct pane *p safe, int offset, const char **cursatt
 	struct render_item *r, *ri = NULL;
 
 	for (r = rd->content; r; r = r->next) {
+		if (r->hidden)
+			continue;
 		if (offset < r->start)
 			break;
 		ri = r;

@@ -15,7 +15,7 @@ the file.
 
 - [X] notmuch addresses in From: list to have menu to add address to any
       from-* query
-- [ ] Disable <hide> if cursor is in the hidden region.
+- [X] Disable <hide> if cursor is in the hidden region.
 - [X] fill mode to handle all punctuation at start of this line
 - [ ] Enable lib-menu to show short-cut keys
 - [ ] Add menu-bar to lib-menu.  Pop it up on F10 with simple commands
@@ -372,7 +372,7 @@ Module features
 
 ### lib-markup
 
-- [ ] Move <hide> handling to lib-renderline so we can disable <hide>
+- [X] Move <hide> handling to lib-renderline so we can disable <hide>
       if cursor is in the hidden region.
 
 ### lib-macro

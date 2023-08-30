@@ -413,8 +413,6 @@ DEF_CMD(render_line)
 			break;
 		}
 		chars++;
-		if (ar.ast && strcmp(ar.ast->attr, "hide") == 0)
-			continue;
 		if (ch == '\r' && noret) {
 			/* do nothing */
 		} else if (ch < ' ' && ch != '\t') {

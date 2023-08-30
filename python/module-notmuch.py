@@ -3512,7 +3512,8 @@ class notmuch_message_view(edlib.Pane):
             comm2("attr:callback", focus, 10000, mark, "word-wrap:0", 120)
             return 1
         if str == "render:hide":
-            comm2("attr:callback", focus, 10000, mark, "hide", 100000)
+            comm2("attr:callback", focus, 100000 if str2 == "1" else -1,
+                  mark, "hide", 100000)
         if str == "render:bold":
             comm2("attr:callback", focus, 100000 if str2 == "1" else -1,
                   mark, "bold", 120)
