@@ -3580,7 +3580,7 @@ class notmuch_message_view(edlib.Pane):
                     t = t[6:]
                     qq = focus.call("doc:notmuch:get-query", t, ret='str')
                     if qq and ("from:"+addr) in qq:
-                        mp.call("menu-add", "-" + t, 'Already in "%s"' % t)
+                        mp.call("menu-add", 1, "-" + t, 'Already in "%s"' % t)
                     else:
                         mp.call("menu-add", t, 'Add to "%s"' % t)
         mp.call("doc:file", -1)

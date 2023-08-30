@@ -33,9 +33,26 @@ DEF_CMD(menu_add)
 	     ci->str2 ?: ci->str);
 	call("doc:set-attr", ci->focus, 0, m, "value", 0, NULL,
 	     ci->str);
+	if (ci->num & 1)
+		call("doc:set-attr", ci->focus, 0, m, "disabled",
+		     0, NULL, "1");
 
 	mark_free(m);
 	return 1;
+}
+
+DEF_CMD(menu_attr)
+{
+	if (ci->str && strcmp(ci->str, "BG") == 0) {
+		char *s = call_ret(str, "doc:get-attr", ci->home,
+				   0, ci->mark, "disabled");
+		char *v = (s && *s) ? "fg:white-40" : "fg:black";
+		comm_call(ci->comm2, "cb", ci->focus, 0, ci->mark,
+			  v, 0, NULL, ci->str);
+		free(s);
+		return 1;
+	}
+	return Efallthrough;
 }
 
 DEF_CMD(menu_reposition)
@@ -96,7 +113,7 @@ DEF_CMD(menu_attach)
 	attr_set_str(&docp->attrs, "render-simple", "format");
 	attr_set_int(&docp->attrs, "render-wrap", 0);
 	attr_set_str(&docp->attrs, "heading", "");
-	attr_set_str(&docp->attrs, "line-format", "<action-activate:menu-select>%name</>");
+	attr_set_str(&docp->attrs, "line-format", "<%BG><action-activate:menu-select>%name</></>");
 	attr_set_str(&docp->attrs, "done-key", ci->str2 ?: "menu-done");
 	/* No borders, just a shaded background to make menu stand out */
 	attr_set_str(&docp->attrs, "borders", "");
@@ -128,6 +145,7 @@ static void menu_init_map(void)
 	key_add(menu_map, "Cancel", &menu_abort);
 	key_add(menu_map, "K:Enter", &menu_done);
 	key_add(menu_map, "menu-select", &menu_done);
+	key_add(menu_map, "doc:get-attr", &menu_attr);
 }
 
 void edlib_init(struct pane *ed safe)
