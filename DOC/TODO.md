@@ -17,7 +17,7 @@ the file.
       from-* query
 - [X] Disable <hide> if cursor is in the hidden region.
 - [X] fill mode to handle all punctuation at start of this line
-- [ ] Enable lib-menu to show short-cut keys
+- [X] Enable lib-menu to show short-cut keys
 - [ ] Add menu-bar to lib-menu.  Pop it up on F10 with simple commands
 - [ ] attach an extensible menu to the selection
         copy, paste-in, QR, git-view
@@ -804,7 +804,7 @@ Module features
 
 ### lib-menu
 
-- [ ] Enable lib-menu to show short-cut keys
+- [X] Enable lib-menu to show short-cut keys
 - [ ] menu-bar to which we can add menus from which commands are sent
 - [ ] track movement so entry under cursor can be highlighted
 - [ ] support positioning above the target is no space below.

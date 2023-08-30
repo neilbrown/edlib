@@ -52,6 +52,16 @@ DEF_CMD(menu_attr)
 		free(s);
 		return 1;
 	}
+	if (ci->str && strcmp(ci->str, "shortcut") == 0) {
+		char *s = call_ret(str, "doc:get-attr", ci->home,
+				   0, ci->mark, "value");
+		/* a leading space on 'value' suppresses listing as a shortcut */
+		char *v = (s && *s != ' ') ? s : "";
+		comm_call(ci->comm2, "cb", ci->focus, 0, ci->mark,
+			  v, 0, NULL, ci->str);
+		free(s);
+		return 1;
+	}
 	return Efallthrough;
 }
 
@@ -113,7 +123,11 @@ DEF_CMD(menu_attach)
 	attr_set_str(&docp->attrs, "render-simple", "format");
 	attr_set_int(&docp->attrs, "render-wrap", 0);
 	attr_set_str(&docp->attrs, "heading", "");
-	attr_set_str(&docp->attrs, "line-format", "<%BG><action-activate:menu-select>%name</></>");
+	if (ci->num & 1)
+		/* show the 'value' - presumably a key name */
+		attr_set_str(&docp->attrs, "line-format", "<%BG><action-activate:menu-select>%name<rtab>%shortcut</></>");
+	else
+		attr_set_str(&docp->attrs, "line-format", "<%BG><action-activate:menu-select>%name</></>");
 	attr_set_str(&docp->attrs, "done-key", ci->str2 ?: "menu-done");
 	/* No borders, just a shaded background to make menu stand out */
 	attr_set_str(&docp->attrs, "borders", "");
