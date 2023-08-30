@@ -86,8 +86,12 @@ void LOG(char *fmt, ...)
 	gettimeofday(&now, NULL);
 	b = get_buf(log_doc);
 	va_start(ap, fmt);
-	n = snprintf(b->text + b->end, LBSIZE - b->end - 1, "%ld.%03ld:",
-		     now.tv_sec % 10000, now.tv_usec / 1000);
+	if (log_pane && edlib_testing(log_pane))
+		n = 0;
+	else
+		n = snprintf(b->text + b->end, LBSIZE - b->end - 1,
+			     "%ld.%03ld:",
+			     now.tv_sec % 10000, now.tv_usec / 1000);
 	if (n < LBSIZE - b->end - 1)
 		n += vsnprintf(b->text + b->end + n, LBSIZE - b->end - 1 - n,
 			       fmt, ap);
@@ -97,8 +101,12 @@ void LOG(char *fmt, ...)
 		/* Didn't fit, allocate new buf */
 		b = get_new_buf(log_doc);
 		va_start(ap, fmt);
-		n = snprintf(b->text, LBSIZE - 1, "%ld.%03ld:",
-			     now.tv_sec % 10000, now.tv_usec / 1000);
+		if (log_pane && edlib_testing(log_pane))
+			n = 0;
+		else
+			n = snprintf(b->text, LBSIZE - 1, "%ld.%03ld:",
+				     now.tv_sec % 10000,
+				     now.tv_usec / 1000);
 		if (n < LBSIZE - 1)
 			n += vsnprintf(b->text + n, LBSIZE - 1 - n, fmt, ap);
 		va_end(ap);
