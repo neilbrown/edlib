@@ -1081,7 +1081,7 @@ static int revalidate_start(struct rl_data *rl safe,
 			 */
 			cols = pane_attr_get_int(hp, "width", 0);
 			while ((hp->cx < prefix_len
-				|| cols + curs_width * 8 + curs_width < p->w) &&
+				|| (cols-rl->shift_left) + curs_width * 8 + curs_width < p->w) &&
 			       rl->shift_left > 0 &&
 			       shifts++ < 1000 &&
 			       hp->cx + curs_width * 8 < p->w) {

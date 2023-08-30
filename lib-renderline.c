@@ -579,6 +579,7 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 				break;
 			}
 
+	rd->width = 0;
 	for (ri = rd->content; ri; ri = ri->next) {
 		ri->hidden = (ri->hide && ri->hide != offset_hide);
 		if (ri->hidden) {
@@ -613,6 +614,7 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 		if (cr.i2 > rd->ascent)
 			rd->ascent = cr.i2;
 		ri->width = ri->eol ? 0 : cr.x;
+		rd->width += ri->width;
 
 		if (ri->start <= offset && offset <= ri->start + ri->len) {
 			cr = measure_str(p, "M", ri->attr);
@@ -628,7 +630,6 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 	 */
 	x = left_margin - (shift_left > 0 ? shift_left : 0);
 	y = rd->space_above * curs_height / 10;
-	rd->width = 0;
 	for (ri = rd->content; ri; ri = ri->next) {
 		int w, margin;
 		struct render_item *ri2;
@@ -643,8 +644,6 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 						    rd->curs_width);
 		if (ri->eol) {
 			/* EOL */
-			if (x > rd->width)
-				rd->width = x;
 			ri->x = x;
 			x = 0; /* Don't include shift. probably not margin */
 			if (rd->line[ri->start])
