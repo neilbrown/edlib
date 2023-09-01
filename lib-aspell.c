@@ -102,7 +102,7 @@ DEF_CMD(spell_check)
 
 	if (rv != Efallthrough)
 		return rv;
-	call_comm("doc:attach-helper", ci->focus, &aspell_attach_helper);
+	call_comm("doc:get-doc", ci->focus, &aspell_attach_helper);
 	return call("doc:notify:aspell:check", ci->focus, 0, NULL, ci->str);
 }
 
@@ -136,7 +136,7 @@ DEF_CMD(spell_suggest)
 
 	if (rv != Efallthrough)
 		return rv;
-	call_comm("doc:attach-helper", ci->focus, &aspell_attach_helper);
+	call_comm("doc:get-doc", ci->focus, &aspell_attach_helper);
 	return call_comm("doc:notify:aspell:suggest", ci->focus, ci->comm2,
 			 0, NULL, ci->str);
 }
@@ -194,7 +194,7 @@ DEF_CMD(spell_add)
 
 	if (rv != Efallthrough)
 		return rv;
-	call_comm("doc:attach-helper", ci->focus, &aspell_attach_helper);
+	call_comm("doc:get-doc", ci->focus, &aspell_attach_helper);
 	return call_comm("doc:notify:aspell:add-word", ci->focus, ci->comm2,
 			 ci->num, NULL, ci->str);
 }
@@ -227,7 +227,7 @@ DEF_CMD(spell_dict)
 		   ksuffix(ci, "interactive-cmd-dict-"));
 	if (ret != Efallthrough)
 		return ret;
-	call_comm("doc:attach-helper", ci->focus, &aspell_attach_helper);
+	call_comm("doc:get-doc", ci->focus, &aspell_attach_helper);
 	return call("doc:notify:aspell:set-dict", ci->focus, 0, NULL,
 		    ksuffix(ci, "interactive-cmd-dict-"));
 }

@@ -150,7 +150,7 @@ the objects to present
 	key_add(doc_default_cmd, "doc:push-point", &doc_push_point);
 	key_add(doc_default_cmd, "doc:pop-point", &doc_pop_point);
 	key_add(doc_default_cmd, "doc:attach-view", &doc_attach_view);
-	key_add(doc_default_cmd, "doc:attach-helper", &doc_attach_helper);
+	key_add(doc_default_cmd, "doc:get-doc", &doc_attach_helper);
 	key_add(doc_default_cmd, "Close", &doc_close_doc);
 
 	key_add(doc_default_cmd, "doc:word", &doc_word);

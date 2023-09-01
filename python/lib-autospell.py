@@ -299,7 +299,7 @@ class autospell_view(edlib.Pane):
             self.vend = mark2.dup()
             if (not self.helper_attached and
                 not self.call("doc:notify:spell:mark-checked")):
-                self.call("doc:attach-helper", autospell_attach_helper)
+                self.call("doc:get-doc", autospell_attach_helper)
                 self.helper_attached = True
             self.sched()
         return edlib.Efallthrough
