@@ -364,7 +364,7 @@ static inline struct call_return do_measure(struct pane *p safe,
 					    int splitpos, int len,
 					    int maxwidth)
 {
-	struct rline_data *rd = &p->data;
+	struct rline_data *rd = p->data;
 	struct call_return cr;
 	char tb[] = "        ";
 	char *str = rd->line + ri->start + splitpos;
@@ -403,7 +403,7 @@ static inline struct call_return measure_str(struct pane *p safe,
 					     char *str safe,
 					     const char *attr)
 {
-	struct rline_data *rd = &p->data;
+	struct rline_data *rd = p->data;
 
 	return call_ret(all, "Draw:text-size", p,
 			-1, NULL, str,
@@ -416,7 +416,7 @@ static inline void do_draw(struct pane *p safe,
 			   int offset,
 			   int x, int y)
 {
-	struct rline_data *rd = &p->data;
+	struct rline_data *rd = p->data;
 	char tmp;
 	char *str;
 	int len;
@@ -472,7 +472,7 @@ static inline void draw_wrap(struct pane *p safe,
 			     char *str safe,
 			     int x, int y)
 {
-	struct rline_data *rd = &p->data;
+	struct rline_data *rd = p->data;
 
 	home_call(focus, "Draw:text", p,
 		  -1, NULL, str,
@@ -515,7 +515,7 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 	 * 3 if both.
 	 * 0 if neither
 	 */
-	struct rline_data *rd = &p->data;
+	struct rline_data *rd = p->data;
 	struct render_item *ri, *wraprl;
 	int shift_left = pane_attr_get_int(focus, "render-wrap", -1);
 	bool wrap = shift_left < 0;
@@ -825,7 +825,7 @@ static int measure_line(struct pane *p safe, struct pane *focus safe, int offset
 
 static void draw_line(struct pane *p safe, struct pane *focus safe, int offset)
 {
-	struct rline_data *rd = &p->data;
+	struct rline_data *rd = p->data;
 	struct render_item *ri;
 	char *wrap_tail = rd->wrap_tail ?: "\\";
 	char *wrap_head = rd->wrap_head ?: "";
@@ -885,7 +885,7 @@ static int find_xy(struct pane *p safe, struct pane *focus safe,
 	 * We do not consider the eol render_item
 	 */
 	struct call_return cr;
-	struct rline_data *rd = &p->data;
+	struct rline_data *rd = p->data;
 	struct render_item *r, *ri = NULL;
 	int splitpos = 0;
 	int start = 0;
@@ -943,7 +943,7 @@ static struct xy find_curs(struct pane *p safe, int offset, const char **cursatt
 	struct xy xy = {0,0};
 	int split;
 	int st;
-	struct rline_data *rd = &p->data;
+	struct rline_data *rd = p->data;
 	struct render_item *r, *ri = NULL;
 
 	for (r = rd->content; r; r = r->next) {
@@ -1033,7 +1033,7 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 			int dodraw,
 			int offset, int want_xypos, short x, short y)
 {
-	struct rline_data *rd = &p->data;
+	struct rline_data *rd = p->data;
 	char *fname = NULL;
 	const char *orig_line = line;
 	short width, height;
@@ -1147,7 +1147,7 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 
 DEF_CMD(renderline_draw)
 {
-	struct rline_data *rd = &ci->home->data;
+	struct rline_data *rd = ci->home->data;
 	struct xy xy;
 	int offset = -1;
 
@@ -1170,7 +1170,7 @@ DEF_CMD(renderline_draw)
 
 DEF_CMD(renderline_refresh)
 {
-	struct rline_data *rd = &ci->home->data;
+	struct rline_data *rd = ci->home->data;
 	int offset = -1;
 
 	if (rd->curspos >= 0)
@@ -1187,7 +1187,7 @@ DEF_CMD(renderline_refresh)
 
 DEF_CMD(renderline_measure)
 {
-	struct rline_data *rd = &ci->home->data;
+	struct rline_data *rd = ci->home->data;
 	int ret;
 
 	if (rd->image)
@@ -1216,7 +1216,7 @@ DEF_CMD(renderline_measure)
 
 DEF_CMD(renderline_findxy)
 {
-	struct rline_data *rd = &ci->home->data;
+	struct rline_data *rd = ci->home->data;
 	const char *xyattr = NULL;
 	int pos;
 
@@ -1240,7 +1240,7 @@ DEF_CMD(renderline_findxy)
 
 DEF_CMD(renderline_get)
 {
-	struct rline_data *rd = &ci->home->data;
+	struct rline_data *rd = ci->home->data;
 	char buf[20];
 	const char *val = buf;
 
@@ -1305,7 +1305,7 @@ static char *cvt(char *str safe)
 
 DEF_CMD(renderline_set)
 {
-	struct rline_data *rd = &ci->home->data;
+	struct rline_data *rd = ci->home->data;
 	const char *old = rd->line;
 	char *prefix = pane_attr_get(ci->focus, "prefix");
 	bool word_wrap = pane_attr_get_int(ci->focus, "word-wrap", 0) != 0;
@@ -1337,7 +1337,7 @@ DEF_CMD(renderline_set)
 
 DEF_CMD(renderline_close)
 {
-	struct rline_data *rd = &ci->home->data;
+	struct rline_data *rd = ci->home->data;
 	struct render_item *ri = rd->content;
 
 	free((void*)rd->line);
@@ -1377,7 +1377,7 @@ DEF_CMD(renderline_attach)
 	p = pane_register(ci->focus, ci->num, &renderline_handle.c);
 	if (!p)
 		return Efail;
-	rd = &p->data;
+	rd = p->data;
 	rd->line = strdup(ETX); // Imposible string
 
 	return comm_call(ci->comm2, "cb", p);

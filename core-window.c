@@ -92,7 +92,7 @@ DEF_CMD(window_set)
 
 DEF_CMD(selection_claim)
 {
-	struct window_data *wd = &ci->home->data;
+	struct window_data *wd = ci->home->data;
 
 	if (wd->sel_owner && wd->sel_owner != ci->focus) {
 		call("Notify:selection:claimed", wd->sel_owner);
@@ -108,7 +108,7 @@ DEF_CMD(selection_claim)
 
 DEF_CMD(selection_commit)
 {
-	struct window_data *wd = &ci->home->data;
+	struct window_data *wd = ci->home->data;
 
 	if (wd->sel_owner && !wd->sel_committed) {
 		if (call("Notify:selection:commit", wd->sel_owner) != 2)
@@ -119,7 +119,7 @@ DEF_CMD(selection_commit)
 
 DEF_CMD(selection_discard)
 {
-	struct window_data *wd = &ci->home->data;
+	struct window_data *wd = ci->home->data;
 	struct pane *op, *fp;
 
 	if (!wd->sel_owner)
@@ -141,7 +141,7 @@ DEF_CMD(selection_discard)
 
 DEF_CMD(close_notify)
 {
-	struct window_data *wd = &ci->home->data;
+	struct window_data *wd = ci->home->data;
 
 	if (wd->sel_owner_fallback == ci->focus)
 		wd->sel_owner_fallback = NULL;

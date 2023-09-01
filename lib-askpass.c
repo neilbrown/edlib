@@ -29,7 +29,7 @@ DEF_LOOKUP_CMD(askpass_handle, askpass_map);
 DEF_CMD(askpass_refresh_view)
 {
 	struct buf b;
-	struct apinfo *ai = &ci->home->data;
+	struct apinfo *ai = ci->home->data;
 	int shift = 0;
 	int i;
 
@@ -54,7 +54,7 @@ DEF_CMD(askpass_refresh_view)
 DEF_CMD(askpass_key)
 {
 	const char *k = ksuffix(ci, "K-");
-	struct apinfo *ai = &ci->home->data;
+	struct apinfo *ai = ci->home->data;
 
 	buf_concat(&ai->b, k);
 	pane_damaged(ci->home, DAMAGED_VIEW);
@@ -63,7 +63,7 @@ DEF_CMD(askpass_key)
 
 DEF_CMD(askpass_bs)
 {
-	struct apinfo *ai = &ci->home->data;
+	struct apinfo *ai = ci->home->data;
 
 	if (ai->b.len > 0)
 		ai->b.len = utf8_round_len(ai->b.b, ai->b.len-1);
@@ -78,7 +78,7 @@ DEF_CMD(askpass_ignore)
 
 DEF_CMD(askpass_done)
 {
-	struct apinfo *ai = &ci->home->data;
+	struct apinfo *ai = ci->home->data;
 
 	comm_call(ai->c, "cb", ci->focus, ai->b.len, NULL,
 		  buf_final(&ai->b));
@@ -89,7 +89,7 @@ DEF_CMD(askpass_done)
 
 DEF_CMD(askpass_abort)
 {
-	struct apinfo *ai = &ci->home->data;
+	struct apinfo *ai = ci->home->data;
 
 	memset(ai->b.b, 0, ai->b.size);
 	comm_call(ai->c, "cb", ci->focus, -1);
@@ -123,9 +123,9 @@ DEF_CMD(askpass_attach)
 
 	attr_set_str(&p->attrs, "pane-title", "Ask Password");
 
-	p->data.msg = strdup(ci->str);
-	p->data.c = command_get(ci->comm2);
-	buf_init(&p->data.b);
+	p->data->msg = strdup(ci->str);
+	p->data->c = command_get(ci->comm2);
+	buf_init(&p->data->b);
 	pane_damaged(p, DAMAGED_VIEW);
 	return 1;
 
@@ -137,7 +137,7 @@ fail:
 
 DEF_CMD(askpass_close)
 {
-	struct apinfo *ai = &ci->home->data;
+	struct apinfo *ai = ci->home->data;
 
 	free(ai->msg);
 	ai->msg = safe_cast NULL;

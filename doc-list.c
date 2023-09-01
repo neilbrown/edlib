@@ -39,7 +39,7 @@ struct list {
 
 static inline wint_t list_next(struct pane *p safe, struct doc_ref *r safe, bool bytes)
 {
-	struct list *l = &p->doc_data;
+	struct list *l = p->doc_data;
 
 	if (r->p == NULL)
 		return WEOF;
@@ -53,7 +53,7 @@ static inline wint_t list_next(struct pane *p safe, struct doc_ref *r safe, bool
 
 static inline wint_t list_prev(struct pane *p safe, struct doc_ref *r safe, bool bytes)
 {
-	struct list *l = &p->doc_data;
+	struct list *l = p->doc_data;
 
 	if (r->p == list_first_entry_or_null(&l->content, struct elmnt, list))
 		return WEOF;
@@ -72,7 +72,7 @@ DEF_CMD(list_char)
 
 DEF_CMD(list_set_ref)
 {
-	struct list *l = &ci->home->doc_data;
+	struct list *l = ci->home->doc_data;
 	struct mark *m = ci->mark;
 
 	if (!m)
@@ -129,7 +129,7 @@ DEF_CMD(list_shares_ref)
 
 DEF_CMD(list_add_elmnt)
 {
-	struct list *l = &ci->home->doc_data;
+	struct list *l = ci->home->doc_data;
 	struct mark *m = ci->mark;
 	struct elmnt *e;
 
@@ -158,7 +158,7 @@ static char *key(struct list_head *le, const void *data)
 
 DEF_CMD(list_sort)
 {
-	struct list *l = &ci->home->doc_data;
+	struct list *l = ci->home->doc_data;
 	struct mark *m;
 
 	if (!ci->str)
@@ -183,7 +183,7 @@ DEF_CMD(list_new)
 	p = doc_register(ci->home, &list_handle.c);
 	if (!p)
 		return Efail;
-	l = &p->doc_data;
+	l = p->doc_data;
 	INIT_LIST_HEAD(&l->content);
 
 	return comm_call(ci->comm2, "callback:doc", p);
@@ -191,7 +191,7 @@ DEF_CMD(list_new)
 
 DEF_CMD(list_close)
 {
-	struct list *l = &ci->home->doc_data;
+	struct list *l = ci->home->doc_data;
 	struct elmnt *e;
 
 	while ((e = list_first_entry_or_null(&l->content,

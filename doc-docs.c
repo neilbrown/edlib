@@ -68,7 +68,7 @@ static void docs_demark(struct pane *d safe, struct pane *p safe)
 	/* This document (p) is about to be moved in the list (d->collection).
 	 * Any mark pointing at it is moved forward
 	 */
-	struct docs *doc = &d->doc_data;
+	struct docs *doc = d->doc_data;
 	struct mark *m, *first = NULL;
 	struct pane *next;
 	struct pane *col = doc->collection;
@@ -100,7 +100,7 @@ static void docs_enmark(struct pane *d safe, struct pane *p safe)
 	/* This document has just been added to the list.
 	 * any mark pointing just past it is moved back.
 	 */
-	struct docs *doc = &d->doc_data;
+	struct docs *doc = d->doc_data;
 	struct mark *m, *first = NULL;
 	struct pane *next;
 	struct pane *col = doc->collection;
@@ -177,7 +177,7 @@ static void check_name(struct docs *docs safe, struct pane *pane safe)
 
 static void doc_checkname(struct pane *p safe, struct pane *d safe, int n)
 {
-	struct docs *ds = &d->doc_data;
+	struct docs *ds = d->doc_data;
 	ASSERT(p->parent->handle == &docs_aux.c);
 	check_name(ds, p);
 	if (n) {
@@ -267,7 +267,7 @@ DEF_CMD(docs_callback_complete)
 
 DEF_CMD(docs_callback_byname)
 {
-	struct docs *doc = &ci->home->doc_data;
+	struct docs *doc = ci->home->doc_data;
 	struct pane *p;
 
 	if (ci->str == NULL || strcmp(ci->str, "*Documents*") == 0)
@@ -284,7 +284,7 @@ DEF_CMD(docs_callback_byname)
 
 DEF_CMD(docs_callback_byfd)
 {
-	struct docs *doc = &ci->home->doc_data;
+	struct docs *doc = ci->home->doc_data;
 	struct pane *p;
 
 	list_for_each_entry(p, &doc->collection->children, siblings) {
@@ -297,7 +297,7 @@ DEF_CMD(docs_callback_byfd)
 
 DEF_CMD(docs_callback_byeach)
 {
-	struct docs *doc = &ci->home->doc_data;
+	struct docs *doc = ci->home->doc_data;
 	struct pane *p;
 
 	list_for_each_entry(p, &doc->collection->children, siblings) {
@@ -311,7 +311,7 @@ DEF_CMD(docs_callback_byeach)
 
 DEF_CMD(docs_callback_choose)
 {
-	struct docs *doc = &ci->home->doc_data;
+	struct docs *doc = ci->home->doc_data;
 	struct pane *choice = NULL, *last = NULL;
 	struct pane *p;
 
@@ -343,7 +343,7 @@ DEF_CMD(docs_callback_choose)
 
 DEF_CMD(docs_callback_saveall)
 {
-	struct docs *doc = &ci->home->doc_data;
+	struct docs *doc = ci->home->doc_data;
 	struct pane *p;
 	int dirlen = ci->str ? (int)strlen(ci->str) : -1;
 
@@ -364,7 +364,7 @@ DEF_CMD(docs_callback_saveall)
 
 DEF_CMD(docs_callback_modified)
 {
-	struct docs *doc = &ci->home->doc_data;
+	struct docs *doc = ci->home->doc_data;
 	struct pane *p;
 
 	p = home_call_ret(pane, ci->home, "doc:attach-view", ci->focus,
@@ -393,7 +393,7 @@ DEF_CMD(docs_callback_modified)
 
 DEF_CMD(docs_callback_appeared)
 {
-	struct docs *doc = &ci->home->doc_data;
+	struct docs *doc = ci->home->doc_data;
 	struct pane *p;
 
 	/* Always return Efallthrough so other handlers get a chance */
@@ -439,7 +439,7 @@ DEF_CMD(doc_revisit)
 {
 	struct pane *p = ci->focus;
 	struct pane *dp = ci->home->data;
-	struct docs *docs = &dp->doc_data;
+	struct docs *docs = dp->doc_data;
 
 	if (!p)
 		return Einval;
@@ -453,7 +453,7 @@ DEF_CMD(doc_revisit)
 
 static inline wint_t docs_next(struct pane *home safe, struct doc_ref *r safe, bool bytes)
 {
-	struct docs *d = &home->doc_data;
+	struct docs *d = home->doc_data;
 	struct pane *p = r->p;
 
 	if (p == NULL)
@@ -468,7 +468,7 @@ static inline wint_t docs_next(struct pane *home safe, struct doc_ref *r safe, b
 }
 static inline wint_t docs_prev(struct pane *home safe, struct doc_ref *r safe, bool bytes)
 {
-	struct docs *d = &home->doc_data;
+	struct docs *d = home->doc_data;
 	struct pane *p = r->p;
 
 	if (list_empty(&d->collection->children))
@@ -492,7 +492,7 @@ DEF_CMD(docs_char)
 
 DEF_CMD(docs_set_ref)
 {
-	struct docs *d = &ci->home->doc_data;
+	struct docs *d = ci->home->doc_data;
 	struct mark *m = ci->mark;
 
 	if (!m)
@@ -751,7 +751,7 @@ DEF_CMD(docs_shares_ref)
 
 DEF_CMD(docs_val_marks)
 {
-	struct docs *d = &ci->home->doc_data;
+	struct docs *d = ci->home->doc_data;
 	struct pane *p;
 	int found;
 
@@ -795,7 +795,7 @@ DEF_CMD(docs_val_marks)
 
 DEF_CMD(docs_close)
 {
-	struct docs *docs = &ci->home->doc_data;
+	struct docs *docs = ci->home->doc_data;
 
 	call_comm("global-set-command-prefix", ci->home, &edlib_noop,
 		  0, NULL, "docs:");
@@ -887,7 +887,7 @@ DEF_CMD(attach_docs)
 	pd = doc_register(ci->home, &docs_handle.c);
 	if (!pd)
 		return Efail;
-	doc = &pd->doc_data;
+	doc = pd->doc_data;
 	doc->doc.name = strdup("*Documents*");
 	paux = pane_register(ci->home, 0, &docs_aux.c, pd);
 	if (!paux) {

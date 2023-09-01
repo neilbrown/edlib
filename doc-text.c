@@ -226,7 +226,7 @@ text_new_alloc(struct text *t safe, int size)
 
 static bool check_file_changed(struct pane *p safe)
 {
-	struct text *t = &p->doc_data;
+	struct text *t = p->doc_data;
 	struct stat st;
 
 	if (t->file_changed)
@@ -253,7 +253,7 @@ static bool check_file_changed(struct pane *p safe)
 DEF_CMD(text_readonly)
 {
 	struct doc *d = ci->home->data;
-	struct text *t = &ci->home->doc_data;
+	struct text *t = ci->home->doc_data;
 
 	if (t->file_changed && !d->readonly && ci->num)
 		t->file_changed = 2;
@@ -286,7 +286,7 @@ DEF_CMD(text_load_file)
 	struct text_alloc *a;
 	struct text_chunk *c = NULL;
 	int len;
-	struct text *t = &ci->home->doc_data;
+	struct text *t = ci->home->doc_data;
 
 	if (t->saved != t->undo)
 		return Einval;
@@ -389,7 +389,7 @@ err:
 
 DEF_CMD(text_insert_file)
 {
-	struct text *t = &ci->home->doc_data;
+	struct text *t = ci->home->doc_data;
 	struct mark *pm = ci->mark, *early;
 	struct text_alloc *a;
 	int len;
@@ -435,7 +435,7 @@ DEF_CMD(text_insert_file)
 static bool do_text_output_file(struct pane *p safe, struct doc_ref *start,
 				struct doc_ref *end, int fd)
 {
-	struct text *t = &p->doc_data;
+	struct text *t = p->doc_data;
 	struct text_chunk *c;
 	int offset = 0;
 
@@ -469,7 +469,7 @@ static bool do_text_write_file(struct pane *p safe, struct doc_ref *start,
 	 * Create a temp file with #basename#~, write to that,
 	 * copy mode across, fsync and then rename
 	 */
-	struct text *t = &p->doc_data;
+	struct text *t = p->doc_data;
 	char *tempname = malloc(strlen(fname) + 3 + 10);
 	const char *base;
 	char *tbase;
@@ -607,7 +607,7 @@ static void autosaves_record(struct pane *p safe, const char *path safe,
 
 static void do_text_autosave(struct pane *p safe)
 {
-	struct text *t = &p->doc_data;
+	struct text *t = p->doc_data;
 	int fd = -1;
 
 	if (!t->fname)
@@ -681,7 +681,7 @@ DEF_CMD(text_autosave_tick)
 
 static void text_check_autosave(struct pane *p safe)
 {
-	struct text *t = &p->doc_data;
+	struct text *t = p->doc_data;
 
 	if (t->undo == t->saved)
 		t->as.changes = 0;
@@ -702,7 +702,7 @@ static void text_check_autosave(struct pane *p safe)
 DEF_CMD(text_save_file)
 {
 	struct doc *d = ci->home->data;
-	struct text *t = &ci->home->doc_data;
+	struct text *t = ci->home->doc_data;
 	int ret;
 	char *msg;
 	int change_status = 0;
@@ -755,7 +755,7 @@ DEF_CMD(text_write_file)
 
 DEF_CMD(text_same_file)
 {
-	struct text *t = &ci->home->doc_data;
+	struct text *t = ci->home->doc_data;
 	struct stat stb, stb2;
 	int fd = ci->num2;
 
@@ -1310,7 +1310,7 @@ static void text_redo(struct text *t safe, struct text_edit *e safe,
 static bool check_readonly(const struct cmd_info *ci safe)
 {
 	struct doc *d = ci->home->data;
-	struct text *t = &ci->home->doc_data;
+	struct text *t = ci->home->doc_data;
 
 	if (t->undo == t->saved &&
 	    check_file_changed(ci->home) &&
@@ -1332,7 +1332,7 @@ DEF_CMD(text_reundo)
 	struct text_edit *ed = NULL;
 	bool first = 1;
 	int status;
-	struct text *t = &ci->home->doc_data;
+	struct text *t = ci->home->doc_data;
 
 	if (!m)
 		return Enoarg;
@@ -1592,7 +1592,7 @@ static void text_add_str(struct text *t safe, struct mark *pm safe,
 
 static inline wint_t text_next(struct pane *p safe, struct doc_ref *r safe, bool bytes)
 {
-	struct text *t = &p->doc_data;
+	struct text *t = p->doc_data;
 	wint_t ret = WERR;
 	const char *c;
 
@@ -1613,7 +1613,7 @@ static inline wint_t text_next(struct pane *p safe, struct doc_ref *r safe, bool
 
 static inline wint_t text_prev(struct pane *p safe, struct doc_ref *r safe, bool bytes)
 {
-	struct text *t = &p->doc_data;
+	struct text *t = p->doc_data;
 	wint_t ret;
 	const char *c;
 
@@ -1694,7 +1694,7 @@ DEF_CMD(text_new)
 	p = doc_register(ci->home, &text_handle.c);
 	if (!p)
 		return Efail;
-	t = &p->doc_data;
+	t = p->doc_data;
 	t->alloc = safe_cast NULL;
 	INIT_LIST_HEAD(&t->text);
 	t->saved = t->undo = t->redo = NULL;
@@ -1751,7 +1751,7 @@ DEF_CMD(text_content)
 {
 	struct mark *from = ci->mark, *to = ci->mark2;
 	struct mark *m;
-	struct text *t = &ci->home->doc_data;
+	struct text *t = ci->home->doc_data;
 	struct text_chunk *c, *first, *last;
 	int bytes = strcmp(ci->key, "doc:content-bytes") == 0;
 	int l = 0, head, tail;
@@ -1886,7 +1886,7 @@ DEF_CMD(text_debug_mark)
 
 DEF_CMD(text_val_marks)
 {
-	struct text *t = &ci->home->doc_data;
+	struct text *t = ci->home->doc_data;
 	struct text_chunk *c;
 	int found;
 
@@ -1930,7 +1930,7 @@ DEF_CMD(text_val_marks)
 DEF_CMD(text_set_ref)
 {
 	struct mark *m = ci->mark;
-	struct text *t = &ci->home->doc_data;
+	struct text *t = ci->home->doc_data;
 
 	if (!m)
 		return Enoarg;
@@ -1986,7 +1986,7 @@ static int text_retreat_towards(struct text *t safe, struct doc_ref *ref safe,
 	 */
 
 	if (ref->c != target->c && (!ref->c || ref->o <= ref->c->start))
-		if (text_prev(safe_cast container_of(t, struct pane, doc_data), ref, 1) == WEOF)
+		if (text_prev(safe_cast container_of(t, struct pane, doc_data[0]), ref, 1) == WEOF)
 			return 0;
 
 	if (ref->c == target->c) {
@@ -2161,7 +2161,7 @@ static void text_add_attrs(struct attrset **attrs safe,
 DEF_CMD(text_replace)
 {
 
-	struct text *t = &ci->home->doc_data;
+	struct text *t = ci->home->doc_data;
 	struct mark *pm = ci->mark2;
 	struct mark *end = ci->mark;
 	const char *str = ci->str;
@@ -2250,7 +2250,7 @@ static struct attrset *text_attrset(struct pane *p safe, struct mark *m safe,
 				    int *op safe)
 {
 	struct text_chunk *c;
-	struct text *t = &p->doc_data;
+	struct text *t = p->doc_data;
 	unsigned int o;
 
 	c = m->ref.c;
@@ -2301,7 +2301,7 @@ DEF_CMD(text_doc_get_attr)
 
 DEF_CMD(text_get_attr)
 {
-	struct text *t = &ci->home->doc_data;
+	struct text *t = ci->home->doc_data;
 	const char *attr = ci->str;
 	const char *val;
 
@@ -2379,7 +2379,7 @@ DEF_CMD(text_set_attr)
 	const char *attr = ci->str;
 	const char *val = ci->str2;
 	struct text_chunk *c, *c2;
-	struct text *t = &ci->home->doc_data;
+	struct text *t = ci->home->doc_data;
 	unsigned int o, o2;
 
 	if (!attr)
@@ -2420,7 +2420,7 @@ DEF_CMD(text_set_attr)
 
 DEF_CMD(text_modified)
 {
-	struct text *t = &ci->home->doc_data;
+	struct text *t = ci->home->doc_data;
 
 	if (ci->num == 0) {
 		/* toggle status */
@@ -2441,7 +2441,7 @@ DEF_CMD(text_modified)
 
 DEF_CMD(text_revisited)
 {
-	struct text *t = &ci->home->doc_data;
+	struct text *t = ci->home->doc_data;
 
 	if (ci->num <= 0)
 		/* Being buried, not visited */
@@ -2518,7 +2518,7 @@ static void text_cleanout(struct text *t safe)
 
 DEF_CMD(text_destroy)
 {
-	struct text *t = &ci->home->doc_data;
+	struct text *t = ci->home->doc_data;
 
 	text_cleanout(t);
 	return Efallthrough;
@@ -2529,7 +2529,7 @@ DEF_CMD(text_clear)
 	/* Clear the document, including undo/redo records
 	 * i.e. free all text
 	 */
-	struct text *t = &ci->home->doc_data;
+	struct text *t = ci->home->doc_data;
 	struct mark *m;
 
 	text_cleanout(t);
@@ -2546,7 +2546,7 @@ DEF_CMD(text_clear)
 
 DEF_CMD(text_free)
 {
-	struct text *t = &ci->home->doc_data;
+	struct text *t = ci->home->doc_data;
 
 	free((void*)t->fname);
 	free((void*)t->autosave_name);

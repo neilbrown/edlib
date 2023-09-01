@@ -61,7 +61,7 @@ static bool crop(struct mark *m, struct crop_data *cd safe)
 
 DEF_CMD(crop_close)
 {
-	struct crop_data *cd = &ci->home->data;
+	struct crop_data *cd = ci->home->data;
 
 	mark_free(cd->start);
 	mark_free(cd->end);
@@ -71,7 +71,7 @@ DEF_CMD(crop_close)
 DEF_CMD(crop_write)
 {
 	struct pane *p = ci->home->parent;
-	struct crop_data *cd = &ci->home->data;
+	struct crop_data *cd = ci->home->data;
 
 	return home_call(p, ci->key, ci->focus, ci->num,
 			 ci->mark ?: cd->start,
@@ -84,7 +84,7 @@ static inline wint_t crop_next(struct pane *home safe, struct mark *mark safe,
 			       struct doc_ref *r, bool bytes)
 {
 	struct pane *p = home->parent;
-	struct crop_data *cd = &home->data;
+	struct crop_data *cd = home->data;
 	int move = r == &mark->ref;
 	int ret;
 
@@ -107,7 +107,7 @@ static inline wint_t crop_prev(struct pane *home safe, struct mark *mark safe,
 			       struct doc_ref *r, bool bytes)
 {
 	struct pane *p = home->parent;
-	struct crop_data *cd = &home->data;
+	struct crop_data *cd = home->data;
 	int move = r == &mark->ref;
 	int ret;
 
@@ -134,7 +134,7 @@ DEF_CMD(crop_char)
 
 DEF_CMD(crop_clip)
 {
-	struct crop_data *cd = &ci->home->data;
+	struct crop_data *cd = ci->home->data;
 
 	mark_clip(cd->start, ci->mark, ci->mark2, !!ci->num);
 	mark_clip(cd->end, ci->mark, ci->mark2, !!ci->num);
@@ -143,7 +143,7 @@ DEF_CMD(crop_clip)
 
 DEF_CMD(crop_content)
 {
-	struct crop_data *cd = &ci->home->data;
+	struct crop_data *cd = ci->home->data;
 	struct mark *m, *m2;
 	int ret;
 
@@ -167,7 +167,7 @@ DEF_CMD(crop_content)
 DEF_CMD(crop_generic)
 {
 	struct pane *p = ci->home->parent;
-	struct crop_data *cd = &ci->home->data;
+	struct crop_data *cd = ci->home->data;
 	int ret;
 
 	if (!ci->mark && !ci->mark2)
@@ -205,7 +205,7 @@ DEF_CMD(crop_attach)
 	if (!p)
 		return Efail;
 
-	cd = &p->data;
+	cd = p->data;
 	cd->start = mark_dup(ci->mark);
 	cd->end = mark_dup(ci->mark2);
 

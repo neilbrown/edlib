@@ -130,7 +130,7 @@ void LOG(char *fmt, ...)
 
 DEF_CMD(log_append)
 {
-	struct log *l = &ci->home->doc_data;
+	struct log *l = ci->home->doc_data;
 	struct logbuf *b;
 	unsigned int len;
 
@@ -158,7 +158,7 @@ DEF_CMD(log_append)
 
 DEF_CMD(log_content)
 {
-	struct log *log = &ci->home->doc_data;
+	struct log *log = ci->home->doc_data;
 	struct mark *from = ci->mark, *to = ci->mark2;
 	struct mark *m;
 	struct logbuf *b, *first, *last;
@@ -247,7 +247,7 @@ DEF_CMD(log_content)
 
 DEF_CMD(log_set_ref)
 {
-	struct log *log = &ci->home->doc_data;
+	struct log *log = ci->home->doc_data;
 	struct mark *m = ci->mark;
 
 	if (!m)
@@ -263,7 +263,7 @@ DEF_CMD(log_set_ref)
 
 static inline wint_t log_next(struct pane *p safe, struct doc_ref *r safe, bool bytes)
 {
-	struct log *log = &p->doc_data;
+	struct log *log = p->doc_data;
 	wint_t ret;
 
 	if (!r->b)
@@ -290,7 +290,7 @@ static inline wint_t log_next(struct pane *p safe, struct doc_ref *r safe, bool 
 
 static inline wint_t log_prev(struct pane *p safe, struct doc_ref *r safe, bool bytes)
 {
-	struct log *log = &p->doc_data;
+	struct log *log = p->doc_data;
 	const char *s;
 
 	if (list_empty(&log->log))
@@ -325,7 +325,7 @@ DEF_CMD(log_char)
 DEF_CMD(log_val_marks)
 {
 	/* mark1 and mark2 must be correctly ordered */
-	struct log *log = &ci->home->doc_data;
+	struct log *log = ci->home->doc_data;
 	struct logbuf *b;
 	int found = 0;
 
@@ -391,7 +391,7 @@ DEF_CMD(log_view)
 
 DEF_CMD(log_close)
 {
-	struct log *l = &ci->home->doc_data;
+	struct log *l = ci->home->doc_data;
 
 	while (!list_empty(&l->log)) {
 		struct logbuf *b = list_first_entry(&l->log, struct logbuf, h);
@@ -415,7 +415,7 @@ DEF_CMD(log_new)
 	p = doc_register(ci->focus, &log_handle.c);
 	if (!p)
 		return Efail;
-	l = &p->doc_data;
+	l = p->doc_data;
 	INIT_LIST_HEAD(&l->log);
 	attr_set_str(&p->attrs, "render-default", "text");
 	attr_set_str(&p->attrs, "doc-type", "text");
@@ -433,7 +433,7 @@ static void log_init(struct pane *ed safe)
 	log_pane = doc_register(ed, &log_handle.c);
 	if (!log_pane)
 		return;
-	log_doc = &log_pane->doc_data;
+	log_doc = log_pane->doc_data;
 	INIT_LIST_HEAD(&log_doc->log);
 
 	fname = getenv("EDLIB_LOG");

@@ -237,7 +237,7 @@ DEF_CMD(render_line_prev)
 
 DEF_CMD(format_free)
 {
-	struct rf_data *rf = &ci->home->data;
+	struct rf_data *rf = ci->home->data;
 
 	free(rf->attr_cache);
 	free(rf->fields);
@@ -363,7 +363,7 @@ static int field_size(struct pane *home safe, struct pane *focus safe,
 		      struct mark *m safe, int field,
 		      const char **valp safe)
 {
-	struct rf_data *rd = &home->data;
+	struct rf_data *rd = home->data;
 	struct rf_field *rf;
 	const char *val;
 	int l;
@@ -411,7 +411,7 @@ static int field_size(struct pane *home safe, struct pane *focus safe,
 static int normalize(struct pane *home safe, struct pane *focus safe,
 		     struct mark *m safe, int inc)
 {
-	struct rf_data *rd = &home->data;
+	struct rf_data *rd = home->data;
 	int index = m->ref.i;
 	unsigned short f = FIELD_NUM(index);
 	unsigned short o = FIELD_OFFSET(index);
@@ -504,7 +504,7 @@ static void update_offset(struct mark *m safe, struct rf_data *rd safe,
 
 static void prev_line(struct pane *home safe, struct mark *m safe)
 {
-	struct rf_data *rd = &home->data;
+	struct rf_data *rd = home->data;
 
 	/* Move m to end of previous line, just before the newline */
 	if (doc_prev(home->parent, m) == WEOF) {
@@ -518,7 +518,7 @@ static void prev_line(struct pane *home safe, struct mark *m safe)
 
 static void next_line(struct pane *home safe, struct mark *m safe)
 {
-	struct rf_data *rd = &home->data;
+	struct rf_data *rd = home->data;
 
 	doc_next(home->parent, m);
 	update_offset(m, rd, MAKE_INDEX(0, 0));
@@ -529,7 +529,7 @@ static inline wint_t format_next_prev(struct pane *home safe, struct pane *focus
 				      struct mark *m safe, struct doc_ref *r safe,
 				      int forward, bool bytes)
 {
-	struct rf_data *rd = &home->data;
+	struct rf_data *rd = home->data;
 	struct rf_field *rf;
 	int move = r == &m->ref;
 	int f, o;
@@ -640,7 +640,7 @@ DEF_CMD(format_content2)
 	 */
 	struct pane *home = ci->home;
 	struct pane *focus = ci->focus;
-	struct rf_data *rd = &home->data;
+	struct rf_data *rd = home->data;
 	struct rf_field *rf;
 	struct mark *m = ci->mark;
 	struct mark *end = ci->mark2;
@@ -772,7 +772,7 @@ DEF_CMD(format_attr)
 	 * Also "format:plain" which formats the line directly
 	 * without the cost of all the lib-markup machinery.
 	 */
-	struct rf_data *rd = &ci->home->data;
+	struct rf_data *rd = ci->home->data;
 	struct mark *m = ci->mark;
 	int previ;
 	int f0, f;
@@ -831,7 +831,7 @@ DEF_CMD(format_attr)
 
 DEF_CMD(format_map)
 {
-	struct rf_data *rd = &ci->home->data;
+	struct rf_data *rd = ci->home->data;
 	struct mark *m = ci->mark;
 	int idx, previ;
 	int f0, f;
@@ -886,7 +886,7 @@ DEF_CMD(format_map)
 
 DEF_CMD(render_line_prev2)
 {
-	struct rf_data *rd = &ci->home->data;
+	struct rf_data *rd = ci->home->data;
 	struct mark *m = ci->mark;
 	struct mark *m2, *mn;
 

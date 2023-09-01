@@ -43,7 +43,7 @@ struct ed_info {
 
 bool edlib_testing(struct pane *p safe)
 {
-	struct ed_info *ei = &pane_root(p)->data;
+	struct ed_info *ei = pane_root(p)->data;
 	return ei->testing;
 }
 
@@ -73,7 +73,7 @@ DEF_CMD(global_set_attr)
 
 DEF_CMD(global_set_command)
 {
-	struct ed_info *ei = &ci->home->data;
+	struct ed_info *ei = ci->home->data;
 	struct map *map = ei->map;
 	bool prefix = strcmp(ci->key, "global-set-command-prefix") == 0;
 
@@ -92,7 +92,7 @@ DEF_CMD(global_set_command)
 
 DEF_CMD(global_get_command)
 {
-	struct ed_info *ei = &ci->home->data;
+	struct ed_info *ei = ci->home->data;
 	struct map *map = ei->map;
 	struct command *cm;
 
@@ -152,7 +152,7 @@ static struct builtin {
 #endif
 DEF_CMD(editor_load_module)
 {
-	struct ed_info *ei = &ci->home->data;
+	struct ed_info *ei = ci->home->data;
 	struct map *map = ei->map;
 	const char *name = ci->str;
 	char buf[PATH_MAX];
@@ -214,7 +214,7 @@ DEF_CMD(editor_auto_event)
 	 * have to use key_lookup_prefix to find them.
 	 * If nothing is found, autoload lib-libevent (hack?)
 	 */
-	struct ed_info *ei = &ci->home->data;
+	struct ed_info *ei = ci->home->data;
 	struct map *map = ei->map;
 	int ret = key_lookup_prefix(map, ci);
 
@@ -272,7 +272,7 @@ DEF_CMD(editor_activate_display)
 
 DEF_CMD(editor_multicall)
 {
-	struct ed_info *ei = &ci->home->data;
+	struct ed_info *ei = ci->home->data;
 	struct map *map = ei->map;
 	int ret;
 	const char *key = ci->key;
@@ -300,7 +300,7 @@ DEF_CMD(editor_send_notify)
 
 DEF_CMD(editor_free_panes)
 {
-	struct ed_info *ei = &ci->home->data;
+	struct ed_info *ei = ci->home->data;
 
 	while (ei->freelist) {
 		struct pane *p = ei->freelist;
@@ -319,7 +319,7 @@ DEF_CMD(editor_free_panes)
 
 DEF_CMD(editor_free_marks)
 {
-	struct ed_info *ei = &ci->home->data;
+	struct ed_info *ei = ci->home->data;
 
 	while (ei->mark_free_list) {
 		struct mark *m = ei->mark_free_list;
@@ -332,7 +332,7 @@ DEF_CMD(editor_free_marks)
 
 DEF_CMD(editor_free_store)
 {
-	struct ed_info *ei = &ci->home->data;
+	struct ed_info *ei = ci->home->data;
 
 	while (ei->store) {
 		struct store *s = ei->store;
@@ -359,7 +359,7 @@ DEF_EXTERN_CMD(edlib_noop)
 
 DEF_CMD(editor_close)
 {
-	struct ed_info *ei = &ci->home->data;
+	struct ed_info *ei = ci->home->data;
 	stat_free();
 	free(ei->here); ei->here = NULL;
 	free(ei->data_path); ei->data_path = NULL;
@@ -372,7 +372,7 @@ void * safe memsave(struct pane *p safe, const char *buf, int len)
 	struct ed_info *ei;
 
 	p = pane_root(p);
-	ei = &p->data;
+	ei = p->data;
 	ASSERT(ei->magic==ED_MAGIC);
 	if (!ei->store)
 		call_comm("event:on-idle", p, &editor_free_store, 2);
@@ -438,7 +438,7 @@ char * safe do_strconcat(struct pane *p, const char *s1 safe, ...)
 
 void editor_delayed_free(struct pane *ed safe, struct pane *p safe)
 {
-	struct ed_info *ei = &ed->data;
+	struct ed_info *ei = ed->data;
 	if (!ei) {
 		p->damaged &= ~DAMAGED_DEAD;
 		pane_call(p, "Free", p);
@@ -458,7 +458,7 @@ void editor_delayed_free(struct pane *ed safe, struct pane *p safe)
 void editor_delayed_mark_free(struct mark *m safe)
 {
 	struct pane *ed = pane_root(m->owner);
-	struct ed_info *ei = &ed->data;
+	struct ed_info *ei = ed->data;
 
 	ASSERT(ei->magic==ED_MAGIC);
 	if (!ei->mark_free_list)
@@ -469,7 +469,7 @@ void editor_delayed_mark_free(struct mark *m safe)
 
 static char *set_here(struct pane *p safe)
 {
-	struct ed_info *ei = &p->data;
+	struct ed_info *ei = p->data;
 	Dl_info info;
 
 	if (ei->here)
@@ -488,7 +488,7 @@ static char *set_here(struct pane *p safe)
 
 static char *set_data_path(struct pane *p safe)
 {
-	struct ed_info *ei = &p->data;
+	struct ed_info *ei = p->data;
 	char *dh, *dd, *here;
 	struct buf b;
 
@@ -538,7 +538,7 @@ static char *set_data_path(struct pane *p safe)
 
 static char *set_config_path(struct pane *p safe)
 {
-	struct ed_info *ei = &p->data;
+	struct ed_info *ei = p->data;
 	char *ch, *cd, *here;
 	struct buf b;
 
@@ -588,7 +588,7 @@ static char *set_config_path(struct pane *p safe)
 
 static char *set_bin_path(struct pane *p safe)
 {
-	struct ed_info *ei = &p->data;
+	struct ed_info *ei = p->data;
 	char *bd, *here;
 	struct buf b;
 
@@ -724,7 +724,7 @@ struct pane *editor_new(const char *comm_name)
 	ed = pane_register_root(&ed_handle.c, NULL, sizeof(*ei));
 	if (!ed)
 		return NULL;
-	ei = &ed->data;
+	ei = ed->data;
 	ei->magic = ED_MAGIC;
 	attr_set_str(&ed->attrs, "command-name", comm_name ?: "edlib");
 	ei->testing = (getenv("EDLIB_TESTING") != NULL);

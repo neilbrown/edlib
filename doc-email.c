@@ -960,7 +960,7 @@ out:
 
 DEF_CMD(email_view_free)
 {
-	struct email_view *evi = &ci->home->data;
+	struct email_view *evi = ci->home->data;
 
 	free(evi->invis);
 	return 1;
@@ -984,7 +984,7 @@ static int count_buttons(struct pane *p safe, struct mark *m safe)
 static inline wint_t email_next(struct pane *p safe, struct mark *m safe,
 				struct doc_ref *r safe, bool bytes)
 {
-	struct email_view *evi = &p->data;
+	struct email_view *evi = p->data;
 	bool move = r == &m->ref;
 	wint_t ret;
 	int n = -1;
@@ -1010,7 +1010,7 @@ static inline wint_t email_next(struct pane *p safe, struct mark *m safe,
 static inline wint_t email_prev(struct pane *p safe, struct mark *m safe,
 				struct doc_ref *r safe, bool bytes)
 {
-	struct email_view *evi = &p->data;
+	struct email_view *evi = p->data;
 	bool move = r == &m->ref;
 	wint_t ret;
 	int n = -1;
@@ -1046,7 +1046,7 @@ DEF_CMD(email_content)
 	 * what is invisible, marking all spacers as invisible
 	 */
 	struct pane *p = ci->home;
-	struct email_view *evi = &p->data;
+	struct email_view *evi = p->data;
 	char *invis2 = strsave(p, evi->invis);
 	int i;
 
@@ -1062,7 +1062,7 @@ DEF_CMD(email_content)
 DEF_CMD(email_set_ref)
 {
 	struct pane *p = ci->home;
-	struct email_view *evi = &p->data;
+	struct email_view *evi = p->data;
 
 	if (!ci->mark)
 		return Enoarg;
@@ -1074,7 +1074,7 @@ DEF_CMD(email_set_ref)
 DEF_CMD(email_step_part)
 {
 	struct pane *p = ci->home;
-	struct email_view *evi = &p->data;
+	struct email_view *evi = p->data;
 
 	if (!ci->mark)
 		return Enoarg;
@@ -1086,7 +1086,7 @@ DEF_CMD(email_view_get_attr)
 {
 	int p;
 	char *v;
-	struct email_view *evi = &ci->home->data;
+	struct email_view *evi = ci->home->data;
 
 	if (!ci->str || !ci->mark)
 		return Enoarg;
@@ -1112,7 +1112,7 @@ DEF_CMD(email_view_get_attr)
 DEF_CMD(email_view_set_attr)
 {
 	int p;
-	struct email_view *evi = &ci->home->data;
+	struct email_view *evi = ci->home->data;
 
 	if (!ci->str || !ci->mark)
 		return Enoarg;
@@ -1197,7 +1197,7 @@ DEF_CMD(attach_email_view)
 	p = pane_register(ci->focus, 0, &email_view_handle.c);
 	if (!p)
 		return Efail;
-	evi = &p->data;
+	evi = p->data;
 	evi->parts = n;
 	evi->invis = calloc(n+1, sizeof(char));
 	for (i = 0; i < n; i++) {

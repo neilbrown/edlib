@@ -135,7 +135,7 @@ DEF_CMD(dir_new)
 	p = doc_register(ci->home, &dir_handle.c);
 	if (!p)
 		return Efail;
-	dr = &p->doc_data;
+	dr = p->doc_data;
 	INIT_LIST_HEAD(&dr->ents);
 	dr->fname = NULL;
 
@@ -153,7 +153,7 @@ DEF_CMD(dir_load_file)
 {
 	int fd = ci->num2;
 	const char *name = ci->str;
-	struct directory *dr = &ci->home->doc_data;
+	struct directory *dr = ci->home->doc_data;
 	struct list_head new;
 	struct dir_ent *de1, *de2;
 	struct mark *prev, *m;
@@ -277,7 +277,7 @@ DEF_CMD(dir_load_file)
 
 DEF_CMD(dir_revisited)
 {
-	struct directory *dr = &ci->home->doc_data;
+	struct directory *dr = ci->home->doc_data;
 	struct stat st;
 
 	if (ci->num <= 0)
@@ -302,7 +302,7 @@ DEF_CMD(dir_same_file)
 {
 	int fd = ci->num2;
 	struct stat stb;
-	struct directory *dr = &ci->home->doc_data;
+	struct directory *dr = ci->home->doc_data;
 
 	if (!dr->fname)
 		return 0;
@@ -318,7 +318,7 @@ DEF_CMD(dir_same_file)
 
 static inline wint_t dir_next(struct pane *p safe, struct doc_ref *r safe, bool bytes)
 {
-	struct directory *dr = &p->doc_data;
+	struct directory *dr = p->doc_data;
 	struct dir_ent *d = r->d;
 
 	if (d == NULL)
@@ -336,7 +336,7 @@ static inline wint_t dir_next(struct pane *p safe, struct doc_ref *r safe, bool 
 
 static inline wint_t dir_prev(struct pane *p safe, struct doc_ref *r safe, bool bytes)
 {
-	struct directory *dr = &p->doc_data;
+	struct directory *dr = p->doc_data;
 	struct dir_ent *d = r->d;
 
 	if (d == list_first_entry(&dr->ents, struct dir_ent, lst))
@@ -359,7 +359,7 @@ DEF_CMD(dir_char)
 
 DEF_CMD(dir_set_ref)
 {
-	struct directory *dr = &ci->home->doc_data;
+	struct directory *dr = ci->home->doc_data;
 	struct mark *m = ci->mark;
 
 	if (!m)
@@ -491,7 +491,7 @@ static const char *_dir_get_attr(struct pane *home safe, struct mark *m safe,
 				  const char *attr safe)
 
 {
-	struct directory *dr = &home->doc_data;
+	struct directory *dr = home->doc_data;
 	struct dir_ent *de;
 
 	de = m->ref.d;
@@ -652,7 +652,7 @@ DEF_CMD(dir_doc_set_attr)
 
 DEF_CMD(dir_get_attr)
 {
-	struct directory *dr = &ci->home->doc_data;
+	struct directory *dr = ci->home->doc_data;
 	const char *attr = ci->str;
 	const char *val;
 
@@ -683,7 +683,7 @@ DEF_CMD(dir_get_attr)
 
 DEF_CMD(dir_val_marks)
 {
-	struct directory *dr = &ci->home->doc_data;
+	struct directory *dr = ci->home->doc_data;
 	struct dir_ent *de;
 	int found;
 
@@ -727,7 +727,7 @@ DEF_CMD(dir_val_marks)
 
 DEF_CMD(dir_destroy)
 {
-	struct directory *dr = &ci->home->doc_data;
+	struct directory *dr = ci->home->doc_data;
 
 	while (!list_empty(&dr->ents)) {
 		struct dir_ent *de = list_entry(dr->ents.next,
