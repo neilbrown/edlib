@@ -3572,7 +3572,7 @@ class notmuch_message_view(edlib.Pane):
             addr = ad[0][1]
         focus.call("Message", "Menu for address %s" % addr)
         mp = self.call("attach-menu", "", "notmuch-addr-choice", xy, ret='pane')
-        mp.call("menu-add", "C", "Compose")
+        mp.call("menu-add", "Compose", "C")
         q = focus.call("doc:notmuch:get-query", "from-list", ret='str')
         if q:
             for t in q.split():
@@ -3580,9 +3580,9 @@ class notmuch_message_view(edlib.Pane):
                     t = t[6:]
                     qq = focus.call("doc:notmuch:get-query", t, ret='str')
                     if qq and ("from:"+addr) in qq:
-                        mp.call("menu-add", 1, "-" + t, 'Already in "%s"' % t)
+                        mp.call("menu-add", 1, 'Already in "%s"' % t, "-" + t)
                     else:
-                        mp.call("menu-add", t, 'Add to "%s"' % t)
+                        mp.call("menu-add", 'Add to "%s"' % t, t)
         mp.call("doc:file", -1)
         self.menu = mp
         self.addr = addr

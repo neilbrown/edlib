@@ -7,7 +7,8 @@
  * A menu is created by called attach-menu with x,y being location
  * in either the pane or (if str contains 'D') the dispay.
  * Entries are added by calling "menu-add" with str being the value to
- * be reported and optionally str2 being the name to display.
+ * be displayed (the name) and optionally str2 being a different value
+ * to be reported (the action).
  *
  * A popup will be created which takes the focus. up/down moves the selection
  * and enter selects, as can the mouse.
@@ -30,9 +31,9 @@ DEF_CMD(menu_add)
 	call("doc:set-ref", ci->focus, 0, m);
 	call("doc:list-add", ci->focus, 0, m);
 	call("doc:set-attr", ci->focus, 0, m, "name", 0, NULL,
-	     ci->str2 ?: ci->str);
-	call("doc:set-attr", ci->focus, 0, m, "value", 0, NULL,
 	     ci->str);
+	call("doc:set-attr", ci->focus, 0, m, "action", 0, NULL,
+	     ci->str2 ?: ci->str);
 	if (ci->num & 1)
 		call("doc:set-attr", ci->focus, 0, m, "disabled",
 		     0, NULL, "1");
@@ -54,8 +55,8 @@ DEF_CMD(menu_attr)
 	}
 	if (ci->str && strcmp(ci->str, "shortcut") == 0) {
 		char *s = call_ret(str, "doc:get-attr", ci->home,
-				   0, ci->mark, "value");
-		/* a leading space on 'value' suppresses listing as a shortcut */
+				   0, ci->mark, "action");
+		/* a leading space on 'action' suppresses listing as a shortcut */
 		char *v = (s && *s != ' ') ? s : "";
 		comm_call(ci->comm2, "cb", ci->focus, 0, ci->mark,
 			  v, 0, NULL, ci->str);
@@ -97,7 +98,7 @@ DEF_CMD(menu_done)
 		m = call_ret(mark, "doc:point", ci->focus);
 	if (!m)
 		return Enoarg;
-	val = pane_mark_attr(ci->focus, m, "value");
+	val = pane_mark_attr(ci->focus, m, "action");
 	call("popup:close", ci->focus, 0, m, val);
 	return 1;
 }
@@ -124,7 +125,7 @@ DEF_CMD(menu_attach)
 	attr_set_int(&docp->attrs, "render-wrap", 0);
 	attr_set_str(&docp->attrs, "heading", "");
 	if (ci->num & 1)
-		/* show the 'value' - presumably a key name */
+		/* show the 'action' - presumably a key name */
 		attr_set_str(&docp->attrs, "line-format", "<%BG><action-activate:menu-select>%name<rtab>%shortcut</></>");
 	else
 		attr_set_str(&docp->attrs, "line-format", "<%BG><action-activate:menu-select>%name</></>");

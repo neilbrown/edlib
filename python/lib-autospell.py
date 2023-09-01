@@ -240,8 +240,8 @@ class autospell_view(edlib.Pane):
         st = mark.dup()
         w = focus.call("Spell:ThisWord", focus, mark, st, ret='str')
         self.thisword = w
-        mp.call("menu-add", "+", "[Insert in dict]")
-        mp.call("menu-add", "!", "[Accept for now]")
+        mp.call("menu-add", "[Insert in dict]", "+")
+        mp.call("menu-add", "[Accept for now]", "!")
         focus.call("Spell:Suggest", w, lambda key, str1, **a: mp.call("menu-add", str1))
         mp.call("doc:file", -1)
         self.menu = mp
