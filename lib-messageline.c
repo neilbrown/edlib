@@ -23,6 +23,7 @@
 #include <string.h>
 #include <time.h>
 
+#define PANE_DATA_TYPE struct mlinfo
 #include "core.h"
 
 struct mlinfo {
@@ -35,6 +36,8 @@ struct mlinfo {
 	int hidden;
 	time_t last_message; /* message should stay for at least 10 seconds */
 };
+#include "core-pane.h"
+
 static struct pane *do_messageline_attach(struct pane *p safe);
 static struct map *messageline_map;
 DEF_LOOKUP_CMD(messageline_handle, messageline_map);
@@ -248,10 +251,10 @@ static struct pane *do_messageline_attach(struct pane *p safe)
 	struct mlinfo *mli;
 	struct pane *ret, *mlp;
 
-	alloc(mli, pane);
-	ret = pane_register(p, 0, &messageline_handle.c, mli);
+	ret = pane_register(p, 0, &messageline_handle.c);
 	if (!ret)
 		return NULL;
+	mli = ret->data;
 	call("editor:request:Message:broadcast", ret);
 	/* z=1 to avoid clone_children affecting it */
 	mlp = call_ret(pane, "attach-renderline", ret, 1);
@@ -295,7 +298,6 @@ void edlib_init(struct pane *ed safe)
 		return;
 	messageline_map = key_alloc();
 	key_add(messageline_map, "Clone", &messageline_clone);
-	key_add(messageline_map, "Free", &edlib_do_free);
 	key_add(messageline_map, "Display:border", &messageline_border);
 	key_add(messageline_map, "Message", &messageline_msg);
 	key_add(messageline_map, "Message:modal", &messageline_msg);
