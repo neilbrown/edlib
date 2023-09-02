@@ -797,14 +797,21 @@ void pane_focus(struct pane *focus)
 	call("pane:refocus", focus);
 }
 
-bool pane_has_focus(struct pane *focus)
+bool do_pane_has_focus(struct pane *focus, struct pane *root)
 {
 	/* Would pane_focus change anything */
 	struct pane *p = focus;
 
 	if (!p)
 		return False;
-	for (; p->parent->parent->parent != p->parent->parent; p = p->parent)
+	/* We check down to the declared root, or to on1 above
+	 * the global root.  Where the focus of the global root
+	 * is never matters.
+	 */
+	for (;
+	     p != root
+	     && p->parent->parent->parent != p->parent->parent;
+	     p = p->parent)
 		if (p->parent->focus != p)
 			return False;
 	return True;

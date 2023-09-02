@@ -877,10 +877,17 @@ static PyObject *Pane_focus(Pane *self safe, PyObject *args)
 
 static PyObject *Pane_has_focus(Pane *self safe, PyObject *args)
 {
+	Pane *other = NULL;
+	int ret;
+
 	if (!pane_valid(self))
 		return NULL;
 
-	if (pane_has_focus(self->pane)) {
+	ret = PyArg_ParseTuple(args, "|O!", &PaneType, &other);
+	if (ret <= 0)
+		return NULL;
+
+	if (pane_has_focus(self->pane, other ? other->pane : NULL)) {
 		Py_INCREF(Py_True);
 		return Py_True;
 	} else {
@@ -1504,7 +1511,7 @@ static const PyMethodDef pane_methods[] = {
 	 "Clone all children onto the target"},
 	{"take_focus", (PyCFunction)Pane_focus, METH_NOARGS,
 	 "Claim the focus for this pane"},
-	{"has_focus", (PyCFunction)Pane_has_focus, METH_NOARGS,
+	{"has_focus", (PyCFunction)Pane_has_focus, METH_VARARGS,
 	 "Check if pane is focus of display"},
 	{"call", (void*)(PyCFunctionWithKeywords)Pane_call, METH_VARARGS|METH_KEYWORDS,
 	 "Call a command from a pane"},
