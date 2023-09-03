@@ -798,7 +798,7 @@ static int to_pair(struct display_data *dd safe, int fg, int bg)
 }
 
 static int cvt_attrs(struct pane *p safe, struct pane *home safe,
-		     const char *attrs, int *pairp safe, bool use_parent)
+		     const char *attrs, int *pairp safe)
 {
 	struct display_data *dd = home->data;
 	int attr = 0;
@@ -809,10 +809,9 @@ static int cvt_attrs(struct pane *p safe, struct pane *home safe,
 	int bg = COLOR_WHITE+8;
 
 	set_screen(home);
-	do {
+	while (p->parent != p &&(pan = pane_panel(p, NULL)) == NULL)
 		p = p->parent;
-	} while (p->parent != p &&(pan = pane_panel(p, NULL)) == NULL);
-	if (pan && use_parent) {
+	if (pan) {
 		/* Get 'default colours for this pane - set at clear */
 		int at = getbkgd(panel_window(pan));
 		int pair = PAIR_NUMBER(at);
@@ -920,7 +919,8 @@ DEF_CMD(nc_clear)
 	struct display_data *dd = p->data;
 	cchar_t cc = {};
 	int pair = 0;
-	int attr = cvt_attrs(ci->focus, p, ci->str, &pair, ci->str == NULL);
+	/* default come from parent when clearing pane */
+	int attr = cvt_attrs(ci->focus->parent, p, ci->str, &pair);
 	PANEL *panel;
 	WINDOW *win;
 	int w, h;
@@ -976,7 +976,7 @@ DEF_CMD(nc_draw_text)
 {
 	struct pane *p = ci->home;
 	int pair = 0;
-	int attr = cvt_attrs(ci->focus, p, ci->str2, &pair, True);
+	int attr = cvt_attrs(ci->focus, p, ci->str2, &pair);
 	int cursor_offset = ci->num;
 	short x = ci->x, y = ci->y;
 	const char *str = ci->str;
