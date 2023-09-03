@@ -174,6 +174,7 @@ static struct pane *_do_pane_register(struct pane *parent, short z,
 		if (pane_call(parent, "Child-Notify", p, 1) < 0 ||
 		    p->damaged & DAMAGED_CLOSED) {
 			/* ChildRegistered objected */
+			p->damaged |= DAMAGED_NOINIT;
 			pane_close(p);
 			p = NULL;
 		} else
@@ -614,7 +615,8 @@ void pane_close(struct pane *p safe)
 	    p->parent->focus == p)
 		pane_refocus(p->parent);
 
-	pane_call(p, "Close", p, infocus);
+	if (!(p->damaged & DAMAGED_NOINIT))
+		pane_call(p, "Close", p, infocus);
 
 	/* If a child has not yet had "Close" called, we need to leave
 	 * ->parent in place so a full range of commands are available.

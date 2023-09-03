@@ -438,6 +438,9 @@ enum {
 					    * hasn't been handled yet.
 					    */
 	DAMAGED_DEBUG		= BIT(12),
+	DAMAGED_NOINIT		= BIT(11), /* Closing before pane_register
+					    * had a chance to complete.
+					    */
 };
 #define DAMAGED_NEED_CALL (DAMAGED_SIZE | DAMAGED_REFRESH)
 
