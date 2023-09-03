@@ -658,12 +658,15 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	if (start->mdata) {
 		struct pane *hp = start->mdata;
 		int curs_width;
+		int shifts = 0;
 		found_end = measure_line(p, focus, start, offset) & 2;
 
 		curs_width = pane_attr_get_int(
 			start->mdata, "curs_width", 1);
 		if (curs_width <= 0)
 			curs_width = 1;
+		// FIXME this loops indefinitely if cursor after
+		// right-justified text.
 		while (!rl->do_wrap && !rl->shift_locked &&
 		       hp->cx + curs_width >= p->w) {
 			int shift = 8 * curs_width;
@@ -671,6 +674,8 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				shift = hp->cx;
 			rl->shift_left += shift;
 			measure_line(p, focus, start, offset);
+			if (shifts++ > 100)
+				break;
 		}
 		/* ->cy is top of cursor, we want to measure from bottom */
 		line_height_pre = attr_find_int(start->mdata->attrs, "line-height");
@@ -1040,7 +1045,7 @@ static int revalidate_start(struct rl_data *rl safe,
 	/* This loop is fragile and sometimes spins.  So ensure we
 	 * never loop more than 1000 times.
 	 */
-	if (pm && !rl->do_wrap && !rl->shift_locked && shifts++ < 1000) {
+	if (pm && !rl->do_wrap && !rl->shift_locked && shifts++ < 100) {
 		int prefix_len;
 		int curs_width;
 		/* Need to check if side-shift is needed on cursor line */
@@ -1068,7 +1073,7 @@ static int revalidate_start(struct rl_data *rl safe,
 			curs_width = pane_attr_get_int(
 				m->mdata, "curs_width", 1);
 
-			while (hp->cx + curs_width > p->w && shifts++ < 1000) {
+			while (hp->cx + curs_width > p->w && shifts++ < 100) {
 				int shift = 8 * curs_width;
 				if (shift > hp->cx)
 					shift = hp->cx;
@@ -1083,7 +1088,7 @@ static int revalidate_start(struct rl_data *rl safe,
 			while ((hp->cx < prefix_len
 				|| (cols-rl->shift_left) + curs_width * 8 + curs_width < p->w) &&
 			       rl->shift_left > 0 &&
-			       shifts++ < 1000 &&
+			       shifts++ < 100 &&
 			       hp->cx + curs_width * 8 < p->w) {
 				int shift = 8 * curs_width;
 				if (shift > rl->shift_left)
