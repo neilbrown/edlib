@@ -121,34 +121,42 @@ DEF_CMD(menu_attach)
 	/* ->str gives the "mode"
 	 * D  means per-display menu, not per-pane
 	 * V  means show value in menu as well as name
+	 * F  means to use the focus as the doc, and its
+	 *    parent as the focus.
 	 */
 	struct pane *docp, *p, *p2;
 	/* Multi-line temporary popup with x,y location provided. */
 	const char *mode = "Mtx";
 	const char *mmode = ci->str ?: "";
+	struct pane *focus = ci->focus;
 
 	if (strchr(mmode, 'D'))
 		/* per-display, not per-pane */
 		mode = "DMtx";
 
-	docp = call_ret(pane, "attach-doc-list", ci->focus);
-	if (!docp)
-		return Efail;
-	call("doc:set:autoclose", docp, 1);
-	attr_set_str(&docp->attrs, "render-simple", "format");
-	attr_set_str(&docp->attrs, "heading", "");
-	if (strchr(mmode, 'V'))
-		/* show the 'action' - presumably a key name */
-		attr_set_str(&docp->attrs, "line-format",
-			     "<%BG><action-activate:menu-select>%name<rtab>%shortcut</></>");
-	else
-		attr_set_str(&docp->attrs, "line-format",
-			     "<%BG><action-activate:menu-select>%name</></>");
-	attr_set_str(&docp->attrs, "done-key", ci->str2 ?: "menu-done");
-	/* No borders, just a shaded background to make menu stand out */
-	attr_set_str(&docp->attrs, "borders", "");
-	attr_set_str(&docp->attrs, "background", "color:white-80");
-	p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, mode,
+	if (strchr(mmode, 'F')) {
+		docp = focus;
+		focus = focus->parent;
+	} else {
+		docp = call_ret(pane, "attach-doc-list", ci->focus);
+		if (!docp)
+			return Efail;
+		call("doc:set:autoclose", docp, 1);
+		attr_set_str(&docp->attrs, "render-simple", "format");
+		attr_set_str(&docp->attrs, "heading", "");
+		if (strchr(mmode, 'V'))
+			/* show the 'action' - presumably a key name */
+			attr_set_str(&docp->attrs, "line-format",
+				     "<%BG><action-activate:menu-select>%name<rtab>%shortcut</></>");
+		else
+			attr_set_str(&docp->attrs, "line-format",
+				     "<%BG><action-activate:menu-select>%name</></>");
+		attr_set_str(&docp->attrs, "done-key", ci->str2 ?: "menu-done");
+		/* No borders, just a shaded background to make menu stand out */
+		attr_set_str(&docp->attrs, "borders", "");
+		attr_set_str(&docp->attrs, "background", "color:white-80");
+	}
+	p = call_ret(pane, "PopupTile", focus, 0, NULL, mode,
 		     0, NULL, NULL, ci->x, ci->y);
 	if (!p)
 		return Efail;
@@ -186,4 +194,8 @@ void edlib_init(struct pane *ed safe)
 	menu_init_map();
 	call_comm("global-set-command", ed, &menu_attach,
 		  0, NULL, "attach-menu");
+	call_comm("global-set-command", ed, &menu_add,
+		  0, NULL, "menu:add");
+	call_comm("global-set-command", ed, &menu_clear,
+		  0, NULL, "menu:clear");
 }
