@@ -129,6 +129,7 @@ struct rline_data {
 	char		*wrap_head, *wrap_tail, *wrap_attr;
 	int		head_length, tail_length;
 	char		*line safe;
+	char		*background;
 	bool		word_wrap;
 	bool		image;
 	int		curspos;
@@ -830,7 +831,7 @@ static void draw_line(struct pane *p safe, struct pane *focus safe, int offset)
 	char *wrap_tail = rd->wrap_tail ?: "\\";
 	char *wrap_head = rd->wrap_head ?: "";
 
-	home_call(focus, "Draw:clear", p);
+	home_call(focus, "Draw:clear", p, 0, NULL, rd->background);
 
 	if (!rd->content)
 		return;
@@ -1309,6 +1310,7 @@ DEF_CMD(renderline_set)
 	const char *old = rd->line;
 	char *prefix = pane_attr_get(ci->focus, "prefix");
 	bool word_wrap = pane_attr_get_int(ci->focus, "word-wrap", 0) != 0;
+	bool bg_changed = False;
 
 	if (!ci->str)
 		return -Enoarg;
@@ -1322,8 +1324,22 @@ DEF_CMD(renderline_set)
 	rd->prefix_bytes = strlen(prefix?:"");
 	cvt(rd->line + rd->prefix_bytes);
 
+	if (ci->str2 && !rd->background) {
+		rd->background = strdup(ci->str2);
+		bg_changed = True;
+	} else if (!ci->str2 && rd->background) {
+		free(rd->background);
+		rd->background = NULL;
+		bg_changed = True;
+	} else if (ci->str2 && rd->background &&
+		   strcmp(ci->str2, rd->background) != 0) {
+		free(rd->background);
+		rd->background = strdup(ci->str2);
+		bg_changed = True;
+	}
+
 	rd->curspos = ci->num;
-	if (strcmp(rd->line, old) != 0 ||
+	if (strcmp(rd->line, old) != 0 || bg_changed ||
 	    (old && word_wrap != rd->word_wrap)) {
 		pane_damaged(ci->home, DAMAGED_REFRESH);
 		pane_damaged(ci->home->parent, DAMAGED_REFRESH);
@@ -1351,6 +1367,7 @@ DEF_CMD(renderline_close)
 	aupdate(&rd->wrap_head, NULL);
 	aupdate(&rd->wrap_tail, NULL);
 	aupdate(&rd->wrap_attr, NULL);
+	aupdate(&rd->background, NULL);
 	return 1;
 }
 
