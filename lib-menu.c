@@ -42,6 +42,16 @@ DEF_CMD(menu_add)
 	return 1;
 }
 
+DEF_CMD(menu_clear)
+{
+	struct mark *m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
+
+	call("doc:set-ref", ci->home, 1, m);
+	while (call("doc:list-del", ci->home, 0, m) > 0)
+		;
+	return 1;
+}
+
 DEF_CMD(menu_attr)
 {
 	if (ci->str && strcmp(ci->str, "BG") == 0) {
@@ -158,6 +168,7 @@ static void menu_init_map(void)
 	key_add(menu_map, "render:reposition", &menu_reposition);
 
 	key_add(menu_map, "menu-add", &menu_add);
+	key_add(menu_map, "menu-clear", &menu_clear);
 	key_add(menu_map, "Cancel", &menu_abort);
 	key_add(menu_map, "K:Enter", &menu_done);
 	key_add(menu_map, "menu-select", &menu_done);

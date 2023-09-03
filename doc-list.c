@@ -143,6 +143,33 @@ DEF_CMD(list_add_elmnt)
 	m->ref.p = e;
 	return 1;
 }
+ 
+DEF_CMD(list_del_elmnt)
+{
+	struct list *l = ci->home->doc_data;
+	struct mark *m = ci->mark;
+	struct mark *m2;
+	struct elmnt *e;
+
+	if (!m)
+		return Enoarg;
+	if (!m->ref.p)
+		return Efalse;
+	e = m->ref.p;
+	while ((m2 = mark_next(m)) && m2->ref.p == e)
+		m = m2;
+	if (e == list_last_entry(&l->content, struct elmnt, list))
+		m->ref.p = NULL;
+	else
+		m->ref.p = list_next_entry(e, list);
+	while ((m2 = mark_prev(m)) && m2->ref.p == e) {
+		m2->ref.p = m->ref.p;
+		m = m2;
+	}
+	list_del(&e->list);
+	unalloc(e, pane);
+	return 1;
+}
 
 static char *key(struct list_head *le, const void *data)
 {
@@ -213,6 +240,7 @@ static void list_init_map(void)
 	key_add(list_map, "doc:get-attr", &list_get_attr);
 	key_add(list_map, "doc:shares-ref", &list_shares_ref);
 	key_add(list_map, "doc:list-add", &list_add_elmnt);
+	key_add(list_map, "doc:list-del", &list_del_elmnt);
 	key_add(list_map, "doc:list-sort", &list_sort);
 	key_add(list_map, "Close", &list_close);
 }
