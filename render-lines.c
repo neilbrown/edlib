@@ -1548,55 +1548,44 @@ DEF_CMD(render_lines_set_cursor)
 	if (!m)
 		/* There is nothing rendered? */
 		return 1;
-	if (!m->mdata) {
-		/* chi is after the last visible content, and m is the end
-		 * of that content (possible EOF) so move there
-		 */
-	} else {
+	if (m->mdata) {
+		/* might be able to find a position in the line */
 		if (cih.y < m->mdata->y) {
 			/* action only permitted in precise match */
 			action = NULL;
 			cih.y = m->mdata->y;
 		}
 		xypos = find_xy_line(p, focus, m, cih.x, cih.y, &xyattr);
-		if (xypos >= 0) {
-			m2 = call_render_line_offset(focus, m, xypos);
-			if (m2) {
-				wint_t c = doc_following(focus, m2);
-				if (c == WEOF || is_eol(c))
-					/* after last char on line - no action. */
-					action = NULL;
-			}
-		}
-	}
-	if (m2) {
-		char *tag;
-
-		if (action && xyattr) {
-			tag = get_action_tag(action, xyattr);
-			if (tag) {
+		if (xypos >= 0 &&
+		    (m2 = call_render_line_offset(focus, m, xypos)) != NULL) {
+			char *tag;
+			wint_t c = doc_following(focus, m2);
+			if (c == WEOF || is_eol(c))
+				/* after last char on line - no action. */
+				action = NULL;
+			if (action && xyattr &&
+			    (tag = get_action_tag(action, xyattr)) != NULL) {
 				int x, y;
-				/* This is a hack to get the start of these
-				 * attrs so menu can be placed correctly.
-				 * Only works for menus below the line.
+				/* This is a hack to get the
+				 * start of these attrs so menu
+				 * can be placed correctly.
+				 * Only works for menus below
+				 * the line.
 				 */
 				if (sscanf(xyattr, "%dx%d,", &x, &y) == 2) {
 					cih.x = x;
 					cih.y = m->mdata->y + y +
 						attr_find_int(m->mdata->attrs,
 							      "line-height");
-;
+					;
 				}
 				call(tag, focus, 0, m2, xyattr,
 				     0, ci->mark, NULL,
 				     cih.x, cih.y);
 			}
+			m = m2;
 		}
-		m = m2;
-	} else {
-		/* m is the closest we'll get */
 	}
-
 	if (ci->mark)
 		mark_to_mark(ci->mark, m);
 	else
