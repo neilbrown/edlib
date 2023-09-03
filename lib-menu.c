@@ -118,6 +118,10 @@ DEF_LOOKUP_CMD(menu_handle, menu_map);
 
 DEF_CMD(menu_attach)
 {
+	/* ->str gives the "mode"
+	 * D  means per-display menu, not per-pane
+	 * V  means show value in menu as well as name
+	 */
 	struct pane *docp, *p, *p2;
 	/* Multi-line temporary popup with x,y location provided. */
 	const char *mode = "Mtx";
@@ -133,11 +137,13 @@ DEF_CMD(menu_attach)
 	call("doc:set:autoclose", docp, 1);
 	attr_set_str(&docp->attrs, "render-simple", "format");
 	attr_set_str(&docp->attrs, "heading", "");
-	if (ci->num & 1)
+	if (strchr(mmode, 'V'))
 		/* show the 'action' - presumably a key name */
-		attr_set_str(&docp->attrs, "line-format", "<%BG><action-activate:menu-select>%name<rtab>%shortcut</></>");
+		attr_set_str(&docp->attrs, "line-format",
+			     "<%BG><action-activate:menu-select>%name<rtab>%shortcut</></>");
 	else
-		attr_set_str(&docp->attrs, "line-format", "<%BG><action-activate:menu-select>%name</></>");
+		attr_set_str(&docp->attrs, "line-format",
+			     "<%BG><action-activate:menu-select>%name</></>");
 	attr_set_str(&docp->attrs, "done-key", ci->str2 ?: "menu-done");
 	/* No borders, just a shaded background to make menu stand out */
 	attr_set_str(&docp->attrs, "borders", "");
