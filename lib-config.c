@@ -91,16 +91,6 @@ static void add_trigger(struct config_data *cd safe, unsigned int type,
 {
 	struct trigger *t = cd->last_trigger;
 
-	if (strstarts(name, "TESTING ")) {
-		if (!edlib_testing(cd->root))
-			return;
-		name += 8;
-	}
-	if (strstarts(name, "NOTESTING ")) {
-		if (edlib_testing(cd->root))
-			return;
-		name += 10;
-	}
 	if (!t || strcmp(t->path, path) != 0 || t->type != type) {
 		alloc(t, pane);
 		t->path = strdup(path);
@@ -184,6 +174,16 @@ static void handle(void *data, char *section safe, char *name safe, char *value 
 		return;
 	cd = data;
 
+	if (strstarts(name, "TESTING ")) {
+		if (!edlib_testing(cd->root))
+			return;
+		name += 8;
+	}
+	if (strstarts(name, "NOTESTING ")) {
+		if (edlib_testing(cd->root))
+			return;
+		name += 10;
+	}
 	if (strcmp(section, "") == 0 || strcmp(section,"include") == 0) {
 		if (strcmp(name, "include") == 0) {
 			load_config(value, data);
