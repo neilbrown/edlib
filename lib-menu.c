@@ -54,10 +54,19 @@ DEF_CMD(menu_clear)
 
 DEF_CMD(menu_attr)
 {
-	if (ci->str && strcmp(ci->str, "BG") == 0) {
+	if (ci->str && strcmp(ci->str, "FG") == 0) {
 		char *s = call_ret(str, "doc:get-attr", ci->home,
 				   0, ci->mark, "disabled");
 		char *v = (s && *s) ? "fg:white-40" : "fg:black";
+		comm_call(ci->comm2, "cb", ci->focus, 0, ci->mark,
+			  v, 0, NULL, ci->str);
+		free(s);
+		return 1;
+	}
+	if (ci->str && strcmp(ci->str, "fg") == 0) {
+		char *s = call_ret(str, "doc:get-attr", ci->home,
+				   0, ci->mark, "disabled");
+		char *v = (s && *s) ? "fg:blue+60" : "fg:blue";
 		comm_call(ci->comm2, "cb", ci->focus, 0, ci->mark,
 			  v, 0, NULL, ci->str);
 		free(s);
@@ -147,10 +156,10 @@ DEF_CMD(menu_attach)
 		if (strchr(mmode, 'V'))
 			/* show the 'action' - presumably a key name */
 			attr_set_str(&docp->attrs, "line-format",
-				     "<%BG><action-activate:menu-select>%name<rtab>%shortcut</></>");
+				     "<%FG><action-activate:menu-select>%name <rtab><%fg>%shortcut</></></>");
 		else
 			attr_set_str(&docp->attrs, "line-format",
-				     "<%BG><action-activate:menu-select>%name</></>");
+				     "<%FG><action-activate:menu-select>%name</></>");
 		attr_set_str(&docp->attrs, "done-key", ci->str2 ?: "menu-done");
 		/* No borders, just a shaded background to make menu stand out */
 		attr_set_str(&docp->attrs, "borders", "");
