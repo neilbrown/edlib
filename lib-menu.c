@@ -122,7 +122,6 @@ DEF_CMD(menu_attach)
 		return Efail;
 	call("doc:set:autoclose", docp, 1);
 	attr_set_str(&docp->attrs, "render-simple", "format");
-	attr_set_int(&docp->attrs, "render-wrap", 0);
 	attr_set_str(&docp->attrs, "heading", "");
 	if (ci->num & 1)
 		/* show the 'action' - presumably a key name */
@@ -144,8 +143,10 @@ DEF_CMD(menu_attach)
 		return Efail;
 	}
 	p2 = pane_register(p2, 0, &menu_handle.c);
+	/* Don't allow any shift - we size the menu to fit */
 	if (!p2)
 		return Efail;
+	attr_set_int(&p2->attrs, "render-wrap", 0);
 	call("Mouse-grab", p2);
 	return comm_call(ci->comm2, "cb:attach", p2);
 }
