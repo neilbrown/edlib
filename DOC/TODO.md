@@ -18,7 +18,7 @@ the file.
 - [X] Disable <hide> if cursor is in the hidden region.
 - [X] fill mode to handle all punctuation at start of this line
 - [X] Enable lib-menu to show short-cut keys
-- [ ] Add menu-bar to lib-menu.  Pop it up on F10 with simple commands
+- [X] Add menu-bar to lib-menu.  Pop it up on F10 with simple commands
 - [ ] attach an extensible menu to the selection
         copy, paste-in, QR, git-view
 
@@ -35,7 +35,7 @@ the file.
 - [ ] image-display pane
 - [ ] git-mode
 - [ ] render-markdown.py
-- [ ] lib-menu
+- [X] lib-menu
 - [ ] Remote display
 
 Requirements for a v1.0 release
@@ -160,6 +160,13 @@ Core features
 
 Module features
 ---------------
+
+### lib-menubar
+
+- enable activation via F10.  Cancel makes it disappear if configed
+  not too.  How to keep??
+- allow left/right arrows to move between menus
+- emacs to disable 'save' when cannot be saved.
 
 ### lib-qrcode
 
@@ -567,7 +574,7 @@ Module features
 
 ###  Notmuch message display
 
-- [ ] notmuch addresses in From: list to have menu to add address to
+- [X] notmuch addresses in From: list to have menu to add address to
       any from-* query
 - [ ] "%d quoted lines" still not quite right.  Moving 'down' past it
       jumps to end of line.
@@ -805,7 +812,7 @@ Module features
 ### lib-menu
 
 - [X] Enable lib-menu to show short-cut keys
-- [ ] menu-bar to which we can add menus from which commands are sent
+- [X] menu-bar to which we can add menus from which commands are sent
 - [ ] track movement so entry under cursor can be highlighted
 - [ ] support positioning above the target is no space below.
 - [ ] support single-click to open modal menu.??
@@ -970,7 +977,7 @@ Possibly some of these will end up being features in other modules.
 - [ ] tags handling - and easy tag-search without tags. e.g. git-search.
       alt-S looks for TAGS or .git and either does a tags-search or a grep-l and
       check every match.  So maybe this is part of the 'make' module
-- [ ] menus
+- [X] menus
       This might support a menu-bar, or drop-downs for spelling or dynamic completion.
 - [ ] hex edit block device - mmap document type
 

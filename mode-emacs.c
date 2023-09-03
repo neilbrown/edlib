@@ -3477,9 +3477,24 @@ static void emacs_init(void)
 
 DEF_LOOKUP_CMD(mode_emacs, emacs_map);
 
+static char *menus[][3] = {
+	{ "Help/Recent", ":F1 l", "R" },
+	{ "File/Open", ":C-X :C-F", "L"},
+	{ "File/Save", ":C-X :C-S", "L"},
+	{ "File/Exit", ":C-X :C-C", "L"},
+	{ "Edit/Copy", ":A-w", "L"},
+};
+
 DEF_CMD(attach_mode_emacs)
 {
-	return call_comm("global-set-keymap", ci->focus, &mode_emacs.c);
+	unsigned int i;
+	call_comm("global-set-keymap", ci->focus, &mode_emacs.c);
+	for (i = 0; i < ARRAY_SIZE(menus); i++)
+		call("menubar-add", ci->focus,
+		     menus[i][2][0] == 'R' ? 2 : 0,
+		     NULL, menus[i][0],
+		     0, NULL, menus[i][1]);
+	return 1;
 }
 
 DEF_CMD(attach_file_entry)
