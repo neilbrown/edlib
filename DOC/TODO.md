@@ -13,7 +13,7 @@ the file.
 - [X] From start-of-file move to end, then up, then down.
       Display jumps.  Why?
 - [ ] Add menubar menu with recent documents?
-- [ ] why does clicking on status line go to top-of-file?
+- [X] why does clicking on status line go to top-of-file?
 - [ ] should Docs menu go on doc name in status bar?
 - [X] search hangs when seeking "^( *)"
 - [ ] selection-menu item to show git-commit from list of known git
@@ -76,6 +76,9 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] If a pane wants to block mouse events from parents, as lib-view
+      does, it shouldn't need to catch all the combinations, or it
+      should be much easier
 - [ ] gather memory usage stats per-pane and allow a dump
 - [ ] show doc size in doc list - include undo size?
 - [ ] Ensure all panes that should use "Free" properly, and find some

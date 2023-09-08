@@ -443,6 +443,7 @@ DEF_CMD(view_click)
 {
 	struct pane *p = ci->home;
 	struct view_data *vd = p->data;
+	struct pane *c = vd->child;
 	int mid = vd->scroll_bar_y;
 	int lh = vd->line_height;
 	int num;
@@ -451,10 +452,20 @@ DEF_CMD(view_click)
 
 	cih = pane_mapxy(ci->focus, ci->home, ci->x, ci->y, False);
 
-	if (cih.x >= vd->border_width)
+	if (ci->focus != p)
+		/* Event was in the child */
 		return Efallthrough;
+	if (!c)
+		return 1;
+	/* Ignore if not in scroll-bar, which it to left of child */
+	if (cih.y < c->y ||		// above child
+	    cih.y >= c->y + c->h ||	// below child
+	    cih.x >= c->x)		// Not to right of child
+		return 1;
+
 	if (p->h <= 4)
-		return Efallthrough;
+		/* scroll bar too small to be useful */
+		return 1;
 
 	scale = 100; /* 10% for small movements */
 	num = RPT_NUM(ci);
@@ -473,6 +484,16 @@ DEF_CMD(view_click)
 		scale = 900;
 	}
 	call("Move-View", pane_leaf(ci->focus), num * scale);
+	return 1;
+}
+
+DEF_CMD(view_release)
+{
+	/* Make sure release doesn't go to parent if not in child */
+
+	if (ci->focus != ci->home)
+		/* Event was in the child */
+		return Efallthrough;
 	return 1;
 }
 
@@ -528,6 +549,9 @@ void edlib_init(struct pane *ed safe)
 
 	key_add(view_map, "M:Click-1", &view_click);
 	key_add(view_map, "M:Press-1", &view_click);
+	key_add(view_map, "M:Release-1", &view_release);
+	key_add(view_map, "M:DPress-1", &view_click);
+	key_add(view_map, "M:TPress-1", &view_click);
 	key_add(view_map, "M:Press-4", &view_scroll);
 	key_add(view_map, "M:Press-5", &view_scroll);
 	key_add(view_map, "Window:border", &view_border);
