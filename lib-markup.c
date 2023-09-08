@@ -16,13 +16,14 @@
 #include <string.h>
 
 #include <stdio.h>
-
+#define PANE_DATA_TYPE struct mu_info
 #include "core.h"
 #include "misc.h"
 
 struct mu_info {
 	int	view;
 };
+#include "core-pane.h"
 
 static struct map *mu_map safe;
 
@@ -466,10 +467,10 @@ static struct pane *do_markup_attach(struct pane *p safe)
 	struct pane *ret;
 	struct mu_info *mu;
 
-	alloc(mu, pane);
-	ret = pane_register(p, 0, &markup_handle.c, mu);
+	ret = pane_register(p, 0, &markup_handle.c);
 	if (!ret)
 		return NULL;
+	mu = ret->data;
 	mu->view = home_call(p, "doc:add-view", ret) - 1;
 
 	return ret;
@@ -509,7 +510,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(mu_map, "doc:render-line", &render_line);
 	key_add(mu_map, "doc:render-line-prev", &render_prev);
 	key_add(mu_map, "Clone", &mu_clone);
-	key_add(mu_map, "Free", &edlib_do_free);
 	key_add(mu_map, "Notify:clip", &mu_clip);
 
 	call_comm("global-set-command", ed, &markup_attach,
