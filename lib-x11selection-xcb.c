@@ -101,6 +101,8 @@
 #include <xcb/xcb.h>
 #include <xcb/xcbext.h>
 
+#define PANE_DATA_TYPE struct xcbd_info
+#define PANE_DATA_TYPE_2 struct xcbc_info
 #include "xcb.h"
 #include "core.h"
 
@@ -154,6 +156,11 @@ struct evlist {
 	struct evlist		*next;
 };
 
+struct xcbd_info {
+	struct command		*c safe;
+	bool			committing;
+};
+
 struct xcbc_info {
 	struct command		c;
 	struct pane		*p safe;
@@ -171,6 +178,7 @@ struct xcbc_info {
 	char			*pending_content;
 	// targets??
 };
+#include "core-pane.h"
 
 static void collect_sel(struct xcbc_info *xci safe, enum my_atoms sel);
 static xcb_timestamp_t collect_sel_stamp(struct xcbc_info *xci safe,
@@ -179,15 +187,10 @@ static void claim_sel(struct xcbc_info *xci safe, enum my_atoms sel);
 static struct command *xcb_register(struct pane *p safe, char *display safe);
 static void get_timestamp(struct xcbc_info *xci safe);
 
-struct xcbd_info {
-	struct command		*c safe;
-	bool			committing;
-};
-
 DEF_CMD(xcbc_commit)
 {
 	/* Commit the selection - make it available for copy:get */
-	struct xcbc_info *xci = ci->home->data;
+	struct xcbc_info *xci = ci->home->data2;
 
 	pane_notify("Notify:xcb-commit", xci->p);
 	return 1;
@@ -198,7 +201,7 @@ DEF_CMD(xcbc_claim)
 	/* claim the selection - so other X11 clients and other edlib
 	 * displays can ask for it
 	 */
-	struct xcbc_info *xci = ci->home->data;
+	struct xcbc_info *xci = ci->home->data2;
 
 	home_pane_notify(xci->p, "Notify:xcb-claim", ci->focus);
 	claim_sel(xci, a_PRIMARY);
@@ -208,7 +211,7 @@ DEF_CMD(xcbc_claim)
 DEF_CMD(xcbc_set)
 {
 	/* Claim the clipboard, because we just copied something to it */
-	struct xcbc_info *xci = ci->home->data;
+	struct xcbc_info *xci = ci->home->data2;
 
 	claim_sel(xci, a_CLIPBOARD); // and primary
 	return 1;
@@ -219,7 +222,7 @@ DEF_CMD(xcbc_get)
 	/* If either PRIMARY or CLIPBOARD is newer than 'last_save',
 	 * save it with "copy:save"
 	 */
-	struct xcbc_info *xci = ci->home->data;
+	struct xcbc_info *xci = ci->home->data2;
 	enum my_atoms best = a_NULL;
 	xcb_timestamp_t ts;
 
@@ -265,7 +268,7 @@ DEF_CMD(xcbc_handle_close)
 
 DEF_CMD(xcbc_close)
 {
-	struct xcbc_info *xci = ci->home->data;
+	struct xcbc_info *xci = ci->home->data2;
 	char *cn = strconcat(ci->home, "xcb-selection-", xci->display);
 
 	call_comm("global-set-command", ci->home, &edlib_noop,
@@ -403,13 +406,11 @@ DEF_CMD(xcbd_attach)
 		call_comm("global-set-command", ci->focus, c,
 			  0, NULL, cn);
 	}
-	alloc(xdi, pane);
-	xdi->c = c;
-	p = pane_register(ci->focus, 0, &xcb_display_handle.c, xdi);
-	if (!p) {
-		unalloc(xdi, pane);
+	p = pane_register(ci->focus, 0, &xcb_display_handle.c);
+	if (!p)
 		return Efail;
-	}
+	xdi = p->data;
+	xdi->c = c;
 	comm_call(c, "register", p);
 	call("selection:claim", p, 1);
 	comm_call(ci->comm2, "cb", p);
@@ -684,7 +685,7 @@ static xcb_generic_event_t *next_event(struct xcbc_info *xci safe)
 
 DEF_CMD(xcbc_input)
 {
-	struct xcbc_info *xci = ci->home->data;
+	struct xcbc_info *xci = ci->home->data2;
 	xcb_generic_event_t *ev;
 	int ret = 1;
 
@@ -991,12 +992,14 @@ static struct command *xcb_register(struct pane *p safe, char *display safe)
 	if (!disp_auth)
 		disp_auth = getenv("XAUTHORITY");
 
+	p2 = pane_register_2(pane_root(p), 0, &xcb_common_handle.c);
+	if (!p2)
+		return NULL;
 	conn = xcb_connect_auth(display, disp_auth, &screen);
 	if (!conn || xcb_connection_has_error(conn))
-		return NULL;
-
-	alloc(xci, pane);
-
+		goto abort;
+	xci = p2->data2;
+	xci->p = p2;
 	xci->conn = conn;
 	xci->display = strdup(display);
 	xci->setup = safe_cast xcb_get_setup(conn);
@@ -1034,18 +1037,12 @@ static struct command *xcb_register(struct pane *p safe, char *display safe)
 
 	xci->c = xcb_common;
 	xci->c.free = xcbc_free_cmd;
-	p2 = pane_register(pane_root(p), 0, &xcb_common_handle.c, xci);
-	if (!p2)
-		goto abort;
-	xci->p = p2;
 	call_comm("event:read", p2, &xcbc_input, xcb_get_file_descriptor(conn));
 	call_comm("event:poll", p2, &xcbc_input);
-	// LOG("registered xcb %d %d", xcb_get_file_descriptor(conn), xci->win);
 	return &xci->c;
+
 abort:
-	xcb_disconnect(conn);
-	free(xci->display);
-	unalloc(xci, pane);
+	pane_close(p2);
 	return NULL;
 }
 
@@ -1063,7 +1060,6 @@ void edlib_init(struct pane *ed safe)
 		key_add(xcb_common_map, "Notify:Close", &xcbc_handle_close);
 
 		key_add(xcb_common_map, "Close", &xcbc_close);
-		key_add(xcb_common_map, "Free", &edlib_do_free);
 
 		xcb_display_map = key_alloc();
 		key_add(xcb_display_map, "copy:save", &xcbd_copy_save);
@@ -1079,7 +1075,6 @@ void edlib_init(struct pane *ed safe)
 		key_add(xcb_display_map, "Notify:xcb-check",
 			&xcbc_do_check);
 
-		key_add(xcb_display_map, "Free", &edlib_do_free);
 	}
 
 	call_comm("global-set-command", ed, &xcbd_attach,
