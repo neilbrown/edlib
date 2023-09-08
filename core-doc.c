@@ -32,11 +32,10 @@ struct doc_ref {
 	int		ignore;
 };
 
+#define PANE_DATA_TYPE struct doc_data
 #include "core.h"
 #include "misc.h"
 #include "internal.h"
-
-static struct pane *doc_attach_assign(struct pane *parent safe, struct pane *doc safe);
 
 /* this is ->data for a document reference pane.
  */
@@ -46,6 +45,10 @@ struct doc_data {
 	struct mark		*old_point; /* location at last refresh */
 	struct mark		*marks[4];
 };
+#include "core-pane.h"
+
+static struct pane *doc_attach_assign(struct pane *parent safe, struct pane *doc safe);
+
 
 static void doc_init(struct doc *d safe)
 {
@@ -494,7 +497,7 @@ DEF_CMD(doc_page)
 
 DEF_CMD(doc_set)
 {
-	struct doc *d = ci->home->data;
+	struct doc *d = ci->home->_data;
 	const char *val = ksuffix(ci, "doc:set:");
 
 	if (!*val)
@@ -552,7 +555,7 @@ DEF_CMD(doc_append)
 
 DEF_CMD(doc_get_attr)
 {
-	struct doc *d = ci->home->data;
+	struct doc *d = ci->home->_data;
 	char pathbuf[PATH_MAX];
 	char *a;
 
@@ -621,7 +624,7 @@ DEF_CMD(doc_doc_get_attr)
 
 DEF_CMD(doc_set_name)
 {
-	struct doc *d = ci->home->data;
+	struct doc *d = ci->home->_data;
 
 	if (!ci->str)
 		return Enoarg;
@@ -692,14 +695,14 @@ static int do_del_view(struct doc *d safe, int v,
 
 DEF_CMD(doc_delview)
 {
-	struct doc *d = ci->home->data;
+	struct doc *d = ci->home->_data;
 
 	return do_del_view(d, ci->num, ci->focus);
 }
 
 DEF_CMD(doc_addview)
 {
-	struct doc *d = ci->home->data;
+	struct doc *d = ci->home->_data;
 	struct docview *g;
 	int ret;
 	int i;
@@ -735,7 +738,7 @@ DEF_CMD(doc_addview)
 
 DEF_CMD(doc_close_doc)
 {
-	struct doc *d = ci->home->data;
+	struct doc *d = ci->home->_data;
 	doc_free(d, ci->home);
 	return 1;
 }
@@ -745,7 +748,7 @@ DEF_CMD(doc_view_close)
 	/* A pane which once held a view is closing.  We must discard
 	 * that view if it still exists.
 	 */
-	struct doc *d = ci->home->data;
+	struct doc *d = ci->home->_data;
 	int v;
 
 	for (v = 0 ; d->views && v < d->nviews; v++)
@@ -756,8 +759,8 @@ DEF_CMD(doc_view_close)
 DEF_CMD(doc_vmarkget)
 {
 	struct mark *m, *m2;
-	m = do_vmark_first(ci->home->data, ci->num, ci->focus);
-	m2 = do_vmark_last(ci->home->data, ci->num, ci->focus);
+	m = do_vmark_first(ci->home->_data, ci->num, ci->focus);
+	m2 = do_vmark_last(ci->home->_data, ci->num, ci->focus);
 	return comm_call(ci->comm2, "callback:vmark", ci->focus,
 			 0, m, NULL, 0, m2) ?: 1;
 }
@@ -766,7 +769,7 @@ DEF_CMD(doc_vmarkprev)
 {
 	struct mark *m = NULL;
 	if (ci->mark)
-		m = do_vmark_at_or_before(ci->home->data, ci->mark,
+		m = do_vmark_at_or_before(ci->home->_data, ci->mark,
 					   ci->num, ci->focus);
 	comm_call(ci->comm2, "callback:vmark", ci->focus, 0, m);
 	return 1;
@@ -784,7 +787,7 @@ DEF_CMD(doc_vmarknew)
 DEF_CMD(doc_drop_cache)
 {
 	struct pane *p = ci->home;
-	struct doc *d = p->data;
+	struct doc *d = p->_data;
 
 	if (d->autoclose)
 		pane_close(p);
@@ -1171,7 +1174,7 @@ DEF_CMD(doc_pass_on)
 
 DEF_CMD(doc_push_point)
 {
-	struct doc *d = ci->home->data;
+	struct doc *d = ci->home->_data;
 	int n = ARRAY_SIZE(d->recent_points);
 	struct mark *m;
 	if (!ci->mark)
@@ -1188,7 +1191,7 @@ DEF_CMD(doc_push_point)
 
 DEF_CMD(doc_pop_point)
 {
-	struct doc *d = ci->home->data;
+	struct doc *d = ci->home->_data;
 	int n = ARRAY_SIZE(d->recent_points);
 
 	if (!ci->mark)
@@ -1318,7 +1321,6 @@ static void init_doc_cmds(void)
 	key_add(doc_handle_cmd,	"Refresh:view", &doc_refresh_view);
 	key_add(doc_handle_cmd,	"Clone", &doc_clone);
 	key_add(doc_handle_cmd,	"Close", &doc_close);
-	key_add(doc_handle_cmd,	"Free", &edlib_do_free);
 	key_add(doc_handle_cmd, "doc:dup-point", &doc_dup_point);
 	key_add(doc_handle_cmd, "Replace", &doc_replace);
 	key_add(doc_handle_cmd, "get-attr", &doc_handle_get_attr);
@@ -1369,10 +1371,10 @@ static struct pane *doc_attach_assign(struct pane *parent safe, struct pane *doc
 	struct doc_data *dd;
 	struct mark *m;
 
-	alloc(dd, pane);
-	p = pane_register(parent, 0, &doc_handle.c, dd);
+	p = pane_register(parent, 0, &doc_handle.c);
 	if (!p)
 		return NULL;
+	dd = p->data;
 	pane_damaged(p, DAMAGED_VIEW);
 
 	m = point_new(doc);
