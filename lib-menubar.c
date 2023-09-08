@@ -283,33 +283,11 @@ DEF_CMD(menubar_done)
 {
 	struct pane *home = ci->home;
 	struct mbinfo *mbi = home->data;
-	char *dash;
-	const char *c, *e;
 
 	if (mbi->child)
 		pane_focus(mbi->child);
-	if (!ci->str)
-		/* Abort ?? */
-		return 1;
-	c = ci->str;
-	while ((e = strchr(c, ' ')) != NULL) {
-		int ret;
-
-		dash = "";
-		if (*c != ':' || e == c+1)
-			dash = "-";
-		ret = call("Keystroke", home, 0, NULL,
-			   strconcat(home, dash,
-				     strnsave(home, c, e - c)));
-		if (ret < 0)
-			return Efail;
-		c = e+1;
-	}
-	dash = "";
-	if (*c != ':' || c[1] == '\0')
-		dash = "-";
-	return call("Keystroke", home, 0, NULL,
-		    strconcat(home, dash, c));
+	call("Keystroke-sequence", home, 0, NULL, ci->str);
+	return 1;
 }
 
 DEF_CMD(menubar_root)

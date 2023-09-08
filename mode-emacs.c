@@ -2389,8 +2389,6 @@ DEF_CMD(emacs_selection_menu)
 DEF_CMD(emacs_selection_menu_action)
 {
 	struct pane *home = ci->home;
-	char *dash;
-	const char *e;
 	const char *c = ci->str;
 
 	if (!c)
@@ -2401,23 +2399,7 @@ DEF_CMD(emacs_selection_menu_action)
 		return 1;
 	}
 
-	while ((e = strchr(c, ' ')) != NULL) {
-		int ret;
-
-		dash = "";
-		if (*c != ':' || e == c+1)
-			dash = "-";
-		ret = call("Keystroke", home, 0, NULL,
-			   strconcat(home, dash,
-				     strnsave(home, c, e - c)));
-		if (ret < 0)
-			return Efail;
-		c = e+1;
-	}
-	dash = "";
-	if (*c != ':' || c[1] == '\0')
-		dash = "-";
-	call("Keystroke", home, 0, NULL, strconcat(home, dash, c));
+	call("Keystroke-sequence", home, 0, NULL, c);
 	return 1;
 }
 

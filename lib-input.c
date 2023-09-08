@@ -161,6 +161,7 @@ static const char *safe ctrl_map[][2] = {
 	{ ":A:LF",	":A:C-J" },
 	{ ":A:Tab",	":A:C-I" },
 	{ ":A:Del",	":A:C-?" },
+	{ ":SPC",	"- " },
 };
 
 static const char *map_key(const char *key safe)
@@ -225,6 +226,35 @@ DEF_CMD(keystroke)
 		call("Message:default", ci->focus, 0, NULL,
 		     "** Command Failed **");
 	return Efallthrough;
+}
+
+DEF_CMD(keystroke_sequence)
+{
+	struct pane *home = ci->home;
+	const char *c = ci->str;
+	const char *e, *dash;
+	int ret;
+
+	if (!c)
+		return Enoarg;
+	while ((e = strchr(c, ' ')) != NULL) {
+		dash = "";
+		if (*c != ':' || e == c+1)
+			dash = "-";
+		ret = call("Keystroke", home, 0, NULL,
+			   strconcat(home, dash,
+				     strnsave(home, c, e - c)));
+		if (ret < 0)
+			return Efail;
+		c = e+1;
+	}
+	dash = "";
+	if (*c != ':' || c[1] == '\0')
+		dash = "-";
+	ret = call("Keystroke", home, 0, NULL, strconcat(home, dash, c));
+	if (ret < 0)
+		return Efail;
+	return 1;
 }
 
 static int tspec_diff_ms(struct timespec *a safe, struct timespec *b safe)
@@ -465,6 +495,7 @@ static void register_map(void)
 		return;
 	im_map = key_alloc();
 	key_add(im_map, "Keystroke", &keystroke);
+	key_add(im_map, "Keystroke-sequence", &keystroke_sequence);
 	key_add(im_map, "Mouse-event", &mouse_event);
 	key_add(im_map, "Mouse-grab", &mouse_grab);
 	key_add(im_map, "Mode:set-mode", &set_mode);

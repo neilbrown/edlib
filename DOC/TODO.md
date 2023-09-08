@@ -824,6 +824,7 @@ Module features
 
 ### lib-menu
 
+- [ ] remove that blank line at the end of menus
 - [X] Enable lib-menu to show short-cut keys
 - [X] menu-bar to which we can add menus from which commands are sent
 - [ ] track movement so entry under cursor can be highlighted
