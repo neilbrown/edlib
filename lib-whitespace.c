@@ -27,6 +27,7 @@
 #include <string.h>
 #include <wchar.h>
 #include <wctype.h>
+#define PANE_DATA_TYPE struct ws_info
 #include "core.h"
 
 struct ws_info {
@@ -37,6 +38,7 @@ struct ws_info {
 	bool indent_space;
 	bool single_blanks;
 };
+#include "core-pane.h"
 
 /* a0 and 2007 are non-breaking an not in iswblank, but I want them. */
 #define ISWBLANK(c) ((c) == 0xa0 || (c) == 0x2007 || iswblank(c))
@@ -259,7 +261,10 @@ static struct pane *ws_attach(struct pane *f safe)
 	struct pane *p;
 	char *w;
 
-	alloc(ws, pane);
+	p = pane_register(f, 0, &whitespace_handle.c);
+	if (!p)
+		return p;
+	ws = p->data;
 
 	w = pane_attr_get(f, "whitespace-width");
 	if (w) {
@@ -284,9 +289,6 @@ static struct pane *ws_attach(struct pane *f safe)
 	if (w && strcasecmp(w, "no") != 0)
 		ws->single_blanks = True;
 
-	p = pane_register(f, 0, &whitespace_handle.c, ws);
-	if (!p)
-		unalloc(ws, pane);
 	return p;
 }
 
@@ -328,7 +330,6 @@ void edlib_init(struct pane *ed safe)
 
 	key_add(ws_map, "map-attr", &ws_attrs);
 	key_add(ws_map, "Close", &ws_close);
-	key_add(ws_map, "Free", &edlib_do_free);
 	key_add(ws_map, "Clone", &ws_clone);
 	call_comm("global-set-command", ed, &whitespace_attach,
 		  0, NULL, "attach-whitespace");
