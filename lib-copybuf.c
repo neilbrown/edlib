@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define PANE_DATA_TYPE struct copy_info
 #include "core.h"
 
 struct copy_info {
@@ -31,6 +32,7 @@ struct copy_info {
 	struct command	cmd;
 	struct pane	*pane;
 };
+#include "core-pane.h"
 
 static struct map *copy_map;
 DEF_LOOKUP_CMD(copy_handle, copy_map);
@@ -46,12 +48,11 @@ static void free_txt(struct txt **tp safe)
 	free(t);
 }
 
-DEF_CMD(copy_free)
+DEF_CMD(copy_close)
 {
 	struct copy_info *cyi = ci->home->data;
 
 	free_txt(&cyi->store);
-	unalloc(cyi, pane);
 	return 1;
 }
 
@@ -123,15 +124,19 @@ DEF_CB(copy_do)
 void edlib_init(struct pane *ed safe)
 {
 	struct copy_info *cyi;
+	struct pane *p;
 
 	if (!copy_map) {
 		copy_map = key_alloc();
-		key_add(copy_map, "Free", &copy_free);
+		key_add(copy_map, "Close", &copy_close);
 	}
 
-	alloc(cyi, pane);
+	p = pane_register(ed, 0, &copy_handle.c);
+	if (!p)
+		return;
+	cyi = p->data;
 	cyi->cmd = copy_do;
-	cyi->pane = pane_register(ed, 0, &copy_handle.c, cyi);
+	cyi->pane = p;
 	call_comm("global-set-command", ed, &cyi->cmd, 0, NULL, "copy:save");
 	call_comm("global-set-command", ed, &cyi->cmd, 0, NULL, "copy:get");
 }
