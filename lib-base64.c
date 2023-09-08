@@ -465,7 +465,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(b64_map, "doc:content-bytes", &base64_content);
 	key_add(b64_map, "doc:set-ref", &base64_setref);
 	key_add(b64_map, "mark:arrived", &base64_arrived);
-	key_add(b64_map, "Free", &edlib_do_free);
 
 	call_comm("global-set-command", ed, &b64_attach, 0, NULL, "attach-base64");
 }
