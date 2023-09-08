@@ -15,6 +15,7 @@
 #include <time.h>
 #include <stdio.h>
 
+#define PANE_DATA_TYPE struct input_mode
 #include "core.h"
 
 #define LOGSIZE 128
@@ -35,6 +36,7 @@ struct input_mode {
 	char		*log[LOGSIZE];
 	int		head;
 };
+#include "core-pane.h"
 
 /* 'head' is 1 more than the last key added. */
 static void log_add(struct input_mode *im safe,
@@ -475,16 +477,17 @@ DEF_CMD(close_focus)
 	return 1;
 }
 
-DEF_CMD(input_free)
+DEF_CMD(input_close)
 {
 	struct input_mode *im = ci->home->data;
 	int i;
 
-	for (i = 0; i < 3; i++)
+	for (i = 0; i < 3; i++) {
 		free(im->buttons[i].mod);
+		im->buttons[i].mod = NULL;
+	}
 	free((void*)im->mode);
 	free((void*)im->context);
-	unalloc(im, pane);
 	return 1;
 }
 
@@ -505,7 +508,7 @@ static void register_map(void)
 	key_add(im_map, "pane:refocus", &refocus);
 	key_add(im_map, "Notify:Close", &close_focus);
 	key_add(im_map, "input:log", &log_input);
-	key_add(im_map, "Free", &input_free);
+	key_add(im_map, "Close", &input_close);
 }
 
 DEF_LOOKUP_CMD(input_handle, im_map);
@@ -516,15 +519,14 @@ DEF_CMD(input_attach)
 
 	register_map();
 
-	alloc(im, pane);
+	p = pane_register(ci->focus, 0, &input_handle.c);
+	if (!p)
+		return Efail;
+	im = p->data;
 	im->mode = strdup("");
 	im->context = strdup("");
 	im->num = NO_NUMERIC;
 	im->num2 = 0;
-
-	p = pane_register(ci->focus, 0, &input_handle.c, im);
-	if (!p)
-		return Efail;
 
 	return comm_call(ci->comm2, "callback:attach", p);
 }
