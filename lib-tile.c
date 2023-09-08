@@ -19,6 +19,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Note that we don't use PANE_DATA_TYPE because the tileinfo
+ * moves between panes sometimes.
+ */
 #include "core.h"
 
 struct tileinfo {

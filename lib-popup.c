@@ -49,10 +49,8 @@
 #include <stdio.h>
 #include <memory.h>
 
+#define PANE_DATA_TYPE struct popup_info
 #include "core.h"
-
-static struct map *popup_map;
-DEF_LOOKUP_CMD(popup_handle, popup_map);
 
 struct popup_info {
 	struct pane	*target safe;
@@ -60,6 +58,10 @@ struct popup_info {
 	char		*style safe;
 	struct command	*done;
 };
+#include "core-pane.h"
+
+static struct map *popup_map;
+DEF_LOOKUP_CMD(popup_handle, popup_map);
 
 static int line_height(struct pane *p safe, int scale)
 {
@@ -139,15 +141,8 @@ DEF_CMD(popup_close)
 		pane_focus(ppi->target);
 	command_put(ppi->done);
 	ppi->done = NULL;
-	return 1;
-}
-
-DEF_CMD(popup_free)
-{
-	struct popup_info *ppi = ci->home->data;
-
 	free(ppi->style);
-	unalloc(ppi, pane);
+	ppi->style = "";
 	return 1;
 }
 
@@ -468,7 +463,7 @@ DEF_CMD(popup_attach)
 	 * r  - allow recursive popup
 	 * t  - temp pane, disappears when it loses focus
 	 */
-	struct pane *root, *p;
+	struct pane *root, *p, *parent;
 	struct popup_info *ppi;
 	const char *style = ci->str;
 	char *in_popup;
@@ -494,24 +489,26 @@ DEF_CMD(popup_attach)
 	if (!root)
 		return Efallthrough;
 
-	alloc(ppi, pane);
-	ppi->done = NULL;
-	ppi->target = ci->focus;
-
 	/* If focus is already a popup, make this popup higher */
 	p = pane_my_child(root, ci->focus);
 	if (p && p->z > 0)
 		z = p->z + 1;
 
-	ppi->parent_popup = NULL;
+	parent = NULL;
 	if (strchr(style, 'P')) {
-		ppi->parent_popup = root;
+		parent = root;
 		root = root->parent;
 	}
 
-	p = pane_register(root, z + 1, &popup_handle.c, ppi);
+	p = pane_register(root, z + 1, &popup_handle.c);
 	if (!p)
 		return Efail;
+	ppi = p->data;
+	ppi->done = NULL;
+	ppi->target = ci->focus;
+
+	ppi->parent_popup = parent;
+
 	ppi->style = strdup(style);
 	popup_set_style(p);
 	xy = pane_mapxy(ci->focus, root, ci->x, ci->y, True);
@@ -550,7 +547,6 @@ void edlib_init(struct pane *ed safe)
 	popup_map = key_alloc();
 
 	key_add(popup_map, "Close", &popup_close);
-	key_add(popup_map, "Free", &popup_free);
 	key_add(popup_map, "Notify:Close", &popup_notify_close);
 	key_add(popup_map, "Abort", &popup_abort);
 	key_add(popup_map, "popup:style", &popup_style);
