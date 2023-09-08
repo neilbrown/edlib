@@ -37,6 +37,7 @@
 #include <string.h>
 #include <ctype.h>
 
+#define PANE_DATA_TYPE struct history_info
 #include "core.h"
 #include "misc.h"
 
@@ -54,6 +55,7 @@ struct history_info {
 	} *prev;
 	int		changed;
 };
+#include "core-pane.h"
 
 static struct map *history_map;
 DEF_LOOKUP_CMD(history_handle, history_map);
@@ -77,19 +79,9 @@ DEF_CMD(history_close)
 	free_si(&hi->prev);
 	if (hi->history)
 		pane_close(hi->history);
-	return 1;
-}
-
-DEF_CMD(history_free)
-{
-	struct history_info *hi = ci->home->data;
-
 	free(hi->search.b);
 	free(hi->saved);
 	free(hi->prompt);
-	unalloc(hi, pane);
-	/* handle was in 'hi' */
-	ci->home->handle = NULL;
 	return 1;
 }
 
@@ -254,29 +246,30 @@ DEF_CMD(history_add_favourite)
 DEF_CMD(history_attach)
 {
 	struct history_info *hi;
-	struct pane *p;
+	struct pane *p, *history;
 
 	if (!ci->str)
 		return Enoarg;
 
-	alloc(hi, pane);
 	p = call_ret(pane, "docs:byname", ci->focus, 0, NULL, ci->str);
 	if (!p)
 		p = call_ret(pane, "doc:from-text", ci->focus, 0, NULL, ci->str);
-
-	if (!p) {
-		free(hi);
-		return Efail;
-	}
-	hi->history = call_ret(pane, "doc:attach-view", p, -1, NULL, "invisible");
-	if (!hi->history)
-		return Efail;
-	call("doc:file", hi->history, 1);
-	buf_init(&hi->search);
-	buf_concat(&hi->search, "?0"); /* remaining chars are searched verbatim */
-	p = pane_register(ci->focus, 0, &history_handle.c, hi);
 	if (!p)
 		return Efail;
+
+	history = call_ret(pane, "doc:attach-view", p, -1, NULL, "invisible");
+	if (!history)
+		return Efail;
+	call("doc:file", history, 1);
+	p = pane_register(ci->focus, 0, &history_handle.c);
+	if (!p) {
+		pane_free(history); // FIXME should I send a close message?
+		return Efail;
+	}
+	hi = p->data;
+	hi->history = history;
+	buf_init(&hi->search);
+	buf_concat(&hi->search, "?0"); /* remaining chars are searched verbatim */
 	pane_add_notify(p, hi->history, "Notify:Close");
 	call("doc:request:doc:replaced", p);
 	return comm_call(ci->comm2, "callback:attach", p);
@@ -537,7 +530,6 @@ void edlib_init(struct pane *ed safe)
 
 	history_map = key_alloc();
 	key_add(history_map, "Close", &history_close);
-	key_add(history_map, "Free", &history_free);
 	key_add(history_map, "Notify:Close", &history_notify_close);
 	key_add(history_map, "doc:replaced", &history_notify_replace);
 	key_add(history_map, "K:A-p", &history_move);
