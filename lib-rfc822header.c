@@ -30,12 +30,14 @@
 #include <stdio.h>
 #include <ctype.h>
 
+#define PANE_DATA_TYPE struct header_info
 #include "core.h"
 #include "misc.h"
 
 struct header_info {
 	int vnum;
 };
+#include "core-pane.h"
 
 static char *get_hname(struct pane *p safe, struct mark *m safe)
 {
@@ -528,7 +530,6 @@ static struct map *header_map safe;
 static void header_init_map(void)
 {
 	header_map = key_alloc();
-	key_add(header_map, "Free", &edlib_do_free);
 	key_add(header_map, "get-header", &header_get);
 	key_add(header_map, "list-headers", &header_list);
 	key_add(header_map, "Notify:clip", &header_clip);
@@ -542,12 +543,10 @@ DEF_CMD(header_attach)
 	struct mark *start = ci->mark;
 	struct mark *end = ci->mark2;
 
-	alloc(hi, pane);
-	p = pane_register(ci->focus, 0, &header_handle.c, hi);
-	if (!p) {
-		free(hi);
+	p = pane_register(ci->focus, 0, &header_handle.c);
+	if (!p)
 		return Efail;
-	}
+	hi = p->data;
 
 	hi->vnum = home_call(ci->focus, "doc:add-view", p) - 1;
 	if (start && end)
