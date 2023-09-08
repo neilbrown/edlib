@@ -625,11 +625,10 @@ void pane_close(struct pane *p safe)
 	/* If a child has not yet had "Close" called, we need to leave
 	 * ->parent in place so a full range of commands are available.
 	 */
+	p->damaged |= DAMAGED_DEAD;
 	if (ed != p) {
-		p->damaged |= DAMAGED_DEAD;
 		editor_delayed_free(ed, p);
 	} else {
-		pane_call(p, "Free", p);
 		command_put(p->handle);
 		p->handle = NULL;
 		attr_free(&p->attrs);

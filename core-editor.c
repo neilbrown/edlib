@@ -307,8 +307,6 @@ DEF_CMD(editor_free_panes)
 		ei->freelist = p->focus;
 		p->focus = NULL;
 
-		p->damaged &= ~DAMAGED_DEAD;
-		pane_call(p, "Free", p);
 		command_put(p->handle);
 		p->handle = NULL;
 		attr_free(&p->attrs);
@@ -433,8 +431,6 @@ void editor_delayed_free(struct pane *ed safe, struct pane *p safe)
 {
 	struct ed_info *ei = ed->data;
 	if (!ei) {
-		p->damaged &= ~DAMAGED_DEAD;
-		pane_call(p, "Free", p);
 		command_put(p->handle);
 		p->handle = NULL;
 		attr_free(&p->attrs);

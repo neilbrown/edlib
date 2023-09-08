@@ -83,7 +83,7 @@ Core features
       should be much easier
 - [ ] gather memory usage stats per-pane and allow a dump
 - [ ] show doc size in doc list - include undo size?
-- [ ] Ensure all panes that should use "Free" properly, and find some
+- [X] Ensure all panes that should use "Free" properly, and find some
       way to encourage its use.
 - [ ] Add optional unit-test interface for modules.  This should be
       implemented at least by lib-search, doc-text and probably many

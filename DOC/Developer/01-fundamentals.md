@@ -52,7 +52,7 @@ how much room there is for the display, the x,y locations position the
 image within the parent, and the depth is use to resolve situations
 where two panes overlap.
 
-FIXME mention "Close" and "Free"
+FIXME mention "Close"
 
 ### relevant interfaces
 
