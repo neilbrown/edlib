@@ -2521,6 +2521,10 @@ DEF_CMD(text_destroy)
 	struct text *t = ci->home->doc_data;
 
 	text_cleanout(t);
+	free((void*)t->fname);
+	t->fname = NULL;
+	free((void*)t->autosave_name);
+	t->autosave_name = NULL;
 	return Efallthrough;
 }
 
@@ -2541,15 +2545,6 @@ DEF_CMD(text_clear)
 	}
 	pane_notify("doc:replaced", ci->home);
 
-	return 1;
-}
-
-DEF_CMD(text_free)
-{
-	struct text *t = ci->home->doc_data;
-
-	free((void*)t->fname);
-	free((void*)t->autosave_name);
 	return 1;
 }
 
@@ -2586,6 +2581,5 @@ void edlib_init(struct pane *ed safe)
 	key_add(text_map, "debug:validate-marks", &text_val_marks);
 
 	key_add(text_map, "Close", &text_destroy);
-	key_add(text_map, "Free", &text_free);
 	key_add(text_map, "get-attr", &text_get_attr);
 }
