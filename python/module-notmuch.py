@@ -28,6 +28,8 @@
 # be assumed.
 # "query.from-list" is a list of other queries for which it is meaningful
 #   to add "from:address" clauses for some address.
+# "query.to-list" is a list of other queries for which it is meaningful
+#   to add "to:address" clauses for some address.
 
 import edlib
 
@@ -3493,8 +3495,9 @@ class notmuch_message_view(edlib.Pane):
                   121)
             return 1
         if str == "render:rfc822header-addr":
+            # str is len,tag,hdr
             w=str2.split(",")
-            if "From" in w:
+            if w[2] in ["From", "To", "Cc"]:
                 comm2("attr:callback", focus, int(w[0]), mark,
                       "underline,action-menu:notmuch-addr-menu,addr-tag:"+w[1],
                       200)
@@ -3573,16 +3576,17 @@ class notmuch_message_view(edlib.Pane):
         focus.call("Message", "Menu for address %s" % addr)
         mp = self.call("attach-menu", "", "notmuch-addr-choice", xy, ret='pane')
         mp.call("menu-add", "Compose", "C")
-        q = focus.call("doc:notmuch:get-query", "from-list", ret='str')
-        if q:
-            for t in q.split():
-                if t.startswith("query:"):
-                    t = t[6:]
-                    qq = focus.call("doc:notmuch:get-query", t, ret='str')
-                    if qq and ("from:"+addr) in qq:
-                        mp.call("menu-add", 1, 'Already in "%s"' % t, "-" + t)
-                    else:
-                        mp.call("menu-add", 'Add to "%s"' % t, t)
+        for dir in [ "from", "to" ]:
+            q = focus.call("doc:notmuch:get-query", dir + "-list", ret='str')
+            if q:
+                for t in q.split():
+                    if t.startswith("query:"):
+                        t = t[6:]
+                        qq = focus.call("doc:notmuch:get-query", t, ret='str')
+                        if qq and (dir + ":" + addr) in qq:
+                            mp.call("menu-add", 1, 'Already in "%s"' % t, "-" + t)
+                        else:
+                            mp.call("menu-add", 'Add to "%s"' % t, dir+':'+t)
         mp.call("doc:file", -1)
         self.menu = mp
         self.addr = addr
@@ -3603,15 +3607,23 @@ class notmuch_message_view(edlib.Pane):
         if str1.startswith('-'):
             # already in this query
             return None
-        q = focus.call("doc:notmuch:get-query", str1, ret='str')
+        dir = str1.split(':')[0]
+        if len(str1) <= len(dir):
+            return None
+        query = str1[len(dir)+1:]
+        q = focus.call("doc:notmuch:get-query", query, ret='str')
         if type(q) == str:
-            q = q + " from:" + self.addr
-            if focus.call("doc:notmuch:set-query", str1, q) > 0:
+            # notmuch combines "to:" with "and" - weird
+            if dir == "to":
+                q = q + " OR " + dir + ":" + self.addr
+            else:
+                q = q + " " + dir + ":" + self.addr
+            if focus.call("doc:notmuch:set-query", query, q) > 0:
                 focus.call("Message",
-                           "Updated query.%s with %s" % (str1, self.addr))
+                           "Updated query.%s with %s" % (query, self.addr))
             else:
                 focus.call("Message",
-                           "Update for query.%s failed." % str1)
+                           "Update for query.%s failed." % query)
         return 1
 
     def handle_render_line(self, key, focus, num, mark, mark2, comm2, **a):
