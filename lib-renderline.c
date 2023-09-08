@@ -1389,7 +1389,6 @@ DEF_CMD(renderline_attach)
 		key_add(rl_map, "get-attr", &renderline_get);
 		key_add(rl_map, "render-line:set", &renderline_set);
 		key_add(rl_map, "Close", &renderline_close);
-		key_add(rl_map, "Free", &edlib_do_free);
 	}
 
 	p = pane_register(ci->focus, ci->num, &renderline_handle.c);
