@@ -15,23 +15,25 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-
+#define PANE_DATA_TYPE struct viewer_data
 #include "core.h"
-
-static struct map *viewer_map safe;
-DEF_LOOKUP_CMD(viewer_handle, viewer_map);
 
 struct viewer_data {
 	bool active;
 };
+#include "core-pane.h"
+
+static struct map *viewer_map safe;
+DEF_LOOKUP_CMD(viewer_handle, viewer_map);
 
 static struct pane *safe do_viewer_attach(struct pane *par safe)
 {
-	struct viewer_data *vd;
+	struct pane *p;
 
-	alloc(vd, pane);
-	vd->active = True;
-	return pane_register(par, 0, &viewer_handle.c, vd);
+	p = pane_register(par, 0, &viewer_handle.c);
+	if (p)
+		p->data->active = True;
+	return p;
 }
 
 DEF_CMD(viewer_attach)
@@ -178,7 +180,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(viewer_map, "doc:char-q", &viewer_bury);
 	key_add(viewer_map, "doc:char-E", &viewer_deactivate);
 	key_add(viewer_map, "Clone", &viewer_clone);
-	key_add(viewer_map, "Free", &edlib_do_free);
 	key_add(viewer_map, "attach-viewer", &viewer_activate);
 
 	call_comm("global-set-command", ed, &viewer_attach, 0, NULL,
