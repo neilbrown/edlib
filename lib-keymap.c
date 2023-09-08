@@ -11,11 +11,13 @@
 
 #include <stdlib.h>
 #include <string.h>
+#define PANE_DATA_TYPE struct key_data
 #include "core.h"
 
 struct key_data {
 	struct command	*globalcmd;
 };
+#include "core-pane.h"
 
 static struct pane *safe do_keymap_attach(struct pane *p safe);
 
@@ -25,11 +27,6 @@ DEF_CMD(keymap_handle)
 
 	if (strcmp(ci->key, "Close") == 0) {
 		command_put(kd->globalcmd);
-		return 1;
-	}
-	if (strcmp(ci->key, "Free") == 0) {
-		free(kd);
-		ci->home->data = safe_cast NULL;
 		return 1;
 	}
 	if (strcmp(ci->key, "Clone") == 0) {
@@ -67,10 +64,7 @@ DEF_CMD(keymap_handle)
 
 static struct pane *safe do_keymap_attach(struct pane *p safe)
 {
-	struct key_data *kd = malloc(sizeof(*kd));
-
-	kd->globalcmd = NULL;
-	return pane_register(p, 0, &keymap_handle, kd);
+	return pane_register(p, 0, &keymap_handle);
 }
 
 DEF_CMD(keymap_attach)
