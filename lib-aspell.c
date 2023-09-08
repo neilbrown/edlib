@@ -8,14 +8,16 @@
 
 #include <aspell.h>
 #include <wctype.h>
+#define PANE_DATA_TYPE struct aspell_data
 #include "core.h"
-
-static AspellConfig *spell_config;
 
 struct aspell_data {
 	AspellSpeller *speller safe;
 	bool need_save;
 };
+#include "core-pane.h"
+
+static AspellConfig *spell_config;
 
 static int trim(const char *safe *wordp safe)
 {
@@ -54,11 +56,11 @@ DEF_CMD(aspell_attach_helper)
 		LOG("Cannot create speller: %s", aspell_error_message(ret));
 		return Efail;
 	}
-	alloc(as, pane);
-	as->speller = safe_cast to_aspell_speller(ret);
-	p = pane_register(ci->focus, 0, &aspell_handle.c, as);
+	p = pane_register(ci->focus, 0, &aspell_handle.c);
 	if (!p)
 		return Efail;
+	as = p->data;
+	as->speller = safe_cast to_aspell_speller(ret);
 
 	call("doc:request:aspell:check", p);
 	call("doc:request:aspell:suggest", p);
@@ -340,7 +342,6 @@ void edlib_init(struct pane *ed safe)
 
 	aspell_map = key_alloc();
 	key_add(aspell_map, "Close", &aspell_close);
-	key_add(aspell_map, "Free", &edlib_do_free);
 	key_add(aspell_map, "aspell:check", &aspell_check);
 	key_add(aspell_map, "aspell:suggest", &aspell_suggest);
 	key_add(aspell_map, "aspell:set-dict", &aspell_set_dict);
