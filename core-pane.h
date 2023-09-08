@@ -10,7 +10,7 @@ struct pane {
 	short			abs_z;
 
 	short			damaged;
-	short			data_size;	/* only needed by edlib_do_free */
+	short			alloc_size;
 
 	int			marks;
 	int			refs;

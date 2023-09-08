@@ -156,17 +156,18 @@ static struct pane *_do_pane_register(struct pane *parent, short z,
 
 	if (data)
 		alloc_size = sizeof(data);
+	alloc_size += offsetof(struct pane, data);
 
-	p = alloc_zbuf(offsetof(struct pane, data) + alloc_size, pane);
+	p = alloc_zbuf(alloc_size, pane);
 	pane_init(p, parent);
+	p->alloc_size = alloc_size;
 	p->z = z;
 	if (parent)
 		p->abs_z = parent->abs_z + 1;
 	p->handle = command_get(handle);
-	if (data) {
+	if (data)
 		p->data = data;
-		p->data_size = data_size;
-	}
+
 	p->name = handle->name;
 	if (z >= 0) {
 		if (parent && parent->focus == NULL)
@@ -639,7 +640,7 @@ void pane_close(struct pane *p safe)
 void pane_free(struct pane *p safe)
 {
 	if (p->refs == 0)
-		unalloc_safe(p, pane);
+		unalloc_buf_safe(p, p->alloc_size, pane);
 }
 
 bool pane_resize(struct pane *p safe, int x, int y, int w, int h)

@@ -342,13 +342,6 @@ DEF_CMD(editor_free_store)
 	return 1;
 }
 
-DEF_EXTERN_CMD(edlib_do_free)
-{
-	if (ci->home->data_size)
-		unalloc_buf_safe(ci->home->_data, ci->home->data_size, pane);
-	return 1;
-}
-
 /* FIXME I should be able to remove things from a keymap, not
  * replace with this.
  */

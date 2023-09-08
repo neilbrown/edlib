@@ -339,7 +339,6 @@ struct lookup_cmd {
 		.m = &_map,				\
 	}
 
-DECL_EXTERN_CMD(edlib_do_free);
 DECL_EXTERN_CMD(edlib_noop);
 
 int key_lookup_cmd_func(const struct cmd_info *ci safe);
