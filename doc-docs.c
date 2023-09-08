@@ -47,6 +47,9 @@ struct doc_ref {
 #define DOC_DATA_TYPE struct docs
 #define DOC_NEXT(d,m,r,b) docs_next(d,r,b)
 #define DOC_PREV(d,m,r,b) docs_prev(d,r,b)
+/* Note: both non-doc panes in this file use a simple
+ * pointer for the data, so no PANE_DATA_TYPE is needed.
+ */
 #include "core.h"
 
 static struct map *docs_map, *docs_aux_map, *docs_modified_map,
@@ -834,7 +837,6 @@ static void docs_init_map(void)
 
 	key_add(docs_map, "get-attr", &docs_get_attr);
 	key_add(docs_map, "Close", &docs_close);
-	key_add(docs_map, "Free", &edlib_do_free);
 
 	key_add(docs_aux_map, "doc:revisit", &doc_revisit);
 	key_add(docs_aux_map, "doc:status-changed", &doc_damage);
