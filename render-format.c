@@ -40,7 +40,7 @@ struct rf_data {
 		unsigned short min_attr_depth; /* attr depth of first attr - from 0 */
 		bool var;	/* else constant */
 		char align;	/* l,r,c */
-	} *fields safe;
+	} *fields;
 	char *attr_cache;
 	void *cache_pos;
 	int cache_field;
@@ -235,13 +235,14 @@ DEF_CMD(render_line_prev)
 	return 1;
 }
 
-DEF_CMD(format_free)
+DEF_CMD(format_close)
 {
 	struct rf_data *rf = ci->home->data;
 
-	free(rf->attr_cache);
-	free(rf->fields);
-	free(rf->format);
+	free(rf->attr_cache); rf->attr_cache = NULL;
+	free(rf->fields); rf->fields = NULL;
+	free(rf->format); rf->format = "";
+	rf->nfields = 0;
 	return 1;
 }
 
@@ -475,6 +476,8 @@ static void update_offset(struct mark *m safe, struct rf_data *rd safe,
 	struct mark *target = m;
 	int f;
 
+	if (!rd->fields)
+		return;
 	/* If o is the first visible field, it needs to be 0 */
 	if (o) {
 		for (f = 0; f < rd->nfields; f++)
@@ -783,6 +786,8 @@ DEF_CMD(format_attr)
 		return Enoarg;
 	if (!m->ref.p)
 		return Efallthrough;
+	if (!rd->fields)
+		return Efail;
 	if (strcmp(ci->str, "format:plain") == 0) {
 		char *v = do_format(ci->focus, m, NULL, -1, 0);
 
@@ -860,7 +865,7 @@ DEF_CMD(format_map)
 	else
 		f0 = FIELD_NUM(previ)+1;
 	for(f = f0; f <= FIELD_NUM(idx); f++) {
-		if (f >= rd->nfields)
+		if (f >= rd->nfields || !rd->fields)
 			continue;
 		/* Each depth gets a priority level from 0 up.
 		 * When starting, set length to v.large.  When ending, set
@@ -942,7 +947,7 @@ static void render_format_register_map(void)
 	key_add(rf2_map, "doc:render-line-prev", &render_line_prev2);
 	key_add(rf2_map, "Clone", &format_clone);
 	key_add(rf2_map, "doc:content", &format_content2);
-	key_add(rf2_map, "Free", &format_free);
+	key_add(rf2_map, "Close", &format_close);
 	key_add(rf2_map, "doc:shares-ref", &format_noshare_ref);
 }
 
