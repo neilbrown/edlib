@@ -19,11 +19,9 @@
 #include <unistd.h>
 #include <event.h>
 #include <string.h>
+#define PANE_DATA_TYPE struct event_info
 #include "core.h"
 #include "misc.h"
-
-static struct map *libevent_map;
-DEF_LOOKUP_CMD(libevent_handle, libevent_map);
 
 enum {
 	EV_LIST,	/* Events handled by libevent */
@@ -43,6 +41,10 @@ struct event_info {
 	struct command read, write, signal, timer, poll, on_idle,
 		run, deactivate, free, refresh, noblock;
 };
+#include "core-pane.h"
+
+static struct map *libevent_map;
+DEF_LOOKUP_CMD(libevent_handle, libevent_map);
 
 struct evt {
 	struct event *l;
@@ -452,7 +454,11 @@ DEF_CMD(libevent_activate)
 	struct pane *p;
 	int i;
 
-	alloc(ei, pane);
+	p = pane_register(pane_root(ci->home), 0, &libevent_handle.c);
+	if (!p)
+		return Efail;
+	ei = p->data;
+	ei->home = p;
 	for (i = 0; i < NR_LISTS; i++)
 		INIT_LIST_HEAD(&ei->event_list[i]);
 	ei->read = libevent_read;
@@ -466,10 +472,6 @@ DEF_CMD(libevent_activate)
 	ei->free = libevent_free;
 	ei->refresh = libevent_refresh;
 	ei->noblock = libevent_noblock;
-	p = pane_register(ei->home, 0, &libevent_handle.c, ei);
-	if (!p)
-		return Efail;
-	ei->home = p;
 
 	/* These are defaults, so make them sort late */
 	call_comm("global-set-command", ci->focus, &ei->read,
@@ -508,5 +510,4 @@ void edlib_init(struct pane *ed safe)
 		return;
 	libevent_map = key_alloc();
 	key_add(libevent_map, "Notify:Close", &libevent_notify);
-	key_add(libevent_map, "Free", &edlib_do_free);
 }

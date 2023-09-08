@@ -177,8 +177,11 @@ static struct pane *_do_pane_register(struct pane *parent, short z,
 			p->damaged |= DAMAGED_NOINIT;
 			pane_close(p);
 			p = NULL;
-		} else
-			/* Need to set size of child */
+		} else if (parent && parent != pane_root(parent))
+			/* Need to set size of child, but not
+			 * if parent is root and that make libevent
+			 * fail to load.
+			 */
 			pane_damaged(parent, DAMAGED_SIZE);
 	}
 	return p;
