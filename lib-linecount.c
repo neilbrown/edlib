@@ -40,16 +40,17 @@
 #include <wctype.h>
 #include <string.h>
 
+#define PANE_DATA_TYPE struct count_info
 #include "core.h"
+struct count_info {
+	int view_num;
+};
+#include "core-pane.h"
 
 static struct map *linecount_map;
 DEF_LOOKUP_CMD(handle_count_lines, linecount_map);
 
 static const int batch_marks = 10;
-
-struct count_info {
-	int view_num;
-};
 
 struct clcb {
 	int lines, words, chars;
@@ -422,11 +423,11 @@ DEF_CMD(count_lines)
 		struct count_info *cli;
 		struct pane *p;
 
-		alloc(cli, pane);
 		p = pane_register(pane_root(ci->focus), 0,
-				  &handle_count_lines.c, cli);
+				  &handle_count_lines.c);
 		if (!p)
 			return Efail;
+		cli = p->data;
 		cli->view_num = home_call(ci->focus, "doc:add-view", p) - 1;
 		home_call(ci->focus, "doc:request:doc:replaced", p);
 		home_call(ci->focus, "doc:request:doc:CountLines", p);
@@ -454,11 +455,10 @@ DEF_CMD(linecount_attach)
 	struct count_info *cli;
 	struct pane *p;
 
-	alloc(cli, pane);
-	p = pane_register(ci->focus, 0,
-			  &handle_count_lines.c, cli);
+	p = pane_register(ci->focus, 0, &handle_count_lines.c);
 	if (!p)
 		return Efail;
+	cli = p->data;
 	cli->view_num = home_call(p, "doc:add-view", p) - 1;
 	call("doc:request:doc:replaced", p);
 	call("doc:request:Notify:Close", p);
@@ -492,7 +492,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(linecount_map, "doc:replaced", &linecount_notify_replace);
 	key_add(linecount_map, "doc:CountLines", &linecount_notify_count);
 	key_add(linecount_map, "doc:GotoLine", &linecount_notify_goto);
-	key_add(linecount_map, "Free", &edlib_do_free);
 
 	/* For view-attached version */
 	key_add(linecount_map, "CountLines", &linecount_view_count);
