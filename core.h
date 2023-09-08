@@ -685,39 +685,44 @@ char *do_call_strsave(enum target_type type, struct pane *home,
 #define _doCALL(...) VFUNC(CALL, __VA_ARGS__)
 #define CALL15(ret, t_type, target, key, comm2a, focus, num, mark, str,	\
 	       num2, mark2, str2, x, y, comm2) \
-	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2,target), \
+	do_call_##ret(TYPE_##t_type, CH(T_##t_type, target, comm2a), CH(T_##t_type,comm2,target), \
 		      key, focus, num, mark, str, num2, mark2, str2, x, y, comm2)
 #define CALL14(ret, t_type, target, key, comm2a, focus, num, mark, str, num2, mark2, str2, x, y) \
-	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
+	do_call_##ret(TYPE_##t_type, CH(T_##t_type, target, comm2a), CH(T_##t_type,comm2a,target), \
 		      key, focus, num, mark, str, num2, mark2, str2, x, y, NULL)
 #define CALL12(ret, t_type, target, key, comm2a, focus, num, mark, str, num2, mark2, str2) \
-	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
+	do_call_##ret(TYPE_##t_type, CH(T_##t_type, target, comm2a), CH(T_##t_type,comm2a,target), \
 		      key, focus, num, mark, str, num2, mark2, str2, 0, 0, NULL)
 #define CALL11(ret, t_type, target, key, comm2a, focus, num, mark, str, num2, mark2) \
-	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
+	do_call_##ret(TYPE_##t_type, CH(T_##t_type, target, comm2a), CH(T_##t_type,comm2a,target), \
 		      key, focus, num, mark, str, num2, mark2, NULL, 0, 0, NULL)
 #define CALL10(ret, t_type, target, key, comm2a, focus, num, mark, str, num2) \
-	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
+	do_call_##ret(TYPE_##t_type, CH(T_##t_type, target, comm2a), CH(T_##t_type,comm2a,target), \
 		      key, focus, num, mark, str, num2, NULL, NULL, 0, 0, NULL)
 #define CALL9(ret, t_type, target, key, comm2a, focus, num, mark, str) \
-	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
+	do_call_##ret(TYPE_##t_type, CH(T_##t_type, target, comm2a), CH(T_##t_type,comm2a,target), \
 		      key, focus, num, mark, str, 0, NULL, NULL, 0, 0, NULL)
 #define CALL8(ret, t_type, target, key, comm2a, focus, num, mark) \
-	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
+	do_call_##ret(TYPE_##t_type, CH(T_##t_type, target, comm2a), CH(T_##t_type,comm2a,target), \
 		      key, focus, num, mark, NULL, 0, NULL, NULL, 0, 0, NULL)
 #define CALL7(ret, t_type, target, key, comm2a, focus, num) \
-	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
+	do_call_##ret(TYPE_##t_type, CH(T_##t_type, target, comm2a), CH(T_##t_type,comm2a,target), \
 		      key, focus, num, NULL, NULL, 0, NULL, NULL, 0, 0, NULL)
 #define CALL6(ret, t_type, target, key, comm2a, focus) \
-	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
+	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, comm2a), CH(T_##t_type,comm2a,target), \
 		      key, focus, 0, NULL, NULL, 0, NULL, NULL, 0, 0, NULL)
 
 #define CALL(ret, t_type, target, key, ...) _doCALL(ret, t_type, target, key, NULL, __VA_ARGS__)
 
 #define call(key, _focus, ...) CALL(val, focus, _focus, key, _focus, ##__VA_ARGS__)
-/* comm_call() is only for callbacks, is it doesn't allow a separate 'home' */
+/* comm_call() is only for callbacks
+ * home_comm_call must be used if the focus must be closed already.
+ */
 #define comm_call(_comm, key, ...) CALL(val, comm, _comm, key, ##__VA_ARGS__)
+#define home_comm_call(_home, _comm, key, ...) _doCALL(val, comm, _comm, key, _home, __VA_ARGS__)
+
 #define comm_call_ret(_ret, _comm, key, ...) CALL(_ret, comm, _comm, key, ##__VA_ARGS__)
+#define home_comm_call_ret(_ret, _comm, key, ...) _doCALL(_ret, comm, _comm, key, _home, ##__VA_ARGS__)
 /* pane_call() is used when a very specific pane must be informed, rather than
  * the first responder in a chain of panes.  This mostly used for notifications,
  * both generic notification, and special things like a child appearing or disappearing

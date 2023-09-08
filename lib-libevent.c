@@ -444,7 +444,7 @@ DEF_CMD(libevent_notify)
 {
 	struct event_info *ei = ci->home->data;
 
-	comm_call(&ei->free, "free", ci->focus);
+	home_comm_call(ci->home, &ei->free, "free", ci->focus);
 	return 1;
 }
 

@@ -558,7 +558,7 @@ int key_handle(const struct cmd_info *ci safe)
 
 	while (p) {
 		int ret = Efallthrough;
-		if (p->handle && !(p->damaged & DAMAGED_DEAD)) {
+		if (p->handle && !(p->damaged & DAMAGED_CLOSED)) {
 			vci->home = p;
 			vci->comm = p->handle;
 			/* Don't add this to the call stack as it
