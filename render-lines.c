@@ -1043,7 +1043,7 @@ static int revalidate_start(struct rl_data *rl safe,
 	int shifts = 0;
 
 	/* This loop is fragile and sometimes spins.  So ensure we
-	 * never loop more than 1000 times.
+	 * never loop more than 100 times.
 	 */
 	if (pm && !rl->do_wrap && !rl->shift_locked && shifts++ < 100) {
 		int prefix_len;
@@ -1133,6 +1133,9 @@ static int revalidate_start(struct rl_data *rl safe,
 			/* Cursor is on this line */
 			offset = call_render_line_to_point(focus,
 							   pm, m);
+		if (pm && mark_same(m, pm))
+			/* Probably EOF - cursor is here */
+			offset = 0;
 		found = measure_line(p, focus, m, offset);
 
 		hp = m->mdata;
