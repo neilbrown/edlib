@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#define PANE_DATA_TYPE struct complete_data
 #include "core.h"
 #include "misc.h"
 
@@ -32,9 +33,10 @@ struct complete_data {
 	struct stk {
 		struct stk *prev;
 		const char *substr safe;
-	} *stk safe;
+	} *stk;
 	int prefix_only;
 };
+#include "core-pane.h"
 
 static struct map *rc_map;
 
@@ -195,7 +197,7 @@ DEF_CMD(render_complete_line)
 	struct mark *m;
 	int offset = 0;
 
-	if (!ci->mark)
+	if (!ci->mark || !cd->stk)
 		return Enoarg;
 
 	m = mark_dup(ci->mark);
@@ -256,7 +258,7 @@ DEF_CMD(render_complete_line)
 	return ret;
 }
 
-DEF_CMD(complete_free)
+DEF_CMD(complete_close)
 {
 	struct complete_data *cd = ci->home->data;
 	struct stk *stk = cd->stk;
@@ -267,9 +269,10 @@ DEF_CMD(complete_free)
 		free((void*)t->substr);
 		free(t);
 	}
+	cd->stk = NULL;
 
 	free(cd->attr);
-	unalloc(cd, pane);
+	cd->attr = NULL;
 	return 1;
 }
 
@@ -278,12 +281,10 @@ static struct pane *complete_pane(struct pane *focus safe)
 	struct pane *complete;
 	struct complete_data *cd;
 
-	alloc(cd, pane);
-	complete = pane_register(focus, 0, &complete_handle.c, cd);
-	if (!complete) {
-		unalloc(cd, pane);
+	complete = pane_register(focus, 0, &complete_handle.c);
+	if (!complete)
 		return NULL;
-	}
+	cd = complete->data;
 	cd->stk = malloc(sizeof(cd->stk[0]));
 	cd->stk->prev = NULL;
 	cd->stk->substr = strdup("");
@@ -324,9 +325,12 @@ DEF_CMD(complete_char)
 {
 	struct complete_data *cd = ci->home->data;
 	char *np;
-	int pl = strlen(cd->stk->substr);
+	int pl;
 	const char *suffix = ksuffix(ci, "doc:char-");
 
+	if (!cd->stk)
+		return Efail;
+	pl = strlen(cd->stk->substr);
 	np = malloc(pl + strlen(suffix) + 1);
 	strcpy(np, cd->stk->substr);
 	strcpy(np+pl, suffix);
@@ -342,7 +346,7 @@ DEF_CMD(complete_bs)
 	struct stk *stk = cd->stk;
 	char *old = NULL;
 
-	if (!stk->prev)
+	if (!stk || !stk->prev)
 		return 1;
 	if (stk->substr[0] && !stk->prev->substr[0]) {
 		old = (void*)stk->substr;
@@ -498,6 +502,8 @@ DEF_CMD(complete_set_prefix)
 	struct stk *stk;
 	struct mark *m;
 
+	if (!cd->stk)
+		return Efail;
 	/* Save a copy of the point so we can restore it if needed */
 	m = call_ret(mark, "doc:point", ci->focus);
 	if (m)
@@ -605,7 +611,7 @@ static void register_map(void)
 	rc_map = key_alloc();
 
 	key_add(rc_map, "doc:render-line", &render_complete_line);
-	key_add(rc_map, "Free", &complete_free);
+	key_add(rc_map, "Close", &complete_close);
 	key_add(rc_map, "Clone", &complete_clone);
 
 	key_add(rc_map, "Replace", &complete_ignore_replace);
