@@ -49,7 +49,7 @@
 
 struct email_view {
 	int	parts;
-	char	*invis safe;
+	char	*invis;
 };
 
 #include "core-pane.h"
@@ -958,11 +958,12 @@ out:
 	return Efail;
 }
 
-DEF_CMD(email_view_free)
+DEF_CMD(email_view_close)
 {
 	struct email_view *evi = ci->home->data;
 
 	free(evi->invis);
+	evi->invis = NULL;
 	return 1;
 }
 
@@ -1096,6 +1097,8 @@ DEF_CMD(email_view_get_attr)
 		p = to_orig(p);
 		if (p < 0 || p >= evi->parts)
 			v = "none";
+		else if (!evi->invis)
+			v = "none";
 		else if (evi->invis[p] != 'i')
 			v = "orig";
 		else if (evi->invis[p+1] != 'i')
@@ -1123,7 +1126,7 @@ DEF_CMD(email_view_set_attr)
 		p = get_part(ci->home->parent, ci->mark);
 		/* only parts can be invisible, not separators */
 		p = to_orig(p);
-		if (p < 0 || p >= evi->parts)
+		if (p < 0 || p >= evi->parts || !evi->invis)
 			return Efail;
 
 		m1 = mark_dup(ci->mark);
@@ -1221,7 +1224,7 @@ DEF_CMD(attach_email_view)
 static void email_init_map(void)
 {
 	email_view_map = key_alloc();
-	key_add(email_view_map, "Free", &email_view_free);
+	key_add(email_view_map, "Close", &email_view_close);
 	key_add(email_view_map, "doc:char", &email_char);
 	key_add(email_view_map, "doc:content", &email_content);
 	key_add(email_view_map, "doc:content-bytes", &email_content);
