@@ -80,6 +80,7 @@
 
 #define	MARK_DATA_PTR struct pane
 #define _GNU_SOURCE /*  for asprintf */
+#define PANE_DATA_TYPE struct rl_data
 #include "core.h"
 #include "misc.h"
 #include <stdio.h> /* snprintf */
@@ -130,6 +131,7 @@ struct rl_data {
 	 */
 	struct pane	*cursor_pane;
 };
+#include "core-pane.h"
 
 static void vmark_clear(struct mark *m safe)
 {
@@ -965,6 +967,9 @@ static int render(struct mark *pm, struct pane *p safe,
 		short lineheight;
 
 		if (!cp) {
+			/* Note: this pane will container rl_data
+			 * which isn't used.
+			 */
 			cp = pane_register(p, -1, &cursor_handle);
 			rl->cursor_pane = cp;
 		}
@@ -1972,7 +1977,6 @@ static void render_lines_register_map(void)
 
 	key_add(rl_map, "Close", &render_lines_close);
 	key_add(rl_map, "Close:mark", &render_lines_close_mark);
-	key_add(rl_map, "Free", &edlib_do_free);
 	key_add(rl_map, "Clone", &render_lines_clone);
 	key_add(rl_map, "Refresh", &render_lines_refresh);
 	key_add(rl_map, "Refresh:view", &render_lines_revise);
@@ -1996,21 +2000,19 @@ REDEF_CMD(render_lines_attach)
 	if (!rl_map)
 		render_lines_register_map();
 
-	alloc(rl, pane);
-	rl->target_x = -1;
-	rl->target_y = -1;
-	rl->do_wrap = 1;
 	p = ci->focus;
 	if (strcmp(ci->key, "attach-render-text") == 0) {
 		p = call_ret(pane, "attach-markup", p);
 		if (!p)
 			p = ci->focus;
 	}
-	p = pane_register(p, 0, &render_lines_handle.c, rl);
-	if (!p) {
-		free(rl);
+	p = pane_register(p, 0, &render_lines_handle.c);
+	if (!p)
 		return Efail;
-	}
+	rl = p->data;
+	rl->target_x = -1;
+	rl->target_y = -1;
+	rl->do_wrap = 1;
 	rl->typenum = home_call(ci->focus, "doc:add-view", p) - 1;
 	call("doc:request:doc:replaced", p);
 	call("doc:request:doc:replaced-attr", p);
