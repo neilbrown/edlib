@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#define PANE_DATA_TYPE struct filter_data
 #include "core.h"
 #include "misc.h"
 
@@ -34,6 +35,7 @@ struct filter_data {
 	bool explicit_set;
 	bool implicit_set;
 };
+#include "core-pane.h"
 
 struct rlcb {
 	struct command c;
@@ -523,7 +525,6 @@ static void filter_register_map(void)
 	filter_map = key_alloc();
 	key_add(filter_map, "doc:render-line", &render_filter_line);
 	key_add(filter_map, "doc:render-line-prev", &render_filter_prev);
-	key_add(filter_map, "Free", &edlib_do_free);
 	key_add(filter_map, "Clone", &filter_clone);
 	key_add(filter_map, "doc:EOL", &filter_eol);
 	key_add(filter_map, "Filter:set", &filter_changed);
@@ -537,16 +538,12 @@ static void filter_register_map(void)
 REDEF_CMD(filter_attach)
 {
 	struct pane *filter;
-	struct filter_data *fd;
 
 	filter_register_map();
-	alloc(fd, pane);
 
-	filter = pane_register(ci->focus, 0, &filter_handle.c, fd);
-	if (!filter) {
-		unalloc(fd, pane);
+	filter = pane_register(ci->focus, 0, &filter_handle.c);
+	if (!filter)
 		return Efail;
-	}
 	pane_damaged(filter, DAMAGED_VIEW);
 	call("doc:request:doc:replaced", filter);
 
