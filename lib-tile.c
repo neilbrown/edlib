@@ -63,14 +63,9 @@ static inline bool mine(struct pane *t safe)
 
 DEF_CMD(tile_close)
 {
-	tile_destroy(ci->home);
-	return 1;
-}
-
-DEF_CMD(tile_free)
-{
 	struct tileinfo *ti = ci->home->data;
 
+	tile_destroy(ci->home);
 	free(ti->name);
 	unalloc(ti, pane);
 	return 1;
@@ -1062,7 +1057,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(tile_map, "Clone", &tile_clone);
 	key_add(tile_map, "Child-Notify", &tile_child_notify);
 	key_add(tile_map, "Close", &tile_close);
-	key_add(tile_map, "Free", &tile_free);
 	key_add(tile_map, "Refresh:size", &tile_refresh_size);
 
 	call_comm("global-set-command", ed, &tile_attach, 0, NULL, "attach-tile");
