@@ -23,7 +23,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-
+#define PANE_DATA_TYPE struct xs_info
 #include "core.h"
 
 #ifndef __CHECKER__
@@ -81,6 +81,7 @@ struct xs_info {
 	GtkTargetEntry		*text_targets;
 	int			n_text_targets;
 };
+#include "core-pane.h"
 
 static void do_get(GtkClipboard *cb, GtkSelectionData *sd,
 		   guint info, gpointer vdata safe)
@@ -308,7 +309,10 @@ DEF_CMD(xs_attach)
 		return 1;
 
 	call("attach-glibevents", ci->focus);
-	alloc(xsi, pane);
+	p = pane_register(ci->focus, 0, &xs_handle.c);
+	if (!p)
+		return Efail;
+	xsi = p->data;
 
 	xsi->display = dis;
 	primary = gdk_atom_intern("PRIMARY", TRUE);
@@ -324,9 +328,6 @@ DEF_CMD(xs_attach)
 
 	claim_both(xsi);
 
-	p = pane_register(ci->focus, 0, &xs_handle.c, xsi);
-	if (!p)
-		return Efail;
 	xsi->self = p;
 	return comm_call(ci->comm2, "cb:attach", xsi->self);
 }
@@ -341,7 +342,6 @@ void edlib_init(struct pane *ed safe)
 		key_add(xs_map, "Notify:selection:commit", &xs_sel_commit);
 		key_add(xs_map, "Clone", &xs_clone);
 		key_add(xs_map, "Close", &xs_close);
-		key_add(xs_map, "Free", &edlib_do_free);
 	}
 
 	call_comm("global-set-command", ed, &xs_attach,
