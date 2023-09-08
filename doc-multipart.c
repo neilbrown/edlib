@@ -47,7 +47,7 @@ struct mp_info {
 	int		parts_size;
 	struct part {
 		struct pane	*pane;
-	} *parts safe;
+	} *parts;
 };
 #include "core-pane.h"
 
@@ -180,7 +180,7 @@ static void change_part(struct mp_info *mpi safe, struct mark *m safe,
 	struct mark *m1;
 	struct part *p;
 
-	if (part < 0 || part > mpi->nparts)
+	if (part < 0 || part > mpi->nparts || !mpi->parts)
 		return;
 	if (m->ref.m) {
 		ASSERT(GET_REFS(m->ref.m) == 1);
@@ -207,6 +207,8 @@ static void mp_normalize(struct mp_info *mpi safe, struct mark *m safe,
 	 * of the next instead.
 	 */
 	struct part *p;
+	if (!mpi->parts)
+		return;
 	while (m->ref.m && (p = &mpi->parts[m->ref.docnum]) && p->pane &&
 	       doc_following(p->pane, m->ref.m) == WEOF) {
 		int n = m->ref.docnum + 1;
@@ -230,20 +232,16 @@ DEF_CMD(mp_close)
 			if (GET_REFS(m2) == 0)
 				mark_free(m2);
 		}
+	if (!mpi->parts)
+		return Efallthrough;
 	for (i = 0; i < mpi->nparts; i++) {
 		struct pane *p = mpi->parts[i].pane;
 		if (p)
 			call("doc:closed", p);
 	}
-	return Efallthrough;
-}
-
-DEF_CMD(mp_free)
-{
-	struct mp_info *mpi = ci->home->doc_data;
-
 	free(mpi->parts);
-	return 1;
+	mpi->parts = NULL;
+	return Efallthrough;
 }
 
 DEF_CMD(mp_set_ref)
@@ -313,7 +311,7 @@ static inline wint_t multipart_next_prev(struct pane *home safe, struct mark *ma
 
 	m1 = m->ref.m;
 
-	if (m->ref.docnum >= mpi->nparts)
+	if (m->ref.docnum >= mpi->nparts || !mpi->parts)
 		ret = -1;
 	else
 		ret = home_call(mpi->parts[m->ref.docnum].pane,
@@ -344,7 +342,7 @@ static inline wint_t multipart_next_prev(struct pane *home safe, struct mark *ma
 			change_part(mpi, m, n, 1);
 		}
 		m1 = m->ref.m;
-		if (m->ref.docnum >= mpi->nparts)
+		if (m->ref.docnum >= mpi->nparts || !mpi->parts)
 			ret = -1;
 		else
 			ret = home_call(mpi->parts[m->ref.docnum].pane,
@@ -484,6 +482,7 @@ DEF_CMD(mp_content)
 	m2 = ci->mark2;
 	cb.last_ret = 1;
 	while (cb.last_ret > 0 && m->ref.docnum < mpi->nparts &&
+	       mpi->parts &&
 	       (!m2 || m->ref.docnum <= m2->ref.docnum)) {
 		/* Need to call doc:content on this document */
 		int n = m->ref.docnum;
@@ -534,7 +533,7 @@ DEF_CMD(mp_attr)
 	m1 = ci->mark->ref.m;
 	d = ci->mark->ref.docnum;
 
-	if (d < mpi->nparts && m1 && (p = &mpi->parts[d]) &&
+	if (d < mpi->nparts && m1 && mpi->parts && (p = &mpi->parts[d]) &&
 	    p->pane &&  doc_following(p->pane, m1) == WEOF)
 		/* at the wrong end of a part */
 		d += 1;
@@ -560,7 +559,7 @@ DEF_CMD(mp_attr)
 		return 1;
 	}
 
-	if (d >= mpi->nparts || d < 0)
+	if (d >= mpi->nparts || d < 0 || !mpi->parts)
 		return 1;
 
 	if (attr != ci->str) {
@@ -601,6 +600,8 @@ DEF_CMD(mp_set_attr)
 		return Enoarg;
 	if (!m)
 		return Efallthrough;
+	if (!mpi->parts)
+		return Efail;
 	dn = m->ref.docnum;
 	m1 = m->ref.m;
 
@@ -638,7 +639,7 @@ DEF_CMD(mp_notify_close)
 	struct mp_info *mpi = ci->home->doc_data;
 	int i;
 
-	for (i = 0; i < mpi->nparts; i++)
+	for (i = 0; i < mpi->nparts && mpi->parts; i++)
 		if (mpi->parts[i].pane == ci->focus) {
 			/* sub-document has been closed.
 			 * Can we survive? or should we just shut down?
@@ -721,7 +722,7 @@ DEF_CMD(mp_forward_by_num)
 		return Einval;
 	key += 1;
 
-	if (d >= mpi->nparts || d < 0)
+	if (d >= mpi->nparts || d < 0 || !mpi->parts)
 		return 1;
 
 	if (ci->mark && ci->mark->ref.docnum == d)
@@ -744,7 +745,7 @@ DEF_CMD(mp_get_part)
 	struct part *p;
 	int d = ci->num;
 
-	if (d < 0 || d >= mpi->nparts)
+	if (d < 0 || d >= mpi->nparts || !mpi->parts)
 		return Einval;
 	p = &mpi->parts[d];
 	if (p->pane)
@@ -766,7 +767,8 @@ DEF_CMD(mp_forward)
 
 	if (!ci->mark2)
 		return Enoarg;
-
+	if (!mpi->parts)
+		return Efail;
 	m2 = ci->mark2->ref.m;
 	d = ci->mark2->ref.docnum;
 
@@ -842,7 +844,6 @@ static void mp_init_map(void)
 	key_add(mp_map, "doc:step-part", &mp_step_part);
 	key_add(mp_map, "doc:get-boundary", &mp_get_boundary);
 	key_add(mp_map, "Close", &mp_close);
-	key_add(mp_map, "Free", &mp_free);
 	key_add(mp_map, "Notify:Close", &mp_notify_close);
 	key_add(mp_map, "doc:notify-viewers", &mp_notify_viewers);
 	key_add(mp_map, "doc:replaced", &mp_doc_replaced);
