@@ -24,6 +24,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#define PANE_DATA_TYPE struct es_info
+#define PANE_DATA_TYPE_2 struct highlight_info
 #include "core.h"
 #include "rexel.h"
 
@@ -46,6 +48,15 @@ struct es_info {
 	short case_sensitive;
 	short replaced;
 };
+
+struct highlight_info {
+	int view, replace_view;
+	char *patn;
+	int ci;
+	struct mark *start, *end, *match, *rpos, *oldpoint;
+	struct pane *popup, *replace_popup;
+};
+#include "core-pane.h"
 
 static struct map *es_map, *er_map;
 DEF_LOOKUP_CMD(search_handle, es_map);
@@ -553,7 +564,7 @@ DEF_CMD(do_replace)
 
 DEF_CMD(replace_request_next)
 {
-	struct pane *sp = ci->home->data;
+	struct pane *sp = ci->home->_data;
 	char *new;
 
 	new = call_ret(str, "doc:get-str", ci->focus);
@@ -568,7 +579,7 @@ DEF_CMD(replace_request_next)
 
 DEF_CMD(replace_request)
 {
-	struct pane *sp = ci->home->data;
+	struct pane *sp = ci->home->_data;
 	char *new;
 
 	new = call_ret(str, "doc:get-str", ci->focus);
@@ -580,7 +591,7 @@ DEF_CMD(replace_request)
 
 DEF_CMD(replace_all)
 {
-	struct pane *sp = ci->home->data;
+	struct pane *sp = ci->home->_data;
 	char *new;
 	int replaced = 0;
 
@@ -599,7 +610,7 @@ DEF_CMD(replace_all)
 
 DEF_CMD(replace_to_search)
 {
-	struct pane *sp = ci->home->data;
+	struct pane *sp = ci->home->_data;
 
 	pane_focus(sp);
 	return 1;
@@ -607,7 +618,7 @@ DEF_CMD(replace_to_search)
 
 DEF_CMD(replace_forward)
 {
-	struct pane *sp = ci->home->data;
+	struct pane *sp = ci->home->_data;
 
 	call(ci->key, sp);
 
@@ -621,14 +632,14 @@ DEF_CMD(replace_undo)
 
 DEF_CMD(replace_escape)
 {
-	struct pane *sp = ci->home->data;
+	struct pane *sp = ci->home->_data;
 
 	return call("search:done", sp);
 }
 
 DEF_CMD(replace_prev)
 {
-	struct pane *home = ci->home->data;
+	struct pane *home = ci->home->_data;
 	struct es_info *esi = home->data;
 
 	if (esi->target)
@@ -638,7 +649,7 @@ DEF_CMD(replace_prev)
 
 DEF_CMD(replace_next)
 {
-	struct pane *home = ci->home->data;
+	struct pane *home = ci->home->_data;
 	struct es_info *esi = home->data;
 
 	if (esi->target)
@@ -657,7 +668,6 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "K:C-C", &search_add);
 	key_add(es_map, "K:C-R", &search_forward);
 	key_add(es_map, "Close", &search_close);
-	key_add(es_map, "Free", &edlib_do_free);
 	key_add(es_map, "K:Enter", &search_done);
 	key_add(es_map, "search:done", &search_done);
 	key_add(es_map, "doc:replaced", &search_again);
@@ -691,22 +701,25 @@ static void emacs_search_init_map(void)
 
 DEF_CMD(emacs_search)
 {
-	struct pane *p;
+	struct pane *p, *target;
 	struct es_info *esi;
 	struct mark *m;
 
 	if (!es_map)
 		emacs_search_init_map();
-	p = call_ret(pane, "popup:get-target", ci->focus);
+	target = call_ret(pane, "popup:get-target", ci->focus);
+	if (!target)
+		return Efail;
+
+	m = mark_at_point(target, NULL, MARK_POINT);
+	if (!m)
+		return Efail;
+
+	p = pane_register(ci->focus, 0, &search_handle.c);
 	if (!p)
 		return Efail;
-	esi = calloc(1, sizeof(*esi));
-	esi->target = p;
-	m = mark_at_point(p, NULL, MARK_POINT);
-	if (!m) {
-		free(esi);
-		return Efail;
-	}
+	esi = p->data;
+	esi->target = target;
 	esi->end = m;
 
 	esi->start = mark_dup(m);
@@ -715,10 +728,6 @@ DEF_CMD(emacs_search)
 	esi->wrapped = 0;
 	esi->replaced = 0;
 	esi->backwards = ci->num & 1;
-
-	p = pane_register(ci->focus, 0, &search_handle.c, esi);
-	if (!p)
-		return Efail;
 
 	call("doc:request:doc:replaced", p);
 	attr_set_str(&p->attrs, "status-line", " Search: case insensitive ");
@@ -731,21 +740,13 @@ DEF_CMD(emacs_search)
 	return 1;
 }
 
-struct highlight_info {
-	int view, replace_view;
-	char *patn;
-	int ci;
-	struct mark *start, *end, *match, *rpos, *oldpoint;
-	struct pane *popup, *replace_popup;
-};
-
 static void do_searches(struct pane *p safe,
 			struct pane *owner safe, int view, char *patn,
 			int ci,
 			struct mark *m, struct mark *end)
 {
 	int ret;
-	struct highlight_info *hi = owner->data;
+	struct highlight_info *hi = owner->data2;
 	struct mark *start;
 
 	if (!m)
@@ -803,7 +804,7 @@ DEF_CMD(emacs_search_highlight)
 	 * will highlight other near-by matches.
 	 */
 	struct mark *m, *start;
-	struct highlight_info *hi = ci->home->data;
+	struct highlight_info *hi = ci->home->data2;
 
 	if (hi->view < 0)
 		return Efail;
@@ -861,7 +862,7 @@ DEF_CMD(emacs_replace_highlight)
 	 * be added.
 	 */
 	struct mark *m;
-	struct highlight_info *hi = ci->home->data;
+	struct highlight_info *hi = ci->home->data2;
 
 	if (hi->replace_view < 0 || !hi->replace_popup)
 		return Efail;
@@ -890,7 +891,7 @@ DEF_CMD(emacs_replace_highlight)
 
 DEF_CMD(emacs_hl_attrs)
 {
-	struct highlight_info *hi = ci->home->data;
+	struct highlight_info *hi = ci->home->data2;
 
 	if (!ci->str)
 		return Efallthrough;
@@ -953,7 +954,7 @@ DEF_CMD(emacs_hl_attrs)
 
 DEF_CMD(highlight_draw)
 {
-	struct highlight_info *hi = ci->home->data;
+	struct highlight_info *hi = ci->home->data2;
 	struct pane *pp = hi->popup;
 	struct pane *pp2 = hi->replace_popup;
 	struct xy xy;
@@ -988,7 +989,7 @@ DEF_CMD(highlight_draw)
 
 DEF_CMD(emacs_search_reposition_delayed)
 {
-	struct highlight_info *hi = ci->home->data;
+	struct highlight_info *hi = ci->home->data2;
 	struct mark *start = hi->start;
 	struct mark *end = hi->end;
 	struct mark *vstart, *vend;
@@ -1031,7 +1032,7 @@ DEF_CMD(emacs_search_reposition)
 	 * delayed update won't happen until a suitable time after the last
 	 * reposition.
 	 */
-	struct highlight_info *hi = ci->home->data;
+	struct highlight_info *hi = ci->home->data2;
 	struct mark *start = ci->mark;
 	struct mark *end = ci->mark2;
 	struct mark *m;
@@ -1059,7 +1060,7 @@ DEF_CMD(emacs_search_reposition)
 DEF_CMD(emacs_highlight_close)
 {
 	/* ci->focus is being closed */
-	struct highlight_info *hi = ci->home->data;
+	struct highlight_info *hi = ci->home->data2;
 
 	free(hi->patn);
 	mark_free(hi->start);
@@ -1077,7 +1078,7 @@ DEF_CMD(emacs_highlight_close)
 
 static void free_marks(struct pane *home safe)
 {
-	struct highlight_info *hi = home->data;
+	struct highlight_info *hi = home->data2;
 	struct mark *m;
 
 	while ((m = vmark_first(home, hi->view, home)) != NULL)
@@ -1088,7 +1089,7 @@ static void free_marks(struct pane *home safe)
 
 DEF_CMD(emacs_search_done)
 {
-	struct highlight_info *hi = ci->home->data;
+	struct highlight_info *hi = ci->home->data2;
 
 	if (ci->str && ci->str[0])
 		call("history:save", ci->focus, 0, NULL, ci->str);
@@ -1109,7 +1110,7 @@ DEF_CMD(emacs_search_done)
 
 DEF_CMD(emacs_highlight_abort)
 {
-	struct highlight_info *hi = ci->home->data;
+	struct highlight_info *hi = ci->home->data2;
 	struct pane *p;
 
 	p = hi->replace_popup;
@@ -1127,7 +1128,7 @@ DEF_CMD(emacs_highlight_abort)
 
 DEF_CMD(emacs_highlight_clip)
 {
-	struct highlight_info *hi = ci->home->data;
+	struct highlight_info *hi = ci->home->data2;
 
 	marks_clip(ci->home, ci->mark, ci->mark2,
 		   hi->view, ci->home, !!ci->num);
@@ -1138,7 +1139,7 @@ DEF_CMD(emacs_highlight_clip)
 
 DEF_CMD(emacs_highlight_set_popup)
 {
-	struct highlight_info *hi = ci->home->data;
+	struct highlight_info *hi = ci->home->data2;
 
 	if (ci->num)
 		hi->replace_popup = ci->focus;
@@ -1150,7 +1151,7 @@ DEF_CMD(emacs_highlight_set_popup)
 
 DEF_CMD(emacs_highlight_close_notify)
 {
-	struct highlight_info *hi = ci->home->data;
+	struct highlight_info *hi = ci->home->data2;
 
 	if (ci->focus == hi->replace_popup)
 		hi->replace_popup = NULL;
@@ -1167,7 +1168,7 @@ DEF_CMD(emacs_highlight_reattach)
 
 DEF_CMD(emacs_step_replace)
 {
-	struct highlight_info *hi = ci->home->data;
+	struct highlight_info *hi = ci->home->data2;
 	struct mark *m;
 
 	if (!hi->replace_view || !hi->match)
@@ -1219,7 +1220,6 @@ static void emacs_highlight_init_map(void)
 	key_add(m, "map-attr", &emacs_hl_attrs);
 	key_add(m, "Draw:text", &highlight_draw);
 	key_add(m, "Close", &emacs_highlight_close);
-	key_add(m, "Free", &edlib_do_free);
 	key_add(m, "Abort", &emacs_highlight_abort);
 	key_add(m, "Notify:clip", &emacs_highlight_clip);
 	key_add(m, "highlight:set-popup", &emacs_highlight_set_popup);
@@ -1236,10 +1236,10 @@ DEF_CMD(emacs_search_attach_highlight)
 	if (!hl_map)
 		emacs_highlight_init_map();
 
-	alloc(hi, pane);
-	p = pane_register(ci->focus, 0, &highlight_handle.c, hi);
+	p = pane_register_2(ci->focus, 0, &highlight_handle.c);
 	if (!p)
 		return Efail;
+	hi = p->data2;
 
 	hi->view = home_call(ci->focus, "doc:add-view", p) - 1;
 	hi->replace_view = home_call(ci->focus, "doc:add-view", p) - 1;

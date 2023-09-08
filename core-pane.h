@@ -36,6 +36,9 @@ struct pane {
 #ifdef DOC_DATA_TYPE
 		DOC_DATA_TYPE	doc_data[1];
 #endif
+#ifdef PANE_DATA_TYPE_2
+		PANE_DATA_TYPE_2 data2[1];
+#endif
 		void		*_data safe;
 	};
 };

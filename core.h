@@ -452,6 +452,9 @@ struct pane * do_pane_register(struct pane *parent safe, short z,
 #ifdef PANE_DATA_TYPE
 #define pane_register4(p,z,h,d) do_pane_register(p,z,h,d,sizeof(d))
 #define pane_register3(p,z,h) do_pane_register(p,z,h,NULL, sizeof(PANE_DATA_TYPE))
+#ifdef PANE_DATA_TYPE_2
+#define pane_register_2(p,z,h) do_pane_register(p,z,h,NULL, sizeof(PANE_DATA_TYPE_2))
+#endif
 #else
 #define pane_register4(p,z,h,d) do_pane_register(p,z,h,d,sizeof((d)[0]))
 #define pane_register3(p,z,h) do_pane_register(p,z,h,NULL, 0)
