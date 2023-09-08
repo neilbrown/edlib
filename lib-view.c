@@ -17,6 +17,7 @@
 #include <wctype.h>
 #include <stdio.h>
 
+#define PANE_DATA_TYPE struct view_data
 #include "core.h"
 #include "misc.h"
 
@@ -30,6 +31,8 @@ struct view_data {
 	struct mark	*viewpoint;
 	struct pane	*child;
 };
+#include "core-pane.h"
+
 /* 0 to 4 borders are possible */
 enum {
 	BORDER_LEFT	= 1,
@@ -397,14 +400,14 @@ static struct pane *do_view_attach(struct pane *par safe, int border)
 	struct view_data *vd;
 	struct pane *p;
 
-	alloc(vd, pane);
+	p = pane_register(par, 0, &view_handle.c);
+	if (!p)
+		return p;
+	vd = p->data;
 	vd->border = border;
 	vd->old_border = border;
 	vd->line_height = -1;
 	vd->border_width = vd->border_height = -1;
-	p = pane_register(par, 0, &view_handle.c, vd);
-	if (!p)
-		return p;
 	/* Capture status-changed notification so we can update 'changed' flag in
 	 * status line */
 	call("doc:request:doc:status-changed", p);
@@ -557,7 +560,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(view_map, "Window:border", &view_border);
 	key_add(view_map, "Refresh:view", &view_refresh_view);
 	key_add(view_map, "Close", &view_close);
-	key_add(view_map, "Free", &edlib_do_free);
 	key_add(view_map, "Clone", &view_clone);
 	key_add(view_map, "Child-Notify", &view_child_notify);
 	key_add(view_map, "Refresh:size", &view_refresh_size);
