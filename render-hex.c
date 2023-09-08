@@ -16,6 +16,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#define PANE_DATA_TYPE struct he_data
 #include "core.h"
 #include "misc.h"
 
@@ -23,6 +24,7 @@ struct he_data {
 	struct pane	*pane;
 	bool bytes;
 };
+#include "core-pane.h"
 
 static struct map *he_map;
 static struct pane *do_render_hex_attach(struct pane *parent safe);
@@ -215,7 +217,6 @@ static void render_hex_register_map(void)
 	key_add(he_map, "doc:render-line", &render_line);
 
 	key_add(he_map, "Close", &render_hex_close);
-	key_add(he_map, "Free", &edlib_do_free);
 	key_add(he_map, "Clone", &render_hex_clone);
 	key_add(he_map, "doc:replaced", &render_hex_notify_replace);
 }
@@ -229,10 +230,10 @@ static struct pane *do_render_hex_attach(struct pane *parent safe)
 	if (!he_map)
 		render_hex_register_map();
 
-	alloc(he, pane);
-	p = pane_register(parent, 0, &render_hex_handle.c, he);
+	p = pane_register(parent, 0, &render_hex_handle.c);
 	if (!p)
 		return NULL;
+	he = p->data;
 	call("doc:request:doc:replaced", p);
 	attr_set_str(&p->attrs, "render-wrap", "no");
 	attr_set_str(&p->attrs, "heading", "<bold>          00 11 22 33 44 55 66 77  88 99 aa bb cc dd ee ff   0 1 2 3 4 5 6 7  8 9 a b c d e f</>");
