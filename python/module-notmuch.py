@@ -1962,7 +1962,7 @@ class notmuch_master_view(edlib.Pane):
         pup['prompt'] = "Ad hoc query"
         pup.call("doc:set-name", "Ad hoc query")
         p = pup.call("attach-history", "*Notmuch Query History*",
-                     "popup:close", ret='pane')
+                     ret='pane')
         if p:
             pup = p
         query_popup(pup)
@@ -2009,7 +2009,7 @@ class notmuch_master_view(edlib.Pane):
         pup['prompt'] = "Query filter"
         pup.call("doc:set-name", "*Query filter for %s*" % focus['qname'])
         p = pup.call("attach-history", "*Notmuch Filter History*",
-                     "popup:close", ret='pane')
+                     ret='pane')
         if p:
             pup = p
         query_popup(pup)

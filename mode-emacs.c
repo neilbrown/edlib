@@ -1242,8 +1242,7 @@ DEF_CMD(emacs_findfile)
 		if (!p)
 			return Efail;
 		attr_set_str(&p->attrs, "initial_path", path);
-		call("attach-history", p, 0, NULL, "*File History*",
-		     0, NULL, "popup:close");
+		call("attach-history", p, 0, NULL, "*File History*");
 		return 1;
 	}
 	if (!ci->str)
@@ -1341,8 +1340,7 @@ DEF_CMD(emacs_writefile)
 	if (!p)
 		return Efail;
 	attr_set_str(&p->attrs, "initial_path", path);
-	call("attach-history", p, 0, NULL, "*File History*",
-	     0, NULL, "popup:close");
+	call("attach-history", p, 0, NULL, "*File History*");
 	return 1;
 }
 
@@ -1415,8 +1413,7 @@ DEF_CMD(emacs_insertfile)
 	if (!p)
 		return Efail;
 	attr_set_str(&p->attrs, "initial_path", path);
-	call("attach-history", p, 0, NULL, "*File History*",
-	     0, NULL, "popup:close");
+	call("attach-history", p, 0, NULL, "*File History*");
 	return 1;
 }
 
@@ -1803,8 +1800,7 @@ DEF_CMD(emacs_shell)
 		attr_set_str(&p->attrs, "popup-aux", aux);
 		attr_set_str(&p->attrs, "done-key", "Shell Command");
 		call("doc:set-name", p, 0, NULL, "Shell Command", -1);
-		p = call_ret(pane, "attach-history", p, 0, NULL, "*Shell History*",
-			     0, NULL, "popup:close");
+		p = call_ret(pane, "attach-history", p, 0, NULL, "*Shell History*");
 		if (p)
 			p = pane_register(p, 0, &find_handle.c, "shellcmd");
 		if (!p)
@@ -2019,8 +2015,7 @@ DEF_CMD(emacs_start_search)
 	attr_set_str(&p->attrs, "prompt", "Search");
 	attr_set_str(&p->attrs, "done-key", "Search String");
 
-	hp = call_ret(pane, "attach-history", p, 0, NULL, "*Search History*",
-		      0, NULL, "popup:close");
+	hp = call_ret(pane, "attach-history", p, 0, NULL, "*Search History*");
 	if (hp)
 		p = hp;
 
@@ -2044,8 +2039,7 @@ DEF_CMD(emacs_command)
 	attr_set_str(&p->attrs, "prompt", "Cmd");
 	attr_set_str(&p->attrs, "done-key", "emacs:command");
 	call("doc:set-name", p, 0, NULL, "K:Ax command", -1);
-	p = call_ret(pane, "attach-history", p, 0, NULL, "*Command History*",
-		     0, NULL, "popup:close");
+	p = call_ret(pane, "attach-history", p, 0, NULL, "*Command History*");
 	if (p)
 		pane_register(p, 0, &find_handle.c, "cmd");
 	return 1;

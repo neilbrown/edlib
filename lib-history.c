@@ -53,8 +53,6 @@ struct history_info {
 		struct mark *line;
 	} *prev;
 	int		changed;
-	struct map	*done_map;
-	struct lookup_cmd handle;
 };
 
 static struct map *history_map;
@@ -258,15 +256,10 @@ DEF_CMD(history_attach)
 	struct history_info *hi;
 	struct pane *p;
 
-	if (!ci->str || !ci->str2)
+	if (!ci->str)
 		return Enoarg;
 
 	alloc(hi, pane);
-	hi->done_map = key_alloc();
-	hi->handle = history_handle;
-	hi->handle.m = &hi->done_map;
-	key_add_chain(hi->done_map, history_map);
-	key_add(hi->done_map, ci->str2, &history_done);
 	p = call_ret(pane, "docs:byname", ci->focus, 0, NULL, ci->str);
 	if (!p)
 		p = call_ret(pane, "doc:from-text", ci->focus, 0, NULL, ci->str);
@@ -281,7 +274,7 @@ DEF_CMD(history_attach)
 	call("doc:file", hi->history, 1);
 	buf_init(&hi->search);
 	buf_concat(&hi->search, "?0"); /* remaining chars are searched verbatim */
-	p = pane_register(ci->focus, 0, &hi->handle.c, hi);
+	p = pane_register(ci->focus, 0, &history_handle.c, hi);
 	if (!p)
 		return Efail;
 	pane_add_notify(p, hi->history, "Notify:Close");
@@ -567,4 +560,5 @@ void edlib_init(struct pane *ed safe)
 		       &history_search_cancel);
 	key_add(history_map, "history:save", &history_save);
 	key_add(history_map, "history:get-last", &history_hlast);
+	key_add(history_map, "popup:close", &history_done);
 }

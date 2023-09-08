@@ -920,7 +920,7 @@ def make_request(key, focus, num, num2, str1, mark, **a):
     p['cmd'] = cmd
     p['mode'] = mode
     if history:
-        p = p.call("attach-history", history, "popup:close", ret='pane')
+        p = p.call("attach-history", history, ret='pane')
     if dir:
         p["dirname"] = dir
     p['orig-dirname'] = focus['dirname']

@@ -723,7 +723,7 @@ class compose_email(edlib.Pane):
         p['done-key'] = "compose-email:attach"
         p.call('doc:set-name', "Attachment File")
         p['pane-title'] = "Attachment File"
-        p = p.call("attach-history", "*Attachment History*", "popup:close",
+        p = p.call("attach-history", "*Attachment History*",
                    ret='pane')
         p.call("attach-file-entry", "file")
         return 1

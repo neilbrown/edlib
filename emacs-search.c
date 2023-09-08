@@ -480,8 +480,7 @@ DEF_CMD(search_replace)
 	p = pane_register(p, 0, &replace_handle.c, ci->focus);
 	if (!p)
 		return Efail;
-	p = call_ret(pane, "attach-history", p, 0, NULL, "*Replace History*",
-		     0, NULL, "popup:close");
+	p = call_ret(pane, "attach-history", p, 0, NULL, "*Replace History*");
 	esi->replace_pane = p;
 	if (p) {
 		pane_add_notify(ci->home, p, "Notify:Close");
