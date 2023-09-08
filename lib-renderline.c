@@ -1315,8 +1315,9 @@ DEF_CMD(renderline_set)
 	if (!ci->str)
 		return -Enoarg;
 	if (prefix)
-		prefix = cvt(strconcat(ci->home, "<bold>", prefix, "</>"));
-
+		prefix = strconcat(ci->home, ACK SOH "bold" STX,
+				   prefix, // No mark in prefix!
+				   ETX);
 	if (prefix)
 		rd->line = strconcat(NULL, prefix, ci->str);
 	else

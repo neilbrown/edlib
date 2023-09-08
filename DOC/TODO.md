@@ -9,7 +9,7 @@ the file.
 
 ### Triage
 
-- [ ] find-document - if default doc has <>, displays wrongly.
+- [X] find-document - if default doc has <>, displays wrongly.
 - [ ] From start-of-file move to end, then up, then down.
       Display jumps.  Why?
 - [ ] Add menubar menu with recent documents?
