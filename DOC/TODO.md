@@ -9,7 +9,20 @@ the file.
 
 ### Triage
 
+- [ ] find-document - if default doc has <>, displays wrongly.
+- [ ] From start-of-file move to end, then up, then down.
+      Display jumps.  Why?
+- [ ] Add menubar menu with recent documents?
+- [ ] why does clicking on status line go to top-of-file?
+- [ ] should Docs menu go on doc name in status bar?
 - [X] search hangs when seeking "^( *)"
+- [ ] selection-menu item to show git-commit from list of known git
+      trees
+- [ ] selection-menu item for word-count
+- [ ] selection-menu item for QR-code
+- [ ] selection-menu sub-menu for UPPER lower Caps ??
+- [ ] selection-menu item for text-fill
+- [ ] selection-menu item for spell-check ??
 
 ### Small
 
@@ -19,8 +32,8 @@ the file.
 - [X] fill mode to handle all punctuation at start of this line
 - [X] Enable lib-menu to show short-cut keys
 - [X] Add menu-bar to lib-menu.  Pop it up on F10 with simple commands
-- [ ] attach an extensible menu to the selection
-        copy, paste-in, QR, git-view
+- [X] attach an extensible menu to the selection
+        cut, copy, paste-in, QR, git-view
 
 ### Medium
 

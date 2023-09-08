@@ -1577,7 +1577,8 @@ DEF_CMD(render_lines_set_cursor)
 				 * Only works for menus below
 				 * the line.
 				 */
-				if (sscanf(xyattr, "%dx%d,", &x, &y) == 2) {
+				if (!strstr(xyattr, ",menu-at-mouse,") &&
+				    sscanf(xyattr, "%dx%d,", &x, &y) == 2) {
 					cih.x = x;
 					cih.y = m->mdata->y + y +
 						attr_find_int(m->mdata->attrs,

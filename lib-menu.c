@@ -132,6 +132,11 @@ DEF_CMD(menu_attach)
 	 * V  means show value in menu as well as name
 	 * F  means to use the focus as the doc, and its
 	 *    parent as the focus.
+	 * ->str2 gives command to call on completion, else
+	 *    "menu-done" is used.
+	 * ->x,y are co-ordinated relative to ->focus where menu
+	 *    (Top-Left) appears
+	 * ->comm2 returns the created pane.
 	 */
 	struct pane *docp, *p, *p2;
 	/* Multi-line temporary popup with x,y location provided. */

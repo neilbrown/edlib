@@ -2330,7 +2330,7 @@ DEF_CMD(emacs_attrs)
 {
 	struct call_return cr;
 	int active;
-	char *selection = "bg:white-80,vis-nl"; // grey
+	char *selection = "bg:white-80,vis-nl,menu-at-mouse,action-menu:emacs:selection-menu"; // grey
 
 	if (!ci->str)
 		return Enoarg;
@@ -2370,6 +2370,64 @@ DEF_CMD(emacs_attrs)
 					 ci->mark, selection, 210);
 	}
 	return Efallthrough;
+}
+
+DEF_CMD(emacs_selection_menu)
+{
+	struct pane *p;
+
+	call("Message", ci->focus, 0, NULL, "So .... you want a menu do you?");
+	p = call_ret(pane, "attach-menu", ci->focus, 0, NULL, "V", 0, NULL,
+		     "emacs:selection-menu-action", ci->x, ci->y+1);
+	if (!p)
+		return Efail;
+	call("global-multicall-selection-menu:add-", p);
+	call("menu-add", p, 0, NULL, "de-select", 0, NULL, ":ESC");
+	return 1;
+}
+
+DEF_CMD(emacs_selection_menu_action)
+{
+	struct pane *home = ci->home;
+	char *dash;
+	const char *e;
+	const char *c = ci->str;
+
+	if (!c)
+		return 1;
+	if (*c == ' ') {
+		/* command for focus */
+		call(c+1, ci->focus, 0, ci->mark);
+		return 1;
+	}
+
+	while ((e = strchr(c, ' ')) != NULL) {
+		int ret;
+
+		dash = "";
+		if (*c != ':' || e == c+1)
+			dash = "-";
+		ret = call("Keystroke", home, 0, NULL,
+			   strconcat(home, dash,
+				     strnsave(home, c, e - c)));
+		if (ret < 0)
+			return Efail;
+		c = e+1;
+	}
+	dash = "";
+	if (*c != ':' || c[1] == '\0')
+		dash = "-";
+	call("Keystroke", home, 0, NULL, strconcat(home, dash, c));
+	return 1;
+}
+
+DEF_CMD(emacs_selection_menu_add)
+{
+	struct pane *p = ci->focus;
+	call("menu-add", p, 0, NULL, "Cut", 0, NULL, ":C-W");
+	call("menu-add", p, 0, NULL, "Copy", 0, NULL, ":A-w");
+	call("menu-add", p, 0, NULL, "Paste-in", 0, NULL, ":C-Y");
+	return 1;
 }
 
 DEF_CMD(emacs_goto_line)
@@ -2448,9 +2506,14 @@ static void update_sel(struct pane *p safe,
 		}
 	}
 
-	/* Must call 'claim' first as it might be claiming from us */
-	call("selection:claim", p);
-	set_selection(p, pt, mk, 2);
+	/* Don't set selection until range is non-empty, else we
+	 * might clear some other selection too early.
+	 */
+	if (!mark_same(pt, mk)) {
+		/* Must call 'claim' first as it might be claiming from us */
+		call("selection:claim", p);
+		set_selection(p, pt, mk, 2);
+	}
 }
 
 DEF_CMD(emacs_press)
@@ -3417,6 +3480,8 @@ static void emacs_init(void)
 	key_add(m, "K:C-Y", &emacs_yank);
 	key_add(m, "K:A-y", &emacs_yank_pop);
 	key_add(m, "map-attr", &emacs_attrs);
+	key_add(m, "emacs:selection-menu", &emacs_selection_menu);
+	key_add(m, "emacs:selection-menu-action", &emacs_selection_menu_action);
 
 	key_add(m, "K:A-g", &emacs_goto_line);
 	key_add(m, "K:A-x", &emacs_command);
@@ -3518,4 +3583,6 @@ void edlib_init(struct pane *ed safe)
 	call_comm("global-set-command", ed, &attach_mode_emacs, 0, NULL, "attach-mode-emacs");
 	call_comm("global-set-command", ed, &attach_file_entry, 0, NULL, "attach-file-entry");
 	call_comm("global-set-command", ed, &emacs_shell, 0, NULL, "attach-shell-prompt");
+	call_comm("global-set-command", ed, &emacs_selection_menu_add,
+		  0, NULL, "selection-menu:add-00-emacs");
 }
