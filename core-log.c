@@ -34,20 +34,19 @@ struct logbuf {
 	char		text[];
 };
 
-static struct log {
+struct log {
 	struct doc		doc;
 	struct list_head	log;
 	int			blocked;
 	int			refresh_active;
-} *log_doc safe;
+	FILE			*log_file;
+};
 
 #include "core-pane.h"
 
 static struct pane *log_pane;
 
 #define LBSIZE (8192 - sizeof(struct logbuf))
-
-static FILE *log_file;
 
 static struct logbuf *safe get_new_buf(struct log *d safe)
 {
@@ -73,26 +72,28 @@ void LOG(char *fmt, ...)
 {
 	va_list ap;
 	unsigned int n;
+	struct log *ld;
 	struct logbuf *b;
 	struct timeval now;
 
-	if (!(void*)log_doc || !log_pane)
+	if (!log_pane)
 		/* too early */
 		return;
 	if (!fmt)
 		return;
-	if (log_doc->refresh_active) {
+	ld = log_pane->doc_data;
+	if (ld->refresh_active) {
 		/* Mustn't log anything if doc is being viewed */
 		if (pane_notify("doc:notify-viewers", log_pane))
 			return;
 	}
-	if (log_doc->blocked)
+	if (ld->blocked)
 		return;
-	log_doc->blocked = 1;
+	ld->blocked = 1;
 	gettimeofday(&now, NULL);
-	b = get_buf(log_doc);
+	b = get_buf(ld);
 	va_start(ap, fmt);
-	if (log_pane && edlib_testing(log_pane))
+	if (edlib_testing(log_pane))
 		n = 0;
 	else
 		n = snprintf(b->text + b->end, LBSIZE - b->end - 1,
@@ -105,9 +106,9 @@ void LOG(char *fmt, ...)
 
 	if (b->end != 0 && n >= LBSIZE - b->end - 1) {
 		/* Didn't fit, allocate new buf */
-		b = get_new_buf(log_doc);
+		b = get_new_buf(ld);
 		va_start(ap, fmt);
-		if (log_pane && edlib_testing(log_pane))
+		if (edlib_testing(log_pane))
 			n = 0;
 		else
 			n = snprintf(b->text, LBSIZE - 1, "%ld.%03ld:",
@@ -124,14 +125,13 @@ void LOG(char *fmt, ...)
 	b->text[b->end + n++] = '\n';
 	b->text[b->end + n] = '\0';
 
-	if (log_file) {
-		fwrite(b->text + b->end, 1, n, log_file);
-		fflush(log_file);
+	if (ld->log_file) {
+		fwrite(b->text + b->end, 1, n, ld->log_file);
+		fflush(ld->log_file);
 	}
 	b->end += n;
-	if (log_pane)
-		pane_notify("doc:replaced", log_pane, 1);
-	log_doc->blocked = 0;
+	pane_notify("doc:replaced", log_pane, 1);
+	ld->blocked = 0;
 }
 
 DEF_CMD(log_append)
@@ -404,6 +404,8 @@ DEF_CMD(log_close)
 		list_del(&b->h);
 		free(b);
 	}
+	if (l->log_file && l->log_file != stderr)
+		fclose(l->log_file);
 	return 1;
 }
 
@@ -443,17 +445,19 @@ DEF_CMD(log_new)
 static void log_init(struct pane *ed safe)
 {
 	char *fname;
+	struct log *ld;
 
 	log_pane = doc_register(ed, &log_handle.c);
 	if (!log_pane)
 		return;
+	ld = log_pane->doc_data;
 	if (edlib_testing(ed))
 		/* line-count is SYNC when testing, and log can
 		 * get big - so disable
 		 */
 		attr_set_str(&log_pane->attrs, "linecount-disable", "yes");
-	log_doc = log_pane->doc_data;
-	INIT_LIST_HEAD(&log_doc->log);
+
+	INIT_LIST_HEAD(&ld->log);
 
 	call("editor:request:Refresh-active", log_pane);
 
@@ -461,12 +465,12 @@ static void log_init(struct pane *ed safe)
 	if (!fname || !*fname)
 		return;
 	if (strcmp(fname, "stderr") == 0) {
-		log_file = stderr;
+		ld->log_file = stderr;
 		return;
 	}
 
-	log_file = fopen(fname, "a");
-	if (!log_file)
+	ld->log_file = fopen(fname, "a");
+	if (!ld->log_file)
 		LOG("log: Cannot open \"%s\" for logging\n", fname);
 }
 

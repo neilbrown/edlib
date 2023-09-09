@@ -110,17 +110,19 @@ Core features
       screen will be meaningless.  I need to properly abort and
       auto-choose a new pane.
 - [ ] LOG_BT() doesn't see TYPE_pane and TYPE_comm calls.
-- [ ] give every pane a link to root/editor main and use that
+- [ ] LOG should take a pane arg, and not use any static vars.
+- [ ] reduce size of $(nm O/*.o | grep ' b ' | grep -v '_map$')
+- [X] give every pane a link to root/editor main and use that
       instead of statics.  Then maybe times_up() can use pane_too_long()
 - [ ] teach input to allow a repeat command to be registered so that e.g.
       search/replace and do a bit of work, then ask to be called again.
       input can cancel this on suitable input.
 - [ ] should input leave mode unchanged for key that isn't handled at
       all
-- [ ] marks can be used after they go invalid too easily.  How to fix??
+- [X] marks can be used after they go invalid too easily.  How to fix??
 - [ ] catching doc:replace in a pane doesn't catch doc:insert-file.
       I need a simple way to intercept any change.
-- [ ] switch-buffer in pop-up window - shouldn't kill the popup (does it?)
+- [X] switch-buffer in pop-up window - shouldn't kill the popup (does it?)
 - [ ] explicitly guard against infinite loops in consistency checks
 - [ ] skip consistency checks after several with no stop for input.
 - [ ] unwanted docs too easily appear high in recent-list - *Output*
