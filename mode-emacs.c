@@ -2825,7 +2825,7 @@ DEF_CMD(emacs_scale_relative)
 	else
 		scale = 12 * scale / 10;
 	snprintf(num, sizeof(num)-1, "%d", scale);
-	call("Display:set:scale", p, 0, NULL, num);
+	call("window:set:scale", p, 0, NULL, num);
 	return 1;
 }
 

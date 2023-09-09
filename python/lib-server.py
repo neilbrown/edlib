@@ -123,7 +123,7 @@ if sys.argv[0] == "":
                     self.add_notify(d, "Notify:Close")
                     self.doc = d
                     if self.term:
-                        self.term.call("Display:set:no-close",
+                        self.term.call("window:set:no-close",
                                        "Cannot close display until document done - use 'C-x #'")
                     self.sock.send(b"OK")
                     return 1
@@ -166,7 +166,7 @@ if sys.argv[0] == "":
                     return 1
                 if cmd == "close":
                     if self.disp:
-                        self.disp.call("Display:set:no-close")
+                        self.disp.call("window:set:no-close")
                         self.disp.call("Display:close")
                         self.disp = None
                     self.call("event:free", self.read)
@@ -200,7 +200,7 @@ if sys.argv[0] == "":
                 # same as doc:done
                 self.doc = None
                 if self.term:
-                    self.term.call("Display:set:no-close")
+                    self.term.call("window:set:no-close")
                     self.term.call("Display:close")
                 self.sock.send(b"Done")
             return 1
@@ -209,7 +209,7 @@ if sys.argv[0] == "":
             "handle:doc:done"
             if str != "test":
                 if self.term:
-                    self.term.call("Display:set:no-close")
+                    self.term.call("window:set:no-close")
                     self.term.call("Display:close")
                 self.sock.send(b"Done")
             return 1

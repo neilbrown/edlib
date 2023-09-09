@@ -98,7 +98,7 @@ Draw:image
 ## Display management commands
 
 Display:close
-Display:set:no-close
+window:set:no-close
 Display:external-viewer
 Display:fullscreen
 Display:new

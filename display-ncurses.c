@@ -441,7 +441,7 @@ DEF_CMD(nc_close_display)
 {
 	/* If this is only display, then refuse to close this one */
 	struct call_return cr;
-	char *nc = attr_find(ci->home->attrs, "no-close");
+	char *nc = pane_attr_get(ci->home, "no-close");
 
 	if (nc) {
 		call("Message", ci->focus, 0, NULL, nc);
@@ -460,16 +460,6 @@ DEF_CMD(nc_close_display)
 	} else
 		call("Message", ci->focus, 0, NULL,
 		     "Cannot close only window.");
-	return 1;
-}
-
-DEF_CMD(nc_set_attr)
-{
-	const char *attr = ci->str2;
-
-	if (!attr)
-		attr = ksuffix(ci, "Display:set:");
-	attr_set_str(&ci->home->attrs, attr, ci->str);
 	return 1;
 }
 
@@ -1822,7 +1812,6 @@ void edlib_init(struct pane *ed safe)
 	nc_map = key_alloc();
 	key_add(nc_map, "Display:refresh", &force_redraw);
 	key_add(nc_map, "Display:close", &nc_close_display);
-	key_add_prefix(nc_map, "Display:set:", &nc_set_attr);
 	key_add(nc_map, "Display:external-viewer", &nc_external_viewer);
 	key_add(nc_map, "Close", &nc_close);
 	key_add(nc_map, "Draw:clear", &nc_clear);

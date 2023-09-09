@@ -84,8 +84,7 @@ DEF_CMD(window_set)
 	if (!val)
 		return Enoarg;
 
-	if (ci->str)
-		attr_set_str(&ci->home->attrs, val, ci->str);
+	attr_set_str(&ci->home->attrs, val, ci->str);
 
 	return 1;
 }
