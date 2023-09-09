@@ -324,7 +324,7 @@ static void pane_do_refresh(struct pane *p safe)
 		return;
 	p->damaged &= ~damage;
 	if (damage & DAMAGED_REFRESH)
-		pane_call(p, "Refresh", pane_leaf(p));
+		pane_call(p, "Refresh", pane_focus(p));
 
 	list_for_each_entry(c, &p->children, siblings)
 		c->damaged |= DAMAGED_NOT_HANDLED;
@@ -356,7 +356,7 @@ static void pane_do_review(struct pane *p safe)
 		return;
 
 	if (damage & DAMAGED_VIEW)
-		pane_call(p, "Refresh:view", pane_leaf(p));
+		pane_call(p, "Refresh:view", pane_focus(p));
 
 	list_for_each_entry(c, &p->children, siblings)
 		c->damaged |= DAMAGED_NOT_HANDLED;
@@ -575,7 +575,7 @@ static void pane_refocus(struct pane *p safe)
 			break;
 		}
 	/* Tell the new focus to update - probably just a cursor update */
-	p = pane_leaf(p);
+	p = pane_focus(p);
 	pt = call_ret(mark, "doc:point", p);
 	call("view:changed", p, 0, pt);
 }
@@ -800,14 +800,14 @@ void pane_take_focus(struct pane *focus)
 			continue;
 		p->parent->focus = p;
 		if (old) {
-			old = pane_leaf(old);
+			old = pane_focus(old);
 			pt = call_ret(mark, "doc:point", old);
 			call("view:changed", old, 0, pt);
 			home_call(old, "pane:defocus", focus);
 		}
 	}
-	pt = call_ret(mark, "doc:point", pane_leaf(focus));
-	call("view:changed", pane_leaf(focus), 0, pt);
+	pt = call_ret(mark, "doc:point", pane_focus(focus));
+	call("view:changed", pane_focus(focus), 0, pt);
 	call("pane:refocus", focus);
 }
 

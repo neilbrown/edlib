@@ -685,7 +685,7 @@ class makeprompt(edlib.Pane):
         self['done-key'] = "N:%s:%s:%s" % (self['autosave'], self['mode'], d)
         # FIXME this only damaged the board content, not doc content
         # Is there a way I can communicate that?
-        focus.leaf.call("view:changed")
+        focus.final_focus.call("view:changed")
         return 1
 
     def down(self, key, focus, **a):
@@ -702,7 +702,7 @@ class makeprompt(edlib.Pane):
         self['dirname'] = d
         self['pane-title'] = "%s in %s" % (self['cmd'],d)
         self['done-key'] = "N:%s:%s:%s" % (self['autosave'], self['mode'], d)
-        focus.leaf.call("view:changed")
+        focus.final_focus.call("view:changed")
         return 1
 
 def isword(c):

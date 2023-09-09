@@ -572,7 +572,7 @@ class EdDisplay(edlib.Pane):
         edlib.time_start(edlib.TIME_WINDOW)
         self.im.focus_in()
         self.in_focus = True
-        f = self.leaf
+        f = self.final_focus
         pt = f.call("doc:point", ret='mark')
         f.call("view:changed", pt)
         self.call("pane:refocus")
@@ -582,7 +582,7 @@ class EdDisplay(edlib.Pane):
         edlib.time_start(edlib.TIME_WINDOW)
         self.im.focus_out()
         self.in_focus = False
-        f = self.leaf
+        f = self.final_focus
         pt = f.call("doc:point", ret='mark')
         f.call("view:changed", pt)
         edlib.time_stop(edlib.TIME_WINDOW)

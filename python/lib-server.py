@@ -90,7 +90,7 @@ if sys.argv[0] == "":
                         self.sock.send(b"FAIL")
                         return 1
                     if self.term:
-                        p = self.term.leaf.call("ThisPane", ret='pane')
+                        p = self.term.final_focus.call("ThisPane", ret='pane')
                         p = d.call("doc:attach-view", p, 1, ret='pane')
                         self.term.take_focus()
                         self.sock.send(b"OK")
@@ -219,7 +219,7 @@ if sys.argv[0] == "":
             self.destpane = None
             self.call("editor:notify:all-displays", self.display_callback)
             if self.destpane:
-                p = self.destpane.leaf
+                p = self.destpane.final_focus
                 self.destpane = None
                 # Need to avoid transient popups
                 if p:

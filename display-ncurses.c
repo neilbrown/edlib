@@ -1273,7 +1273,7 @@ DEF_CMD(nc_refresh_post)
 			dest.y, dest.x, destend.y-1, destend.x-1, 0);
 	}
 	/* place the cursor */
-	p1 = pane_leaf(p);
+	p1 = pane_focus(p);
 	pan = NULL;
 	while (p1 != p && (pan = pane_panel(p1, NULL)) == NULL)
 		p1 = p1->parent;

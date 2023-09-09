@@ -206,7 +206,7 @@ DEF_CMD(keystroke)
 	}
 
 	if (!im->focus || im->focus->focus) {
-		p = pane_leaf(ci->focus);
+		p = pane_focus(ci->focus);
 		im->focus = p;
 		pane_add_notify(ci->home, p, "Notify:Close");
 	}

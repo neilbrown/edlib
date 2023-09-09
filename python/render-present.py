@@ -164,7 +164,7 @@ class PresenterPane(edlib.Pane):
                             self['background'] = 'call:Present-BG:'+globals['background']
                         if 'scale' in globals:
                             self['scale'] = globals['scale']
-                        self.leaf.call("view:changed")
+                        self.final_focus.call("view:changed")
                     return maybe
             else:
                 # not part of start-of-page block
@@ -401,7 +401,7 @@ class PresenterPane(edlib.Pane):
             first.release()
         if extra_change:
             # force full refresh
-            self.leaf.call("view:changed")
+            self.final_focus.call("view:changed")
 
     def get_local_attr(self, m, attr, page):
         t = 'attr:' + attr
@@ -625,7 +625,7 @@ class PresenterPane(edlib.Pane):
                 self.first_valid = False
                 page['valid'] = 'no'
             # attributes probably changed so...
-            self.leaf.call("view:changed")
+            self.final_focus.call("view:changed")
         else:
             page['valid'] = 'no'
             page['next-valid'] = 'no'
@@ -643,7 +643,7 @@ class PresenterPane(edlib.Pane):
                 l['type'] = 'unknown'
                 l = l.prev()
             if l['type'] and l['type'][0:5] == "attr:":
-                self.leaf.call("view:changed")
+                self.final_focus.call("view:changed")
             l['type'] = 'unknown'
             l = l.next()
             if l:
@@ -670,7 +670,7 @@ class PresenterPane(edlib.Pane):
                 m2.to_mark(m)
                 if comm2 is not None:
                     comm2("callback", focus, m)
-        self.leaf.call("Move-View-Pos", m2)
+        self.final_focus.call("Move-View-Pos", m2)
         return 1
 
     def handle_clone(self, key, **a):

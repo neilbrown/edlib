@@ -128,8 +128,8 @@ DEF_CMD(selection_discard)
 	/* Don't require exactly same pane for sel_owner,
 	 * but ensure they have the same focus.
 	 */
-	op = pane_leaf(wd->sel_owner);
-	fp = pane_leaf(ci->focus);
+	op = pane_focus(wd->sel_owner);
+	fp = pane_focus(ci->focus);
 	if (fp != op)
 		return Efalse;
 

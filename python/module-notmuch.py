@@ -2709,8 +2709,8 @@ class notmuch_query_view(edlib.Pane):
         if self.thread_start:
             # Possible insertion before thread_end - recalc.
             self.thread_end = self.thread_start.dup()
-            self.leaf.call("doc:step-thread", 1, 1, self.thread_end)
-        self.leaf.call("view:changed")
+            self.final_focus.call("doc:step-thread", 1, 1, self.thread_end)
+        self.final_focus.call("view:changed")
         self.call("doc:notify:doc:status-changed")
         return edlib.Efallthrough
 
@@ -2719,17 +2719,17 @@ class notmuch_query_view(edlib.Pane):
             return None
         # old thread is disappearing.  If it is not gone, clip marks
         # to start, else clip to next thread.
-        self.leaf.call("Notify:clip", self.thread_start, self.thread_end,
+        self.final_focus.call("Notify:clip", self.thread_start, self.thread_end,
                        0 if gone else 1)
         if self.whole_thread:
             # And clip anything after (at eof) to thread_end
             eof = edlib.Mark(self)
-            self.leaf.call("doc:set-ref", eof, 0)
+            self.final_focus.call("doc:set-ref", eof, 0)
             eof.step(1)
             eof.index = 1 # make sure all eof marks are different
-            self.leaf.call("Notify:clip", self.thread_end, eof, 1)
+            self.final_focus.call("Notify:clip", self.thread_end, eof, 1)
             eof.index = 0
-        self.leaf.call("view:changed", self.thread_start, self.thread_end)
+        self.final_focus.call("view:changed", self.thread_start, self.thread_end)
         self.selected = None
         self.thread_start = None
         self.thread_end = None
@@ -2745,7 +2745,7 @@ class notmuch_query_view(edlib.Pane):
         # might be where thread used to be.
         self.thread_end = self.thread_start.dup()
         self.call("doc:step-thread", self.thread_end, 1, 1)
-        self.leaf.call("view:changed", self.thread_start, self.thread_end)
+        self.final_focus.call("view:changed", self.thread_start, self.thread_end)
         return 1
 
     def find_message(self, key, focus, mark, str, str2, **a):
@@ -2771,12 +2771,12 @@ class notmuch_query_view(edlib.Pane):
             if mt != "True":
                 m2 = m.dup()
                 self.call("doc:step-matched", m2, 1, 1)
-                self.leaf.call("Notify:clip", m, m2)
+                self.final_focus.call("Notify:clip", m, m2)
                 m = m2
             if not self.thread_matched:
                 self.thread_matched = m.dup()
             self.parent.next(m)
-        self.leaf.call("view:changed", self.thread_start, self.thread_end)
+        self.final_focus.call("view:changed", self.thread_start, self.thread_end)
 
     def handle_notify_thread(self, key, str, num, **a):
         "handle:notmuch:thread-changed"
@@ -2966,10 +2966,10 @@ class notmuch_query_view(edlib.Pane):
                 focus.call("Notify:clip", self.thread_start, self.thread_end)
             # everything after to EOF moves to thread_end.
             eof = edlib.Mark(self)
-            self.leaf.call("doc:set-ref", eof, 0)
+            self.final_focus.call("doc:set-ref", eof, 0)
             eof.step(1)
             eof.offset = 1 # make sure all eof marks are different
-            self.leaf.call("Notify:clip", self.thread_end, eof, 1)
+            self.final_focus.call("Notify:clip", self.thread_end, eof, 1)
             eof.offset = 0
 
             self['doc-status'] = "Query: %s" % self['qname']
@@ -3389,7 +3389,7 @@ class notmuch_message_view(edlib.Pane):
                 m['quote-hidden'] = "no"
             else:
                 m['quote-hidden'] = "yes"
-            self.leaf.call("view:changed", m, m.next())
+            self.final_focus.call("view:changed", m, m.next())
             return 1
 
     def handle_vis(self, focus, mark, which):

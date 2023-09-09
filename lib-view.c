@@ -486,7 +486,7 @@ DEF_CMD(view_click)
 		/* big scroll down */
 		scale = 900;
 	}
-	call("Move-View", pane_leaf(ci->focus), num * scale);
+	call("Move-View", pane_focus(ci->focus), num * scale);
 	return 1;
 }
 
@@ -503,9 +503,9 @@ DEF_CMD(view_release)
 DEF_CMD(view_scroll)
 {
 	if (strcmp(ci->key, "M:Press-4") == 0)
-		call("Move-View", pane_leaf(ci->focus), -200);
+		call("Move-View", pane_focus(ci->focus), -200);
 	else
-		call("Move-View", pane_leaf(ci->focus), 200);
+		call("Move-View", pane_focus(ci->focus), 200);
 	return 1;
 }
 

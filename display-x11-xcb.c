@@ -1228,7 +1228,7 @@ static void handle_focus(struct pane *home safe, xcb_focus_in_event_t *fie safe)
 	struct mark *pt;
 
 	xd->in_focus = in;
-	p = pane_leaf(home);
+	p = pane_focus(home);
 	pt = call_ret(mark, "doc:point", p);
 	if (pt)
 		call("view:changed", p, 0, pt);
@@ -1584,7 +1584,7 @@ static void handle_client_message(struct pane *home safe,
 	    cme->format == 32 &&
 	    cme->window == xd->win &&
 	    cme->data.data32[0] == xd->atoms[a_WM_DELETE_WINDOW]) {
-		call("window:close", pane_leaf(home));
+		call("window:close", pane_focus(home));
 		return;
 	}
 

@@ -58,7 +58,7 @@ DEF_CMD(render_hex_notify_replace)
 	 * However we cannot currently access the view port, so
 	 * always signal damage. FIXME.
 	 */
-	call("view:changed", pane_leaf(ci->home));
+	call("view:changed", pane_focus(ci->home));
 	return 1;
 }
 

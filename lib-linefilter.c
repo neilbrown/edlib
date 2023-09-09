@@ -337,7 +337,7 @@ DEF_CMD(filter_changed)
 	if (strcmp(ci->key, "Filter:set") == 0) {
 		if (!ci->str)
 			return Enoarg;
-		call("view:changed", pane_leaf(ci->home));
+		call("view:changed", pane_focus(ci->home));
 		comm = ci->comm2;
 		fd->explicit_set = True;
 		free(fd->match);
@@ -352,7 +352,7 @@ DEF_CMD(filter_changed)
 		fd->implicit_set = False;
 		if (check_settings(ci->focus, fd))
 			/* Something changed */
-			call("view:changed", pane_leaf(ci->home));
+			call("view:changed", pane_focus(ci->home));
 	}
 	if (!fd->match)
 		return 1;

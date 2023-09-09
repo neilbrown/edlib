@@ -75,7 +75,7 @@ static inline bool times_up_fast(struct pane *p safe)
 	return pane_root(p)->timestamp == 1;
 }
 
-static inline struct pane *safe pane_leaf(struct pane *p safe)
+static inline struct pane *safe pane_focus(struct pane *p safe)
 {
 	struct pane *f;
 

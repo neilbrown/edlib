@@ -951,7 +951,7 @@ DEF_CMD(tile_doc)
 		t = list_next_entry(t, tiles);
 		f = t->content;
 		if (f) {
-			f = pane_leaf(f);
+			f = pane_focus(f);
 			n = pane_attr_get(f, "doc-name");
 			if (name && n && strcmp(n, name) == 0)
 				return comm_call(ci->comm2, "callback:pane",

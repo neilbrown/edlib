@@ -198,7 +198,7 @@ DEF_CMD(ask_autosave)
 		/* No display!!! */
 		return Efalse;
 
-	p2 = call_ret(pane, "PopupTile", pane_leaf(cr.p), 0, NULL, "DM3sta");
+	p2 = call_ret(pane, "PopupTile", pane_focus(cr.p), 0, NULL, "DM3sta");
 	if (!p2)
 		return Efalse;
 

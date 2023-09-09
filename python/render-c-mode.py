@@ -898,9 +898,9 @@ class CModePane(edlib.Pane):
 
     def handle_replace(self, key, focus, **a):
         "handle:doc:replaced"
-        self.update(self.leaf, self.pre_paren)
+        self.update(self.final_focus, self.pre_paren)
         self.pre_paren = None
-        self.update(self.leaf, self.post_paren)
+        self.update(self.final_focus, self.post_paren)
         self.post_paren = None
         self.damaged(edlib.DAMAGED_VIEW)
         return 1

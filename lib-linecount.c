@@ -168,7 +168,7 @@ static void do_count(struct pane *p safe, struct pane *owner safe,
 
 DEF_CMD(linecount_restart)
 {
-	pane_call(ci->home, "CountLinesAsync", pane_leaf(ci->focus), 1);
+	pane_call(ci->home, "CountLinesAsync", pane_focus(ci->focus), 1);
 	return Efalse;
 }
 

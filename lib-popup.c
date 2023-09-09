@@ -82,12 +82,12 @@ static void popup_resize(struct pane *p safe, const char *style safe,
 
 	/* First find the size */
 	lh = line_height(p, xyscale.x);
-	bhs = pane_attr_get(pane_leaf(p), "border-height");
+	bhs = pane_attr_get(pane_focus(p), "border-height");
 	if (bhs)
 		bh = atoi(bhs);
 	if (bh <= 0)
 		bh = line_height(p, 0); /* border height */
-	bws = pane_attr_get(pane_leaf(p), "border-width");
+	bws = pane_attr_get(pane_focus(p), "border-width");
 	if (bws)
 		bw = atoi(bhs);
 	if (bw <= 0)
@@ -249,7 +249,7 @@ DEF_CMD(popup_refresh_size)
 {
 	struct popup_info *ppi = ci->home->data;
 	char *prompt, *dflt, *prefix;
-	struct pane *focus = pane_leaf(ci->home);
+	struct pane *focus = pane_focus(ci->home);
 
 	prefix = pane_attr_get(focus, "prefix");
 	prompt = pane_attr_get(focus, "prompt");

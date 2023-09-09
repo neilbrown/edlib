@@ -140,8 +140,8 @@ Core features
 - [ ] Make DEF_CB really different from DEF_CMD and ensure it is used properly.
 - [ ] is DocLeaf really a good idea?  Maybe panes should have 'leafward'
       pointer separate to 'focus'?  Maybe panes could have optional
-      'child' method which returns main child - pane_leaf() calls that.
-      Maybe pane_leaf() find a pane with z=0 and matching w,h ??
+      'child' method which returns main child - pane_focus() calls that.
+      Maybe pane_focus() find a pane with z=0 and matching w,h ??
 - [ ] support text-replace as easy as text-insert (doc:char...)
 - [ ] for doc:cmd transformation,  what about :Enter and BS TAB ESC ???
 - [ ] For a notify handler, returning non-zero doesn't stop other handlers
