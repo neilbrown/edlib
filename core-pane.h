@@ -132,10 +132,12 @@ static inline int do_call_val(enum target_type type, struct pane *home,
 		if (home)
 			ci.home = home;
 		if ((home->damaged & DAMAGED_CLOSED) &&
-		    strncmp(ci.key, "Close", 5) != 0 &&
-		    strcmp(ci.key, "Notify:Close") != 0)
+		    ci.key[0] != 'C' && /* Compile will often optimise
+					 * the strncmp away
+					 */
+		    strncmp(ci.key, "Close", 5) != 0)
 			/* This pane cannot accept anything but
-			 * "Close" or "Close:mark" or "Notify:Close"
+			 * "Close" or "Close:mark" or "Close:Notify"
 			 */
 			return Efail;
 		ci.comm = home->handle;
