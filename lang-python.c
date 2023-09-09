@@ -1626,6 +1626,8 @@ static Pane *pane_getpane(Pane *p safe, char *which safe)
 		new = pane_root(p->pane);
 	if (*which == 'F')
 		new = pane_focus(p->pane);
+	if (*which == 'L')
+		new = pane_leaf(p->pane);
 	if (new == NULL) {
 		Py_INCREF(Py_None);
 		newpane = (Pane*)Py_None;
@@ -1713,7 +1715,10 @@ static const PyGetSetDef pane_getseters[] = {
 	 "Root pane", "r"},
 	{"final_focus",
 	 (getter)pane_getpane, (setter)pane_nosetpane,
-	 "Leaf pane", "F"},
+	 "Final focus pane", "F"},
+	{"leaf",
+	 (getter)pane_getpane, (setter)pane_nosetpane,
+	 "Leaf pane", "L"},
 	{NULL}  /* Sentinel */
 };
 

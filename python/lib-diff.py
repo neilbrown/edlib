@@ -304,7 +304,9 @@ class DiffPane(edlib.Pane):
             focus.call("Message", "File %s not found" % fname)
             return edlib.Efail
 
-        par = focus.call("DocLeaf", d, ret='pane')
+        par = focus.call("DocPane", d, ret='pane')
+        if par:
+            par = par.leaf
         if not par:
             par = focus.call("OtherPane", d, ret='pane')
             if not par:

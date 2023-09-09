@@ -893,6 +893,34 @@ struct pane *pane_my_child(struct pane *p, struct pane *c)
 	return c;
 }
 
+struct pane * safe pane_leaf(struct pane *p safe)
+{
+	/* Find the only child with ->z of zero,
+	 * and recurse on that.
+	 * This ignores popups and stops when a pane
+	 * splits.
+	 */
+	struct pane *l = p;
+
+	while (l) {
+		struct pane *c;
+		p = l;
+		l = NULL;
+		list_for_each_entry(c, &p->children, siblings) {
+			if (c->z)
+				continue;
+			if (!l) {
+				l = c;
+				continue;
+			}
+			/* Two candidates, so further leaf - stop here */
+			l = NULL;
+			break;
+		}
+	}
+	return p;
+}
+
 DEF_CB(take_simple)
 {
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);

@@ -508,6 +508,7 @@ static inline int pane_attr_get_int(struct pane *p safe, const char *key safe,
 	return rv;
 }
 void pane_free(struct pane *p safe);
+struct pane * safe pane_leaf(struct pane *p safe);
 
 /* Inlines */
 

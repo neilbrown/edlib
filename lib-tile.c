@@ -942,6 +942,8 @@ DEF_CMD(tile_doc)
 	}
 	/* Find where 'focus' is open */
 	name = pane_attr_get(ci->focus, "doc-name");
+	if (!name)
+		return Efallthrough;
 	if (!ti->leaf)
 		ti = tile_first(ti);
 	t = ti;
@@ -951,12 +953,11 @@ DEF_CMD(tile_doc)
 		t = list_next_entry(t, tiles);
 		f = t->content;
 		if (f) {
-			f = pane_focus(f);
+			f = pane_leaf(f);
 			n = pane_attr_get(f, "doc-name");
-			if (name && n && strcmp(n, name) == 0)
+			if (n && strcmp(n, name) == 0)
 				return comm_call(ci->comm2, "callback:pane",
-						 strcmp(ci->key, "DocLeaf") == 0
-						 ? f : t->p,
+						 t->p,
 						 0, NULL, t->name);
 		}
 	} while (t != ti);
@@ -1052,7 +1053,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(tile_map, "OtherPane", &tile_other);
 	key_add(tile_map, "ThisPane", &tile_this);
 	key_add(tile_map, "DocPane", &tile_doc);
-	key_add(tile_map, "DocLeaf", &tile_doc);
 	key_add(tile_map, "RootPane", &tile_root);
 	key_add(tile_map, "Clone", &tile_clone);
 	key_add(tile_map, "Child-Notify", &tile_child_notify);

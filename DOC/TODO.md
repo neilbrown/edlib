@@ -138,7 +138,7 @@ Core features
 - [ ] send warning message when recursive notification is prohibited.
        editor:notify:Message:broadcast
 - [ ] Make DEF_CB really different from DEF_CMD and ensure it is used properly.
-- [ ] is DocLeaf really a good idea?  Maybe panes should have 'leafward'
+- [X] is DocLeaf really a good idea?  Maybe panes should have 'leafward'
       pointer separate to 'focus'?  Maybe panes could have optional
       'child' method which returns main child - pane_focus() calls that.
       Maybe pane_focus() find a pane with z=0 and matching w,h ??
@@ -149,6 +149,7 @@ Core features
       messageline_msg which wants to allow fallthrough, but needs to acknowledge.
       How can I resolve this? Use Efallthrough as -1.
 - [ ] make a doc read-only if dir doesn't exist or isn't writable
+- [ ] change some pane_focus() to pane_leaf() where appropriate.
 - [ ] account all mem allocation types separately, and (optionally) report
       stats regularly
 - [ ] document the use of doc:replaced.  What are the two

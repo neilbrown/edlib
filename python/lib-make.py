@@ -466,9 +466,9 @@ class MakePane(edlib.Pane):
         else:
             in_popup = True
         if where in ['OtherPane', 'AnyPane']:
-            par = focus.call("DocLeaf", d, ret='pane')
+            par = focus.call("DocPane", d, ret='pane')
             if par:
-                pass
+                par = par.leaf
             elif where == 'OtherPane':
                 pane = focus.call(where, ret='pane')
             else:
