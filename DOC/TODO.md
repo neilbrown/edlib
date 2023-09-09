@@ -89,7 +89,7 @@ Core features
       implemented at least by lib-search, doc-text and probably many
       others.  It is particularly for things that are awkward to test
       with the ncurses/replay test approach.
-- [ ] Send global notify before/after refresh.  LOG must suspend logging
+- [X] Send global notify before/after refresh.  LOG must suspend logging
       (or notifications at least) during refresh if is visible anywhere
 - [ ] Do I want "Display" as in "Display:close", or "window" as in
       "window:notify".  Decide, and make everything consistent.

@@ -351,8 +351,6 @@ DEF_CMD(linecount_notify_count)
 	/* num==1 means we don't want to wait for precision */
 	bool sync = ci->mark2 && ci->num != 1;
 
-	if (strcmp(ci->key, "CountLinesAsync") == 0)
-		sync = False;
 	count_calculate(d, ci->mark2, ci->home, cli->view_num,
 			sync);
 	return 1;

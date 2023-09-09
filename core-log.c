@@ -37,7 +37,8 @@ struct logbuf {
 static struct log {
 	struct doc		doc;
 	struct list_head	log;
-	int blocked;
+	int			blocked;
+	int			refresh_active;
 } *log_doc safe;
 
 #include "core-pane.h"
@@ -75,11 +76,16 @@ void LOG(char *fmt, ...)
 	struct logbuf *b;
 	struct timeval now;
 
-	if (!(void*)log_doc)
+	if (!(void*)log_doc || !log_pane)
 		/* too early */
 		return;
 	if (!fmt)
 		return;
+	if (log_doc->refresh_active) {
+		/* Mustn't log anything if doc is being viewed */
+		if (pane_notify("doc:notify-viewers", log_pane))
+			return;
+	}
 	if (log_doc->blocked)
 		return;
 	log_doc->blocked = 1;
@@ -401,6 +407,14 @@ DEF_CMD(log_close)
 	return 1;
 }
 
+DEF_CMD(log_refresh_active)
+{
+	struct log *l = ci->home->doc_data;
+
+	l->refresh_active = ci->num;
+	return 1;
+}
+
 static struct map *log_map;
 DEF_LOOKUP_CMD(log_handle, log_map);
 
@@ -433,8 +447,15 @@ static void log_init(struct pane *ed safe)
 	log_pane = doc_register(ed, &log_handle.c);
 	if (!log_pane)
 		return;
+	if (edlib_testing(ed))
+		/* line-count is SYNC when testing, and log can
+		 * get big - so disable
+		 */
+		attr_set_str(&log_pane->attrs, "linecount-disable", "yes");
 	log_doc = log_pane->doc_data;
 	INIT_LIST_HEAD(&log_doc->log);
+
+	call("editor:request:Refresh-active", log_pane);
 
 	fname = getenv("EDLIB_LOG");
 	if (!fname || !*fname)
@@ -461,6 +482,7 @@ void log_setup(struct pane *ed safe)
 	key_add(log_map, "doc:destroy", &log_destroy);
 	key_add(log_map, "doc:log:append", &log_append);
 	key_add(log_map, "Close", &log_close);
+	key_add(log_map, "Refresh-active", &log_refresh_active);
 	if(0)key_add(log_map, "debug:validate-marks", &log_val_marks);
 
 	log_init(ed);

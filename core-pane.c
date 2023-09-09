@@ -410,7 +410,7 @@ REDEF_CMD(pane_refresh)
 
 	if (p->damaged & DAMAGED_CLOSED)
 		return 1;
-
+	call("editor:notify:Refresh-active", p, 1);
 	time_start(TIME_REFRESH);
 	while (cnt-- &&
 	       (p->damaged &
@@ -422,20 +422,24 @@ REDEF_CMD(pane_refresh)
 		pane_do_refresh(p);
 		p->damaged &= ~DAMAGED_DEBUG;
 	}
+	if (cnt < 0)
+		p->damaged |= DAMAGED_DEBUG;
 	pane_do_postorder(p);
+	p->damaged &= ~DAMAGED_DEBUG;
 	if (p->damaged) {
 		static time_t last_warn;
 		static int rpt;
 		if (last_warn + 5 < time(NULL))
 			rpt = 0;
 		if (rpt++ < 5)
-			LOG("WARNING %sroot pane damaged after refresh: %d",
+			LOG("WARNING %sroot pane damaged after refresh: 0x%x",
 			    p->parent != p ? "":"non-", p->damaged);
 		last_warn = time(NULL);
 		call("editor:notify:Message:broadcast",p, 0, NULL,
 		     "Refresh looping - see log");
 	}
 	time_stop(TIME_REFRESH);
+	call("editor:notify:Refresh-active", p, 0);
 	return 1;
 }
 
