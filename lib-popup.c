@@ -138,7 +138,7 @@ DEF_CMD(popup_close)
 
 	if (ci->num)
 		/* Pane had focus, so give to target */
-		pane_focus(ppi->target);
+		pane_take_focus(ppi->target);
 	command_put(ppi->done);
 	ppi->done = NULL;
 	free(ppi->style);
@@ -167,7 +167,7 @@ static void popup_finished(struct pane *focus safe, struct pane *home safe,
 	const char *aux;
 	struct command *done = ppi->done;
 
-	pane_focus(target);
+	pane_take_focus(target);
 	key = pane_attr_get(focus, "done-key");
 	if (!key)
 		key = "PopupDone";
@@ -296,7 +296,7 @@ DEF_CMD(popup_close_others)
 	p = call_ret(pane, "OtherPane", ci->focus);
 	if (p) {
 		home_call(ci->home->focus, "doc:attach-view", p);
-		pane_focus(p);
+		pane_take_focus(p);
 	}
 	return 1;
 }
@@ -318,7 +318,7 @@ DEF_CMD(popup_split)
 		p = call_ret(pane, "OtherPane", p);
 	if (p) {
 		home_call(ci->home->focus, "doc:attach-view", p);
-		pane_focus(p);
+		pane_take_focus(p);
 	}
 	return 1;
 }
@@ -519,7 +519,7 @@ DEF_CMD(popup_attach)
 	if (ppi->parent_popup)
 		pane_add_notify(p, ppi->parent_popup, "Notify:resize");
 
-	pane_focus(p);
+	pane_take_focus(p);
 
 	if (ci->str2) {
 		struct pane *doc =

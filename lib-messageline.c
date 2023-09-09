@@ -266,7 +266,7 @@ static struct pane *do_messageline_attach(struct pane *p safe)
 	attr_set_str(&mlp->attrs, "render:wrap", "yes");
 	pane_damaged(ret, DAMAGED_VIEW);
 	mli->line = mlp;
-	pane_focus(ret);
+	pane_take_focus(ret);
 	if (!edlib_testing(p))
 		/* This can introduce unwanted variablitiy in tests */
 		call_comm("event:timer", ret, &force_refresh, 15000);

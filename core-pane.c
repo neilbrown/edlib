@@ -784,7 +784,7 @@ void pane_subsume(struct pane *p safe, struct pane *parent safe)
 	pane_close(p);
 }
 
-void pane_focus(struct pane *focus)
+void pane_take_focus(struct pane *focus)
 {
 	struct pane *p = focus;
 	struct mark *pt;
@@ -813,7 +813,7 @@ void pane_focus(struct pane *focus)
 
 bool do_pane_has_focus(struct pane *focus, struct pane *root)
 {
-	/* Would pane_focus change anything */
+	/* Test inf pane_take_focus() would change anything. */
 	struct pane *p = focus;
 
 	if (!p)

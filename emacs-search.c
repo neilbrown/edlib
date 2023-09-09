@@ -397,7 +397,7 @@ DEF_CMD(search_done)
 
 	if (esi->replace_pane && strcmp(ci->key, "K:Enter") == 0) {
 		/* if there is a replace pane, switch to it instead of closing */
-		pane_focus(esi->replace_pane);
+		pane_take_focus(esi->replace_pane);
 		return 1;
 	}
 	str = call_ret(str, "doc:get-str", ci->focus);
@@ -462,7 +462,7 @@ DEF_CMD(search_replace)
 	struct es_info *esi = ci->home->data;
 
 	if (esi->replace_pane) {
-		pane_focus(esi->replace_pane);
+		pane_take_focus(esi->replace_pane);
 		return 1;
 	}
 
@@ -487,9 +487,9 @@ DEF_CMD(search_replace)
 		home_call(esi->target, "highlight:set-popup", p, 1);
 	}
 	if (strcmp(ci->key, "K:A-%") == 0)
-		pane_focus(ci->focus);
+		pane_take_focus(ci->focus);
 	else
-		pane_focus(p);
+		pane_take_focus(p);
 	return 1;
 }
 
@@ -611,7 +611,7 @@ DEF_CMD(replace_to_search)
 {
 	struct pane *sp = ci->home->_data;
 
-	pane_focus(sp);
+	pane_take_focus(sp);
 	return 1;
 }
 

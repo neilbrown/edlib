@@ -285,7 +285,7 @@ DEF_CMD(menubar_done)
 	struct mbinfo *mbi = home->data;
 
 	if (mbi->child)
-		pane_focus(mbi->child);
+		pane_take_focus(mbi->child);
 	call("Keystroke-sequence", home, 0, NULL, ci->str);
 	return 1;
 }

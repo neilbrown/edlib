@@ -824,7 +824,7 @@ static int dir_open(struct pane *focus safe,
 	if (other) {
 		par = home_call_ret(pane, focus, "DocPane", p);
 		if (par) {
-			pane_focus(par);
+			pane_take_focus(par);
 			return 1;
 		}
 		par = call_ret(pane, "OtherPane", focus);
@@ -832,7 +832,7 @@ static int dir_open(struct pane *focus safe,
 		par = call_ret(pane, "ThisPane", focus);
 	if (par) {
 		p = home_call_ret(pane, p, "doc:attach-view", par);
-		pane_focus(p);
+		pane_take_focus(p);
 	}
 	return 1;
 }
@@ -884,7 +884,7 @@ static int dir_open_alt(struct pane *focus safe,
 		p = home_call_ret(pane, doc, "doc:attach-view", p, 1);
 	}
 	free(fname);
-	pane_focus(p);
+	pane_take_focus(p);
 	return 1;
 }
 

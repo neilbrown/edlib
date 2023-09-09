@@ -1272,7 +1272,7 @@ DEF_CMD(emacs_findfile)
 		struct pane *this = call_ret(pane, "ThisPane", ci->focus);
 		par = home_call_ret(pane, ci->focus, "DocPane", p);
 		if (par && par != this) {
-			pane_focus(par);
+			pane_take_focus(par);
 			return 1;
 		}
 		par = call_ret(pane, "OtherPane", ci->focus);
@@ -1288,7 +1288,7 @@ DEF_CMD(emacs_findfile)
 
 	p = home_call_ret(pane, p, "doc:attach-view", par, 1);
 	if (p)
-		pane_focus(p);
+		pane_take_focus(p);
 
 	return p ? 1 : Efail;
 }
@@ -1607,7 +1607,7 @@ DEF_CMD(emacs_finddoc)
 		struct pane *this = call_ret(pane, "ThisPane", ci->focus);
 		par = home_call_ret(pane, ci->focus, "DocPane", p);
 		if (par && par != this) {
-			pane_focus(par);
+			pane_take_focus(par);
 			return 1;
 		}
 		par = call_ret(pane, "OtherPane", ci->focus);
@@ -1620,7 +1620,7 @@ DEF_CMD(emacs_finddoc)
 
 	p = home_call_ret(pane, p, "doc:attach-view", par, 1);
 	if (p)
-		pane_focus(p);
+		pane_take_focus(p);
 	return p ? 1 : Efail;
 }
 
@@ -1687,7 +1687,7 @@ DEF_CMD(emacs_viewdocs)
 		struct pane *this = call_ret(pane, "ThisPane", ci->focus);
 		par = home_call_ret(pane, ci->focus, "DocPane", docs);
 		if (par && par != this) {
-			pane_focus(par);
+			pane_take_focus(par);
 			return 1;
 		}
 		par = call_ret(pane, "OtherPane", ci->focus);
@@ -2517,7 +2517,7 @@ DEF_CMD(emacs_press)
 
 	clear_selection(ci->focus, pt, mk, 0);
 	call("Move-to", ci->focus, 0, m);
-	pane_focus(ci->focus);
+	pane_take_focus(ci->focus);
 
 	if (m2 && strcmp(ci->key, "M:DPress-1") == 0) {
 		type = attr_find(m2->attrs, "emacs:selection-type");
@@ -2654,7 +2654,7 @@ DEF_CMD(emacs_paste)
 
 	call("Replace", ci->focus, 0, NULL, str);
 
-	pane_focus(ci->focus);
+	pane_take_focus(ci->focus);
 
 	return 1;
 }
@@ -2669,7 +2669,7 @@ DEF_CMD(emacs_paste_direct)
 	if (ci->key[0] == 'M') {
 		call("Move-CursorXY", ci->focus,
 		     0, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
-		pane_focus(ci->focus);
+		pane_take_focus(ci->focus);
 	}
 
 	s = call_ret(str, "Paste:get", ci->focus);

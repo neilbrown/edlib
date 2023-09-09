@@ -680,10 +680,10 @@ DEF_CMD(tile_window_next)
 	if (p->focus && p->focus->z) {
 		p2 = next_child(p, p->focus, 1);
 		if (p2) {
-			pane_focus(p2);
+			pane_take_focus(p2);
 			return 1;
 		} else if (ti->leaf) {
-			pane_focus(ti->content);
+			pane_take_focus(ti->content);
 			return 1;
 		}
 		t2 = tile_first(ti);
@@ -692,17 +692,17 @@ DEF_CMD(tile_window_next)
 			t2 = tile_next_named(ti, ci->str2);
 			if (tile_is_first(t2) &&
 			    (p2 = tile_root_popup(t2)) != NULL) {
-				pane_focus(p2);
+				pane_take_focus(p2);
 				return 1;
 			}
 		} else
 			t2 = tile_first(ti);
 	}
 	if (t2) {
-		pane_focus(t2->p);
+		pane_take_focus(t2->p);
 		p2 = next_child(t2->p, NULL, 1);
 		if (p2)
-			pane_focus(p2);
+			pane_take_focus(p2);
 	}
 	return 1;
 }
@@ -716,7 +716,7 @@ DEF_CMD(tile_window_prev)
 	if (wrong_pane(ci))
 		return Efallthrough;
 	t2 = list_prev_entry(ti, tiles);
-	pane_focus(t2->p);
+	pane_take_focus(t2->p);
 	return 1;
 }
 

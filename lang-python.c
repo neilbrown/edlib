@@ -865,12 +865,12 @@ static PyObject *Pane_clone_children(Pane *self safe, PyObject *args)
 	return Py_None;
 }
 
-static PyObject *Pane_focus(Pane *self safe, PyObject *args)
+static PyObject *Pane_take_focus(Pane *self safe, PyObject *args)
 {
 	if (!pane_valid(self))
 		return NULL;
 
-	pane_focus(self->pane);
+	pane_take_focus(self->pane);
 	Py_INCREF(Py_None);
 	return Py_None;
 }
@@ -1509,7 +1509,7 @@ static const PyMethodDef pane_methods[] = {
 	 "provides an iterator which will iterate over all children"},
 	{"clone_children", (PyCFunction)Pane_clone_children, METH_VARARGS,
 	 "Clone all children onto the target"},
-	{"take_focus", (PyCFunction)Pane_focus, METH_NOARGS,
+	{"take_focus", (PyCFunction)Pane_take_focus, METH_NOARGS,
 	 "Claim the focus for this pane"},
 	{"has_focus", (PyCFunction)Pane_has_focus, METH_VARARGS,
 	 "Check if pane is focus of display"},

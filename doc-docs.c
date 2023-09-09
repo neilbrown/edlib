@@ -594,7 +594,7 @@ static int docs_open(struct pane *home safe, struct pane *focus safe,
 	if (other) {
 		par = home_call_ret(pane, focus, "DocPane", dp);
 		if (par) {
-			pane_focus(par);
+			pane_take_focus(par);
 			return 1;
 		}
 		par = call_ret(pane, "OtherPane", focus);
@@ -603,7 +603,7 @@ static int docs_open(struct pane *home safe, struct pane *focus safe,
 	if (par)
 		p = home_call_ret(pane, dp, "doc:attach-view", par, 1);
 	if (p) {
-		pane_focus(p);
+		pane_take_focus(p);
 		return 1;
 	} else {
 		return Efail;
@@ -639,7 +639,7 @@ static int docs_open_alt(struct pane *home safe, struct pane *focus safe,
 		return Efail;
 	p = home_call_ret(pane, dp, "doc:attach-view", par, 1, NULL, buf+5);
 	if (p) {
-		pane_focus(p);
+		pane_take_focus(p);
 		return 1;
 	} else {
 		return Efail;

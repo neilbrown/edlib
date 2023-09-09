@@ -477,7 +477,7 @@ void pane_move_after(struct pane *p safe, struct pane *after);
 void pane_subsume(struct pane *p safe, struct pane *parent safe);
 void pane_close(struct pane *p safe);
 bool pane_resize(struct pane *p safe, int x, int y, int w, int h);
-void pane_focus(struct pane *p);
+void pane_take_focus(struct pane *p);
 bool do_pane_has_focus(struct pane *p, struct pane *root);
 #define pane_has_focus(...) VFUNC(pane_has_focus, __VA_ARGS__)
 #define pane_has_focus1(p) do_pane_has_focus(p, NULL)
