@@ -91,7 +91,7 @@ Core features
       with the ncurses/replay test approach.
 - [X] Send global notify before/after refresh.  LOG must suspend logging
       (or notifications at least) during refresh if is visible anywhere
-- [ ] Do I want "Display" as in "Display:close", or "window" as in
+- [X] Do I want "Display" as in "window:close", or "window" as in
       "window:notify".  Decide, and make everything consistent.
 - [ ] Do I really need global-multicall- or can I just use
       notifications.

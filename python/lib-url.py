@@ -92,7 +92,7 @@ class url_view(edlib.Pane):
         if url:
             focus.call("Message", "Url: <%s>" % url)
             if self.displayed_tag == tag:
-                focus.call("Display:external-viewer", url)
+                focus.call("window:external-viewer", url)
             self.displayed_tag = tag
         else:
             focus.call("Message", "URL tag %s not found" % tag)

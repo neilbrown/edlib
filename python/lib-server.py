@@ -51,7 +51,7 @@ if sys.argv[0] == "":
 
             if not msg :
                 if self.disp:
-                    self.disp.call("Display:close")
+                    self.disp.call("window:close")
                 if self.sock:
                     self.sock.close()
                 self.sock = None
@@ -167,7 +167,7 @@ if sys.argv[0] == "":
                 if cmd == "close":
                     if self.disp:
                         self.disp.call("window:set:no-close")
-                        self.disp.call("Display:close")
+                        self.disp.call("window:close")
                         self.disp = None
                     self.call("event:free", self.read)
                     self.sock.close()
@@ -201,7 +201,7 @@ if sys.argv[0] == "":
                 self.doc = None
                 if self.term:
                     self.term.call("window:set:no-close")
-                    self.term.call("Display:close")
+                    self.term.call("window:close")
                 self.sock.send(b"Done")
             return 1
 
@@ -210,7 +210,7 @@ if sys.argv[0] == "":
             if str != "test":
                 if self.term:
                     self.term.call("window:set:no-close")
-                    self.term.call("Display:close")
+                    self.term.call("window:close")
                 self.sock.send(b"Done")
             return 1
 
@@ -242,7 +242,7 @@ if sys.argv[0] == "":
                 self.sock.close()
                 self.sock = None
             if self.disp:
-                self.disp.call("Display:close")
+                self.disp.call("window:close")
                 self.disp = None
 
     global server_sock

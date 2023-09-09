@@ -298,7 +298,7 @@ void edlib_init(struct pane *ed safe)
 		return;
 	messageline_map = key_alloc();
 	key_add(messageline_map, "Clone", &messageline_clone);
-	key_add(messageline_map, "Display:border", &messageline_border);
+	key_add(messageline_map, "window:border", &messageline_border);
 	key_add(messageline_map, "Message", &messageline_msg);
 	key_add(messageline_map, "Message:modal", &messageline_msg);
 	key_add(messageline_map, "Message:default", &messageline_msg);

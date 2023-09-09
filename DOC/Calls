@@ -147,7 +147,7 @@ When a close request is sent to the display, it should call
 from this display), it should generally refuse, as closing the last
 display can be awkward.
 
-## Display:close
+## window:close
 
 This is a request for the display to close - may be rejected if it is
 the only display left.
@@ -156,11 +156,11 @@ the only display left.
 
 Set any attribute on the display pane.  
 
-The attribute "no-close" affects closing.  If a Display:close request
+The attribute "no-close" affects closing.  If a window:close request
 arrives when "no-close" attribute is a non-empty string, that string
 should be reported via a message, and the close should be rejected.
 
-## Display:external-viewer
+## window:external-viewer
 
 str1 is a filename and str2 is (optionally) a basename template
 containing "XXXXXX".  An external viewer (typically xdg-open) should be
@@ -168,12 +168,12 @@ run on the file.  If the display is on a different host to where the
 file is stored, some action might be taken to copy it and provide a
 local names, based on str2.
 
-## Display:fullscreen
+## window:fullscreen
 
 If num1 > 0, display should switch to full-screen mode if possible.
 If num1 <= 0, display should switch away from full-screen mode.
 
-## Display:new
+## window:new
 
 If it is possible to duplicate the display (e.g.  similar window on same
 output), do that.

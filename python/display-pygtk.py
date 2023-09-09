@@ -72,7 +72,7 @@ class EdDisplay(edlib.Pane):
         return 1
 
     def handle_close_window(self, key, focus, **a):
-        "handle:Display:close"
+        "handle:window:close"
         nc = self['no-close']
         if nc:
             focus.call("Message", nc)
@@ -86,7 +86,7 @@ class EdDisplay(edlib.Pane):
         return 1
 
     def handle_fullscreen(self, key, num, **a):
-        "handle:Display:fullscreen"
+        "handle:window:fullscreen"
         if num > 0:
             self.win.fullscreen()
         else:
@@ -94,7 +94,7 @@ class EdDisplay(edlib.Pane):
         return 1
 
     def handle_new(self, key, focus, **a):
-        "handle:Display:new"
+        "handle:window:new"
         newdisp = EdDisplay(edlib.editor, self['DISPLAY'])
         p = newdisp.call("editor:activate-display", ret='pane')
         if p:
@@ -102,7 +102,7 @@ class EdDisplay(edlib.Pane):
         return 1
 
     def handle_external(self, key, str, **a):
-        "handle:Display:external-viewer"
+        "handle:window:external-viewer"
         disp = self['DISPLAY']
         if not str or not disp:
             return edlib.Enoarg
@@ -493,11 +493,11 @@ class EdDisplay(edlib.Pane):
         # This must not happen. What should I do?
 
     def close_win(self, *a):
-        self.call("Display:close")
+        self.call("window:close")
         return True
 
     def destroy_win(self, *a):
-        self.parent("Display:close")
+        self.parent("window:close")
         return False
 
     def create_ui(self):

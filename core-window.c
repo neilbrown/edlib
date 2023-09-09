@@ -177,7 +177,7 @@ void window_setup(struct pane *ed safe)
 	key_add_prefix(window_map, "window:request:", &request_notify);
 	key_add_prefix(window_map, "window:notify:", &send_notify);
 
-	key_add(window_map, "Display:close", &window_close);
+	key_add(window_map, "window:close", &window_close);
 
 	key_add_prefix(window_map, "window:set:", &window_set);
 

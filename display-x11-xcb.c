@@ -1584,7 +1584,7 @@ static void handle_client_message(struct pane *home safe,
 	    cme->format == 32 &&
 	    cme->window == xd->win &&
 	    cme->data.data32[0] == xd->atoms[a_WM_DELETE_WINDOW]) {
-		call("Display:close", pane_leaf(home));
+		call("window:close", pane_leaf(home));
 		return;
 	}
 
@@ -1684,7 +1684,7 @@ DEF_CMD(xcb_input)
 		xcb_flush(xd->conn);
 	}
 	if (xcb_connection_has_error(xd->conn)) {
-		call("Display:close", ci->home->parent);
+		call("window:close", ci->home->parent);
 		pane_close(ci->home);
 	}
 	return ret;
@@ -1990,10 +1990,10 @@ void edlib_init(struct pane *ed safe)
 
 	xcb_map = key_alloc();
 
-	key_add(xcb_map, "Display:close", &xcb_close_display);
-	key_add(xcb_map, "Display:external-viewer", &xcb_external_viewer);
-	key_add(xcb_map, "Display:fullscreen", &xcb_fullscreen);
-	key_add(xcb_map, "Display:new", &xcb_new_display);
+	key_add(xcb_map, "window:close", &xcb_close_display);
+	key_add(xcb_map, "window:external-viewer", &xcb_external_viewer);
+	key_add(xcb_map, "window:fullscreen", &xcb_fullscreen);
+	key_add(xcb_map, "window:new", &xcb_new_display);
 
 	key_add(xcb_map, "Close", &xcb_close);
 	key_add(xcb_map, "Draw:clear", &xcb_clear);

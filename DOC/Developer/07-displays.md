@@ -95,13 +95,13 @@ Draw:text
 Draw:image-size
 Draw:image
 
-## Display management commands
+## Window management commands
 
-Display:close
+window:close
 window:set:no-close
-Display:external-viewer
-Display:fullscreen
-Display:new
+window:external-viewer
+window:fullscreen
+window:new
 
 
 all-displays

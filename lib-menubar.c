@@ -430,7 +430,7 @@ void edlib_init(struct pane *ed safe)
 		  0, NULL, "attach-menubar");
 
 	menubar_map = key_alloc();
-	key_add(menubar_map, "Display:border", &menubar_border);
+	key_add(menubar_map, "window:border", &menubar_border);
 	key_add(menubar_map, "Refresh:size", &menubar_refresh_size);
 	key_add(menubar_map, "Child-Notify", &menubar_child_notify);
 	key_add(menubar_map, "Refresh:view", &menubar_refresh);

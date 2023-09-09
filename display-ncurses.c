@@ -1810,9 +1810,9 @@ void edlib_init(struct pane *ed safe)
 		  "attach-display-ncurses");
 
 	nc_map = key_alloc();
-	key_add(nc_map, "Display:refresh", &force_redraw);
-	key_add(nc_map, "Display:close", &nc_close_display);
-	key_add(nc_map, "Display:external-viewer", &nc_external_viewer);
+	key_add(nc_map, "window:refresh", &force_redraw);
+	key_add(nc_map, "window:close", &nc_close_display);
+	key_add(nc_map, "window:external-viewer", &nc_external_viewer);
 	key_add(nc_map, "Close", &nc_close);
 	key_add(nc_map, "Draw:clear", &nc_clear);
 	key_add(nc_map, "Draw:text-size", &nc_text_size);
