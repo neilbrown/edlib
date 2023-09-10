@@ -524,6 +524,9 @@ int do_pane_notify(struct pane *home, const char *notification safe,
 			LOG("Nested notification from %s to %s for %s not permitted.",
 			    home->name, n->notifiee->name, notification);
 			LOG_BT();
+			call("editor:notify:Message:broadcast",
+			     home, 0, NULL,
+			     "WARNING nested notification blocked - see log");
 			return Efail;
 		}
 restart:

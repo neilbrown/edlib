@@ -9,6 +9,8 @@ the file.
 
 ### Triage
 
+- [ ] adding new lines at end of doc in x11 leaves phantom underline
+      cursors.
 - [ ] 20230908090027.6AA0DC05B9@prodcs.lwn.net has a wrapped
       <a> tag which isn't parsed well.
 - [X] find-document - if default doc has <>, displays wrongly.
@@ -135,7 +137,7 @@ Core features
       care if the callback succeeded?
 - [ ] Change Efallthough to -1 so I can return '0' meaningfully.
       Efalse probably becomes 0.
-- [ ] send warning message when recursive notification is prohibited.
+- [X] send warning message when recursive notification is prohibited.
        editor:notify:Message:broadcast
 - [ ] Make DEF_CB really different from DEF_CMD and ensure it is used properly.
 - [X] is DocLeaf really a good idea?  Maybe panes should have 'leafward'
