@@ -748,6 +748,7 @@ DEF_CMD(xcb_draw_text)
 		PangoRectangle curs;
 		bool in_focus = xd->in_focus;
 		struct pane *f = ci->focus;
+		double cx, cy, cw, ch;
 
 		pango_layout_index_to_pos(layout, ci->num, &curs);
 		if (curs.width <= 0) {
@@ -756,9 +757,14 @@ DEF_CMD(xcb_draw_text)
 			pango_layout_get_extents(layout, NULL, &log);
 			curs.width = log.width;
 		}
-		cairo_rectangle(ctx, x+curs.x/PANGO_SCALE, y-baseline+curs.y/PANGO_SCALE,
-				(curs.width - PANGO_SCALE/2) / PANGO_SCALE,
-				(curs.height - PANGO_SCALE/2) / PANGO_SCALE);
+
+		/* Add half to x,y as stroke is either side of the line */
+		cx = x * PANGO_SCALE + curs.x + PANGO_SCALE/2;
+		cy = (y - baseline) * PANGO_SCALE + curs.y + PANGO_SCALE/2;
+		ch = curs.height - PANGO_SCALE;
+		cw = curs.width - PANGO_SCALE;
+		cairo_rectangle(ctx, cx/PANGO_SCALE, cy/PANGO_SCALE,
+				cw/PANGO_SCALE, ch/PANGO_SCALE);
 		cairo_set_line_width(ctx, 1.0);
 		cairo_stroke(ctx);
 

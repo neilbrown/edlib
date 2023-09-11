@@ -9,7 +9,7 @@ the file.
 
 ### Triage
 
-- [ ] adding new lines at end of doc in x11 leaves phantom underline
+- [X] adding new lines at end of doc in x11 leaves phantom underline
       cursors.
 - [ ] 20230908090027.6AA0DC05B9@prodcs.lwn.net has a wrapped
       <a> tag which isn't parsed well.
