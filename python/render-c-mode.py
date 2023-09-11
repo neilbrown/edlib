@@ -185,7 +185,7 @@ class parse_state:
                 if ('=' in seen or 'enum' in seen or
                     'define' in seen or 'define-body' in seen):
                     self.comma_ends = True
-            if 'case' not in seen:
+            if 'case' not in seen or c != '{':
                 self.d = self.column+1
                 self.last_was_open = True
             return
