@@ -758,26 +758,27 @@ DEF_CMD(xcb_draw_text)
 			curs.width = log.width;
 		}
 
-		/* Add half to x,y as stroke is either side of the line */
-		cx = x * PANGO_SCALE + curs.x + PANGO_SCALE/2;
-		cy = (y - baseline) * PANGO_SCALE + curs.y + PANGO_SCALE/2;
-		ch = curs.height - PANGO_SCALE;
-		cw = curs.width - PANGO_SCALE;
-		cairo_rectangle(ctx, cx/PANGO_SCALE, cy/PANGO_SCALE,
-				cw/PANGO_SCALE, ch/PANGO_SCALE);
-		cairo_set_line_width(ctx, 1.0);
-		cairo_stroke(ctx);
-
 		while (in_focus && f->parent->parent != f &&
 		       f->parent != ci->home) {
 			if (f->parent->focus != f && f->z >= 0)
 				in_focus = False;
 			f = f->parent;
 		}
-		if (in_focus) {
-			if (fg.g >= 0)
-				cairo_set_source_rgb(ctx, fg.r, fg.g, fg.b);
-			cairo_rectangle(ctx, x+curs.x/PANGO_SCALE,
+		if (!in_focus) {
+			/* Just an fg:rectangle around the fg:text */
+			/* Add half to x,y as stroke is either side of the line */
+			cx = x * PANGO_SCALE + curs.x + PANGO_SCALE/2;
+			cy = (y - baseline) * PANGO_SCALE + curs.y + PANGO_SCALE/2;
+			ch = curs.height - PANGO_SCALE;
+			cw = curs.width - PANGO_SCALE;
+			cairo_rectangle(ctx, cx/PANGO_SCALE, cy/PANGO_SCALE,
+					cw/PANGO_SCALE, ch/PANGO_SCALE);
+			cairo_set_line_width(ctx, 1.0);
+			cairo_stroke(ctx);
+		} else {
+			/* solid fd:block with txt in bg color */
+			cairo_rectangle(ctx,
+					x+curs.x/PANGO_SCALE,
 					y-baseline+curs.y/PANGO_SCALE,
 					curs.width / PANGO_SCALE,
 					curs.height / PANGO_SCALE);
