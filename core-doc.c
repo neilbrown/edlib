@@ -639,7 +639,7 @@ DEF_CMD(doc_request_notify)
 	return 1;
 }
 
-DEF_CMD(doc_notify)
+DEF_CMD_CLOSED(doc_notify)
 {
 	/* Key is "doc:notify:..." */
 	int ret = pane_notify(ksuffix(ci, "doc:notify:"),
@@ -679,7 +679,8 @@ static int do_del_view(struct doc *d safe, int v,
 					call("editor:notify:Message:broadcast",
 					     owner, 0, NULL,
 					     "WARNING mark not freed by Close:mark");
-					LOG("WARNING Mark not freed by Close:mark");
+					LOG("WARNING Mark on %s not freed by Close:mark",
+					    owner->name);
 					warned = True;
 				}
 				m->mdata = NULL;
@@ -1165,7 +1166,7 @@ DEF_CMD(doc_clip)
 	return 1;
 }
 
-DEF_CMD(doc_pass_on)
+DEF_CMD_CLOSED(doc_pass_on)
 {
 	struct doc_data *dd = ci->home->data;
 	int ret = home_call(dd->doc, ci->key, ci->focus, ci->num,

@@ -132,6 +132,7 @@ static inline int do_call_val(enum target_type type, struct pane *home,
 		if (home)
 			ci.home = home;
 		if ((home->damaged & DAMAGED_CLOSED) &&
+		    !home->handle->closed_ok &&
 		    ci.key[0] != 'C' && /* Compile will often optimise
 					 * the strncmp away
 					 */
@@ -148,7 +149,8 @@ static inline int do_call_val(enum target_type type, struct pane *home,
 			return Efail;
 		if (home)
 			ci.home = home;
-		if (ci.home->damaged & DAMAGED_CLOSED)
+		if (ci.home->damaged & DAMAGED_CLOSED &&
+		    !comm2a->closed_ok)
 			return Efallthrough;
 		ci.comm = comm2a;
 		ci.comm2 = comm2b;

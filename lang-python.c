@@ -114,6 +114,7 @@ static struct python_command *export_callable(PyObject *callable safe)
 	c->c = python_call;
 	c->c.free = python_free_command;
 	c->c.refcnt = 0;
+	c->c.closed_ok = 0;
 	command_get(&c->c);
 	Py_INCREF(callable);
 	c->callable = callable;
@@ -722,6 +723,7 @@ static int do_Pane_init(Pane *self safe, PyObject *args, PyObject *kwds,
 	self->map = key_alloc();
 	key_add(self->map, "Close:mark", &python_close_mark);
 	self->cmd = python_pane_call;
+	self->cmd.closed_ok = 1;
 	self->cmd.free = python_pane_free;
 	if (self->ob_base.ob_type)
 		self->cmd.name = self->ob_base.ob_type->tp_name;

@@ -64,10 +64,11 @@ void LOG_BT(void);
 struct pane ;
 
 struct command {
-	int	(*func)(const struct cmd_info *ci safe);
-	int	refcnt; /* only if 'free' is not NULL */
-	void	(*free)(struct command *c safe);
-	const char *name;
+	int		(*func)(const struct cmd_info *ci safe);
+	unsigned int	refcnt; /* only if 'free' is not NULL */
+	unsigned int	closed_ok:1;
+	void		(*free)(struct command *c safe);
+	const char	 *name;
 };
 
 enum edlib_errors {
@@ -92,7 +93,7 @@ static inline struct command *safe command_get(struct command * safe c)
 
 static inline void command_put(struct command *c)
 {
-	if (c && c->free && c->refcnt-- == 1)
+	if (c && c->free && --c->refcnt == 0)
 		c->free(c);
 }
 
@@ -300,13 +301,23 @@ struct lookup_cmd {
 	struct map	**m safe;
 };
 
-#define CMD(_name) {.func = _name ## _func ,		\
-		    .refcnt = 0,			\
-		    .free = NULL,			\
-		    .name = # _name,			\
+#define CMD(_name) {					\
+		.func = _name ## _func ,		\
+		.refcnt = 0,				\
+		.closed_ok = 0,				\
+		.free = NULL,				\
+		.name = # _name,			\
+	}
+#define CMD_CLOSED(_name) {				\
+		.func = _name ## _func ,		\
+		.refcnt = 0,				\
+		.closed_ok = 1,				\
+		.free = NULL,				\
+		.name = # _name,			\
 	}
 #define CB(_name) {.func = _name ## _func ,		\
 		   .refcnt = 0,				\
+		   .closed_ok = 0,			\
 		   .free = NULL,			\
 		   .name = # _name,			\
 	}
@@ -314,6 +325,10 @@ struct lookup_cmd {
 #define DEF_CMD(_name) \
 	static int _name ## _func(const struct cmd_info *ci safe); \
 	static struct command _name = CMD(_name);	\
+	static int _name ## _func(const struct cmd_info *ci safe)
+#define DEF_CMD_CLOSED(_name) \
+	static int _name ## _func(const struct cmd_info *ci safe); \
+	static struct command _name = CMD_CLOSED(_name);	\
 	static int _name ## _func(const struct cmd_info *ci safe)
 #define REDEF_CMD(_name) \
 	static int _name ## _func(const struct cmd_info *ci safe)
@@ -334,6 +349,7 @@ struct lookup_cmd {
 	static struct lookup_cmd _name = {		\
 		.c.func = key_lookup_cmd_func,		\
 		.c.refcnt = 0,				\
+		.c.closed_ok = 1,			\
 		.c.free = NULL,				\
 		.c.name = #_name,			\
 		.m = &_map,				\
@@ -354,6 +370,7 @@ int key_pfx_func(const struct cmd_info *ci safe);
 	static struct pfx_cmd _name = {			\
 		.c.func = key_pfx_func,			\
 		.c.refcnt = 0,				\
+		.c.closed_ok = 1,			\
 		.c.free = NULL,				\
 		.c.name = "prefix" #_pfx,		\
 		.pfx = _pfx,				\
