@@ -139,7 +139,7 @@ static inline int do_call_val(enum target_type type, struct pane *home,
 			/* This pane cannot accept anything but
 			 * "Close" or "Close:mark" or "Close:Notify"
 			 */
-			return Efail;
+			return Efallthrough;
 		ci.comm = home->handle;
 		ret = ci.comm->func(&ci);
 		break;
@@ -149,7 +149,7 @@ static inline int do_call_val(enum target_type type, struct pane *home,
 		if (home)
 			ci.home = home;
 		if (ci.home->damaged & DAMAGED_CLOSED)
-			return Efail;
+			return Efallthrough;
 		ci.comm = comm2a;
 		ci.comm2 = comm2b;
 		ret = ci.comm->func(&ci);
