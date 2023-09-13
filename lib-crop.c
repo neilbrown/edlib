@@ -59,7 +59,7 @@ static bool crop(struct mark *m, struct crop_data *cd safe)
 	return True;
 }
 
-DEF_CMD(crop_close)
+DEF_CMD_CLOSED(crop_close)
 {
 	struct crop_data *cd = ci->home->data;
 

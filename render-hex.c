@@ -31,7 +31,7 @@ static struct pane *do_render_hex_attach(struct pane *parent safe);
 
 DEF_LOOKUP_CMD(render_hex_handle, he_map);
 
-DEF_CMD(render_hex_close)
+DEF_CMD_CLOSED(render_hex_close)
 {
 	struct pane *p = ci->home;
 	struct he_data *he = p->data;

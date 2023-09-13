@@ -796,7 +796,7 @@ DEF_CMD(docs_val_marks)
 	return Efalse;
 }
 
-DEF_CMD(docs_close)
+DEF_CMD_CLOSED(docs_close)
 {
 	struct docs *docs = ci->home->doc_data;
 

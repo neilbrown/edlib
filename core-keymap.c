@@ -222,6 +222,11 @@ void key_add(struct map *map safe, const char *k safe, struct command *comm)
 
 	if (!comm)
 		return;
+	if (strcmp(k, "Close") == 0 &&
+	    !comm->closed_ok) {
+		LOG("WARNING: Command %s registered for \"Close\" but not marked closed_ok",
+		    comm->name);
+	}
 
 	pos = key_find(map, k);
 	/* cases:

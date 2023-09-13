@@ -218,7 +218,7 @@ static void mp_normalize(struct mp_info *mpi safe, struct mark *m safe,
 	}
 }
 
-DEF_CMD(mp_close)
+DEF_CMD_CLOSED(mp_close)
 {
 	struct mp_info *mpi = ci->home->doc_data;
 	int i;

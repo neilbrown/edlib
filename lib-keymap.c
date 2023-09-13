@@ -21,7 +21,7 @@ struct key_data {
 
 static struct pane *safe do_keymap_attach(struct pane *p safe);
 
-DEF_CMD(keymap_handle)
+DEF_CMD_CLOSED(keymap_handle)
 {
 	struct key_data *kd = ci->home->data;
 
@@ -29,6 +29,9 @@ DEF_CMD(keymap_handle)
 		command_put(kd->globalcmd);
 		return 1;
 	}
+	if (ci->home->damaged & DAMAGED_CLOSED)
+		return Efallthrough;
+
 	if (strcmp(ci->key, "Clone") == 0) {
 		struct pane *p = do_keymap_attach(ci->focus);
 		struct key_data *kd_old = ci->home->data;

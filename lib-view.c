@@ -258,7 +258,7 @@ DEF_CMD(view_refresh)
 	return 1;
 }
 
-DEF_CMD(view_close)
+DEF_CMD_CLOSED(view_close)
 {
 	struct view_data *vd = ci->home->data;
 

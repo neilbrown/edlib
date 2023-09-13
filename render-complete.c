@@ -258,7 +258,7 @@ DEF_CMD(render_complete_line)
 	return ret;
 }
 
-DEF_CMD(complete_close)
+DEF_CMD_CLOSED(complete_close)
 {
 	struct complete_data *cd = ci->home->data;
 	struct stk *stk = cd->stk;

@@ -858,7 +858,7 @@ DEF_CMD(nc_notify_display)
 	return 1;
 }
 
-DEF_CMD(nc_close)
+DEF_CMD_CLOSED(nc_close)
 {
 	struct pane *p = ci->home;
 	struct display_data *dd = p->data;

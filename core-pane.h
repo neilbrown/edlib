@@ -132,13 +132,9 @@ static inline int do_call_val(enum target_type type, struct pane *home,
 		if (home)
 			ci.home = home;
 		if ((home->damaged & DAMAGED_CLOSED) &&
-		    !home->handle->closed_ok &&
-		    ci.key[0] != 'C' && /* Compile will often optimise
-					 * the strncmp away
-					 */
-		    strcmp(ci.key, "Close") != 0)
+		    !home->handle->closed_ok)
 			/* This pane cannot accept anything but
-			 * "Close"
+			 * close_ok commands.
 			 */
 			return Efallthrough;
 		ci.comm = home->handle;

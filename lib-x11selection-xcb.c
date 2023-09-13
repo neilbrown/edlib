@@ -266,7 +266,7 @@ DEF_CMD(xcbc_handle_close)
 	return 1;
 }
 
-DEF_CMD(xcbc_close)
+DEF_CMD_CLOSED(xcbc_close)
 {
 	struct xcbc_info *xci = ci->home->data2;
 	char *cn = strconcat(ci->home, "xcb-selection-", xci->display);

@@ -395,7 +395,7 @@ DEF_CMD(log_view)
 	return 1;
 }
 
-DEF_CMD(log_close)
+DEF_CMD_CLOSED(log_close)
 {
 	struct log *l = ci->home->doc_data;
 

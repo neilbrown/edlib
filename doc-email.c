@@ -958,7 +958,7 @@ out:
 	return Efail;
 }
 
-DEF_CMD(email_view_close)
+DEF_CMD_CLOSED(email_view_close)
 {
 	struct email_view *evi = ci->home->data;
 

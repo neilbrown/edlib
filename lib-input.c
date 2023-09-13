@@ -477,7 +477,7 @@ DEF_CMD(close_focus)
 	return 1;
 }
 
-DEF_CMD(input_close)
+DEF_CMD_CLOSED(input_close)
 {
 	struct input_mode *im = ci->home->data;
 	int i;

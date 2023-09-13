@@ -132,7 +132,7 @@ static void popup_resize(struct pane *p safe, const char *style safe,
 	pane_resize(p, x, y, w, h);
 }
 
-DEF_CMD(popup_close)
+DEF_CMD_CLOSED(popup_close)
 {
 	struct popup_info *ppi = ci->home->data;
 

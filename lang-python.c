@@ -100,9 +100,18 @@ DEF_CMD(python_pane_call);
 DEF_CMD(python_doc_call);
 static void python_free_command(struct command *c safe);
 
-static struct python_command *export_callable(PyObject *callable safe)
+static struct python_command *export_callable(PyObject *callable safe,
+					      PyObject *nm)
 {
 	struct python_command *c;
+	const char *name = NULL;
+	int len;
+
+	if (nm && PyUnicode_Check(nm))
+		name = PyUnicode_AsUTF8(nm);
+	if (!name)
+		name = "";
+	len = strlen(name);
 
 	list_for_each_entry(c, &exported_commands, lst)
 		if (c->callable == callable) {
@@ -114,7 +123,12 @@ static struct python_command *export_callable(PyObject *callable safe)
 	c->c = python_call;
 	c->c.free = python_free_command;
 	c->c.refcnt = 0;
-	c->c.closed_ok = 0;
+	if (strcmp(name, "handle_close") == 0 ||
+	    (len > 10 &&
+	     strcmp(name+len-10, "_closed_ok") == 0))
+		c->c.closed_ok = 1;
+	else
+		c->c.closed_ok = 0;
 	command_get(&c->c);
 	Py_INCREF(callable);
 	c->callable = callable;
@@ -547,6 +561,7 @@ static void do_map_init(Pane *self safe)
 			if (doc && doc != Py_None) {
 				PyObject *tofree = NULL;
 				char *docs = python_as_string(doc, &tofree);
+
 				if (docs &&
 				    strstarts(docs, "handle-range") &&
 				    docs[12]) {
@@ -558,7 +573,7 @@ static void do_map_init(Pane *self safe)
 						char *b = strndup(s1+1, s2-(s1+1));
 
 						struct python_command *comm =
-							export_callable(m);
+							export_callable(m, e);
 						key_add_range(self->map, a, b,
 							      &comm->c);
 						free(a); free(b);
@@ -571,7 +586,7 @@ static void do_map_init(Pane *self safe)
 					char *b = strconcat(self->pane,
 							    a, "\xFF\xFF\xFF\xFF");
 					struct python_command *comm =
-						export_callable(m);
+						export_callable(m, e);
 					key_add_range(self->map, a, b,
 						      &comm->c);
 					command_put(&comm->c);
@@ -589,24 +604,24 @@ static void do_map_init(Pane *self safe)
 
 		if (m && PyMethod_Check(m)) {
 			PyObject *doc = PyObject_GetAttrString(m, "__doc__");
-			if (doc && doc != Py_None) {
-				PyObject *tofree = NULL;
-				char *docs = python_as_string(doc, &tofree);
-				if (docs &&
-				    strstarts(docs, "handle:")) {
+			char *docs;
+			PyObject *tofree = NULL;
+			if (doc && doc != Py_None &&
+			    (docs = python_as_string(doc, &tofree)) != NULL) {
+
+				if (strstarts(docs, "handle:")) {
 					struct python_command *comm =
-						export_callable(m);
+						export_callable(m, e);
 					key_add(self->map, docs+7, &comm->c);
 					command_put(&comm->c);
 				}
-				if (docs &&
-				    strstarts(docs, "handle-list") &&
+				if (strstarts(docs, "handle-list") &&
 				    docs[11]) {
 					char sep = docs[11];
 					char *s1 = docs + 12;
 					while (s1 && *s1 && *s1 != sep) {
 						struct python_command *comm =
-							export_callable(m);
+							export_callable(m, e);
 						char *a;
 						char *s2 = strchr(s1, sep);
 						if (s2) {
@@ -621,8 +636,8 @@ static void do_map_init(Pane *self safe)
 						command_put(&comm->c);
 					}
 				}
-				Py_XDECREF(tofree);
 			}
+			Py_XDECREF(tofree);
 			Py_XDECREF(doc);
 		}
 		Py_XDECREF(m);
@@ -2640,7 +2655,7 @@ static bool get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject
 				return False;
 			}
 		} else if (PyCallable_Check(a)) {
-			struct python_command *pc = export_callable(a);
+			struct python_command *pc = export_callable(a, NULL);
 
 			if (ci->comm2 == NULL)
 				ci->comm2 = &pc->c;
@@ -2803,7 +2818,7 @@ static bool get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject
 					return False;
 				}
 			} else if (PyCallable_Check(a)) {
-				struct python_command *pc = export_callable(a);
+				struct python_command *pc = export_callable(a, NULL);
 
 				ci->comm2 = &pc->c;
 			} else {

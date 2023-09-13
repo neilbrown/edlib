@@ -737,7 +737,7 @@ DEF_CMD(doc_addview)
 	return 1 + ret;
 }
 
-DEF_CMD(doc_close_doc)
+DEF_CMD_CLOSED(doc_close_doc)
 {
 	struct doc *d = ci->home->_data;
 	doc_free(d, ci->home);
@@ -1059,7 +1059,7 @@ DEF_CMD(doc_clone)
 	return 1;
 }
 
-DEF_CMD(doc_close)
+DEF_CMD_CLOSED(doc_close)
 {
 	struct doc_data *dd = ci->home->data;
 	int i;

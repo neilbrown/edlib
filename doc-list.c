@@ -216,7 +216,7 @@ DEF_CMD(list_new)
 	return comm_call(ci->comm2, "callback:doc", p);
 }
 
-DEF_CMD(list_close)
+DEF_CMD_CLOSED(list_close)
 {
 	struct list *l = ci->home->doc_data;
 	struct elmnt *e;

@@ -48,7 +48,7 @@ static void free_txt(struct txt **tp safe)
 	free(t);
 }
 
-DEF_CMD(copy_close)
+DEF_CMD_CLOSED(copy_close)
 {
 	struct copy_info *cyi = ci->home->data;
 

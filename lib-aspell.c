@@ -71,7 +71,7 @@ DEF_CMD(aspell_attach_helper)
 	return 1;
 }
 
-DEF_CMD(aspell_close)
+DEF_CMD_CLOSED(aspell_close)
 {
 	struct aspell_data *as = ci->home->data;
 

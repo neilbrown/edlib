@@ -72,7 +72,7 @@ static void free_si(struct si **sip safe)
 	}
 }
 
-DEF_CMD(history_close)
+DEF_CMD_CLOSED(history_close)
 {
 	struct history_info *hi = ci->home->data;
 

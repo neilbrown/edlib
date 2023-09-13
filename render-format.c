@@ -235,7 +235,7 @@ DEF_CMD(render_line_prev)
 	return 1;
 }
 
-DEF_CMD(format_close)
+DEF_CMD_CLOSED(format_close)
 {
 	struct rf_data *rf = ci->home->data;
 

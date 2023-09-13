@@ -135,7 +135,7 @@ fail:
 	return Efail;
 }
 
-DEF_CMD(askpass_close)
+DEF_CMD_CLOSED(askpass_close)
 {
 	struct apinfo *ai = ci->home->data;
 

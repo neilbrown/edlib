@@ -1357,7 +1357,7 @@ DEF_CMD(render_lines_refresh)
 	return 1;
 }
 
-DEF_CMD(render_lines_close)
+DEF_CMD_CLOSED(render_lines_close)
 {
 	struct rl_data *rl = ci->home->data;
 

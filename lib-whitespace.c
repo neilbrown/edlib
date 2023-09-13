@@ -243,7 +243,7 @@ DEF_CMD(ws_attrs)
 	return Efallthrough;
 }
 
-DEF_CMD(ws_close)
+DEF_CMD_CLOSED(ws_close)
 {
 	struct ws_info *ws = ci->home->data;
 

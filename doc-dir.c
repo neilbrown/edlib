@@ -725,7 +725,7 @@ DEF_CMD(dir_val_marks)
 	return Efalse;
 }
 
-DEF_CMD(dir_destroy)
+DEF_CMD_CLOSED(dir_destroy)
 {
 	struct directory *dr = ci->home->doc_data;
 

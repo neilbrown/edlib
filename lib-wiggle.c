@@ -218,7 +218,7 @@ DEF_CMD(notify_close)
 	return 1;
 }
 
-DEF_CMD(wiggle_close)
+DEF_CMD_CLOSED(wiggle_close)
 {
 	struct wiggle_data *wd = ci->home->data;
 	int i;

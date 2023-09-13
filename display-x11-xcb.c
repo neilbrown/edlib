@@ -442,7 +442,7 @@ DEF_CB(cnt_disp)
 	return 1;
 }
 
-DEF_CMD(xcb_close_display)
+DEF_CMD_CLOSED(xcb_close_display)
 {
 	/* If this is only display, then refuse to close this one */
 	struct call_return cr;
@@ -557,7 +557,7 @@ static void panes_free(struct xcb_data *xd safe)
 
 static void kbd_free(struct xcb_data *xd safe);
 
-DEF_CMD(xcb_close)
+DEF_CMD_CLOSED(xcb_close)
 {
 	struct xcb_data *xd = ci->home->data;
 

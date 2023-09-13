@@ -61,7 +61,7 @@ static inline bool mine(struct pane *t safe)
 	return t->z == 0 && t->handle == &tile_handle.c;
 }
 
-DEF_CMD(tile_close)
+DEF_CMD_CLOSED(tile_close)
 {
 	struct tileinfo *ti = ci->home->data;
 

@@ -2516,7 +2516,7 @@ static void text_cleanout(struct text *t safe)
 	}
 }
 
-DEF_CMD(text_destroy)
+DEF_CMD_CLOSED(text_destroy)
 {
 	struct text *t = ci->home->doc_data;
 

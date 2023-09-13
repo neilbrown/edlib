@@ -295,7 +295,7 @@ DEF_CMD(search_insert_meta)
 
 }
 
-DEF_CMD(search_close)
+DEF_CMD_CLOSED(search_close)
 {
 	struct es_info *esi = ci->home->data;
 
@@ -1056,7 +1056,7 @@ DEF_CMD(emacs_search_reposition)
 	return Efallthrough;
 }
 
-DEF_CMD(emacs_highlight_close)
+DEF_CMD_CLOSED(emacs_highlight_close)
 {
 	/* ci->focus is being closed */
 	struct highlight_info *hi = ci->home->data2;

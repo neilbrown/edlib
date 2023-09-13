@@ -264,7 +264,7 @@ DEF_CMD(xs_sel_commit)
 	return Efallthrough;
 }
 
-DEF_CMD(xs_close)
+DEF_CMD_CLOSED(xs_close)
 {
 	struct xs_info *xsi = ci->home->data;
 

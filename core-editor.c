@@ -348,7 +348,7 @@ DEF_EXTERN_CMD(edlib_noop)
 	return Efallthrough;
 }
 
-DEF_CMD(editor_close)
+DEF_CMD_CLOSED(editor_close)
 {
 	struct ed_info *ei = ci->home->data;
 	stat_free();

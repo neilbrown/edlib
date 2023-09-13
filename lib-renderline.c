@@ -1352,7 +1352,7 @@ DEF_CMD(renderline_set)
 	return 1;
 }
 
-DEF_CMD(renderline_close)
+DEF_CMD_CLOSED(renderline_close)
 {
 	struct rline_data *rd = ci->home->data;
 	struct render_item *ri = rd->content;
