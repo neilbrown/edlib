@@ -489,11 +489,6 @@ static void pane_notify_close(struct pane *p safe)
 		list_del_init(&n->notifier_link);
 		if (strcmp(n->notification, "Notify:Close") == 0)
 			pane_call(n->notifiee, n->notification, p);
-		/* Close:Notify can be delivered even to DAMAGED_CLOSED
-		 * panes
-		 */
-		if (strcmp(n->notification, "Close:Notify") == 0)
-			pane_call(n->notifiee, n->notification, p);
 		free(n->notification);
 		free(n);
 	}

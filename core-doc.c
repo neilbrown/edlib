@@ -732,10 +732,7 @@ DEF_CMD(doc_addview)
 	if (d->views /* FIXME always true */) {
 		points_attach(d, ret);
 		d->views[ret].owner = ci->focus;
-		/* Use Close:Notify because we need this even
-		 * when the pane is closing
-		 */
-		pane_add_notify(ci->home, ci->focus, "Close:Notify");
+		pane_add_notify(ci->home, ci->focus, "Notify:Close");
 	}
 	return 1 + ret;
 }
@@ -747,7 +744,7 @@ DEF_CMD(doc_close_doc)
 	return 1;
 }
 
-DEF_CMD(doc_view_close)
+DEF_CMD_CLOSED(doc_view_close)
 {
 	/* A pane which once held a view is closing.  We must discard
 	 * that view if it still exists.
@@ -1334,7 +1331,7 @@ static void init_doc_cmds(void)
 
 	key_add(doc_default_cmd, "doc:add-view", &doc_addview);
 	key_add(doc_default_cmd, "doc:del-view", &doc_delview);
-	key_add(doc_default_cmd, "Close:Notify", &doc_view_close);
+	key_add(doc_default_cmd, "Notify:Close", &doc_view_close);
 	key_add(doc_default_cmd, "doc:vmark-get", &doc_vmarkget);
 	key_add(doc_default_cmd, "doc:vmark-prev", &doc_vmarkprev);
 	key_add(doc_default_cmd, "doc:vmark-new", &doc_vmarknew);

@@ -138,7 +138,7 @@ static inline int do_call_val(enum target_type type, struct pane *home,
 					 */
 		    strncmp(ci.key, "Close", 5) != 0)
 			/* This pane cannot accept anything but
-			 * "Close" or "Close:mark" or "Close:Notify"
+			 * "Close" or "Close:mark".
 			 */
 			return Efallthrough;
 		ci.comm = home->handle;
