@@ -1368,7 +1368,7 @@ DEF_CMD(render_lines_close)
 	return 1;
 }
 
-DEF_CMD(render_lines_close_mark)
+DEF_CMD_CLOSED(render_lines_close_mark)
 {
 	struct mark *m = ci->mark;
 

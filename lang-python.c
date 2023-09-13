@@ -683,7 +683,7 @@ static void python_pane_free(struct command *c safe)
 	Py_DECREF(p);
 }
 
-DEF_CMD(python_close_mark)
+DEF_CMD_CLOSED(python_close_mark)
 {
 	struct mark *m = ci->mark;
 
