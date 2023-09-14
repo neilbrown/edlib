@@ -16,7 +16,9 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#define PANE_DATA_PTR_TYPE const wchar_t *
 #include "core.h"
+#include "core-pane.h"
 
 static const wchar_t WIN1251_UNICODE_TABLE[] = {
 	[0x00] = 0x0000,	// Null
@@ -1319,7 +1321,7 @@ DEF_LOOKUP_CMD(charset_handle, charset_map);
 DEF_CMD(charset_char)
 {
 	wint_t ret;
-	wchar_t *tbl = ci->home->_data;
+	const wchar_t *tbl = ci->home->data;
 
 	ret = home_call(ci->home->parent, "doc:byte", ci->focus,
 			ci->num, ci->mark, NULL,
@@ -1335,7 +1337,7 @@ struct charsetcb {
 	struct command *cb safe;
 	struct pane *p safe;
 	bool noalloc;
-	wchar_t *tbl safe;
+	const wchar_t *tbl safe;
 };
 
 DEF_CB(charset_content_cb)
@@ -1387,7 +1389,7 @@ DEF_CB(charset_content_cb)
 DEF_CMD(charset_content)
 {
 	struct charsetcb c;
-	wchar_t *tbl = ci->home->_data;
+	const wchar_t *tbl = ci->home->data;
 
 	if (!ci->comm2 || !ci->mark)
 		return Enoarg;
@@ -1449,7 +1451,7 @@ DEF_CMD(win1251_attach)
 	struct pane *p;
 
 	p = pane_register(ci->focus, 0, &charset_handle.c,
-			  (wchar_t*) WIN1251_UNICODE_TABLE);
+			  WIN1251_UNICODE_TABLE);
 	if (!p)
 		return Efail;
 
@@ -1461,7 +1463,7 @@ DEF_CMD(win1252_attach)
 	struct pane *p;
 
 	p = pane_register(ci->focus, 0, &charset_handle.c,
-			  (wchar_t*)WIN1252_UNICODE_TABLE);
+			  WIN1252_UNICODE_TABLE);
 	if (!p)
 		return Efail;
 
@@ -1473,7 +1475,7 @@ DEF_CMD(iso8859_1_attach)
 	struct pane *p;
 
 	p = pane_register(ci->focus, 0, &charset_handle.c,
-			  (wchar_t*)ISO_8859_1_UNICODE_TABLE);
+			  ISO_8859_1_UNICODE_TABLE);
 	if (!p)
 		return Efail;
 
@@ -1485,7 +1487,7 @@ DEF_CMD(iso8859_2_attach)
 	struct pane *p;
 
 	p = pane_register(ci->focus, 0, &charset_handle.c,
-			  (wchar_t*)ISO_8859_2_UNICODE_TABLE);
+			  ISO_8859_2_UNICODE_TABLE);
 	if (!p)
 		return Efail;
 
@@ -1497,7 +1499,7 @@ DEF_CMD(iso8859_15_attach)
 	struct pane *p;
 
 	p = pane_register(ci->focus, 0, &charset_handle.c,
-			  (wchar_t*)ISO_8859_15_UNICODE_TABLE);
+			  ISO_8859_15_UNICODE_TABLE);
 	if (!p)
 		return Efail;
 
