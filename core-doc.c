@@ -53,7 +53,6 @@ static struct pane *doc_attach_assign(struct pane *parent safe, struct pane *doc
 
 static void doc_init(struct doc *d safe)
 {
-	d->self = d;
 	INIT_HLIST_HEAD(&d->marks);
 	INIT_TLIST_HEAD(&d->points, 0);
 	d->views = NULL;
@@ -495,7 +494,7 @@ DEF_CMD(doc_page)
 
 DEF_CMD(doc_set)
 {
-	struct doc *d = ci->home->_data;
+	struct doc *d = &ci->home->doc;
 	const char *val = ksuffix(ci, "doc:set:");
 
 	if (!*val)
@@ -553,7 +552,7 @@ DEF_CMD(doc_append)
 
 DEF_CMD(doc_get_attr)
 {
-	struct doc *d = ci->home->_data;
+	struct doc *d = &ci->home->doc;
 	char pathbuf[PATH_MAX];
 	char *a;
 
@@ -622,7 +621,7 @@ DEF_CMD(doc_doc_get_attr)
 
 DEF_CMD(doc_set_name)
 {
-	struct doc *d = ci->home->_data;
+	struct doc *d = &ci->home->doc;
 
 	if (!ci->str)
 		return Enoarg;
@@ -694,14 +693,14 @@ static int do_del_view(struct doc *d safe, int v,
 
 DEF_CMD(doc_delview)
 {
-	struct doc *d = ci->home->_data;
+	struct doc *d = &ci->home->doc;
 
 	return do_del_view(d, ci->num, ci->focus);
 }
 
 DEF_CMD(doc_addview)
 {
-	struct doc *d = ci->home->_data;
+	struct doc *d = &ci->home->doc;
 	struct docview *g;
 	int ret;
 	int i;
@@ -737,7 +736,7 @@ DEF_CMD(doc_addview)
 
 DEF_CMD_CLOSED(doc_close_doc)
 {
-	struct doc *d = ci->home->_data;
+	struct doc *d = &ci->home->doc;
 	doc_free(d, ci->home);
 	return 1;
 }
@@ -747,7 +746,7 @@ DEF_CMD_CLOSED(doc_view_close)
 	/* A pane which once held a view is closing.  We must discard
 	 * that view if it still exists.
 	 */
-	struct doc *d = ci->home->_data;
+	struct doc *d = &ci->home->doc;
 	int v;
 
 	for (v = 0 ; d->views && v < d->nviews; v++)
@@ -758,8 +757,8 @@ DEF_CMD_CLOSED(doc_view_close)
 DEF_CMD(doc_vmarkget)
 {
 	struct mark *m, *m2;
-	m = do_vmark_first(ci->home->_data, ci->num, ci->focus);
-	m2 = do_vmark_last(ci->home->_data, ci->num, ci->focus);
+	m = do_vmark_first(&ci->home->doc, ci->num, ci->focus);
+	m2 = do_vmark_last(&ci->home->doc, ci->num, ci->focus);
 	return comm_call(ci->comm2, "callback:vmark", ci->focus,
 			 0, m, NULL, 0, m2) ?: 1;
 }
@@ -768,7 +767,7 @@ DEF_CMD(doc_vmarkprev)
 {
 	struct mark *m = NULL;
 	if (ci->mark)
-		m = do_vmark_at_or_before(ci->home->_data, ci->mark,
+		m = do_vmark_at_or_before(&ci->home->doc, ci->mark,
 					   ci->num, ci->focus);
 	comm_call(ci->comm2, "callback:vmark", ci->focus, 0, m);
 	return 1;
@@ -786,7 +785,7 @@ DEF_CMD(doc_vmarknew)
 DEF_CMD(doc_drop_cache)
 {
 	struct pane *p = ci->home;
-	struct doc *d = p->_data;
+	struct doc *d = &p->doc;
 
 	if (d->autoclose)
 		pane_close(p);
@@ -1173,7 +1172,7 @@ DEF_CMD_CLOSED(doc_pass_on)
 
 DEF_CMD(doc_push_point)
 {
-	struct doc *d = ci->home->_data;
+	struct doc *d = &ci->home->doc;
 	int n = ARRAY_SIZE(d->recent_points);
 	struct mark *m;
 	if (!ci->mark)
@@ -1190,7 +1189,7 @@ DEF_CMD(doc_push_point)
 
 DEF_CMD(doc_pop_point)
 {
-	struct doc *d = ci->home->_data;
+	struct doc *d = &ci->home->doc;
 	int n = ARRAY_SIZE(d->recent_points);
 
 	if (!ci->mark)

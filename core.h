@@ -124,12 +124,6 @@ bool edlib_testing(struct pane *p safe);
 void edlib_init(struct pane *ed safe);
 
 struct doc {
-	/* This pointer always points to itelf. It allows
-	 * a pane to have a pointer to a doc, or an embedded doc,
-	 * and following the pointer at that location will always
-	 * lead to the doc.
-	 */
-	struct doc		*self;
 	struct hlist_head	marks;
 	struct tlist_head	points;
 	struct docview {

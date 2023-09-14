@@ -1895,7 +1895,7 @@ static PyObject *mark_getoffset(Mark *m safe, void *x)
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
-	d = m->mark->owner->data;
+	d = &m->mark->owner->doc;
 	if (d->refcnt == mark_refcnt)
 		return PyLong_FromLong(m->mark->ref.o);
 	return PyLong_FromLong(0);
@@ -1913,7 +1913,7 @@ static int mark_setoffset(Mark *m safe, PyObject *v safe, void *x)
 	val = PyLong_AsLong(v);
 	if (val == -1 && PyErr_Occurred())
 		return -1;
-	d = m->mark->owner->data;
+	d = &m->mark->owner->doc;
 	if (d->refcnt == mark_refcnt)
 		m->mark->ref.o = val;
 	else {
@@ -1959,7 +1959,7 @@ static PyObject *mark_getpos(Mark *m safe, void *x)
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
-	d = m->mark->owner->data;
+	d = &m->mark->owner->doc;
 	if (d->refcnt == mark_refcnt && m->mark->ref.c) {
 		Py_INCREF(m->mark->ref.c);
 		return m->mark->ref.c;
@@ -1978,7 +1978,7 @@ static int mark_setpos(Mark *m safe, PyObject *v, void *x)
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return -1;
 	}
-	d = m->mark->owner->data;
+	d = &m->mark->owner->doc;
 	if (d->refcnt != mark_refcnt) {
 		PyErr_SetString(PyExc_TypeError, "Cannot set ref for non-local mark");
 		return -1;
@@ -1990,12 +1990,12 @@ static int mark_setpos(Mark *m safe, PyObject *v, void *x)
 	 * use that instead, so that mark_same() works.
 	 */
 	if ((m2 = mark_next(m->mark)) != NULL &&
-	    ((struct doc *safe)m2->owner->data)->refcnt == mark_refcnt &&
+	    m2->owner->doc.refcnt == mark_refcnt &&
 	    m2->ref.c != NULL && v != NULL &&
 	    PyObject_RichCompareBool(v, m2->ref.c, Py_EQ) == 1)
 		m->mark->ref.c = m2->ref.c;
 	else if ((m2 = mark_prev(m->mark)) != NULL &&
-		 ((struct doc *safe)m2->owner->data)->refcnt == mark_refcnt &&
+		 m2->owner->doc.refcnt == mark_refcnt &&
 		 m2->ref.c != NULL && v != NULL &&
 		 PyObject_RichCompareBool(v, m2->ref.c, Py_EQ) == 1)
 		m->mark->ref.c = m2->ref.c;

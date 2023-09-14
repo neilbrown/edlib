@@ -252,10 +252,9 @@ static bool check_file_changed(struct pane *p safe)
 
 DEF_CMD(text_readonly)
 {
-	struct doc *d = ci->home->data;
 	struct text *t = ci->home->doc_data;
 
-	if (t->file_changed && !d->readonly && ci->num)
+	if (t->file_changed && !t->doc.readonly && ci->num)
 		t->file_changed = 2;
 	/* Use default handling */
 	return Efallthrough;
@@ -639,7 +638,7 @@ static void do_text_autosave(struct pane *p safe)
 DEF_CMD(text_autosave_delete)
 {
 	struct pane *home = ci->home;
-	struct text *t = home->data;
+	struct text *t = home->doc_data;
 	const char *name = ci->str;
 	int ret = 1;
 
@@ -661,7 +660,7 @@ DEF_CMD(text_autosave_delete)
 DEF_CMD(text_autosave_tick)
 {
 	struct pane *home = ci->home;
-	struct text *t = home->data;
+	struct text *t = home->doc_data;
 
 	t->as.timer_started = 0;
 	if (!t->fname)
@@ -701,14 +700,13 @@ static void text_check_autosave(struct pane *p safe)
 
 DEF_CMD(text_save_file)
 {
-	struct doc *d = ci->home->data;
 	struct text *t = ci->home->doc_data;
 	int ret;
 	char *msg;
 	int change_status = 0;
 
 	if (!t->fname) {
-		asprintf(&msg, "** No file name known for %s ***", d->name);
+		asprintf(&msg, "** No file name known for %s ***", t->doc.name);
 		ret = Efail;
 	} else {
 		ret = do_text_write_file(ci->home, NULL, NULL, t->fname);
@@ -1309,16 +1307,15 @@ static void text_redo(struct text *t safe, struct text_edit *e safe,
 
 static bool check_readonly(const struct cmd_info *ci safe)
 {
-	struct doc *d = ci->home->data;
 	struct text *t = ci->home->doc_data;
 
 	if (t->undo == t->saved &&
 	    check_file_changed(ci->home) &&
-	    !d->readonly) {
+	    !t->doc.readonly) {
 		call("doc:notify:doc:status-changed", ci->home);
-		d->readonly = 1;
+		t->doc.readonly = 1;
 	}
-	if (!d->readonly)
+	if (!t->doc.readonly)
 		return False;
 	call("Message", ci->focus, 0, NULL, "Document is read-only");
 	return True;

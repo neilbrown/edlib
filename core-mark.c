@@ -63,7 +63,9 @@
 #include <stdlib.h>
 #include <memory.h>
 
+#define DOC_DATA_TYPE struct doc
 #include "core.h"
+#include "core-pane.h"
 #include "internal.h"
 #include "misc.h"
 
@@ -175,7 +177,7 @@ void do_mark_free(struct mark *m)
 
 static void mark_refcnt(struct mark *m safe, int inc)
 {
-	struct doc *d = m->owner->data;
+	struct doc *d = &m->owner->doc;
 
 	if (d->refcnt)
 		d->refcnt(m, inc);
@@ -382,7 +384,7 @@ struct mark *safe mark_dup_view(struct mark *m safe)
 /* if 'end', move mark after all other marks, else move before all others */
 void mark_to_end(struct pane *p safe, struct mark *m safe, int end)
 {
-	struct doc *d = p->data;
+	struct doc *d = &p->doc;
 	unsigned int i;
 	struct point_links *lnk;
 
@@ -479,7 +481,7 @@ struct mark *doc_new_mark(struct pane *p safe, int view, struct pane *owner)
 {
 	/* FIXME view is >= -1 */
 	struct mark *ret;
-	struct doc *d = p->data;
+	struct doc *d = &p->doc;
 
 	if (view >= d->nviews ||
 	    view < MARK_UNGROUPED ||
@@ -541,7 +543,7 @@ wint_t do_doc_step(struct pane *p safe, struct mark *m,
 
 	if (m && dodebug && count++ >= dodebug) {
 		count = 0;
-		doc_check_consistent(m->owner->data);
+		doc_check_consistent(&m->owner->doc);
 	}
 
 	if (move)
@@ -1086,7 +1088,7 @@ struct mark *do_vmark_at_or_before(struct doc *d safe,
 	if (!mark_valid(m))
 		return NULL;
 
-	if (m->owner->data != d) {
+	if (&m->owner->doc != d) {
 		LOG("vmark_at_or_before called with incorrect mark");
 		return NULL;
 	}
@@ -1205,7 +1207,7 @@ void doc_check_consistent(struct doc *d safe)
 
 	hlist_for_each_entry(m, &d->marks, all) {
 		ASSERT(m->seq >= seq);
-		ASSERT(m->owner->data == d);
+		ASSERT(&m->owner->doc == d);
 		seq = m->seq + 1;
 		if (m2 && !marks_validate(m2, m) && !warned) {
 			LOG_BT();
@@ -1251,7 +1253,7 @@ void doc_check_consistent(struct doc *d safe)
 bool marks_validate(struct mark *m1 safe, struct mark *m2 safe)
 {
 	struct mark *m;
-	struct doc *d = m1->owner->data;
+	struct doc *d = &m1->owner->doc;
 	int found = 0;
 	int ret;
 	int max = 1000;

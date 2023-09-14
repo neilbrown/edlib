@@ -145,7 +145,7 @@ static bool doc_save(struct pane *p safe, struct pane *focus safe, int test)
 
 static void check_name(struct docs *docs safe, struct pane *pane safe)
 {
-	struct doc *d = pane->data;
+	struct doc *d = &pane->doc;
 	char *nname;
 	int unique = 1;
 	int conflict = 1;
@@ -162,7 +162,7 @@ static void check_name(struct docs *docs safe, struct pane *pane safe)
 		else
 			strcpy(nname, d->name);
 		list_for_each_entry(p, &docs->collection->children, siblings) {
-			struct doc *d2 = p->data;
+			struct doc *d2 = &p->doc;
 			if (d != d2 && d2->name &&
 			    strcmp(nname, d2->name) == 0) {
 				conflict = 1;
@@ -277,7 +277,7 @@ DEF_CMD(docs_callback_byname)
 		return comm_call(ci->comm2, "callback:doc",
 				 ci->home);
 	list_for_each_entry(p, &doc->collection->children, siblings) {
-		struct doc *dc = p->data;
+		struct doc *dc = &p->doc;
 		char *n = dc->name;
 		if (n && strcmp(ci->str, n) == 0)
 			return comm_call(ci->comm2, "callback:doc", p);
@@ -323,7 +323,7 @@ DEF_CMD(docs_callback_choose)
 	 */
 
 	list_for_each_entry(p, &doc->collection->children, siblings) {
-		struct doc *d = p->data;
+		struct doc *d = &p->doc;
 
 		if (p->damaged & DAMAGED_CLOSED)
 			continue;
