@@ -1791,6 +1791,18 @@ class notmuch_query(edlib.Doc):
         self.maindoc.call(key, str, str2)
         return 1
 
+    def handle_doc_closed(self, key, **a):
+        "handle:doc:closed"
+        # A view on this query has been closed, so now is a good
+        # time to update the list (prune all archived threads) and
+        # the counts.
+        if self.notify("doc:notify-viewers") == 0:
+            self.load_full()
+        self.maindoc.call("doc:notmuch:update-one", self['qname'])
+
+        # contine to default handling.
+        return edlib.Efallthrough
+
 class tag_popup(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
@@ -2687,14 +2699,6 @@ class notmuch_query_view(edlib.Pane):
         "handle:Clone"
         p = notmuch_query_view(focus)
         self.clone_children(focus.focus)
-        return 1
-
-    def handle_close(self, key, focus, **a):
-        "handle:Close"
-
-        # Reload the query so archived messages disappear
-        self.call("doc:notmuch:query:reload")
-        self.call("doc:notmuch:update-one", self['qname'])
         return 1
 
     def handle_matched_mids(self, key, focus, str, str2, comm2, **a):
