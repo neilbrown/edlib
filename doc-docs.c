@@ -47,9 +47,8 @@ struct doc_ref {
 #define DOC_DATA_TYPE struct docs
 #define DOC_NEXT(d,m,r,b) docs_next(d,r,b)
 #define DOC_PREV(d,m,r,b) docs_prev(d,r,b)
-/* Note: both non-doc panes in this file use a simple
- * pointer for the data, so no PANE_DATA_TYPE is needed.
- */
+
+#define PANE_DATA_PTR_TYPE struct pane *
 #include "core.h"
 
 static struct map *docs_map, *docs_aux_map, *docs_modified_map,
@@ -367,7 +366,6 @@ DEF_CMD(docs_callback_saveall)
 
 DEF_CMD(docs_callback_modified)
 {
-	struct docs *doc = ci->home->doc_data;
 	struct pane *p;
 
 	p = home_call_ret(pane, ci->home, "doc:attach-view", ci->focus,
@@ -379,7 +377,7 @@ DEF_CMD(docs_callback_modified)
 		return Efail;
 	attr_set_str(&p->attrs, "filter:attr", "doc-can-save");
 	attr_set_str(&p->attrs, "filter:match", "yes");
-	p = pane_register(p, 0, &docs_modified_handle.c, doc);
+	p = pane_register(p, 0, &docs_modified_handle.c, NULL);
 	if (!p)
 		return Efail;
 	attr_set_str(&p->attrs, "doc-name", "*Modified Documents*");
@@ -422,7 +420,7 @@ DEF_CMD(docs_callback_appeared)
 
 DEF_CMD(doc_damage)
 {
-	struct pane *dp = ci->home->_data;
+	struct pane *dp = ci->home->data;
 	struct mark *m = mark_new(dp);
 	struct pane *child = ci->focus;
 
@@ -441,7 +439,7 @@ DEF_CMD(doc_damage)
 DEF_CMD(doc_revisit)
 {
 	struct pane *p = ci->focus;
-	struct pane *dp = ci->home->_data;
+	struct pane *dp = ci->home->data;
 	struct docs *docs = dp->doc_data;
 
 	if (!p)
@@ -707,7 +705,7 @@ DEF_CMD(docs_destroy)
 
 DEF_CMD(docs_child_closed)
 {
-	struct pane *pd = ci->home->_data;
+	struct pane *pd = ci->home->data;
 
 	if (ci->num < 0)
 	    docs_demark(pd, ci->focus);
@@ -867,7 +865,7 @@ static void docs_init_map(void)
 DEF_CB(docs_callback_lookup)
 {
 	struct docs *docs = container_of(ci->comm, struct docs, callback);
-	struct pane *home = docs->collection->_data;
+	struct pane *home = docs->collection->data;
 
 	return do_call_val(TYPE_comm, home, &docs_callback_handle.c,
 			   ci->key, ci->focus,
