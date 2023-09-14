@@ -68,6 +68,8 @@ struct doc_ref {
 #include <signal.h>
 
 #define DOC_DATA_TYPE struct python_doc
+#define PANE_DATA_PTR_TYPE struct Pane *
+struct Pane;
 #include "core.h"
 #include "misc.h"
 #include "rexel.h"
@@ -145,7 +147,7 @@ static struct python_command *export_callable(PyObject *callable safe,
 	return c;
 }
 
-typedef struct {
+typedef struct Pane {
 	PyObject_HEAD;
 	struct pane	*pane;
 	struct command	cmd;
@@ -206,7 +208,7 @@ static inline PyObject *safe Pane_Frompane(struct pane *p)
 {
 	Pane *pane;
 	if (p && p->handle && p->handle->func == python_pane_call.func) {
-		pane = p->_data;
+		pane = p->data;
 		Py_INCREF(pane);
 	} else if (p && p->handle && p->handle->func == python_doc_call.func) {
 		struct python_doc *pd = p->doc_data;
