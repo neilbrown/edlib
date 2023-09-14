@@ -462,12 +462,30 @@ struct pane * do_pane_register(struct pane *parent safe, short z,
 #ifdef PANE_DATA_TYPE
 #define pane_register4(p,z,h,d) do_pane_register(p,z,h,d,sizeof(d))
 #define pane_register3(p,z,h) do_pane_register(p,z,h,NULL, sizeof(PANE_DATA_TYPE))
-#ifdef PANE_DATA_TYPE_2
-#define pane_register_2(p,z,h) do_pane_register(p,z,h,NULL, sizeof(PANE_DATA_TYPE_2))
-#endif
+#else
+#ifdef PANE_DATA_PTR_TYPE
+static inline struct pane *pane_register(struct pane *parent safe, short z,
+					 struct command *handle safe,
+					 PANE_DATA_PTR_TYPE data)
+{
+	return do_pane_register(parent, z, handle, (void*)data, sizeof(data));
+}
 #else
 #define pane_register4(p,z,h,d) do_pane_register(p,z,h,d,sizeof((d)[0]))
 #define pane_register3(p,z,h) do_pane_register(p,z,h,NULL, 0)
+#endif
+#endif
+
+#ifdef PANE_DATA_TYPE_2
+#define pane_register_2(p,z,h) do_pane_register(p,z,h,NULL, sizeof(PANE_DATA_TYPE_2))
+#endif
+#ifdef PANE_DATA_PTR_TYPE_2
+static inline struct pane *pane_register_2(struct pane *parent safe, short z,
+					   struct command *handle safe,
+					   PANE_DATA_PTR_TYPE_2 data)
+{
+	return do_pane_register(parent, z, handle, (void*)data, sizeof(data));
+}
 #endif
 
 void pane_update_handle(struct pane *p safe, struct command *handle safe);
@@ -782,7 +800,7 @@ char *do_call_strsave(enum target_type type, struct pane *home,
 #define HOMENOTIFY3(home, not, focus) \
 	do_pane_notify(home, not, focus, 0, NULL, NULL, 0, NULL, NULL, NULL)
 
-#if !defined(PANE_DATA_TYPE) && !defined(DOC_DATA_TYPE)
+#if !defined(PANE_DATA_TYPE) && !defined(DOC_DATA_TYPE) && !defined(PANE_DATA_PTR_TYPE)
 /* If you define PANE_DATA_TYPEor DOC_DATA_TYPE, you need to include this yourself */
 #include "core-pane.h"
 #endif

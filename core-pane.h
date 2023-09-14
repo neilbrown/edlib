@@ -31,11 +31,17 @@ struct pane {
 #ifdef PANE_DATA_TYPE
 		PANE_DATA_TYPE	data[1];
 #endif
+#ifdef PANE_DATA_PTR_TYPE
+		PANE_DATA_PTR_TYPE data safe;
+#endif
 #ifdef DOC_DATA_TYPE
 		DOC_DATA_TYPE	doc_data[1];
 #endif
 #ifdef PANE_DATA_TYPE_2
 		PANE_DATA_TYPE_2 data2[1];
+#endif
+#ifdef PANE_DATA_PTR_TYPE_2
+		PANE_DATA_PTR_TYPE_2 data2 safe;
 #endif
 		void		*_data safe;
 	};
