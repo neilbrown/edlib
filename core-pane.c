@@ -156,7 +156,7 @@ static struct pane *_do_pane_register(struct pane *parent, short z,
 
 	if (data)
 		alloc_size = sizeof(data);
-	alloc_size += offsetof(struct pane, data);
+	alloc_size += offsetof(struct pane, _data);
 
 	p = alloc_zbuf(alloc_size, pane);
 	pane_init(p, parent);
@@ -166,7 +166,7 @@ static struct pane *_do_pane_register(struct pane *parent, short z,
 		p->abs_z = parent->abs_z + 1;
 	p->handle = command_get(handle);
 	if (data)
-		p->data = data;
+		p->_data = data;
 
 	p->name = handle->name;
 	if (z >= 0) {
@@ -772,9 +772,9 @@ void pane_subsume(struct pane *p safe, struct pane *parent safe)
 	parent->handle = p->handle;
 	p->handle = handle;
 
-	data = parent->data;
-	parent->data = p->data;
-	p->data = data;
+	data = parent->_data;
+	parent->_data = p->_data;
+	p->_data = data;
 
 	parent->damaged |= p->damaged;
 	pane_damaged(p, DAMAGED_SIZE);

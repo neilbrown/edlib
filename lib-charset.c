@@ -1319,7 +1319,7 @@ DEF_LOOKUP_CMD(charset_handle, charset_map);
 DEF_CMD(charset_char)
 {
 	wint_t ret;
-	wchar_t *tbl = ci->home->data;
+	wchar_t *tbl = ci->home->_data;
 
 	ret = home_call(ci->home->parent, "doc:byte", ci->focus,
 			ci->num, ci->mark, NULL,
@@ -1387,7 +1387,7 @@ DEF_CB(charset_content_cb)
 DEF_CMD(charset_content)
 {
 	struct charsetcb c;
-	wchar_t *tbl = ci->home->data;
+	wchar_t *tbl = ci->home->_data;
 
 	if (!ci->comm2 || !ci->mark)
 		return Enoarg;

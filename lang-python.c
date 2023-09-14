@@ -206,7 +206,7 @@ static inline PyObject *safe Pane_Frompane(struct pane *p)
 {
 	Pane *pane;
 	if (p && p->handle && p->handle->func == python_pane_call.func) {
-		pane = p->data;
+		pane = p->_data;
 		Py_INCREF(pane);
 	} else if (p && p->handle && p->handle->func == python_doc_call.func) {
 		struct python_doc *pd = p->doc_data;

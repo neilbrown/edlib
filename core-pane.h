@@ -30,8 +30,6 @@ struct pane {
 		struct doc	doc;
 #ifdef PANE_DATA_TYPE
 		PANE_DATA_TYPE	data[1];
-#else
-		void		*data safe;
 #endif
 #ifdef DOC_DATA_TYPE
 		DOC_DATA_TYPE	doc_data[1];

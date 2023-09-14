@@ -422,7 +422,7 @@ DEF_CMD(docs_callback_appeared)
 
 DEF_CMD(doc_damage)
 {
-	struct pane *dp = ci->home->data;
+	struct pane *dp = ci->home->_data;
 	struct mark *m = mark_new(dp);
 	struct pane *child = ci->focus;
 
@@ -441,7 +441,7 @@ DEF_CMD(doc_damage)
 DEF_CMD(doc_revisit)
 {
 	struct pane *p = ci->focus;
-	struct pane *dp = ci->home->data;
+	struct pane *dp = ci->home->_data;
 	struct docs *docs = dp->doc_data;
 
 	if (!p)
@@ -707,7 +707,7 @@ DEF_CMD(docs_destroy)
 
 DEF_CMD(docs_child_closed)
 {
-	struct pane *pd = ci->home->data;
+	struct pane *pd = ci->home->_data;
 
 	if (ci->num < 0)
 	    docs_demark(pd, ci->focus);
@@ -867,7 +867,7 @@ static void docs_init_map(void)
 DEF_CB(docs_callback_lookup)
 {
 	struct docs *docs = container_of(ci->comm, struct docs, callback);
-	struct pane *home = docs->collection->data;
+	struct pane *home = docs->collection->_data;
 
 	return do_call_val(TYPE_comm, home, &docs_callback_handle.c,
 			   ci->key, ci->focus,

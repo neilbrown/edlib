@@ -817,7 +817,7 @@ REDEF_CMD(emacs_cmd_complete);
 
 DEF_CMD(find_complete)
 {
-	char *type = ci->home->data;
+	char *type = ci->home->_data;
 
 	if (strstarts(type, "file"))
 		return emacs_file_complete_func(ci);
@@ -833,7 +833,7 @@ DEF_CMD(find_complete)
 DEF_CMD(find_done)
 {
 	int ret;
-	char *type = ci->home->data;
+	char *type = ci->home->_data;
 	char *str = call_ret(strsave, "doc:get-str", ci->focus);
 	const char *norm = NULL;
 	struct stat stb;
@@ -977,7 +977,7 @@ DEF_CMD(find_prevnext)
 	 * walk the list in mru order.
 	 * When we find it, insert the name into ci->focus document
 	 */
-	char *type = ci->home->data;
+	char *type = ci->home->_data;
 	struct find_helper h;
 
 	if (strcmp(type, "doc") != 0)
@@ -1006,7 +1006,7 @@ DEF_CMD(find_prevnext)
 
 DEF_CMD(find_attr)
 {
-	char *type = ci->home->data;
+	char *type = ci->home->_data;
 
 	if (!ci->str)
 		return Enoarg;
@@ -1043,7 +1043,7 @@ DEF_CMD(find_attr)
 DEF_CMD(find_check_replace)
 {
 	char *str, *cp, *sl;
-	char *type = ci->home->data;
+	char *type = ci->home->_data;
 	char *initial_path;
 	char *prev_dir;
 	struct stat stb;
@@ -1457,7 +1457,7 @@ REDEF_CMD(emacs_file_complete)
 	int fd;
 	struct pane *par, *pop, *docp, *p;
 	struct call_return cr;
-	char *type = ci->home->data;
+	char *type = ci->home->_data;
 	char *initial = attr_find(ci->home->attrs, "initial_path");
 	int wholebuf = strcmp(type, "file") == 0;
 	struct mark *st;

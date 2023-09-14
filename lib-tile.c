@@ -63,7 +63,7 @@ static inline bool mine(struct pane *t safe)
 
 DEF_CMD_CLOSED(tile_close)
 {
-	struct tileinfo *ti = ci->home->data;
+	struct tileinfo *ti = ci->home->_data;
 
 	tile_destroy(ci->home);
 	free(ti->name);
@@ -74,7 +74,7 @@ DEF_CMD_CLOSED(tile_close)
 DEF_CMD(tile_refresh_size)
 {
 	struct pane *p = ci->home;
-	struct tileinfo *ti = p->data;
+	struct tileinfo *ti = p->_data;
 
 	if (ti->direction == Neither) {
 		tile_avail(p, NULL);
@@ -93,7 +93,7 @@ DEF_CMD(tile_clone)
 	 * create a single tile, cloned from the focus pane
 	 */
 	child = ci->home;
-	cti = child->data;
+	cti = child->_data;
 	alloc(ti, pane);
 	ti->leaf = 1;
 	ti->direction = Neither;
@@ -109,10 +109,10 @@ DEF_CMD(tile_clone)
 	attr_set_str(&p2->attrs, "borders", "BL");
 	while (!cti->leaf && child->focus) {
 		child = child->focus;
-		cti = child->data;
+		cti = child->_data;
 	}
 	cti = list_next_entry(cti, tiles);
-	while (cti != child->data &&
+	while (cti != child->_data &&
 	       (cti->name == NULL || strcmp(cti->name, "main") != 0))
 		cti = list_next_entry(cti, tiles);
 	child = cti->p;
@@ -160,7 +160,7 @@ static struct pane *tile_split(struct pane **pp safe, int horiz, int after,
 	int space, new_space;
 	struct pane *p = safe_cast *pp;
 	struct pane *ret;
-	struct tileinfo *ti = p->data;
+	struct tileinfo *ti = p->_data;
 	struct tileinfo *ti2;
 	if (horiz)
 		space = p->w;
@@ -185,7 +185,7 @@ static struct pane *tile_split(struct pane **pp safe, int horiz, int after,
 		ti2->direction = ti->direction;
 		ti2->group = ti->group;
 		INIT_LIST_HEAD(&ti2->tiles);
-		p->data = ti2;
+		p->_data = ti2;
 		ti2->p = p;
 		p2 = pane_register(p, 0, &tile_handle.c, ti);
 		if (!p2)
@@ -247,7 +247,7 @@ static struct pane *tile_split(struct pane **pp safe, int horiz, int after,
 
 static int tile_destroy(struct pane *p safe)
 {
-	struct tileinfo *ti = p->data;
+	struct tileinfo *ti = p->_data;
 	struct pane *prev = NULL, *next = NULL;
 	struct pane *t, *remain = NULL;
 	int pos, prevpos, nextpos;
@@ -345,8 +345,8 @@ static int tile_destroy(struct pane *p safe)
 		 * Cannot destroy the parent, so bring child into parent */
 		p = remain->parent;
 
-		ti = remain->data;
-		ti2 = p->data;
+		ti = remain->_data;
+		ti2 = p->_data;
 
 		tmp = ti2->direction;
 		ti2->direction = ti->direction;
@@ -368,7 +368,7 @@ static void tile_avail(struct pane *p safe, struct pane *ignore)
 	 * if stacking direction doesn't match 'horiz', find minimum.
 	 * If only one child, assume min of 4.
 	 */
-	struct tileinfo *ti = p->data;
+	struct tileinfo *ti = p->_data;
 	struct pane *t;
 
 	if (ti->leaf) {
@@ -387,7 +387,7 @@ static void tile_avail(struct pane *p safe, struct pane *ignore)
 			if (t == ignore || !mine(t))
 				continue;
 			tile_avail(t, NULL);
-			ti2 = t->data;
+			ti2 = t->_data;
 			if (min < 0 || min > ti2->avail_perp)
 				min = ti2->avail_perp;
 			sum += ti2->avail_inline;
@@ -414,7 +414,7 @@ static void tile_adjust(struct pane *p safe)
 	int avail_cnt = 0;
 	int pos;
 	int size = 0;
-	struct tileinfo *ti = p->data;
+	struct tileinfo *ti = p->_data;
 
 	if (ti->leaf)
 		/* Children are responsible for themselves. */
@@ -424,7 +424,7 @@ static void tile_adjust(struct pane *p safe)
 
 		if (!mine(t))
 			continue;
-		ti = t->data;
+		ti = t->_data;
 		if (ti->direction == Horiz) {
 			pane_resize(t, t->x, 0, t->w, p->h);
 			used += t->w;
@@ -446,7 +446,7 @@ static void tile_adjust(struct pane *p safe)
 			cnt = avail_cnt;
 		avail_cnt = 0;
 		list_for_each_entry(t, &p->children, siblings) {
-			struct tileinfo *ti2 = t->data;
+			struct tileinfo *ti2 = t->_data;
 			int diff;
 			int mysize;
 			if (!mine(t))
@@ -492,7 +492,7 @@ static void tile_adjust(struct pane *p safe)
 	}
 	pos = 0;
 	list_for_each_entry(t, &p->children, siblings) {
-		struct tileinfo *ti2 = t->data;
+		struct tileinfo *ti2 = t->_data;
 		if (!mine(t))
 			continue;
 		if (ti2->direction == Horiz) {
@@ -517,7 +517,7 @@ static bool tile_grow(struct pane *p safe, int horiz, int size)
 	 * Then that propagates back down.  Size of this pane is adjusted
 	 * first to catch the propagations, then corrected after.
 	 */
-	struct tileinfo *ti = p->data;
+	struct tileinfo *ti = p->_data;
 	struct tileinfo *tip;
 	int avail;
 
@@ -573,7 +573,7 @@ static bool tile_grow(struct pane *p safe, int horiz, int size)
 
 	/* Hoping to grow if there is room for others to shrink */
 	tile_avail(p->parent, p);
-	tip = p->parent->data;
+	tip = p->parent->_data;
 	if (ti->direction == (horiz ? Horiz : Vert))
 		avail = tip->avail_inline;
 	else
@@ -613,7 +613,7 @@ static struct tileinfo *tile_first(struct tileinfo *ti safe)
 		struct pane *p = next_child(ti->p, NULL, 0);
 		if (!p)
 			return NULL;
-		ti = p->data;
+		ti = p->_data;
 	}
 	return ti;
 }
@@ -623,7 +623,7 @@ static bool tile_is_first(struct tileinfo *ti safe)
 	while (ti->direction != Neither) {
 		if (ti->p != next_child(ti->p->parent, NULL, 0))
 			return False;
-		ti = ti->p->parent->data;
+		ti = ti->p->parent->_data;
 	}
 	return True;
 }
@@ -631,7 +631,7 @@ static bool tile_is_first(struct tileinfo *ti safe)
 static struct pane *tile_root_popup(struct tileinfo *ti safe)
 {
 	while (ti->direction != Neither)
-		ti = ti->p->parent->data;
+		ti = ti->p->parent->_data;
 	return next_child(ti->p, NULL, 1);
 }
 
@@ -651,7 +651,7 @@ static struct tileinfo *safe tile_next_named(struct tileinfo *ti safe,
 
 static bool wrong_pane(struct cmd_info const *ci safe)
 {
-	struct tileinfo *ti = ci->home->data;
+	struct tileinfo *ti = ci->home->_data;
 
 	if (ci->str || ti->group) {
 		if (!ci->str || !ti->group)
@@ -672,7 +672,7 @@ DEF_CMD(tile_window_next)
 	 */
 	struct pane *p = ci->home;
 	struct pane *p2;
-	struct tileinfo *ti = p->data;
+	struct tileinfo *ti = p->_data;
 	struct tileinfo *t2;
 
 	if (wrong_pane(ci))
@@ -710,7 +710,7 @@ DEF_CMD(tile_window_next)
 DEF_CMD(tile_window_prev)
 {
 	struct pane *p = ci->home;
-	struct tileinfo *ti = p->data;
+	struct tileinfo *ti = p->_data;
 	struct tileinfo *t2;
 
 	if (wrong_pane(ci))
@@ -785,7 +785,7 @@ DEF_CMD(tile_window_splity)
 DEF_CMD(tile_window_close)
 {
 	struct pane *p = ci->home;
-	struct tileinfo *ti = p->data;
+	struct tileinfo *ti = p->_data;
 
 	if (wrong_pane(ci))
 		return Efallthrough;
@@ -818,7 +818,7 @@ DEF_CMD(tile_window_close_others)
 {
 	struct pane *p = ci->home;
 	struct pane *parent = p->parent;
-	struct tileinfo *ti = p->data;
+	struct tileinfo *ti = p->_data;
 	bool found =  True;
 
 	if (wrong_pane(ci))
@@ -851,7 +851,7 @@ DEF_CMD(tile_other)
 	 */
 	struct pane *p = ci->home;
 	struct pane *p2;
-	struct tileinfo *ti = p->data;
+	struct tileinfo *ti = p->_data;
 	struct tileinfo *ti2;
 	int horiz, after;
 
@@ -902,7 +902,7 @@ DEF_CMD(tile_other)
 
 DEF_CMD(tile_this)
 {
-	struct tileinfo *ti = ci->home->data;
+	struct tileinfo *ti = ci->home->_data;
 
 	if (ci->str || ti->group) {
 		if (!ci->str || !ti->group)
@@ -929,7 +929,7 @@ DEF_CMD(tile_doc)
 	/* Find the pane displaying given document, preferrably not
 	 * this pane
 	 */
-	struct tileinfo *ti = ci->home->data;
+	struct tileinfo *ti = ci->home->_data;
 	struct tileinfo *t;
 	char *name;
 
@@ -968,7 +968,7 @@ DEF_CMD(tile_doc)
 DEF_CMD(tile_root)
 {
 	struct pane *p = ci->home;
-	struct tileinfo *ti = p->data;
+	struct tileinfo *ti = p->_data;
 
 	if (ti->direction != Neither)
 		return Efallthrough;
@@ -986,7 +986,7 @@ DEF_CMD(tile_root)
 DEF_CMD(tile_child_notify)
 {
 	struct pane *p = ci->home;
-	struct tileinfo *ti = p->data;
+	struct tileinfo *ti = p->_data;
 	struct pane *c = ci->focus;
 
 	if (c->z)
