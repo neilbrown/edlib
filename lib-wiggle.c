@@ -13,9 +13,31 @@
  */
 
 #include <wctype.h>
+#define PANE_DATA_TYPE struct wiggle_data
 #include "core.h"
 #include "misc.h"
 #include "wiggle/wiggle.h"
+
+/* We provide a command that handles wiggling across multiple panes.  It
+ * is paired with a private pane which can get notifications when those
+ * panes are closed.
+ */
+struct wiggle_data {
+	struct pane *private safe;
+	struct wtxt {
+		struct pane *text;
+		struct mark *start, *end;
+		short skip;	/* prefix chars to skip */
+		short choose;	/* if !=0, only chose lines with non-space
+				 * in this position 1..skip
+				 */
+	} texts[3];
+	struct command c;
+	/* After set-wiggle is called, these are set */
+	int space_conflicts, conflicts, wiggles;
+	char *wiggle;
+};
+#include "core-pane.h"
 
 static bool has_nonspace(const char *s, int len)
 {
@@ -180,30 +202,10 @@ static void add_markup(struct pane *p, struct mark *start,
 	mark_free(m);
 }
 
-/* We provide a command that handles wiggling across multiple panes.  It
- * is paired with a private pane which can get notifications when those
- * panes are closed.
- */
-struct wiggle_data {
-	struct pane *private safe;
-	struct wtxt {
-		struct pane *text;
-		struct mark *start, *end;
-		short skip;	/* prefix chars to skip */
-		short choose;	/* if !=0, only chose lines with non-space
-				 * in this position 1..skip
-				 */
-	} texts[3];
-	struct command c;
-	/* After set-wiggle is called, these are set */
-	int space_conflicts, conflicts, wiggles;
-	char *wiggle;
-};
-
 DEF_CMD(notify_close)
 {
 	/* Private pane received a "close" notification. */
-	struct wiggle_data *wd = ci->home->_data;
+	struct wiggle_data *wd = ci->home->data;
 	int i;
 
 	for (i = 0; i < 3; i++)
@@ -220,7 +222,7 @@ DEF_CMD(notify_close)
 
 DEF_CMD_CLOSED(wiggle_close)
 {
-	struct wiggle_data *wd = ci->home->_data;
+	struct wiggle_data *wd = ci->home->data;
 	int i;
 
 	for (i = 0; i < 3 ; i++) {
@@ -264,7 +266,7 @@ static void forward_lines(struct pane *p safe, struct mark *m safe,
 DEF_CMD(wiggle_text)
 {
 	/* remember pane, mark1, mark2, num,  num2 */
-	struct wiggle_data *wd = ci->home->_data;
+	struct wiggle_data *wd = ci->home->data;
 	struct mark *m2;
 	char k0 = ci->key[0];
 	int which = k0 == 'b' ? 1 : k0 == 'a' ? 2 : 0;
@@ -302,7 +304,7 @@ DEF_CMD(wiggle_text)
 
 DEF_CMD(wiggle_extract)
 {
-	struct wiggle_data *wd = ci->home->_data;
+	struct wiggle_data *wd = ci->home->data;
 	struct wtxt *wt;
 	struct stream str;
 
@@ -330,7 +332,7 @@ DEF_CMD(wiggle_set_common)
 	/* Set the attribute 'str' on all common ranges in
 	 * 'before' and 'after'
 	 */
-	struct wiggle_data *wd = ci->home->_data;
+	struct wiggle_data *wd = ci->home->data;
 	const char *attr = ci->str ?: "render:common";
 	struct stream before, after;
 	struct file bfile, afile;
@@ -573,7 +575,7 @@ static char *collect_merge(struct merge *merge safe,
 
 DEF_CMD(wiggle_set_wiggle)
 {
-	struct wiggle_data *wd = ci->home->_data;
+	struct wiggle_data *wd = ci->home->data;
 	struct stream ostr, astr, bstr;
 	struct file of, af, bf;
 	struct csl *csl1, *csl2;
@@ -648,7 +650,7 @@ DEF_CMD(wiggle_find)
 	 * num2 is max number of lines, defaults to searching whole file.
 	 * Returns number of fuzz lines, plus 1
 	 */
-	struct wiggle_data *wd = ci->home->_data;
+	struct wiggle_data *wd = ci->home->data;
 	int lines = ci->num2;
 	struct pane *p = ci->focus;
 	struct stream str;
@@ -744,7 +746,7 @@ DEF_CMD(wiggle_find)
 
 DEF_CMD(wiggle_get)
 {
-	struct wiggle_data *wd = ci->home->_data;
+	struct wiggle_data *wd = ci->home->data;
 
 	if (wd->conflicts < 0)
 		return Einval;
@@ -791,16 +793,14 @@ DEF_CMD(make_wiggle)
 		key_add(wiggle_map, "get-result", &wiggle_get);
 	}
 
-	alloc(wd, pane);
+	p = pane_register(pane_root(ci->focus), 0,
+			  &wiggle_pane.c);
+	if (!p)
+		return Efail;
+	wd = p->data;
 	wd->c = do_wiggle;
 	wd->c.free = wiggle_free;
 	wd->conflicts = -1;
-	p = pane_register(pane_root(ci->focus), 0,
-			  &wiggle_pane.c, wd);
-	if (!p) {
-		unalloc(wd, pane);
-		return Efail;
-	}
 	command_get(&wd->c);
 	wd->private = p;
 	comm_call(ci->comm2, "cb", ci->focus,
