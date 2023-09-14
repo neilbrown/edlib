@@ -33,6 +33,7 @@ struct doc_ref {
 };
 
 #define PANE_DATA_TYPE struct doc_data
+#define DOC_DATA_TYPE struct doc
 #include "core.h"
 #include "misc.h"
 #include "internal.h"
@@ -66,23 +67,20 @@ static void doc_init(struct doc *d safe)
 
 struct pane *do_doc_register(struct pane *parent safe,
 			     struct command *handle safe,
-			     struct doc *doc,
 			     unsigned short data_size)
 {
 	struct pane *p;
 
-	if (doc == NULL && data_size < sizeof(*doc))
+	if (data_size < sizeof(struct doc))
 		/* Not enough room for the doc ! */
 		return NULL;
 
 	/* Documents are always registered against the root */
 	parent = pane_root(parent);
-	p = do_pane_register(parent, 0, handle, doc, data_size);
+	p = do_pane_register(parent, 0, handle, NULL, data_size);
 	if (!p)
 		return p;
-	if (!doc)
-		doc = &p->doc;
-	doc_init(doc);
+	doc_init(&p->doc);
 	return p;
 }
 

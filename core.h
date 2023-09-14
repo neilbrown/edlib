@@ -478,15 +478,12 @@ struct pane * do_pane_register(struct pane *parent safe, short z,
 
 void pane_update_handle(struct pane *p safe, struct command *handle safe);
 
-struct pane *do_doc_register(struct pane *parent safe,
-			     struct command *handle safe,
-			     struct doc *doc,
-			     unsigned short data_size);
 
 #ifdef DOC_DATA_TYPE
-#define doc_register(p,h) do_doc_register(p, h, NULL, sizeof(DOC_DATA_TYPE))
-#else
-#define doc_register(p,h,d) do_doc_register(p,h,&(d)->doc,sizeof((d)[0]))
+struct pane *do_doc_register(struct pane *parent safe,
+			     struct command *handle safe,
+			     unsigned short data_size);
+#define doc_register(p,h) do_doc_register(p, h, sizeof(DOC_DATA_TYPE))
 #endif
 
 void pane_reparent(struct pane *p safe, struct pane *newparent safe);
