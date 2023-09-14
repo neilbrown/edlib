@@ -1926,14 +1926,17 @@ class notmuch_master_view(edlib.Pane):
     def handle_maindoc(self, key, **a):
         "handle-prefix:doc:notmuch:"
         # any doc:notmuch calls that haven't been handled
-        # are handled to the list_pane
+        # are handed to the list_pane
         if self.recursed == key:
             edlib.LOG("doc:notmuch: recursed!", key)
+            edlib.LOG_BT()
             return edlib.Efail
         prev = self.recursed
         self.recursed = key
-        # FIXME catch exception to return failure state properly
-        ret = self.list_pane.call(key, **a)
+        try:
+            ret = self.list_pane.call(key, **a)
+        except edlib.commandfailed:
+            ret = edlib.Efail
         self.recursed = prev
         return ret
 
