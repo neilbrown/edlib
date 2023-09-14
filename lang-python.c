@@ -66,9 +66,18 @@ struct doc_ref {
 
 #include <fcntl.h>
 #include <signal.h>
+
+#define DOC_DATA_TYPE struct python_doc
 #include "core.h"
 #include "misc.h"
 #include "rexel.h"
+
+struct python_doc {
+	struct doc	doc;
+	struct pydoc	*pdoc;
+};
+
+#include "core-pane.h"
 
 #define SAFE_CI {.key=safe_cast NULL,\
 		 .home=safe_cast NULL,\
@@ -151,13 +160,12 @@ typedef struct {
 } PaneIter;
 static PyTypeObject PaneIterType;
 
-typedef struct {
+typedef struct pydoc {
 	PyObject_HEAD;
 	struct pane	*pane;
 	struct command	cmd;
 	struct map	*map;
 	int		map_init;
-	struct doc	doc;
 } Doc;
 static PyTypeObject DocType;
 
@@ -201,8 +209,8 @@ static inline PyObject *safe Pane_Frompane(struct pane *p)
 		pane = p->data;
 		Py_INCREF(pane);
 	} else if (p && p->handle && p->handle->func == python_doc_call.func) {
-		struct doc *doc = p->data;
-		Doc *pdoc = container_of(doc, Doc, doc);
+		struct python_doc *pd = p->doc_data;
+		Doc *pdoc = pd->pdoc;
 		pane = (Pane*)pdoc;
 		Py_INCREF(pane);
 	} else {
@@ -689,10 +697,8 @@ static void python_pane_free(struct command *c safe)
 	if (p->map)
 		key_free(p->map);
 	p->map = NULL;
-	if (PyObject_TypeCheck(p, &DocType)) {
-		Doc *d = (Doc*)p;
-		doc_free(&d->doc, safe_cast pn);
-	}
+	if (pn && PyObject_TypeCheck(p, &DocType))
+		doc_free(&pn->doc_data->doc, safe_cast pn);
 	if (pn)
 		pane_put(pn);
 	Py_DECREF(p);
@@ -772,6 +778,7 @@ static int Pane_init(Pane *self safe, PyObject *args, PyObject *kwds)
 static int Doc_init(Doc *self, PyObject *args, PyObject *kwds)
 {
 	Pane *parent = NULL;
+	struct python_doc *pd;
 	int z = 0;
 	int ret = do_Pane_init((Pane*safe)self, args, kwds, &parent, &z);
 
@@ -781,10 +788,13 @@ static int Doc_init(Doc *self, PyObject *args, PyObject *kwds)
 		return -1;
 
 	self->cmd.func = python_doc_call_func;
-	self->pane = do_doc_register(parent->pane, &self->cmd, &self->doc, 0);
-	if (self->pane)
+	self->pane = doc_register(parent->pane, &self->cmd);
+	if (self->pane) {
 		pane_get(self->pane);
-	self->doc.refcnt = mark_refcnt;
+		pd = self->pane->doc_data;
+		pd->pdoc = self;
+		pd->doc.refcnt = mark_refcnt;
+	}
 	return 0;
 }
 
@@ -1828,7 +1838,7 @@ static PyObject *first_mark(Doc *self safe, PyObject *args)
 	if (!doc_valid(self))
 		return NULL;
 
-	m = mark_first(&self->doc);
+	m = mark_first(&self->pane->doc_data->doc);
 	if (!m) {
 		Py_INCREF(Py_None);
 		return Py_None;
