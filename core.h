@@ -458,11 +458,9 @@ struct xy {short x,y;};
 struct pane * do_pane_register(struct pane *parent safe, short z,
 			       struct command *handle safe, void *data,
 			       short data_size);
-#define pane_register(...) VFUNC(pane_register, __VA_ARGS__)
 #ifdef PANE_DATA_TYPE
-#define pane_register4(p,z,h,d) do_pane_register(p,z,h,d,sizeof(d))
-#define pane_register3(p,z,h) do_pane_register(p,z,h,NULL, sizeof(PANE_DATA_TYPE))
-#else
+#define pane_register(p,z,h) do_pane_register(p,z,h,NULL, sizeof(PANE_DATA_TYPE))
+#endif
 #ifdef PANE_DATA_PTR_TYPE
 static inline struct pane *pane_register(struct pane *parent safe, short z,
 					 struct command *handle safe,
@@ -470,14 +468,9 @@ static inline struct pane *pane_register(struct pane *parent safe, short z,
 {
 	return do_pane_register(parent, z, handle, (void*)data, sizeof(data));
 }
-#else
+#endif
 #ifdef PANE_DATA_VOID
-#define pane_register3(p,z,h) do_pane_register(p,z,h,NULL, 0)
-#else
-#define pane_register4(p,z,h,d) do_pane_register(p,z,h,d,sizeof((d)[0]))
-#define pane_register3(p,z,h) do_pane_register(p,z,h,NULL, 0)
-#endif
-#endif
+#define pane_register(p,z,h) do_pane_register(p,z,h,NULL, 0)
 #endif
 
 #ifdef PANE_DATA_TYPE_2
