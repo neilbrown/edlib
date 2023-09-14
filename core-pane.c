@@ -32,7 +32,9 @@
 #include <ctype.h>
 #include <stdio.h>
 
+#define PANE_DATA_PTR_TYPE void *
 #include "core.h"
+#include "core-pane.h"
 #include "internal.h"
 
 MEMPOOL(pane);
@@ -156,7 +158,7 @@ static struct pane *_do_pane_register(struct pane *parent, short z,
 
 	if (data)
 		alloc_size = sizeof(data);
-	alloc_size += offsetof(struct pane, _data);
+	alloc_size += offsetof(struct pane, data);
 
 	p = alloc_zbuf(alloc_size, pane);
 	pane_init(p, parent);
@@ -166,7 +168,7 @@ static struct pane *_do_pane_register(struct pane *parent, short z,
 		p->abs_z = parent->abs_z + 1;
 	p->handle = command_get(handle);
 	if (data)
-		p->_data = data;
+		p->data = data;
 
 	p->name = handle->name;
 	if (z >= 0) {
@@ -772,9 +774,9 @@ void pane_subsume(struct pane *p safe, struct pane *parent safe)
 	parent->handle = p->handle;
 	p->handle = handle;
 
-	data = parent->_data;
-	parent->_data = p->_data;
-	p->_data = data;
+	data = parent->data;
+	parent->data = p->data;
+	p->data = data;
 
 	parent->damaged |= p->damaged;
 	pane_damaged(p, DAMAGED_SIZE);

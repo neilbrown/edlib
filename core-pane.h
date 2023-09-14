@@ -49,7 +49,6 @@ struct pane {
 #ifdef PANE_DATA_PTR_TYPE_3
 		PANE_DATA_PTR_TYPE_3 data3 safe;
 #endif
-		void		*_data safe;
 	};
 };
 
