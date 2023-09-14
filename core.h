@@ -488,6 +488,18 @@ static inline struct pane *pane_register_2(struct pane *parent safe, short z,
 }
 #endif
 
+#ifdef PANE_DATA_TYPE_3
+#define pane_register_3(p,z,h) do_pane_register(p,z,h,NULL, sizeof(PANE_DATA_TYPE_3))
+#endif
+#ifdef PANE_DATA_PTR_TYPE_3
+static inline struct pane *pane_register_3(struct pane *parent safe, short z,
+					   struct command *handle safe,
+					   PANE_DATA_PTR_TYPE_3 data)
+{
+	return do_pane_register(parent, z, handle, (void*)data, sizeof(data));
+}
+#endif
+
 void pane_update_handle(struct pane *p safe, struct command *handle safe);
 
 

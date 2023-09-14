@@ -26,6 +26,7 @@
 #include <string.h>
 #define PANE_DATA_TYPE struct es_info
 #define PANE_DATA_TYPE_2 struct highlight_info
+#define PANE_DATA_PTR_TYPE_3 struct pane *
 #include "core.h"
 #include "rexel.h"
 
@@ -477,7 +478,7 @@ DEF_CMD(search_replace)
 	attr_set_str(&p->attrs, "status-line", " Replacement ");
 	call("doc:set-name", p, 0, NULL, "Replacement");
 
-	p = pane_register(p, 0, &replace_handle.c, ci->focus);
+	p = pane_register_3(p, 0, &replace_handle.c, ci->focus);
 	if (!p)
 		return Efail;
 	p = call_ret(pane, "attach-history", p, 0, NULL, "*Replace History*");
@@ -563,7 +564,7 @@ DEF_CMD(do_replace)
 
 DEF_CMD(replace_request_next)
 {
-	struct pane *sp = ci->home->_data;
+	struct pane *sp = ci->home->data3;
 	char *new;
 
 	new = call_ret(str, "doc:get-str", ci->focus);
@@ -578,7 +579,7 @@ DEF_CMD(replace_request_next)
 
 DEF_CMD(replace_request)
 {
-	struct pane *sp = ci->home->_data;
+	struct pane *sp = ci->home->data3;
 	char *new;
 
 	new = call_ret(str, "doc:get-str", ci->focus);
@@ -590,7 +591,7 @@ DEF_CMD(replace_request)
 
 DEF_CMD(replace_all)
 {
-	struct pane *sp = ci->home->_data;
+	struct pane *sp = ci->home->data3;
 	char *new;
 	int replaced = 0;
 
@@ -609,7 +610,7 @@ DEF_CMD(replace_all)
 
 DEF_CMD(replace_to_search)
 {
-	struct pane *sp = ci->home->_data;
+	struct pane *sp = ci->home->data3;
 
 	pane_take_focus(sp);
 	return 1;
@@ -617,7 +618,7 @@ DEF_CMD(replace_to_search)
 
 DEF_CMD(replace_forward)
 {
-	struct pane *sp = ci->home->_data;
+	struct pane *sp = ci->home->data3;
 
 	call(ci->key, sp);
 
@@ -631,14 +632,14 @@ DEF_CMD(replace_undo)
 
 DEF_CMD(replace_escape)
 {
-	struct pane *sp = ci->home->_data;
+	struct pane *sp = ci->home->data3;
 
 	return call("search:done", sp);
 }
 
 DEF_CMD(replace_prev)
 {
-	struct pane *home = ci->home->_data;
+	struct pane *home = ci->home->data3;
 	struct es_info *esi = home->data;
 
 	if (esi->target)
@@ -648,7 +649,7 @@ DEF_CMD(replace_prev)
 
 DEF_CMD(replace_next)
 {
-	struct pane *home = ci->home->_data;
+	struct pane *home = ci->home->data3;
 	struct es_info *esi = home->data;
 
 	if (esi->target)
