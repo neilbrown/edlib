@@ -1200,6 +1200,7 @@ void doc_check_consistent(struct doc *d safe)
 	struct mark *m, *m2 = NULL;
 	int seq = 0;
 	int i;
+	int max = 1000;
 	static bool warned = False;
 
 	hlist_for_each_entry(m, &d->marks, all) {
@@ -1214,6 +1215,8 @@ void doc_check_consistent(struct doc *d safe)
 			warned = True;
 		}
 		m2 = m;
+		if (max-- < 0)
+			break;
 	}
 	for (i = 0; d->views && i < d->nviews; i++)
 		if (d->views[i].owner == NULL) {
@@ -1239,6 +1242,8 @@ void doc_check_consistent(struct doc *d safe)
 				if (m->seq < seq)
 					abort();
 				seq = m->seq + 1;
+				if (max-- < 0)
+					break;
 			}
 		}
 }
@@ -1249,11 +1254,15 @@ bool marks_validate(struct mark *m1 safe, struct mark *m2 safe)
 	struct doc *d = m1->owner->data;
 	int found = 0;
 	int ret;
+	int max = 1000;
 
 	if (m1 == m2) {
-		for (m = mark_first(d); m; m = mark_next(m))
+		for (m = mark_first(d); m; m = mark_next(m)) {
 			if (m1 == m)
 				return True;
+			if (max-- < 0)
+				break;
+		}
 		LOG("marks_validate: marks not found");
 		return False;
 	}
@@ -1261,9 +1270,12 @@ bool marks_validate(struct mark *m1 safe, struct mark *m2 safe)
 		m = m1; m1 = m2; m2 = m;
 	}
 
-	for (m = mark_first(d); m; m = mark_next(m))
+	for (m = mark_first(d); m; m = mark_next(m)) {
 		if (m == m1 || m == m2)
 			found += 1;
+		if (max-- < 0)
+			break;
+	}
 	if (found != 2) {
 		LOG("log_val_marks not both found, only %d", found);
 		return False;

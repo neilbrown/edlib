@@ -2087,16 +2087,20 @@ static void text_check_consistent(struct text *t safe)
 	struct text_chunk *c;
 	struct mark *m, *prev;
 	struct doc *d = &t->doc;
-	int loops;
+	int loops = 10000;
 
 	list_for_each_entry(c, &t->text, lst) {
 		check_allocated(t, c->txt, c->end);
 		if (c->start >= c->end)
 			abort();
+		if (loops-- < 0)
+			break;
 	}
 	list_for_each_entry(c, &t->text, lst) {
 		struct text_chunk *c2;
 		list_for_each_entry(c2, &t->text, lst) {
+			if (loops -- < 0)
+				break;
 			if (c2 == c ||
 			    c2->txt != c->txt)
 				continue;
@@ -2106,12 +2110,13 @@ static void text_check_consistent(struct text *t safe)
 				continue;
 			abort();
 		}
+		if (loops-- < 0)
+			break;
 	}
 
 	/* This test is quadratic in the number of marks, so let's
 	 * give up rather then annoy the users.
 	 */
-	loops = 10000;
 	for (m = mark_first(d); m; m = mark_next(m))
 		text_ref_consistent(t, &m->ref, &loops);
 
@@ -2130,6 +2135,8 @@ static void text_check_consistent(struct text *t safe)
 			}
 		}
 		prev = m;
+		if (loops-- < 0)
+			break;
 	}
 	doc_check_consistent(d);
 }

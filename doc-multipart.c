@@ -152,12 +152,12 @@ static void mp_mark_refcnt(struct mark *m safe, int inc)
 
 static void mp_check_consistent(struct mp_info *mpi safe)
 {
-//	struct mark *m;
 	struct doc *d = &mpi->doc;
-//	int s = -1;
-
-	doc_check_consistent(d);
 #if 0
+	struct mark *m;
+	int s = -1;
+	int max = 1000;
+
 	for (m = mark_first(d); m; m = mark_next(m)) {
 		if (!m->ref.m || m->ref.m->seq <= s) {
 			for (m = mark_first(d); m;
@@ -169,9 +169,11 @@ static void mp_check_consistent(struct mp_info *mpi safe)
 			abort();
 		}
 		s = m->ref.m->seq;
+		if (max-- < 0)
+			break;
 	}
-	doc_check_consistent(d);
 #endif
+	doc_check_consistent(d);
 }
 
 static void change_part(struct mp_info *mpi safe, struct mark *m safe,

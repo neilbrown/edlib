@@ -127,7 +127,7 @@ Core features
 - [ ] catching doc:replace in a pane doesn't catch doc:insert-file.
       I need a simple way to intercept any change.
 - [X] switch-buffer in pop-up window - shouldn't kill the popup (does it?)
-- [ ] explicitly guard against infinite loops in consistency checks
+- [X] explicitly guard against infinite loops in consistency checks
 - [ ] skip consistency checks after several with no stop for input.
 - [ ] unwanted docs too easily appear high in recent-list - *Output*
 - [ ] design a way for a keystroke to interrupt a long-running function.
