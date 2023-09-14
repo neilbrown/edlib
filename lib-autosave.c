@@ -12,6 +12,7 @@
 
 #include <unistd.h>
 #include <dirent.h>
+#define PANE_DATA_VOID
 #include "core.h"
 
 /*

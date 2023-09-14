@@ -471,8 +471,12 @@ static inline struct pane *pane_register(struct pane *parent safe, short z,
 	return do_pane_register(parent, z, handle, (void*)data, sizeof(data));
 }
 #else
+#ifdef PANE_DATA_VOID
+#define pane_register3(p,z,h) do_pane_register(p,z,h,NULL, 0)
+#else
 #define pane_register4(p,z,h,d) do_pane_register(p,z,h,d,sizeof((d)[0]))
 #define pane_register3(p,z,h) do_pane_register(p,z,h,NULL, 0)
+#endif
 #endif
 #endif
 
@@ -487,6 +491,9 @@ static inline struct pane *pane_register_2(struct pane *parent safe, short z,
 	return do_pane_register(parent, z, handle, (void*)data, sizeof(data));
 }
 #endif
+#ifdef PANE_DATA_VOID_2
+#define pane_register_2(p,z,h) do_pane_register(p,z,h,NULL, 0)
+#endif
 
 #ifdef PANE_DATA_TYPE_3
 #define pane_register_3(p,z,h) do_pane_register(p,z,h,NULL, sizeof(PANE_DATA_TYPE_3))
@@ -498,6 +505,9 @@ static inline struct pane *pane_register_3(struct pane *parent safe, short z,
 {
 	return do_pane_register(parent, z, handle, (void*)data, sizeof(data));
 }
+#endif
+#ifdef PANE_DATA_VOID_3
+#define pane_register_3(p,z,h) do_pane_register(p,z,h,NULL, 0)
 #endif
 
 void pane_update_handle(struct pane *p safe, struct command *handle safe);

@@ -51,6 +51,8 @@ struct doc_ref {
 #define DOC_DATA_TYPE struct directory
 #define DOC_NEXT(d,m,r,b) dir_next(d,r,b)
 #define DOC_PREV(d,m,r,b) dir_prev(d,r,b)
+
+#define PANE_DATA_VOID
 #include "core.h"
 
 struct dir_ent {

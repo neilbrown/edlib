@@ -25,6 +25,7 @@
 #define DOC_NEXT base64_next
 #define DOC_PREV base64_prev
 
+#define PANE_DATA_VOID
 #include "core.h"
 
 static struct map *b64_map safe;

@@ -49,6 +49,7 @@ struct doc_ref {
 #define DOC_PREV(d,m,r,b) docs_prev(d,r,b)
 
 #define PANE_DATA_PTR_TYPE struct pane *
+#define PANE_DATA_VOID_2
 #include "core.h"
 
 static struct map *docs_map, *docs_aux_map, *docs_modified_map,
@@ -377,7 +378,7 @@ DEF_CMD(docs_callback_modified)
 		return Efail;
 	attr_set_str(&p->attrs, "filter:attr", "doc-can-save");
 	attr_set_str(&p->attrs, "filter:match", "yes");
-	p = pane_register(p, 0, &docs_modified_handle.c, NULL);
+	p = pane_register_2(p, 0, &docs_modified_handle.c);
 	if (!p)
 		return Efail;
 	attr_set_str(&p->attrs, "doc-name", "*Modified Documents*");

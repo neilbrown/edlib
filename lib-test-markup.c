@@ -6,6 +6,7 @@
  * of the document as verbatim markup.  This is for testing only.
  */
 
+#define PANE_DATA_VOID
 #include "core.h"
 #include "misc.h"
 

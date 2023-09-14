@@ -15,10 +15,12 @@
 #include <stdio.h>
 
 #define PANE_DATA_TYPE struct rf_data
+#define PANE_DATA_VOID_2
 #define DOC_NEXT(p,m,r,b) format_next_prev(p, ci->focus, m, r, 1, b)
 #define DOC_PREV(p,m,r,b) format_next_prev(p, ci->focus, m, r, 0, b)
 #define DOC_NEXT_DECL(p,m,r,b) format_next_prev(p, struct pane *focus safe, m, r, int forward, b)
 #define DOC_PREV_DECL(p,m,r,b) format_next_prev(p, struct pane *focus safe, m, r, int forward, b)
+
 #include "core.h"
 #include "misc.h"
 
@@ -962,7 +964,7 @@ static struct pane *do_render_format_attach(struct pane *parent safe)
 		if (!rf_map)
 			render_format_register_map();
 
-		p = pane_register(parent, 0, &render_format_handle.c, NULL);
+		p = pane_register_2(parent, 0, &render_format_handle.c);
 	} else {
 		if (!rf2_map)
 			render_format_register_map();

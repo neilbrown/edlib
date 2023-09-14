@@ -18,6 +18,7 @@
  *
  */
 
+#define PANE_DATA_VOID
 #include "core.h"
 #include "misc.h"
 

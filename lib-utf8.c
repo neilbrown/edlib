@@ -11,6 +11,7 @@
 
 #define DOC_NEXT utf8_next
 #define DOC_PREV utf8_prev
+#define PANE_DATA_VOID
 #include "core.h"
 
 static struct map *utf8_map safe;
