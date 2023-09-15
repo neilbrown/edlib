@@ -1239,3 +1239,17 @@ void pane_set_time(struct pane *p safe)
 	if (p->timestamp <= 1)
 		p->timestamp = 2;
 }
+
+DEF_CB(clear_consistency)
+{
+	ci->focus->consistency_checks = 0;
+	return 1;
+}
+
+bool pane_no_consistency(struct pane *p safe)
+{
+	p->consistency_checks += 1;
+	if (p->consistency_checks == 50)
+		call_comm("event:on-idle", p, &clear_consistency, 2);
+	return p->consistency_checks > 60;
+}

@@ -2086,6 +2086,9 @@ static void text_check_consistent(struct text *t safe)
 	struct doc *d = &t->doc;
 	int loops = 10000;
 
+	if (pane_no_consistency(safe_cast container_of(d, struct pane, doc)))
+		return;
+
 	list_for_each_entry(c, &t->text, lst) {
 		check_allocated(t, c->txt, c->end);
 		if (c->start >= c->end)

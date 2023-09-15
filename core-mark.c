@@ -1205,6 +1205,9 @@ void doc_check_consistent(struct doc *d safe)
 	int max = 1000;
 	static bool warned = False;
 
+	if (pane_no_consistency(safe_cast container_of(d, struct pane, doc)))
+		return;
+
 	hlist_for_each_entry(m, &d->marks, all) {
 		ASSERT(m->seq >= seq);
 		ASSERT(&m->owner->doc == d);

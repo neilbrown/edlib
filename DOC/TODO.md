@@ -29,6 +29,8 @@ the file.
 - [ ] selection-menu sub-menu for UPPER lower Caps ??
 - [ ] selection-menu item for text-fill
 - [ ] selection-menu item for spell-check ??
+- [ ] notmuch - capture errors about multiple Subject lines and
+      display them better.
 
 ### Small
 
@@ -82,6 +84,8 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] universal times_up tests might cause Close_mark or similar
+      not to be called.  How can we avoid that?
 - [ ] If a pane wants to block mouse events from parents, as lib-view
       does, it shouldn't need to catch all the combinations, or it
       should be much easier
@@ -128,7 +132,7 @@ Core features
       I need a simple way to intercept any change.
 - [X] switch-buffer in pop-up window - shouldn't kill the popup (does it?)
 - [X] explicitly guard against infinite loops in consistency checks
-- [ ] skip consistency checks after several with no stop for input.
+- [X] skip consistency checks after several with no stop for input.
 - [ ] unwanted docs too easily appear high in recent-list - *Output*
 - [ ] design a way for a keystroke to interrupt a long-running function.
 - [ ] extend Draw:measure protocol to allow constant-width-fonts to

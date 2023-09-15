@@ -11,6 +11,7 @@ struct pane {
 
 	short			damaged;
 	short			alloc_size;
+	short			consistency_checks;
 
 	int			marks;
 	int			refs;
@@ -52,6 +53,7 @@ struct pane {
 	};
 };
 
+bool pane_no_consistency(struct pane *p safe);
 bool pane_too_long(struct pane *p safe, unsigned int msec);
 void pane_set_time(struct pane *p safe);
 static inline void pane_end_time(struct pane *p safe)
