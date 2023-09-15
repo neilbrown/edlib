@@ -453,12 +453,12 @@ static int dict_add(PyObject *kwds, char *name, PyObject *val)
 	return 1;
 }
 
-static void python_interrupt(int sig)
+static bool python_running;
+DEF_CB(handle_alarm)
 {
-	/* Python code has been running for too long,
-	 * interrupt it.
-	 */
-	kill(getpid(), 2);
+	if (python_running)
+		PyErr_SetInterrupt();
+	return 1;
 }
 
 REDEF_CB(python_call)
@@ -516,11 +516,9 @@ REDEF_CB(python_call)
 			    Py_BuildValue("ii", ci->x, ci->y));
 
 	if (rv && pc->callable) {
-		signal(SIGALRM, python_interrupt);
-		alarm(10);
+		python_running = True;
 		ret = PyObject_Call(pc->callable, args, kwds);
-		alarm(0);
-		signal(SIGALRM, SIG_DFL);
+		python_running = False;
 	}
 
 	Py_DECREF(args);
@@ -1172,8 +1170,6 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 	int rv;
 	PyObject *s1, *s2;
 	struct pyret pr;
-	int remain;
-	sighandler_t oldhan;
 
 	if (!pane_valid(self))
 		return NULL;
@@ -1187,13 +1183,9 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 		return NULL;
 	}
 
-	remain = alarm(0);
-	oldhan = signal(SIGALRM, SIG_DFL);
+	python_running = False;
 	rv = key_handle(&ci);
-	if (oldhan != SIG_DFL) {
-		signal(SIGALRM, oldhan);
-		alarm(remain);
-	}
+	python_running = True;
 
 	/* Just in case ... */
 	PyErr_Clear();
@@ -2950,17 +2942,25 @@ void edlib_init(struct pane *ed safe)
 	PyObject *m;
 	PyConfig config;
 	char *argv[2]= { "edlib", NULL };
+	sighandler_t sigint;
 
 	if (edlib_module_path)
 		module_dir = strdup(edlib_module_path);
 	else
 		module_dir = ".";
 
+	/* de-register SIGINT while we initialise python,
+	 * so that Python thinks that it's registration is
+	 * valid - so PyErr_SetInterrupt() don't think there
+	 * is a race.
+	 */
+	sigint = signal(SIGINT, SIG_DFL);
 	PyConfig_InitPythonConfig(&config);
 	config.isolated = 1;
 	PyConfig_SetBytesArgv(&config, 0, argv);
 	Py_InitializeFromConfig(&config);
 	PyConfig_Clear(&config);
+	signal(SIGINT, sigint);
 
 	PaneType.tp_new = PyType_GenericNew;
 	PaneIterType.tp_new = PyType_GenericNew;
@@ -3029,6 +3029,9 @@ void edlib_init(struct pane *ed safe)
 
 	EdlibModule = m;
 	ed_pane = ed;
+
+	call_comm("global-set-command", ed, &handle_alarm,
+		  0, NULL, "fast-alarm-python");
 
 	call_comm("global-set-command", ed, &python_load_module,
 		  0, NULL, "global-load-modules:python");

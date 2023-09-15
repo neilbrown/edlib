@@ -406,7 +406,8 @@ struct map *safe key_alloc(void);
 void key_free(struct map *m safe);
 int key_handle(const struct cmd_info *ci safe);
 int key_lookup(struct map *m safe, const struct cmd_info *ci safe);
-int key_lookup_prefix(struct map *m safe, const struct cmd_info *ci safe);
+int key_lookup_prefix(struct map *m safe, const struct cmd_info *ci safe,
+		      bool simple);
 struct command *key_lookup_cmd(struct map *m safe, const char *c safe);
 void key_add(struct map *map safe, const char *k safe, struct command *comm);
 void key_add_range(struct map *map safe,

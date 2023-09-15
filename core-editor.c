@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <signal.h>
 #include <fcntl.h>
 #include <stdarg.h>
 #include <dlfcn.h>
@@ -202,7 +203,11 @@ DEF_CMD(editor_load_module)
 			return 1;
 		}
 #endif
-	if (key_lookup_prefix(map, ci) > 0)
+	/* Multiple modules can support module lookup, such as
+	 * global-load-modules:python or global-load-module:lua.
+	 * So do a prefix lookup.
+	 */
+	if (key_lookup_prefix(map, ci, False) > 0)
 		return 1;
 	LOG("Failed to load module: %s", name);
 	return Efail;
@@ -216,7 +221,7 @@ DEF_CMD(editor_auto_event)
 	 */
 	struct ed_info *ei = ci->home->data;
 	struct map *map = ei->map;
-	int ret = key_lookup_prefix(map, ci);
+	int ret = key_lookup_prefix(map, ci, False);
 
 	if (ret)
 		return ret;
@@ -224,7 +229,7 @@ DEF_CMD(editor_auto_event)
 		/* pointless to autoload for refresh */
 		return Efallthrough;
 	call("attach-libevent", ci->home);
-	return key_lookup_prefix(map, ci);
+	return key_lookup_prefix(map, ci, False);
 }
 
 DEF_CMD(editor_activate_display)
@@ -278,7 +283,7 @@ DEF_CMD(editor_multicall)
 	const char *key = ci->key;
 
 	((struct cmd_info*)ci)->key = ksuffix(ci, "global-multicall-");
-	ret = key_lookup_prefix(map, ci);
+	ret = key_lookup_prefix(map, ci, False);
 	((struct cmd_info*)ci)->key = key;
 	return ret;
 }
@@ -686,6 +691,32 @@ DEF_CMD(global_find_file)
 	return Efalse;
 }
 
+static struct pane *editor;
+static void catch(int sig)
+{
+	struct cmd_info ci;
+	if (!editor)
+		return;
+	signal(sig, catch);
+	ci.home = editor;
+	ci.focus = editor;
+	ci.num = sig;
+	ci.num2 = 0;
+	ci.str = ci.str2 = NULL;
+	ci.mark = ci.mark2 = NULL;
+	ci.x = ci.y = 0;
+	switch (sig) {
+	case SIGALRM:
+		ci.key = "fast-alarm-";
+		key_lookup_prefix(editor->data->map, &ci, True);
+		break;
+	case SIGINT:
+		ci.key = "fast-interrupt-";
+		key_lookup_prefix(editor->data->map, &ci, True);
+		break;
+	}
+}
+
 struct pane *editor_new(const char *comm_name)
 {
 	struct pane *ed;
@@ -728,5 +759,9 @@ struct pane *editor_new(const char *comm_name)
 	log_setup(ed);
 	window_setup(ed);
 
+	signal(SIGINT, catch);
+	signal(SIGALRM, catch);
+
+	editor = ed;
 	return ed;
 }

@@ -1,3 +1,5 @@
+#include <unistd.h>
+
 struct pane {
 	const char		*name; /* For easy discovery in gdb */
 	struct pane		*parent safe;
@@ -69,10 +71,12 @@ static inline struct pane * safe pane_root(struct pane *p safe)
 static inline void time_starts(struct pane *p safe)
 {
 	pane_set_time(pane_root(p));
+	alarm(15);
 }
 
 static inline void time_ends(struct pane *p safe)
 {
+	alarm(0);
 	pane_end_time(pane_root(p));
 }
 

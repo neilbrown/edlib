@@ -491,8 +491,12 @@ int key_lookup(struct map *m safe, const struct cmd_info *ci safe)
 	}
 }
 
-int key_lookup_prefix(struct map *m safe, const struct cmd_info *ci safe)
+int key_lookup_prefix(struct map *m safe, const struct cmd_info *ci safe,
+		      bool simple)
 {
+	/* A "Simple" lookup avoids the backtrace.  It is used in
+	 * signal handlers.
+	 */
 	const char *k = ci->key;
 	int len = strlen(k);
 	int pos = key_find(m, k);
@@ -508,7 +512,10 @@ int key_lookup_prefix(struct map *m safe, const struct cmd_info *ci safe)
 		if (comm && comm != prev) {
 			((struct cmd_info*)ci)->comm = comm;
 			((struct cmd_info*)ci)->key = m->keys[pos+i];
-			ret = do_comm_call(comm, ci);
+			if (simple)
+				ret = comm->func(ci);
+			else
+				ret = do_comm_call(comm, ci);
 			ASSERT(ret >= Efallthrough || ret < Eunused);
 			prev = comm;
 			/* something might have been added, recalc

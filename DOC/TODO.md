@@ -89,7 +89,7 @@ Core features
 - [ ] If a pane wants to block mouse events from parents, as lib-view
       does, it shouldn't need to catch all the combinations, or it
       should be much easier
-- [ ] gather memory usage stats per-pane and allow a dump
+- [ ] gather memory usage stats per-pane, ensure 0 on close, and allow a dump
 - [ ] show doc size in doc list - include undo size?
 - [X] Ensure all panes that should use "Free" properly, and find some
       way to encourage its use.
@@ -137,7 +137,7 @@ Core features
 - [ ] design a way for a keystroke to interrupt a long-running function.
 - [ ] extend Draw:measure protocol to allow constant-width-fonts to
       cannot-scale displays can be detected and measurement optimised for.
-- [ ] improve timeout.  Set timer once, then set a flag so that all commands fail
+- [X] improve timeout.  Set timer once, then set a flag so that all commands fail
       until some top-level clears the flag.
 - [ ] reconsider all 'return comm_call()' calls.  Do we every really
       care if the callback succeeded?
@@ -171,6 +171,7 @@ Core features
       the call which gave access to it, unless it registers for
       notifications from the owner, and that probably only applies to
       points.
+- [ ] do something useful on SIGINT - maybe expedite times_up().
 
 ### Longer term
 
@@ -182,7 +183,7 @@ Core features
 - [ ] support $SUBST in file-open path names ??
 - [ ] Need a debug mode where every mark usage is checked for validity.
       also check the setref sets up all linkages.
-- [ ] remove all FIXMEs (there are 65) ... and any HACKs (2).
+- [ ] remove all FIXMEs (there are 77) ... and any HACKs (5).
 - [ ] Replace asserts with warnings where possible.
 - [ ] hide view-num inside pane so number cannot be misused.
      i.e. each view is owned by a pane and can only be used by that pane.
@@ -369,7 +370,8 @@ Module features
 
 ### pygtk
 
-- [ ] can we capture the substates of character composition, and give feed-back?
+- [ ] can we capture the substates of character composition, and give
+      feed-back?
 
 ### display-x11-xcb
 
@@ -413,7 +415,7 @@ Module features
 
 ### lib-macro
 
-- [ ] don't allow starting macro inside a macro
+- [X] don't allow starting macro inside a macro
 - [ ] detect errors including Abort and search failure etc. Abort capture or
       replay on error
 - [ ] Possibly wait for a shell-command etc to complete before continuing.
@@ -443,7 +445,7 @@ Module features
 - [ ] things slow down after lots of edits.  Maybe track
       number of chunk, marks, undos etc and display them somewhere
 - [ ] stop consistency checking a doc when it gets "big" ??
-- [ ] avoid infinite loops in consistency checks
+- [X] avoid infinite loops in consistency checks
 - [ ] doc-text: opening file with e.g. 200,000 lines is very slow
       Check this..
 - [ ] moving in a big file is slow - check this
@@ -780,7 +782,7 @@ Module features
 ### lang-python
 
 - [ ] review python doc:char implementations for simplification.
-- [ ] repeated alarm(10)/alarm(0) calls slow things down
+- [X] repeated alarm(10)/alarm(0) calls slow things down
 - [ ] array index should allow two args, second being a mark for
       doc:get-attr etc.
 - [ ] should be able to test if a mark is NULL or Freed
