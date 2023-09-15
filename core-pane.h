@@ -106,6 +106,7 @@ static inline void pane_put(struct pane *p safe)
 	pane_free(p);
 }
 
+int do_comm_call(struct command *comm safe, const struct cmd_info *ci safe);
 static inline int do_call_val(enum target_type type, struct pane *home,
 			      struct command *comm2a,
 			      const char *key safe, struct pane *focus safe,
@@ -136,32 +137,17 @@ static inline int do_call_val(enum target_type type, struct pane *home,
 		ret = key_handle(&ci);
 		break;
 	case TYPE_pane:
-		if (!home->handle || (home->damaged & DAMAGED_DEAD))
-			return Efail;
-		if (times_up_fast(focus))
-			return Efail;
-		if (home)
-			ci.home = home;
-		if ((home->damaged & DAMAGED_CLOSED) &&
-		    !home->handle->closed_ok)
-			/* This pane cannot accept anything but
-			 * close_ok commands.
-			 */
-			return Efallthrough;
-		ci.comm = home->handle;
-		ret = ci.comm->func(&ci);
+		ci.home = home;
+		if (home->handle)
+			ci.comm = home->handle;
+		ret = do_comm_call(ci.comm, &ci);
 		break;
 	case TYPE_comm:
-		if (times_up_fast(focus))
-			return Efail;
 		if (home)
 			ci.home = home;
-		if (ci.home->damaged & DAMAGED_CLOSED &&
-		    !comm2a->closed_ok)
-			return Efallthrough;
 		ci.comm = comm2a;
 		ci.comm2 = comm2b;
-		ret = ci.comm->func(&ci);
+		ret = do_comm_call(ci.comm, &ci);
 		break;
 	}
 	return ret;

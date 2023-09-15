@@ -435,14 +435,19 @@ void LOG_BT(void)
 	LOG("End Backtrace");
 }
 
-static int do_comm_call(struct command *comm safe,
-			const struct cmd_info *ci safe)
+int do_comm_call(struct command *comm safe, const struct cmd_info *ci safe)
 {
 	struct backtrace bt;
 	int ret;
 
+	if (ci->home->damaged & DAMAGED_DEAD)
+		return Efail;
 	if (times_up_fast(ci->home))
 		return Efail;
+	if ((ci->home->damaged & DAMAGED_CLOSED) &&
+	    !comm->closed_ok)
+		return Efallthrough;
+
 	if (backtrace_depth > 100) {
 		backtrace_depth = 0;
 		LOG("Recursion limit of 100 reached");
@@ -569,7 +574,7 @@ int key_handle(const struct cmd_info *ci safe)
 			vci->home = p;
 			vci->comm = p->handle;
 			/* Don't add this to the call stack as it
-			 * should simple call the desired function and
+			 * should simply call the desired function and
 			 * that will appear on the call stack.
 			 */
 			ret = p->handle->func(ci);

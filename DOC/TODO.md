@@ -117,7 +117,7 @@ Core features
       hitting a python error - there will be no active view so the
       screen will be meaningless.  I need to properly abort and
       auto-choose a new pane.
-- [ ] LOG_BT() doesn't see TYPE_pane and TYPE_comm calls.
+- [X] LOG_BT() doesn't see TYPE_pane and TYPE_comm calls.
 - [ ] LOG should take a pane arg, and not use any static vars.
 - [ ] reduce size of $(nm O/*.o | grep ' b ' | grep -v '_map$')
 - [X] give every pane a link to root/editor main and use that
