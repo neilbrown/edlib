@@ -15,184 +15,10 @@
 # We add ranges when a word is checked.  This might merge with existing
 # ranges.
 # We need to find an unchecked section in some range to start checking.
-# This is all managed by:
-#   remove_range(focus, viewnum, attr, start, end)
-#   add_range(focus, viewnum, attr, start, end)
-#   choose_range(focus, viewnum, attr, start, end) - changes start and end to be
-#    a contiguous unchecked section in the range
+# This is all managed with the help of rangetrack
 
 import edlib
 import os
-
-def show_range(action, focus, viewnum, attr):
-    edlib.LOG("range:", attr, action)
-    f,l = focus.vmarks(viewnum)
-    while f:
-        edlib.LOG("  ", f, f[attr])
-        f = f.next()
-    edlib.LOG("done", action)
-
-def remove_range(focus, viewnum, attr, start, end):
-    m = focus.vmark_at_or_before(viewnum, start)
-    if not m or not m[attr]:
-        # Immediately after start is not active, so the earliest we might need
-        # to remove is the next mark, or possibly the very first
-        if m:
-            m = m.next()
-        else:
-            m, l = focus.vmarks(viewnum)
-        if not m or m >= end:
-            # Nothing to remove
-            return
-    elif start < m:
-        # From m to start are in a range and should stay there.
-        # Split the range from 'm' at 'start'
-        m = edlib.Mark(focus, view = viewnum)
-        m.to_mark(start)
-        m = edlib.Mark(orig=m, owner = focus)
-        # ensure the m is after the previous one
-        m.step(1)
-        m[attr] = 'yes'
-    # m is now the start of an active section that is within start-end
-    # and should be removed
-    m2 = focus.vmark_at_or_before(viewnum, end)
-    if m2 and m2 == end and m2[attr]:
-        # this section is entirely after end, so not interesting
-        m2 = m2.prev()
-    if m2 and m2[attr]:
-        # end is within an active section that needs to be split
-        m2 = edlib.Mark(focus, view = viewnum)
-        m2.to_mark(end)
-        m2[attr] = 'yes'
-        m2 = edlib.Mark(orig=m2, owner=focus)
-        m2.step(0)
-    # m2 is now the end of an active section that needs to be
-    # discarded
-    while m < m2:
-        old = m
-        m = m.next()
-        old.release()
-    m2.release()
-    return
-
-def add_range(focus, viewnum, attr, start, end):
-    m1 = focus.vmark_at_or_before(viewnum, start)
-    if m1 and m1[attr]:
-        m1 = m1.next()
-        # Range ending at m1 can be extended to cover start->end
-    elif m1 and m1 == start:
-        # can move m1 down to cover range
-        pass
-    else:
-        m1 = None
-        # must create new mark, or move a later mark up
-    m2 = focus.vmark_at_or_before(viewnum, end)
-    if m2 and not m2[attr]:
-        if m2 == end:
-             m2 = m2.prev()
-             # can move m2 earlier
-        else:
-            # end not in range, must create mark or move earlier down
-            m2 = None
-    # if m2, then can move it backwards.  No need to create
-    if not m1 and not m2:
-        # no overlaps, create new region
-        m1 = edlib.Mark(focus, viewnum)
-        m1.to_mark(start)
-        m2 = edlib.Mark(orig=m1, owner=focus)
-        m2.to_mark(end)
-        m1[attr] = 'yes'
-    elif m1 and not m2:
-        # can move m1 down to end, removing anything in the way
-        m = m1.next()
-        while m and m <= end:
-            m.release()
-            m = m1.next()
-        m1.to_mark(end)
-    elif not m1 and m2:
-        # can move m2 up to start, removing things
-        m = m2.prev()
-        while m and m >= start:
-            m.release()
-            m = m2.prev()
-        m2.to_mark(start)
-    else:
-        # can remove all from m1 to m2 inclusive
-        while m1 < m2:
-            m = m1.next()
-            m1.release()
-            m1 = m
-        m2.release()
-
-def choose_range(focus, viewnum, attr, start, end):
-    # contract start-end so that none of it is in-range
-    m1 = focus.vmark_at_or_before(viewnum, start)
-    if m1 and not m1[attr]:
-        m2 = m1.next()
-        # start not in-range, end must not exceed m1
-    elif m1 and m1[attr]:
-        # start is in range - move it forward
-        m1 = m1.next()
-        if m1:
-            start.to_mark(m1)
-            m2 = m1.next()
-        else:
-            # error
-            m2 = start
-    else:
-        m2, l = focus.vmarks(viewnum)
-    if m2 and m2 < end:
-        end.to_mark(m2)
-
-class autospell_monitor(edlib.Pane):
-    # autospell_monitor attaches to a document and tracks ranges
-    # that have been spell-checked.  Sends notifications when there
-    # is a change, so viewers can do the checking.  Only views know
-    # mode-specific details
-    def __init__(self, focus):
-        edlib.Pane.__init__(self, focus)
-        self.view = self.call("doc:add-view") - 1
-        self.call("doc:request:doc:replaced")
-        self.call("doc:request:spell:mark-checked")
-        self.call("doc:request:spell:choose-range")
-        self.call("doc:request:spell:dict-changed")
-
-    def doc_replace(self, key, focus, mark, mark2, num2, **a):
-        "handle-list/doc:replaced/spell:dict-changed"
-        if not mark:
-            mark = edlib.Mark(focus)
-            focus.call("doc:set-ref", mark, 1);
-        if not mark2:
-            mark2 = edlib.Mark(focus)
-            focus.call("doc:set-ref", mark2, 0);
-
-        # mark2 might have been the start-of-word, but not any longer
-        # So any spell-incorrect must be cleared as normal checking
-        # only affects first char of a word.
-        focus.call("doc:set-attr", mark2, "render:spell-incorrect",
-                   None);
-        # Need to capture adjacent words, and avoid zero-size gap
-        mark = mark.dup()
-        focus.prev(mark)
-        mark2 = mark2.dup()
-        focus.next(mark2)
-
-        remove_range(self, self.view, "spell:start", mark, mark2)
-
-        self.call("doc:notify:spell:recheck")
-        return 1
-
-    def handle_checked(self, key, mark, mark2, **a):
-        "handle:spell:mark-checked"
-        if mark and mark2:
-            add_range(self, self.view, 'spell:start', mark, mark2)
-        return 1
-
-    def handle_choose(self, key, mark, mark2, **a):
-        "handle:spell:choose-range"
-        if mark and mark2:
-            choose_range(self, self.view, 'spell:start', mark, mark2)
-        return 1
 
 class autospell_view(edlib.Pane):
     def __init__(self, focus):
@@ -203,8 +29,9 @@ class autospell_view(edlib.Pane):
         self.vstart = None
         self.vend = None
         self.menu = None
-        self.call("doc:request:spell:recheck")
+        self.call("doc:request:rangetrack:recheck-autospell")
         self.call("doc:request:doc:replaced")
+        self.call("doc:request:spell:dict-changed")
         # trigger render-lines refresh notification
         pt = focus.call("doc:point", ret='mark')
         focus.call("render:request:reposition", pt)
@@ -228,7 +55,8 @@ class autospell_view(edlib.Pane):
         if not str1 or not mark or not comm2:
             return edlib.Efallthrough
         if str1 == "render:spell-incorrect":
-            comm2("cb", focus, int(str2), mark, "fg:red-80,underline,action-menu:autospell-menu", 120)
+            comm2("cb", focus, int(str2), mark,
+                  "fg:red-80,underline,action-menu:autospell-menu", 120)
         return edlib.Efallthrough
 
     def handle_click(self, key, focus, mark, xy, str1, **a):
@@ -242,7 +70,8 @@ class autospell_view(edlib.Pane):
         self.thisword = w
         mp.call("menu-add", "[Insert in dict]", "+")
         mp.call("menu-add", "[Accept for now]", "!")
-        focus.call("Spell:Suggest", w, lambda key, str1, **a: mp.call("menu-add", str1))
+        focus.call("Spell:Suggest", w,
+                   lambda key, str1, **a: mp.call("menu-add", str1))
         mp.call("doc:file", -1)
         self.menu = mp
         self.add_notify(mp, "Notify:Close")
@@ -276,20 +105,45 @@ class autospell_view(edlib.Pane):
         return 1
 
     def handle_recheck(self, key, **a):
-        "handle:spell:recheck"
+        "handle:rangetrack:recheck-autospell"
         self.sched()
+        return 1
+
+    def handle_dict_changed(self, key, focus, mark, mark2, num2, **a):
+        "handle:spell:dict-changed"
+        # clear everything
+        self.call("doc:notify:rangetrack:clear", "autospell")
+        return 1
 
     def handle_replace(self, key, focus, mark, mark2, num2, **a):
         "handle:doc:replaced"
         if not mark or not mark2:
+            # clear everything
+            self.call("doc:notify:rangetrack:clear", "autospell")
             return 1
+
+        # mark2 might have been the start-of-word, but not any longer
+        # So any spell-incorrect must be cleared as normal checking
+        # only affects first char of a word.
+        focus.call("doc:set-attr", mark2, "render:spell-incorrect",
+                   None);
+
         # if change at either end of view, extend view until reposition message
+        # If we don't get a render:resposition message then probably the
+        # rendered didn't see the mark move, but we did, because the change
+        # was between the marks?  Should I test more precisely for that FIXME
         if mark < self.vstart and mark2 >= self.vstart:
             self.vstart.to_mark(mark)
-            self.sched()
         if mark2 > self.vend and mark <= self.vend:
             self.vend.to_mark(mark2)
-            self.sched()
+
+        # Need to capture adjacent words, and avoid zero-size gap
+        mark = mark.dup()
+        focus.prev(mark)
+        mark2 = mark2.dup()
+        focus.next(mark2)
+        self.call("doc:notify:rangetrack:clear", "autospell", mark, mark2)
+
         return 1
 
     def reposition(self, key, mark, mark2, **a):
@@ -298,9 +152,12 @@ class autospell_view(edlib.Pane):
             self.vstart = mark.dup()
             self.vend = mark2.dup()
             if (not self.helper_attached and
-                not self.call("doc:notify:spell:mark-checked")):
-                self.call("doc:get-doc", autospell_attach_helper)
-                self.helper_attached = True
+                not self.call("doc:notify:rangetrack:add",
+                              "autospell")):
+                if self.call("rangetrack:new", "autospell") > 0:
+                    self.helper_attached = True
+                else:
+                    pass # FIXME
             self.sched()
         return edlib.Efallthrough
 
@@ -315,7 +172,8 @@ class autospell_view(edlib.Pane):
             return edlib.Efalse
         start = self.vstart.dup()
         end = self.vend.dup()
-        self.call("doc:notify:spell:choose-range", start, end)
+        self.call("doc:notify:rangetrack:choose", "autospell",
+                  start, end)
         if start >= end:
             # nothing to do
             return edlib.Efalse
@@ -334,7 +192,8 @@ class autospell_view(edlib.Pane):
             focus.call("Spell:NextWord", ed)
             st = ed.dup()
             word = focus.call("Spell:ThisWord", ed, st, ret='str')
-            self.call("doc:notify:spell:mark-checked", start, ed)
+            self.call("doc:notify:rangetrack:add", "autospell",
+                      start, ed)
             start = ed
             if word:
                 ret = focus.call("Spell:Check", word)
@@ -357,10 +216,6 @@ def autospell_attach(key, focus, comm2, **a):
         comm2("callback", p)
     return 1
 
-def autospell_attach_helper(key, focus, **a):
-    p = autospell_monitor(focus)
-    return 1
-
 def autospell_activate(key, focus, comm2, **a):
     autospell_view(focus)
 
@@ -370,4 +225,4 @@ def autospell_activate(key, focus, comm2, **a):
 
 edlib.editor.call("global-set-command", "attach-autospell", autospell_attach)
 edlib.editor.call("global-set-command", "interactive-cmd-autospell",
-            autospell_activate)
+                  autospell_activate)

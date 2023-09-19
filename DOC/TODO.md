@@ -9,6 +9,9 @@ the file.
 
 ### Triage
 
+- [ ] unknown keysequence should be reported so e.g. if keyboard
+      is is Greek mode, then I will be told that Cx-b doesn't work
+- [ ] menubar doesn't redraw background when resized wider.
 - [X] open second x11 window, use selections.  Close it.  command
       in x11selection_Xcb gets freed???
 - [X] adding new lines at end of doc in x11 leaves phantom underline
@@ -45,7 +48,7 @@ the file.
 
 ### Medium
 
-- [ ] split range management out of autospell so it can be used by other
+- [X] split range management out of autospell so it can be used by other
       modules.
 - [ ] make it easy for a make-search command to search backwards
 - [ ] Make a start on CUA mode with mouse/menu/selection support.
@@ -824,7 +827,7 @@ Module features
 - [ ] Some way for 'c-mode' to report where comments are so they can be spell-checked
 - [ ] drop-down with options
 - [ ] unify UI with dynamic-completion
-- [ ] split range management out of autospell so it can be used by other
+- [X] split range management out of autospell so it can be used by other
   modules.
 
 ### calculator
