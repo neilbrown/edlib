@@ -637,9 +637,13 @@ DEF_CMD(emacs_exit)
 		}
 
 		p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "DM");
-		// FIXME if called from a popup, this fails.
-		if (!p)
+		if (!p) {
+			/* Probably called from a pop-up.  Abort the popup
+			 * and let the user try again.
+			 */
+			call("Abort", ci->focus);
 			return Efail;
+		}
 		attr_set_str(&p->attrs, "done-key", "emacs:deactivate");
 		return call("docs:show-modified", p);
 	} else
