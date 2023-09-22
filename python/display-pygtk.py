@@ -276,7 +276,7 @@ class EdDisplay(edlib.Pane):
 
         return True
 
-    def handle_image(self, key, focus, str1, str2, xy, **a):
+    def handle_image(self, key, focus, str1, str2, **a):
         "handle:Draw:image"
         self.damaged(edlib.DAMAGED_POSTORDER)
         # 'str1' identifies the image. Options are:
@@ -292,10 +292,11 @@ class EdDisplay(edlib.Pane):
         #       'T' - place at top if full height isn't used
         #       'B' - place at bottom if full height isn't used.
         #
-        # xy gives a number of rows and cols to overlay on the image
-        # for the purpose of cursor positioning.  If these are positive
-        # and focus.cx,cy are not negative, draw a cursor at cx,cy
-        # highlighting the relevant cell.
+        #     Also a suffix ":NNxNN" will be parse and the two numbers used
+        #     to give number of rows and cols to overlay on the image for
+        #     the purpose of cursor positioning.  If these are present and
+        #     focus.cx,cy are not negative, draw a cursor at cx,cy highlighting
+        #     the relevant cell.
         if not str1:
             return edlib.Enoarg
         mode = str2 if str2 else ""
@@ -339,7 +340,15 @@ class EdDisplay(edlib.Pane):
         Gdk.cairo_set_source_pixbuf(cr, scale, x + xo, y + yo)
         cr.paint()
 
-        (rows,cols) = xy
+        (rows,cols) = (-1,-1)
+        if ':' in mode:
+            rc = mode[mode.rindex(':')+1:].split('x')
+            try:
+                (rows,cols) = (int(rc[0]), int(rc[1]))
+            except ValueError:
+                pass
+            except IndexError:
+                pass
         if rows > 0 and cols > 0 and focus.cx >= 0:
             cr.rectangle(focus.cx + xo, focus.cy + yo,
                          w/rows, h/cols)

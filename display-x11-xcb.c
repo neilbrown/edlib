@@ -820,9 +820,11 @@ DEF_CMD(xcb_draw_image)
 	 *     'T' - place at top if full height isn't used
 	 *     'B' - place at bottom if full height isn't used.
 	 *
-	 * If 'x' and 'y' are both positive, draw cursor box at
-	 * p->cx, p->cy of a size so that 'x' will fit across and
-	 * 'y' will fit down.
+	 *    Also a suffix ":NNxNN" will be parse and the two numbers used
+	 *    to give number of rows and cols to overlay on the image for
+	 *    the purpose of cursor positioning.  If these are present and
+	 *    p->cx,cy are not negative, draw a cursor at p->cx,cy highlighting
+	 *    the relevant cell.
 	 */
 	struct xcb_data *xd = ci->home->data;
 	const char *mode = ci->str2 ?: "";
@@ -919,13 +921,17 @@ DEF_CMD(xcb_draw_image)
 	cairo_surface_destroy(surface);
 	free(buf);
 
-	if (ci->x > 0 && ci->y > 0 && ci->focus->cx >= 0) {
+	if (ci->focus->cx >= 0) {
 		struct pane *p = ci->focus;
-		cairo_rectangle(ps->ctx, p->cx + xo, p->cy + yo,
-				w/ci->x, h/ci->y);
-		cairo_set_line_width(ps->ctx, 1.0);
-		cairo_set_source_rgb(ps->ctx, 1.0, 0.0, 0.0);
-		cairo_stroke(ps->ctx);
+		int rows, cols;
+		char *cl = strchr(mode, ':');
+		if (cl && sscanf(cl, ":%dx%d", &cols, &rows) == 2) {
+			cairo_rectangle(ps->ctx, p->cx + xo, p->cy + yo,
+					w/cols, h/rows);
+			cairo_set_line_width(ps->ctx, 1.0);
+			cairo_set_source_rgb(ps->ctx, 1.0, 0.0, 0.0);
+			cairo_stroke(ps->ctx);
+		}
 	}
 	DestroyMagickWand(wd);
 

@@ -1010,9 +1010,11 @@ DEF_CMD(nc_draw_image)
 	 *     'T' - place at top if full height isn't used
 	 *     'B' - place at bottom if full height isn't used.
 	 *
-	 * If 'x' and 'y' are both positive, draw cursor box at
-	 * p->cx, p->cy of a size so that 'x' will fit across and
-	 * 'y' will fit down.
+	 *    Also a suffix ":NNxNN" will be parse and the two numbers used
+	 *    to give number of rows and cols to overlay on the image for
+	 *    the purpose of cursor positioning.  If these are present and
+	 *    p->cx,cy are not negative, draw a cursor at p->cx,cy highlighting
+	 *    the relevant cell.
 	 */
 	struct pane *p = ci->home;
 	struct display_data *dd = p->data;
@@ -1087,7 +1089,7 @@ DEF_CMD(nc_draw_image)
 	buf = malloc(h * w * 4);
 	MagickExportImagePixels(wd, 0, 0, w, h, "RGBA", CharPixel, buf);
 
-	if (ci->x > 0 && ci->y > 0 && ci->focus->cx >= 0) {
+	if (ci->focus->cx >= 0 && strchr(mode, ':')) {
 		/* We want a cursor */
 		cx = x + ci->focus->cx;
 		cy = y + ci->focus->cy;

@@ -1044,6 +1044,7 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 	struct xy xyscale = pane_scale(focus);
 	int scale = xyscale.x;
 	struct xy size= {-1, -1};
+	char mode[30] = "";
 	const char *a, *v;
 	const char *end;
 
@@ -1097,6 +1098,9 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 			 */
 			map_offset = v - orig_line;
 			parse_map(v, &rows, &cols);
+			if (rows > 0 && cols > 0)
+				snprintf(mode, sizeof(mode),
+					 ":%dx%d", cols, rows);
 		}
 	}
 	pane_resize(p, (p->parent->w - width)/2, p->y, width, height);
@@ -1131,7 +1135,7 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 
 	if (fname && dodraw)
 		home_call(focus, "Draw:image", p, 0, NULL, fname,
-			  0, NULL, NULL, cols, rows);
+			  0, NULL, mode);
 
 	free(fname);
 
