@@ -110,13 +110,14 @@ static void popup_resize(struct pane *p safe, const char *style safe,
 			w = w / 4;
 		else if (strchr(style, '3'))
 			w = 3 * w / 4;
-		else if (strchr(style, '4'))
+		else if (strchr(style, '4')) {
 			w = w;
-		else
+			h = p->parent->h - 2 * bh;
+		} else
 			w = w / 2;
 
-		x = p->parent->w/2 - w/2 - bw;
-		y = p->parent->h/2 - h/2 - bh;
+		x = p->parent->w/2 - w/2;
+		y = p->parent->h/2 - h/2;
 		if (strchr(style, 'T')) { y = 0; h -= bh; }
 		if (strchr(style, 'B')) { h -= bh; y = p->parent->h - h; }
 		if (strchr(style, 'L')) x = 0;
