@@ -250,6 +250,7 @@ Module features
 
 ### lib-server
 
+- [ ] catch broken-pipe errors when sending to sock
 - [ ] ctrl-z in elc doesn't ask edlib to release the terminal
 - [ ] do we need both .term and .disp?  When are they different?
 

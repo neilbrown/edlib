@@ -276,7 +276,7 @@ class EdDisplay(edlib.Pane):
 
         return True
 
-    def handle_image(self, key, focus, str1, str2, **a):
+    def handle_image(self, key, focus, num, num2, str1, str2, xy, **a):
         "handle:Draw:image"
         self.damaged(edlib.DAMAGED_POSTORDER)
         # 'str1' identifies the image. Options are:
@@ -297,6 +297,11 @@ class EdDisplay(edlib.Pane):
         #     the purpose of cursor positioning.  If these are present and
         #     focus.cx,cy are not negative, draw a cursor at cx,cy highlighting
         #     the relevant cell.
+        #  num,num2, if both positive, override the automatic scaling.
+        #    The image is scaled to this many pixels.
+        #    If num2 <=0, then num is 1024 times a scale factor
+        #  x,y  is top-left pixel in the scaled image to start display at.
+        #    Negative values allow a margin between pane edge and this image.
         if not str1:
             return edlib.Enoarg
         mode = str2 if str2 else ""
@@ -314,10 +319,17 @@ class EdDisplay(edlib.Pane):
                 return edlib.Einval
         except:
             # create a red error image
-            pb = Gdk.Pixbuf(Gdk.COLORSPACE_RGB, False, 8, w, h)
+            pb = GdkPixbuf.Pixbuf.new(GdkPixbuf.Colorspace.RGB,
+                                  False, 8, w, h)
             pb.fill(0xff000000)
 
-        if not stretch:
+        if num > 0 and num2 > 0:
+            w = num
+            h = num2
+        elif num > 0:
+            w = pb.get_width() * num / 1024
+            h = pb.get_height() * num / 1024
+        elif not stretch:
             if pb.get_width() * h > pb.get_height() * w:
                 # image is wider than space, reduce height
                 h2 = pb.get_height() * w / pb.get_width()
@@ -334,9 +346,35 @@ class EdDisplay(edlib.Pane):
                 elif 'L' not in mode:
                     x = (w - w2) / 2
                 w = w2
-        scale = pb.scale_simple(w, h, GdkPixbuf.InterpType.HYPER)
         pm, xo, yo, pbg = self.find_pixmap(focus, True)
+        sh = h / pb.get_height()
+        sw = w / pb.get_width()
+
+        pw = focus.w
+        ph = focus.h
+        cix, ciy = xy
+        if cix < 0:
+            xo -= cix
+            pw += cix
+            cix = 0
+        if ciy < 0:
+            yo -= ciy
+            ph += ciy
+            ciy = 0
+        if w - cix <= pw:
+            w -= cix
+        else:
+            w = pw
+        if h - ciy <= ph:
+            h -= ciy
+        else:
+            h = ph
+
         cr = cairo.Context(pm)
+        scale = GdkPixbuf.Pixbuf.new(GdkPixbuf.Colorspace.RGB,
+                                     False, 8, w, h)
+        pb.scale(scale, 0,0, w, h, -cix, -ciy, sw, sh,
+                 GdkPixbuf.InterpType.BILINEAR)
         Gdk.cairo_set_source_pixbuf(cr, scale, x + xo, y + yo)
         cr.paint()
 

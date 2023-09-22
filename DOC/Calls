@@ -134,6 +134,13 @@ Draw an image on the pane (or ancestor which as been cleared).
         the purpose of cursor positioning.  If these are present and
         p->cx,cy are not negative, draw a cursor at p->cx,cy highlighting
         the relevant cell.
+- num, num2 if both positive, give width and height to scale to, 
+       over-riding the default scaling.
+       If only num is positive, then it is a scale factor *1024
+       to be applied to the image.
+- x,y give a top-left pixel in the scaled image to display.  Only
+      this pixel and those to right and below might be shown.
+      Negative values allow a margin between pane edge and this image.
 
 ## all-displays
 

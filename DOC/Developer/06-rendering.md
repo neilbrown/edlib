@@ -25,9 +25,9 @@ given.
 
 ### Refresh size
 
-The first step in the sequence ensure all panes have he right size.  If
+The first step in the sequence ensure all panes have the right size.  If
 one pane changes size for any reason, such as a top level window being
-resized, other may need to adjust to this change.  A pane that notices
+resized, others may need to adjust to this change.  A pane that notices
 its size has changed, or might need to change, sets DAMAGED_SIZE with
 the pane_damage() interface.
 
@@ -37,11 +37,11 @@ depth of zero will have their size adjusted to match the parent, which
 will cause DAMAGED_SIZE to be set on them.  Any pane with a larger depth
 will just have DAMAGED_SIZE set.
 
-When pane is thus requested to handle a resize, the sequence starts
+When a pane is thus requested to handle a resize, the sequence starts
 again from the root looking for panes that need to handle a resize.  It
-should quickly deal with all pane. It finds that it needs to resize more
-than 1000 panes, it assumes that some pane keeps setting DAMAGED_SIZE on
-itself, and it aborts the loop.
+should quickly deal with all pane.  If it finds that it needs to resize
+more than 1000 panes, it assumes that some pane keeps setting
+DAMAGED_SIZE on itself, and it aborts the loop.
 
 ### Refresh view
 

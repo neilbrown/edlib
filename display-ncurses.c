@@ -1015,6 +1015,11 @@ DEF_CMD(nc_draw_image)
 	 *    the purpose of cursor positioning.  If these are present and
 	 *    p->cx,cy are not negative, draw a cursor at p->cx,cy highlighting
 	 *    the relevant cell.
+	 *
+	 * num,num2, if both positive, override the automatic scaling.
+	 *    The image is scaled to this many pixels.
+	 * x,y is top-left pixel in the scaled image to start display at.
+	 *    Negative values allow a margin between pane edge and this image.
 	 */
 	struct pane *p = ci->home;
 	struct display_data *dd = p->data;
@@ -1022,6 +1027,9 @@ DEF_CMD(nc_draw_image)
 	const char *mode = ci->str2 ?: "";
 	bool stretch = strchr(mode, 'S');
 	int w = ci->focus->w, h = ci->focus->h * 2;
+	int pw = w, ph = h;
+	int xo = 0, yo = 0;
+	int cix, ciy;
 	int cx = -1, cy = -1;
 	MagickBooleanType status;
 	MagickWand *wd;
@@ -1055,7 +1063,20 @@ DEF_CMD(nc_draw_image)
 		return Einval;
 
 	MagickAutoOrientImage(wd);
-	if (!stretch) {
+	if (ci->num > 0 && ci->num2 > 0) {
+		w = ci->num;
+		h = ci->num2;
+	} else if (ci->num > 0) {
+		int ih = MagickGetImageHeight(wd);
+		int iw = MagickGetImageWidth(wd);
+
+		if (iw <= 0 || iw <= 0) {
+			DestroyMagickWand(wd);
+			return Efail;
+		}
+		w = iw * ci->num / 1024;
+		h = ih * ci->num / 1024;
+	} else if (!stretch) {
 		int ih = MagickGetImageHeight(wd);
 		int iw = MagickGetImageWidth(wd);
 
@@ -1086,8 +1107,28 @@ DEF_CMD(nc_draw_image)
 		}
 	}
 	MagickAdaptiveResizeImage(wd, w, h);
+	cix = ci->x;
+	ciy = ci->y;
+	if (cix < 0) {
+		xo -= cix;
+		pw += cix;
+		cix = 0;
+	}
+	if (ciy < 0) {
+		yo -= ciy;
+		ph += ciy;
+		ciy = 0;
+	}
+	if (w - cix <= pw)
+		w -= cix;
+	else
+		w = pw;
+	if (h - ciy <= ph)
+		h -= ciy;
+	else
+		h = ph;
 	buf = malloc(h * w * 4);
-	MagickExportImagePixels(wd, 0, 0, w, h, "RGBA", CharPixel, buf);
+	MagickExportImagePixels(wd, cix, ciy, w, h, "RGBA", CharPixel, buf);
 
 	if (ci->focus->cx >= 0 && strchr(mode, ':')) {
 		/* We want a cursor */
@@ -1351,6 +1392,8 @@ static struct pane *ncurses_init(struct pane *ed safe,
 	dd->scr = scr;
 	dd->scr_file = f;
 	dd->is_xterm = (term && strstarts(term, "xterm"));
+
+	attr_set_str(&p->attrs, "Display:pixels", "1x2");
 
 	set_screen(p);
 

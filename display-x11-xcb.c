@@ -825,13 +825,20 @@ DEF_CMD(xcb_draw_image)
 	 *    the purpose of cursor positioning.  If these are present and
 	 *    p->cx,cy are not negative, draw a cursor at p->cx,cy highlighting
 	 *    the relevant cell.
+	 *
+	 * num,num2, if both positive, override the automatic scaling.
+	 *    The image is scaled to this many pixels.
+	 * x,y is top-left pixel in the scaled image to start display at.
+	 *    Negative values allow a margin between pane edge and this image.
 	 */
 	struct xcb_data *xd = ci->home->data;
 	const char *mode = ci->str2 ?: "";
 	bool stretch = strchr(mode, 'S');
-	int w = ci->focus->w, h = ci->focus->h;
+	int w, h;
 	int x = 0, y = 0;
+	int pw, ph;
 	int xo, yo;
+	int cix, ciy;
 	int stride;
 	struct panes *ps;
 	MagickBooleanType status;
@@ -875,7 +882,22 @@ DEF_CMD(xcb_draw_image)
 		return Einval;
 
 	MagickAutoOrientImage(wd);
-	if (!stretch) {
+	w = ci->focus->w;
+	h = ci->focus->h;
+	if (ci->num > 0 && ci->num2 > 0) {
+		w = ci->num;
+		h = ci->num2;
+	} else if (ci->num > 0) {
+		int ih = MagickGetImageHeight(wd);
+		int iw = MagickGetImageWidth(wd);
+
+		if (iw <= 0 || iw <= 0) {
+			DestroyMagickWand(wd);
+			return Efail;
+		}
+		w = iw * ci->num / 1024;
+		h = ih * ci->num / 1024;
+	} else if (!stretch) {
 		int ih = MagickGetImageHeight(wd);
 		int iw = MagickGetImageWidth(wd);
 
@@ -905,6 +927,28 @@ DEF_CMD(xcb_draw_image)
 		}
 	}
 	MagickAdaptiveResizeImage(wd, w, h);
+	pw = ci->focus->w;
+	ph = ci->focus->h;
+	cix = ci->x;
+	ciy = ci->y;
+	if (cix < 0) {
+		xo -= cix;
+		pw += cix;
+		cix = 0;
+	}
+	if (ciy < 0) {
+		yo -= ciy;
+		ph += ciy;
+		ciy = 0;
+	}
+	if (w - cix <= pw)
+		w -= cix;
+	else
+		w = pw;
+	if (h - ciy <= ph)
+		h -= ciy;
+	else
+		h = ph;
 	stride = cairo_format_stride_for_width(CAIRO_FORMAT_RGB24, w);
 	buf = malloc(h * stride);
 	// Cairo expects 32bit values with A in the high byte, then RGB.
@@ -913,7 +957,8 @@ DEF_CMD(xcb_draw_image)
 
 	fmt[0] = ('A'<<24) | ('R' << 16) | ('G' << 8) | ('B' << 0);
 	fmt[1] = 0;
-	MagickExportImagePixels(wd, 0, 0, w, h, (char*)fmt, CharPixel, buf);
+	MagickExportImagePixels(wd, cix, ciy, w, h,
+				(char*)fmt, CharPixel, buf);
 	surface = cairo_image_surface_create_for_data(buf, CAIRO_FORMAT_ARGB32,
 						      w, h, stride);
 	cairo_set_source_surface(ps->ctx, surface, x + xo, y + yo);
