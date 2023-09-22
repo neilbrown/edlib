@@ -276,33 +276,37 @@ class EdDisplay(edlib.Pane):
 
         return True
 
-    def handle_image(self, key, num, focus, str, xy, **a):
+    def handle_image(self, key, focus, str1, str2, xy, **a):
         "handle:Draw:image"
         self.damaged(edlib.DAMAGED_POSTORDER)
-        # 'str' identifies the image. Options are:
+        # 'str1' identifies the image. Options are:
         #     file:filename  - load file from fs
         #     comm:command   - run command collecting bytes
-        # 'num' is '16' if image should be stretched to fill pane
-        # otherwise it is 'or' of
-        #   0,1,2 for left/middle/right in x direction
-        #   0,4,8 for top/middle/bottom in y direction
-        # only one of these can be used as image will fill pane
-        # in other direction.
+        # 'str2' contains 'mode' information.
+        #   - By default the image is placed centrally in the pane
+        #     and scaled to use either fully height or fully width.
+        #   - Various letters modify this:
+        #       'S' - stretch to use full height *and* full width
+        #       'L' - place on left if full width isn't used
+        #       'R' - place on right if full width isn't used
+        #       'T' - place at top if full height isn't used
+        #       'B' - place at bottom if full height isn't used.
+        #
         # xy gives a number of rows and cols to overlay on the image
         # for the purpose of cursor positioning.  If these are positive
         # and focus.cx,cy are not negative, draw a cursor at cx,cy
         # highlighting the relevant cell.
-        if not str:
+        if not str1:
             return edlib.Enoarg
-        stretch = num & 16
-        pos = num
+        mode = str2 if str2 else ""
+        stretch = 'S' in mode
         w, h = focus.w, focus.h
         x, y = 0, 0
         try:
-            if str.startswith("file:"):
-                pb = GdkPixbuf.Pixbuf.new_from_file(str[5:])
-            elif str.startswith("comm:"):
-                img = focus.call(str[5:], ret='bytes')
+            if str1.startswith("file:"):
+                pb = GdkPixbuf.Pixbuf.new_from_file(str1[5:])
+            elif str1.startswith("comm:"):
+                img = focus.call(str1[5:], ret='bytes')
                 io = Gio.MemoryInputStream.new_from_data(img)
                 pb = GdkPixbuf.Pixbuf.new_from_stream(io)
             else:
@@ -316,18 +320,18 @@ class EdDisplay(edlib.Pane):
             if pb.get_width() * h > pb.get_height() * w:
                 # image is wider than space, reduce height
                 h2 = pb.get_height() * w / pb.get_width()
-                if pos & 12 == 4:
-                    y = (h - h2) / 2
-                if pos & 12 == 8:
+                if 'B' in mode:
                     y = h - h2
+                elif 'T' not in mode:
+                    y = (h - h2) / 2
                 h = h2
             else:
                 # image is too tall, reduce width
                 w2 = pb.get_width() * h / pb.get_height()
-                if pos & 3 == 1:
-                    x = (w - w2) / 2
-                if pos & 3 == 2:
+                if 'R' in mode:
                     x = w - w2
+                elif 'L' not in mode:
+                    x = (w - w2) / 2
                 w = w2
         scale = pb.scale_simple(w, h, GdkPixbuf.InterpType.HYPER)
         pm, xo, yo, pbg = self.find_pixmap(focus, True)

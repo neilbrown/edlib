@@ -1000,12 +1000,16 @@ DEF_CMD(nc_draw_image)
 	/* 'str' identifies the image. Options are:
 	 *     file:filename  - load file from fs
 	 *     comm:command   - run command collecting bytes
-	 * 'num' is '16' if image should be stretched to fill pane
-	 * Otherwise it is the 'or' of
-	 *   0,1,2 for left/middle/right in x direction
-	 *   0,4,8 for top/middle/bottom in y direction
-	 * only one of these can be used as image will fill pane
-	 * in other direction.
+	 * 'str2' container 'mode' information.
+	 *     By default the image is placed centrally in the pane
+	 *     and scaled to use either fully height or fully width.
+	 *     Various letters modify this:
+	 *     'S' - stretch to use full height *and* full width
+	 *     'L' - place on left if full width isn't used
+	 *     'R' - place on right if full width isn't used
+	 *     'T' - place at top if full height isn't used
+	 *     'B' - place at bottom if full height isn't used.
+	 *
 	 * If 'x' and 'y' are both positive, draw cursor box at
 	 * p->cx, p->cy of a size so that 'x' will fit across and
 	 * 'y' will fit down.
@@ -1013,8 +1017,8 @@ DEF_CMD(nc_draw_image)
 	struct pane *p = ci->home;
 	struct display_data *dd = p->data;
 	int x = 0, y = 0;
-	bool stretch = ci->num & 16;
-	int pos = ci->num;
+	const char *mode = ci->str2 ?: "";
+	bool stretch = strchr(mode, 'S');
 	int w = ci->focus->w, h = ci->focus->h * 2;
 	int cx = -1, cy = -1;
 	MagickBooleanType status;
@@ -1060,23 +1064,22 @@ DEF_CMD(nc_draw_image)
 		if (iw * h > ih * w) {
 			/* Image is wider than space, use less height */
 			ih = ih * w / iw;
-			switch(pos & (8+4)) {
-			case 4: /* center */
-				y = (h - ih) / 2; break;
-			case 8: /* bottom */
-				y = h - ih; break;
-			}
+			if (strchr(mode, 'B'))
+				/* bottom */
+				y = h - ih;
+			else if (!strchr(mode, 'T'))
+				/* center */
+				y = (h - ih) / 2;
 			/* Keep 'h' even! */
 			h = ((ih+1)/2) * 2;
 		} else {
 			/* image is too tall, use less width */
 			iw = iw * h / ih;
-			switch (pos & (1+2)) {
-			case 1: /* center */
-				x = (w - iw) / 2; break;
-			case 2: /* right */
-				x = w - iw ; break;
-			}
+			if (strchr(mode, 'R'))
+				/* right */
+				x = w - iw;
+			else if (!strchr(mode, 'L'))
+				x = (w - iw) / 2;
 			w = iw;
 		}
 	}

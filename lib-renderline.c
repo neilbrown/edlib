@@ -1130,7 +1130,7 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 	}
 
 	if (fname && dodraw)
-		home_call(focus, "Draw:image", p, 5, NULL, fname,
+		home_call(focus, "Draw:image", p, 0, NULL, fname,
 			  0, NULL, NULL, cols, rows);
 
 	free(fname);

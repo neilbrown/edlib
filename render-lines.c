@@ -909,7 +909,7 @@ static int render(struct mark *pm, struct pane *p safe,
 		free(a);
 	} else if (strstarts(s, "image:")) {
 		home_call(focus, "Draw:clear", p);
-		home_call(focus, "Draw:image", p, 16, NULL, s+6);
+		home_call(focus, "Draw:image", p, 0, NULL, s+6, 0, NULL, "S");
 		rl->background_uniform = False;
 	} else
 		home_call(focus, "Draw:clear", p, 0, NULL, "");
