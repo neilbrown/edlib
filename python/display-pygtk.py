@@ -276,7 +276,7 @@ class EdDisplay(edlib.Pane):
 
         return True
 
-    def handle_image(self, key, num, focus, str, str2, xy, **a):
+    def handle_image(self, key, num, focus, str, xy, **a):
         "handle:Draw:image"
         self.damaged(edlib.DAMAGED_POSTORDER)
         # 'str' identifies the image. Options are:
@@ -302,7 +302,7 @@ class EdDisplay(edlib.Pane):
             if str.startswith("file:"):
                 pb = GdkPixbuf.Pixbuf.new_from_file(str[5:])
             elif str.startswith("comm:"):
-                img = focus.call(str[5:], str2, ret='bytes')
+                img = focus.call(str[5:], ret='bytes')
                 io = Gio.MemoryInputStream.new_from_data(img)
                 pb = GdkPixbuf.Pixbuf.new_from_stream(io)
             else:
@@ -344,7 +344,7 @@ class EdDisplay(edlib.Pane):
             cr.stroke()
         return True
 
-    def handle_image_size(self, key, focus, str1, str2, comm2, **a):
+    def handle_image_size(self, key, focus, str1, comm2, **a):
         "handle:Draw:image-size"
         if not str1 or not comm2:
             return edlib.Enoarg
@@ -352,7 +352,7 @@ class EdDisplay(edlib.Pane):
             if str1.startswith("file:"):
                 pb = GdkPixbuf.Pixbuf.new_from_file(str1[5:])
             elif str1.startswith("comm:"):
-                img = focus.call(str1[5:], str2, ret='bytes')
+                img = focus.call(str1[5:], ret='bytes')
                 io = Gio.MemoryInputStream.new_from_data(img)
                 pb = GdkPixbuf.Pixbuf.new_from_stream(io)
             else:

@@ -854,7 +854,7 @@ DEF_CMD(xcb_draw_image)
 	} else if (strstarts(ci->str, "comm:")) {
 		struct call_return cr;
 		wd = NewMagickWand();
-		cr = call_ret(bytes, ci->str+5, ci->focus, 0, NULL, ci->str2);
+		cr = call_ret(bytes, ci->str+5, ci->focus);
 		if (!cr.s) {
 			DestroyMagickWand(wd);
 			return Efail;
@@ -949,7 +949,7 @@ DEF_CMD(xcb_image_size)
 	} else if (strstarts(ci->str, "comm:")) {
 		struct call_return cr;
 		wd = NewMagickWand();
-		cr = call_ret(bytes, ci->str+5, ci->focus, 0, NULL, ci->str2);
+		cr = call_ret(bytes, ci->str+5, ci->focus);
 		if (!cr.s) {
 			DestroyMagickWand(wd);
 			return Efail;

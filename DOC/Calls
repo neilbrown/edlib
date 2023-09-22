@@ -118,9 +118,8 @@ comm2 as the (x,y) pair.
 Draw an image on the pane (or ancestor which as been cleared).
 
 - str1 identifies the images, either "file:FILENAME" or "comm:COMMAND".
-  If "comm:" the command is run with 'str2' passed as arg 'str1', and
-  result should be returned as 'bytes' (comm2 called with ->str1 as
-  array of bytes, ->num1 as length).
+  If "comm:" the command is run and result should be returned as 'bytes'
+  (comm2 called with ->str1 as array of bytes, ->num1 as length).
 - num is the 'or' of the following bit flags:
    - 16 stretch image to exactly fit pane.  If set, lower bits are ignored.
   Otherwise image will fill the pane in one dimension, and be positioning
