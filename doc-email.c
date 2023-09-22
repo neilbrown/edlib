@@ -24,7 +24,7 @@
  *   etc).
  *
  * The middle part has attributes set on the document which can be
- * accessed form the spacer using "multipart-prev:"
+ * accessed from the spacer using "multipart-prev:"
  * - email:path identify the part in the nexted multipart struture
  *   e.g. "header", "body", "body,multipart/mixed:0,mulitpart/alternate:1"
  * - email:actions a ':' separated list of buttons. "hide:save:view"
@@ -1108,6 +1108,14 @@ DEF_CMD(email_view_get_attr)
 
 		return comm_call(ci->comm2, "callback", ci->focus, 0, ci->mark,
 				 v, 0, NULL, ci->str);
+	}
+	if (strcmp(ci->str, "email:image") == 0) {
+		char im[100];
+
+		p = get_part(ci->home->parent, ci->mark);
+		sprintf(im, "comm:doc:multipart-%d-doc:get-bytes", to_orig(p));
+		return comm_call(ci->comm2, "cb", ci->focus, 0, ci->mark,
+				 im, 0, NULL, ci->str);
 	}
 	return Efallthrough;
 }

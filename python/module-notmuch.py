@@ -3373,6 +3373,23 @@ class notmuch_message_view(edlib.Pane):
         self.set_vis(focus, mark, s == "none")
         return 1
 
+    def handle_query(self, key, focus, mark, **a):
+        "handle:doc:char-?"
+        s = focus.call("doc:get-attr", mark, "email:content-type", ret='str')
+        if not s or not s.startswith("image/"):
+            return 1
+        s = focus.call("doc:get-attr", mark, "email:image", ret='str')
+        if not s:
+            return 1
+        d = focus.call("doc:get-doc", ret='pane')
+        d['linecount-disable'] = "yes"
+        p = focus.call("PopupTile", "D4M", ret='pane')
+        p = focus.call("doc:attach-view", p, "invisible", ret='pane')
+        p = p.call("attach-view", ret='pane')
+        p['status-line'] = "image view"
+        p.call("attach-render-imageview", s)
+        return 1
+
     def handle_space(self, key, focus, mark, **a):
         "handle:doc:char- "
         if focus.call("K:Next", 1, mark) == 2:
