@@ -40,7 +40,7 @@
 #include "core.h"
 
 struct mbinfo {
-	struct pane *bar safe;
+	struct pane *bar;
 	struct pane *child;
 	struct pane *menu, *open;
 	bool hidden, wanted;
@@ -64,10 +64,11 @@ DEF_CMD(menubar_refresh_size)
 	struct mbinfo *mbi = ci->home->data;
 	struct pane *p = mbi->bar;
 
-	if (mbi->hidden) {
+	if (!p || mbi->hidden) {
 		/* Put bar below window - out of sight */
-		pane_resize(p, 0, ci->home->h,
-			    p->w, p->h);
+		if (p)
+			pane_resize(p, 0, ci->home->h,
+				    p->w, p->h);
 		if (mbi->child)
 			pane_resize(mbi->child, 0, 0,
 				    ci->home->w, ci->home->h);
@@ -111,7 +112,7 @@ DEF_CMD(menubar_refresh)
 	struct pane *bar = mbi->bar;
 	int h;
 
-	if (mbi->hidden)
+	if (mbi->hidden || !bar)
 		return 1;
 	if (!mbi->child)
 		return 1;
@@ -313,7 +314,7 @@ DEF_CMD(menubar_press)
 	struct pane *p;
 	int x, y;
 
-	if (ci->focus != mbi->bar)
+	if (ci->focus != mbi->bar || !mbi->bar)
 		return Efallthrough;
 	if (mbi->menu) {
 		call("popup:close", mbi->menu);
@@ -385,7 +386,7 @@ DEF_CMD(menubar_close_notify)
 		return 1;
 	}
 	if (ci->focus == mbi->bar) {
-		// FIXME
+		mbi->bar = NULL;
 		return 1;
 	}
 	list_for_each_entry(p, &ci->home->children, siblings) {
@@ -420,6 +421,7 @@ DEF_CMD(menubar_attach)
 		return Efail;
 	}
 	mbi->bar = mbp;
+	pane_add_notify(ret, mbp, "Notify:Close");
 	pane_damaged(ret, DAMAGED_VIEW);
 	return comm_call(ci->comm2, "callback:attach", ret);
 }
