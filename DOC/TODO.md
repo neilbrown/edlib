@@ -21,9 +21,8 @@ the file.
 - [X] find-document - if default doc has <>, displays wrongly.
 - [X] From start-of-file move to end, then up, then down.
       Display jumps.  Why?
-- [ ] Add menubar menu with recent documents?
+- [X] Add menubar menu with recent documents?
 - [X] why does clicking on status line go to top-of-file?
-- [ ] should Docs menu go on doc name in status bar?
 - [X] search hangs when seeking "^( *)"
 - [ ] selection-menu item to show git-commit from list of known git
       trees
@@ -487,6 +486,7 @@ Module features
 - [ ] review decision about that to do when high < 3*border-height.
       Current (disabled) code makes a mess when differing scales causes
       borders to be shorter than content.
+- [ ] Place docs menu on the doc name in status line
 
 ### grep/make
 

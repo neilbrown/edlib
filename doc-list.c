@@ -143,7 +143,7 @@ DEF_CMD(list_add_elmnt)
 	m->ref.p = e;
 	return 1;
 }
- 
+
 DEF_CMD(list_del_elmnt)
 {
 	struct list *l = ci->home->doc_data;

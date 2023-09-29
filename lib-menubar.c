@@ -225,8 +225,6 @@ static struct pane *menubar_find(struct pane *home safe,
 	pane_add_notify(home, owner, "Notify:Close");
 	if (last_left)
 		list_move(&d->siblings, &last_left->siblings);
-	else if (create == C_RIGHT)
-		list_move_tail(&d->siblings, &home->children);
 	pane_damaged(home, DAMAGED_VIEW);
 	return d;
 }
@@ -288,7 +286,11 @@ DEF_CMD(menubar_done)
 
 	if (mbi->child)
 		pane_take_focus(mbi->child);
-	if (ci->str && ci->str[0])
+	if (!ci->str || !ci->str[0])
+		return 1;
+	if (ci->str[0] == ' ')
+		call(ci->str+1, pane_focus(home));
+	else
 		call("Keystroke-sequence", home, 0, NULL, ci->str);
 	return 1;
 }
@@ -345,6 +347,10 @@ DEF_CMD(menubar_press)
 		if (p->x < cr.ret - 1)
 			continue;
 		/* clicked on 'p' */
+		/* FIXME this should be pane_call, but emacs mode is
+		 * a bit confusing.
+		 */
+		home_call(p->focus, "menu:refresh", p);
 		mbi->menu = call_ret(pane, "attach-menu", p, 0, NULL, "DVF",
 				     0, NULL, NULL,
 				     cih.x, mbi->bar->h);

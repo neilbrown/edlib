@@ -3329,6 +3329,59 @@ DEF_CMD(emacs_quote)
 	return 1;
 }
 
+struct docs_helper {
+	struct command c;
+	int cnt;
+	struct pane *p safe;
+};
+
+DEF_CMD(emacs_doc_menu)
+{
+	const char *d = ksuffix(ci, "emacs:doc-menu:");
+	struct pane *p = call_ret(pane, "docs:byname", ci->focus,
+				  0, NULL, d);
+
+	if (p) {
+		struct pane *t = call_ret(pane, "ThisPane", ci->focus);
+		if (t)
+			home_call(p, "doc:attach-view", t, 1);
+	}
+	return 1;
+}
+
+DEF_CB(emacs_menu_add_doc)
+{
+	struct docs_helper *dh = container_of(ci->comm, struct docs_helper, c);
+	char *name = pane_attr_get(ci->focus, "doc-name");
+
+	if (!name)
+		return Efallthrough;
+	if (dh->cnt >= 10)
+		return 1;
+	dh->cnt += 1;
+	call("menu:add", dh->p, 0, NULL, name, 0, NULL,
+	     strconcat(ci->home, " emacs:doc-menu:", name));
+	return Efallthrough;
+}
+
+DEF_CMD(emacs_menu_refresh)
+{
+	struct pane *p = ci->focus;
+	char *n = pane_attr_get(p, "doc-name");
+	struct docs_helper dh;
+
+	if (!n || strcmp(n, "Documents") != 0)
+		return 1;
+
+	call("menu:clear", p);
+	dh.c = emacs_menu_add_doc;
+	dh.cnt = 0;
+	dh.p = p;
+	call_comm("docs:byeach", p, &dh.c);
+	call("menu:add", p, 0, NULL, "List all", 0, NULL, ":C-X :C-B");
+	return 1;
+}
+
 DEF_PFX_CMD(cx_cmd, ":CX");
 DEF_PFX_CMD(cx4_cmd, ":CX4");
 DEF_PFX_CMD(cx5_cmd, ":CX5");
@@ -3519,6 +3572,9 @@ static void emacs_init(void)
 	key_add(m, "K:CX-e", &emacs_macro_run);
 	key_add(m, "K-e", &emacs_macro_run);
 
+	key_add(m, "menu:refresh", &emacs_menu_refresh);
+	key_add_prefix(m, "emacs:doc-menu:", &emacs_doc_menu);
+
 	emacs_map = m;
 }
 
@@ -3526,6 +3582,7 @@ DEF_LOOKUP_CMD(mode_emacs, emacs_map);
 
 static char *menus[][3] = {
 	{ "Help/Recent", ":F1 l", "R" },
+	{ "Documents/List all", ":C-X :C-B", "R"},
 	{ "File/Open", ":C-X :C-F", "L"},
 	{ "File/Save", ":C-X :C-S", "L"},
 	{ "File/Exit", ":C-X :C-C", "L"},

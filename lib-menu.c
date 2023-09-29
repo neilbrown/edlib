@@ -47,8 +47,8 @@ DEF_CMD(menu_clear)
 {
 	struct mark *m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
 
-	call("doc:set-ref", ci->home, 1, m);
-	while (call("doc:list-del", ci->home, 0, m) > 0)
+	call("doc:set-ref", ci->focus, 1, m);
+	while (call("doc:list-del", ci->focus, 0, m) > 0)
 		;
 	return 1;
 }
@@ -181,6 +181,7 @@ DEF_CMD(menu_attach)
 		pane_close(p);
 		return Efail;
 	}
+	call("doc:file", p2, -1);
 	p2 = pane_register(p2, 0, &menu_handle.c);
 	/* Don't allow any shift - we size the menu to fit */
 	if (!p2)
