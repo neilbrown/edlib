@@ -276,8 +276,8 @@ if sys.argv[0] == "":
                 focus = a['focus']
                 if focus.notify("doc:done", "test") > 0:
                     choice.append(focus)
-                    return 1
-                return 0
+                    return False
+                return 1
             focus.call("docs:byeach", lambda key,**a:choose(choice, a))
             if len(choice):
                 par = focus.call("ThisPane", ret='pane')

@@ -1990,8 +1990,8 @@ class notmuch_master_view(edlib.Pane):
             focus = a['focus']
             if focus['email-sent'] == 'no':
                 choice.append(focus)
-                return 1
-            return 0
+                return False
+            return 1
         focus.call("docs:byeach", lambda key,**a:choose(choice, a))
         if len(choice):
             par = focus.call("PopupTile", "MD3tsa", ret='pane')
@@ -3798,8 +3798,8 @@ def notmuch_compose(key, focus, **a):
         focus = a['focus']
         if focus['email-sent'] == 'no':
             choice.append(focus)
-            return 1
-        return 0
+            return False
+        return 1
     focus.call("docs:byeach", lambda key,**a:choose(choice, a))
     if len(choice):
         par = focus.call("ThisPane", ret='pane')

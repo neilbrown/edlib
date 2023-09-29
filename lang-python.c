@@ -533,7 +533,7 @@ REDEF_CB(python_call)
 	else if (PyLong_Check(ret))
 		rv = PyLong_AsLong(ret);
 	else if (PyBool_Check(ret))
-		rv = (ret == Py_True);
+		rv = (ret == Py_True) ? 1 : Efalse;
 	else if (PyUnicode_Check(ret) && PyUnicode_GET_LENGTH(ret) >= 1)
 		rv = CHAR_RET(PyUnicode_READ_CHAR(ret, 0));
 	else

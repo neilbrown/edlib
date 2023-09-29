@@ -182,14 +182,14 @@ class AbbrevPane(edlib.Pane):
     def each_doc(self, key, focus, **a):
         if self.docs_scanned > 5:
             # already handle 5 docs - stop now
-            return 1
+            return False
         if focus['doc-name'] == self['doc-name']:
-            return 0
+            return 1
         if "text" not in focus["doc-type"]:
-            return 0
+            return 1
         self.docs_scanned += 1
         self.gather_completions(focus, None)
-        return 0
+        return 1
 
     def next_completion(self, dir):
         if self.current < 0:

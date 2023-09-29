@@ -302,14 +302,19 @@ DEF_CMD(docs_callback_byeach)
 {
 	struct docs *doc = ci->home->doc_data;
 	struct pane *p;
+	int ret = 1;
 
 	list_for_each_entry(p, &doc->collection->children, siblings) {
 		int r;
 		r = comm_call(ci->comm2, "callback:doc", p);
-		if (r)
+		if (r > ret)
+			ret = r;
+		if (r == Efalse)
+			return ret;
+		if (r < Efalse)
 			return r;
 	}
-	return 1;
+	return ret;
 }
 
 DEF_CMD(docs_callback_choose)

@@ -940,39 +940,39 @@ DEF_CB(find_helper)
 			 * So return this one and keep looking.
 			 */
 			h->ret = p;
-			return 0;
+			return 1;
 		} else {
 			/* Want the pane that is after nothing, so
 			 * the first.  This one. All done.
 			 */
 			h->ret = p;
-			return 1;
+			return Efalse;
 		}
 	}
 	name = pane_attr_get(ci->focus, "doc-name");
 	if (!name)
-		return 0;
+		return 1;
 	if (strcmp(name, h->name) == 0) {
 		if (h->want_prev) {
 			/* Want the previous one, which is
 			 * already in ->ret
 			 */
-			return 1;
+			return Efalse;
 		} else {
 			/* Want the next one, so clear name
 			 * and keep going.
 			 */
 			h->name = NULL;
-			return 0;
+			return 1;
 		}
 	} else {
 		if (h->want_prev) {
 			/* This might be what I want - keep it in case */
 			h->ret = p;
-			return 0;
+			return 1;
 		} else {
 			/* Don't want this - just keep going */
-			return 0;
+			return 1;
 		}
 	}
 }
