@@ -16,7 +16,7 @@ the file.
       in x11selection_Xcb gets freed???
 - [X] adding new lines at end of doc in x11 leaves phantom underline
       cursors.
-- [ ] 20230908090027.6AA0DC05B9@prodcs.lwn.net has a wrapped
+- [X] 20230908090027.6AA0DC05B9@prodcs.lwn.net has a wrapped
       <a> tag which isn't parsed well.
 - [X] find-document - if default doc has <>, displays wrongly.
 - [X] From start-of-file move to end, then up, then down.

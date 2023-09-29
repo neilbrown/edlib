@@ -63,7 +63,6 @@
  *			  recognised has "wrap-" stripped and is used for the
  *			  head and tail. Default is fg:blue,underline
  *  hide		- Text is hidden if cursor is not within range.
- *			  NOT YET IMPLEMENTED
  *
  * "nn" is measured in "points" which is 1/10 the nominal width of chars
  * in the default font size, which is called "10".  A positive value is
@@ -96,7 +95,7 @@ struct render_item {
 				 * it.
 				 */
 	uint8_t		hide;	/* This and consecutive render_items
-				 * with the same hide nmber form a
+				 * with the same hide number form a
 				 * hidden extent which is visible when
 				 * the cursor is in it.
 				 */
@@ -256,8 +255,8 @@ static void parse_line(struct rline_data *rd safe)
 			 * which should leave either a trailing comma, or an
 			 * empty string.
 			 */
-			buf_append(&attr, ',');
 			old_len = attr.len;
+			buf_append(&attr, ',');
 			foreach_attr(a, v, st, line) {
 				if (amatch(a, "centre") || amatch(a, "center") ||
 				    amatch(a, "ctab")) {
