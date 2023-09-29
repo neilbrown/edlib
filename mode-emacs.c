@@ -215,7 +215,7 @@ REDEF_CMD(emacs_move)
 
 	ret = call(mv->type, ci->focus, mv->direction * RPT_NUM(ci), ci->mark,
 		   NULL, mv->extra);
-	if (ret <= 0)
+	if (ret < 0)
 		return ret;
 
 	if (strcmp(mv->type, "Move-View") == 0)
@@ -226,13 +226,13 @@ REDEF_CMD(emacs_move)
 	/* Discard a transient selection */
 	clear_selection(ci->focus, NULL, mk, 2);
 
-	return ret;
+	return 1;
 }
 
 REDEF_CMD(emacs_delete)
 {
 	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
-	int ret = 0;
+	int ret;
 	struct mark *m, *mk;
 
 	if (!ci->mark)
@@ -250,7 +250,7 @@ REDEF_CMD(emacs_delete)
 
 	ret = call(mv->type, ci->focus, mv->direction * RPT_NUM(ci), m);
 
-	if (ret <= 0) {
+	if (ret < 0) {
 		mark_free(m);
 		return ret;
 	}
@@ -261,14 +261,14 @@ REDEF_CMD(emacs_delete)
 	mark_free(m);
 	call("Mode:set-num2", ci->focus, N2_undo_delete);
 
-	return ret;
+	return 1;
 }
 
 REDEF_CMD(emacs_kill)
 {
 	/* Like delete, but copy to copy-buffer */
 	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
-	int ret = 0;
+	int ret;
 	struct mark *m;
 	char *str;
 
@@ -284,7 +284,7 @@ REDEF_CMD(emacs_kill)
 	else
 		ret = call(mv->type, ci->focus, mv->direction * RPT_NUM(ci), m);
 
-	if (ret <= 0) {
+	if (ret < 0) {
 		mark_free(m);
 		return ret;
 	}
@@ -299,13 +299,13 @@ REDEF_CMD(emacs_kill)
 	mark_free(m);
 	call("Mode:set-num2", ci->focus, N2_undo_delete);
 
-	return ret;
+	return 1;
 }
 
 REDEF_CMD(emacs_case)
 {
 	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
-	int ret = 0;
+	int ret;
 	struct mark *start = NULL;
 	int cnt = mv->direction * RPT_NUM(ci);
 	int dir;
@@ -388,7 +388,7 @@ REDEF_CMD(emacs_case)
 		mark_to_mark(ci->mark, start);
 		mark_free(start);
 	}
-	return ret;
+	return 1;
 }
 
 REDEF_CMD(emacs_swap)
@@ -399,7 +399,6 @@ REDEF_CMD(emacs_swap)
 	 * previous objects.  Object is determined by mv->type.
 	 */
 	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
-	int ret = 0;
 	struct mark *start = NULL;
 	int cnt = mv->direction * RPT_NUM(ci);
 	int dir;
@@ -469,7 +468,7 @@ REDEF_CMD(emacs_swap)
 		mark_to_mark(ci->mark, start);
 		mark_free(start);
 	}
-	return ret;
+	return 1;
 }
 
 DEF_CMD(emacs_move_view_other)
@@ -645,7 +644,8 @@ DEF_CMD(emacs_exit)
 			return Efail;
 		}
 		attr_set_str(&p->attrs, "done-key", "emacs:deactivate");
-		return call("docs:show-modified", p);
+		call("docs:show-modified", p);
+		return 1;
 	} else
 		call("event:deactivate", ci->focus);
 	return 1;
@@ -678,7 +678,7 @@ DEF_CMD(emacs_insert)
 	ret = call(dc, ci->focus, ci->num, ci->mark, NULL, !first);
 	call("Mode:set-num2", ci->focus, N2_undo_insert);
 
-	return ret;
+	return ret < 0 ? ret : 1;
 }
 
 DEF_CMD(emacs_quote_insert)
@@ -709,7 +709,7 @@ DEF_CMD(emacs_quote_insert)
 	ret = call("Replace", ci->focus, 1, ci->mark, str, !first);
 	call("Mode:set-num2", ci->focus, N2_undo_insert);
 
-	return ret;
+	return ret < 0 ? ret : 1;
 }
 
 static struct {
@@ -762,7 +762,7 @@ DEF_CMD(emacs_insert_other)
 	}
 	/* A newline starts a new undo */
 	call("Mode:set-num2", ci->focus, (*ins == '\n') ? 0 : N2_undo_insert);
-	return ret;
+	return ret < 0 ? ret : 1;
 }
 
 DEF_CMD(emacs_interactive_insert)
@@ -785,7 +785,7 @@ DEF_CMD(emacs_interactive_insert)
 		   !first);
 	call("Mode:set-num2", ci->focus,
 	     strchr(ci->str, '\n') ? 0 : N2_undo_insert);
-	return ret;
+	return ret < 0 ? ret : 1;
 }
 
 DEF_CMD(emacs_interactive_delete)
@@ -801,7 +801,7 @@ DEF_CMD(emacs_interactive_delete)
 		   N2(ci) == N2_undo_insert, ci->mark2);
 	call("Mode:set-num2", ci->focus,
 	     strchr(ci->str, '\n') ? 0 : N2_undo_delete);
-	return ret;
+	return ret < 0 ? ret : 1;
 }
 
 DEF_CMD(emacs_undo)
@@ -916,7 +916,7 @@ DEF_CMD(find_done)
 		return 1;
 	}
 	ret = call("popup:close", ci->focus, 0, NULL, norm ?: str);
-	return ret;
+	return ret < 0 ? ret : 1;
 }
 
 struct find_helper {

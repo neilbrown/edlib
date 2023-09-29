@@ -287,7 +287,8 @@ DEF_CMD(menubar_done)
 
 	if (mbi->child)
 		pane_take_focus(mbi->child);
-	call("Keystroke-sequence", home, 0, NULL, ci->str);
+	if (ci->str && ci->str[0])
+		call("Keystroke-sequence", home, 0, NULL, ci->str);
 	return 1;
 }
 

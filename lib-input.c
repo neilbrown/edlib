@@ -225,8 +225,13 @@ DEF_CMD(keystroke)
 	}
 	time_ends(ci->home);
 	if (ret <= Efail)
-		call("Message:default", ci->focus, 0, NULL,
-		     "** Command Failed **");
+		call("Message:default", p, 0, NULL,
+		     strconcat(ci->home, "** Command ", key, " Failed **"));
+	else if (ret == Efallthrough) {
+		key = strconcat(ci->home, "K", mode, ci->str);
+		call("Message:modal", p, 0, NULL,
+		     strconcat(ci->home, "** Command ", key, " not known **"));
+	}
 	return Efallthrough;
 }
 
@@ -250,6 +255,8 @@ DEF_CMD(keystroke_sequence)
 			return Efail;
 		c = e+1;
 	}
+	if (!*c)
+		return 1;
 	dash = "";
 	if (*c != ':' || c[1] == '\0')
 		dash = "-";
@@ -452,6 +459,14 @@ DEF_CMD(mouse_grab)
 	return 1;
 }
 
+DEF_CMD(input_cancel)
+{
+	/* Other handlers fall-through.  We catch so that
+	 * it doesn't appear to be ignored
+	 */
+	return 1;
+}
+
 DEF_CMD(refocus)
 {
 	struct input_mode *im = ci->home->data;
@@ -509,6 +524,9 @@ static void register_map(void)
 	key_add(im_map, "Notify:Close", &close_focus);
 	key_add(im_map, "input:log", &log_input);
 	key_add(im_map, "Close", &input_close);
+
+	key_add(im_map, "Cancel", &input_cancel);
+	key_add(im_map, "Abort", &input_cancel);
 }
 
 DEF_LOOKUP_CMD(input_handle, im_map);

@@ -9,7 +9,7 @@ the file.
 
 ### Triage
 
-- [ ] unknown keysequence should be reported so e.g. if keyboard
+- [X] unknown keysequence should be reported so e.g. if keyboard
       is is Greek mode, then I will be told that Cx-b doesn't work
 - [ ] menubar doesn't redraw background when resized wider.
 - [X] open second x11 window, use selections.  Close it.  command
