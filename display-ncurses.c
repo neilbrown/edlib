@@ -995,46 +995,120 @@ DEF_CMD(nc_draw_text)
 	return 1;
 }
 
+struct di_info {
+	struct command c;
+	MagickWand *wd safe;
+	int x,y,w,h;
+	int xo, yo;
+	struct pane *p safe;
+};
+
+DEF_CB(nc_draw_image_cb)
+{
+	struct di_info *dii = container_of(ci->comm, struct di_info, c);
+	struct display_data *dd = dii->p->data;
+	int i, j;
+	unsigned char *buf;
+
+	switch (ci->key[0]) {
+	case 'w': /* width */
+		return MagickGetImageWidth(dii->wd);
+	case 'h': /* height */
+		return MagickGetImageHeight(dii->wd);
+	case 's': /* scale */
+		MagickAdaptiveResizeImage(dii->wd, ci->num, ci->num2);
+		return 1;
+	case 'c': /* crop or cursor */
+		if (ci->key[1] != 'u') {
+			/* crop */
+			dii->x = ci->x;
+			dii->y = ci->y;
+			dii->w = ci->num;
+			dii->h = ci->num2;
+			return 1;
+		} else {
+			/* cursor */
+			/* FIXME this doesn't work because
+			 * render-line knows too much and gets it wrong.
+			 */
+			ncurses_text(ci->focus, dii->p, 'X', 0,
+				     to_pair(dd, 0, 0),
+				     ci->x + dii->xo,
+				     (ci->y + dii->xo)/2, 1);
+			return 1;
+		}
+	case 'd': /* draw */
+		if (dii->w <= 0 || dii->h <= 0)
+			return Efail;
+		buf = malloc(dii->h * dii->w * 4);
+
+		MagickExportImagePixels(dii->wd, dii->x, dii->y,
+					dii->w, dii->h,
+					"RGBA", CharPixel, buf);
+
+		for (i = 0; i < dii->h; i+= 2) {
+			static const wint_t hilo = 0x2580; /* L'▀' */
+			for (j = 0; j < dii->w ; j+= 1) {
+				unsigned char *p1 = buf + i*dii->w*4 + j*4;
+				unsigned char *p2 = buf + (i+1)*dii->w*4 + j*4;
+				int rgb1[3] = { p1[0]*1000/255, p1[1]*1000/255, p1[2]*1000/255 };
+				int rgb2[3] = { p2[0]*1000/255, p2[1]*1000/255, p2[2]*1000/255 };
+				int fg = find_col(dd, rgb1);
+				int bg = find_col(dd, rgb2);
+
+				if (p1[3] < 128 || p2[3] < 128) {
+					/* transparent */
+					cchar_t cc;
+					short f,b;
+					struct pane *pn2 = ci->focus;
+					PANEL *pan = pane_panel(pn2, NULL);
+
+					while (!pan && pn2->parent != pn2) {
+						pn2 = pn2->parent;
+						pan = pane_panel(pn2, NULL);
+					}
+					if (pan) {
+						wgetbkgrnd(panel_window(pan), &cc);
+						if (cc.ext_color == 0)
+							/* default.  This is light
+							 * gray rather then white,
+							 * but I think it is a good
+							 * result.
+							 */
+							b = COLOR_WHITE;
+						else
+							pair_content(cc.ext_color, &f, &b);
+						if (p1[3] < 128)
+							fg = b;
+						if (p2[3] < 128)
+							bg = b;
+					}
+				}
+				ncurses_text(ci->focus, dii->p, hilo, 0,
+					     to_pair(dd, fg, bg),
+					     ci->num + dii->xo + j,
+					     (ci->num2 + dii->yo + i)/2,
+					     0);
+			}
+		}
+		free(buf);
+		return 1;
+	default:
+		return Efail;
+	}
+}
+
 DEF_CMD(nc_draw_image)
 {
 	/* 'str' identifies the image. Options are:
 	 *     file:filename  - load file from fs
 	 *     comm:command   - run command collecting bytes
-	 * 'str2' container 'mode' information.
-	 *     By default the image is placed centrally in the pane
-	 *     and scaled to use either fully height or fully width.
-	 *     Various letters modify this:
-	 *     'S' - stretch to use full height *and* full width
-	 *     'L' - place on left if full width isn't used
-	 *     'R' - place on right if full width isn't used
-	 *     'T' - place at top if full height isn't used
-	 *     'B' - place at bottom if full height isn't used.
-	 *
-	 *    Also a suffix ":NNxNN" will be parse and the two numbers used
-	 *    to give number of rows and cols to overlay on the image for
-	 *    the purpose of cursor positioning.  If these are present and
-	 *    p->cx,cy are not negative, draw a cursor at p->cx,cy highlighting
-	 *    the relevant cell.
-	 *
-	 * num,num2, if both positive, override the automatic scaling.
-	 *    The image is scaled to this many pixels.
-	 * x,y is top-left pixel in the scaled image to start display at.
-	 *    Negative values allow a margin between pane edge and this image.
+	 * 'str2' and numbers are handled by Draw:scale-image.
 	 */
 	struct pane *p = ci->home;
-	struct display_data *dd = p->data;
-	int x = 0, y = 0;
-	const char *mode = ci->str2 ?: "";
-	bool stretch = strchr(mode, 'S');
-	int w = ci->focus->w, h = ci->focus->h * 2;
-	int pw = w, ph = h;
-	int xo = 0, yo = 0;
-	int cix, ciy;
-	int cx = -1, cy = -1;
 	MagickBooleanType status;
-	MagickWand *wd;
-	unsigned char *buf;
-	int i, j;
+	MagickWand *wd = NULL;
+	struct di_info dii;
 
 	if (!ci->str)
 		return Enoarg;
@@ -1059,135 +1133,19 @@ DEF_CMD(nc_draw_image)
 			DestroyMagickWand(wd);
 			return Efail;
 		}
-	} else
+	}
+
+	if (!wd)
 		return Einval;
 
 	MagickAutoOrientImage(wd);
-	if (ci->num > 0 && ci->num2 > 0) {
-		w = ci->num;
-		h = ci->num2;
-	} else if (ci->num > 0) {
-		int ih = MagickGetImageHeight(wd);
-		int iw = MagickGetImageWidth(wd);
-
-		if (iw <= 0 || iw <= 0) {
-			DestroyMagickWand(wd);
-			return Efail;
-		}
-		w = iw * ci->num / 1024;
-		h = ih * ci->num / 1024;
-	} else if (!stretch) {
-		int ih = MagickGetImageHeight(wd);
-		int iw = MagickGetImageWidth(wd);
-
-		if (iw <= 0 || iw <= 0) {
-			DestroyMagickWand(wd);
-			return Efail;
-		}
-		if (iw * h > ih * w) {
-			/* Image is wider than space, use less height */
-			ih = ih * w / iw;
-			if (strchr(mode, 'B'))
-				/* bottom */
-				y = h - ih;
-			else if (!strchr(mode, 'T'))
-				/* center */
-				y = (h - ih) / 2;
-			/* Keep 'h' even! */
-			h = ((ih+1)/2) * 2;
-		} else {
-			/* image is too tall, use less width */
-			iw = iw * h / ih;
-			if (strchr(mode, 'R'))
-				/* right */
-				x = w - iw;
-			else if (!strchr(mode, 'L'))
-				x = (w - iw) / 2;
-			w = iw;
-		}
-	}
-	MagickAdaptiveResizeImage(wd, w, h);
-	cix = ci->x;
-	ciy = ci->y;
-	if (cix < 0) {
-		xo -= cix;
-		pw += cix;
-		cix = 0;
-	}
-	if (ciy < 0) {
-		yo -= ciy;
-		ph += ciy;
-		ciy = 0;
-	}
-	if (w - cix <= pw)
-		w -= cix;
-	else
-		w = pw;
-	if (h - ciy <= ph)
-		h -= ciy;
-	else
-		h = ph;
-	buf = malloc(h * w * 4);
-	MagickExportImagePixels(wd, cix, ciy, w, h, "RGBA", CharPixel, buf);
-
-	if (ci->focus->cx >= 0 && strchr(mode, ':')) {
-		/* We want a cursor */
-		cx = x + ci->focus->cx;
-		cy = y + ci->focus->cy;
-	}
-	for (i = 0; i < h; i+= 2) {
-		static const wint_t hilo = 0x2580; /* L'▀' */
-		for (j = 0; j < w ; j+= 1) {
-			unsigned char *p1 = buf + i*w*4 + j*4;
-			unsigned char *p2 = buf + (i+1)*w*4 + j*4;
-			int rgb1[3] = { p1[0]*1000/255, p1[1]*1000/255, p1[2]*1000/255 };
-			int rgb2[3] = { p2[0]*1000/255, p2[1]*1000/255, p2[2]*1000/255 };
-			int fg = find_col(dd, rgb1);
-			int bg = find_col(dd, rgb2);
-
-			if (p1[3] < 128 || p2[3] < 128) {
-				/* transparent */
-				cchar_t cc;
-				short f,b;
-				struct pane *pn2 = ci->focus;
-				PANEL *pan = pane_panel(pn2, NULL);
-
-				while (!pan && pn2->parent != pn2) {
-					pn2 = pn2->parent;
-					pan = pane_panel(pn2, NULL);
-				}
-				if (pan) {
-					wgetbkgrnd(panel_window(pan), &cc);
-					if (cc.ext_color == 0)
-						/* default.  This is light
-						 * gray rather then white,
-						 * but I think it is a good
-						 * result.
-						 */
-						b = COLOR_WHITE;
-					else
-						pair_content(cc.ext_color, &f, &b);
-					if (p1[3] < 128)
-						fg = b;
-					if (p2[3] < 128)
-						bg = b;
-				}
-			}
-			/* FIXME this doesn't work because
-			 * render-line knows too much and gets it wrong.
-			 */
-			if (cx == x+j && cy == y + (i/2))
-				ncurses_text(ci->focus, p, 'X', 0,
-					     to_pair(dd, 0, 0),
-					     x+j, y+(i/2), 1);
-			else
-				ncurses_text(ci->focus, p, hilo, 0,
-					     to_pair(dd, fg, bg),
-					     x+j, y+(i/2), 0);
-
-		}
-	}
-	free(buf);
+	dii.c = nc_draw_image_cb;
+	dii.wd = wd;
+	dii.p = p;
+	dii.w = dii.h = dii.x = dii.y = dii.xo = dii.yo = 0;
+	call("Draw:scale-image", ci->focus,
+	     ci->num, NULL, NULL, ci->num2, NULL, ci->str2,
+	     ci->x, ci->y, &dii.c);
 
 	DestroyMagickWand(wd);
 

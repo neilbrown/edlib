@@ -805,59 +805,102 @@ DEF_CMD(xcb_draw_text)
 	return 1;
 }
 
+struct di_info {
+	struct command c;
+	MagickWand *wd safe;
+	int x,y,w,h;
+	int xo, yo;
+	struct panes *ps safe;
+};
+
+DEF_CB(xcb_draw_image_cb)
+{
+	struct di_info *dii = container_of(ci->comm, struct di_info, c);
+	int stride;
+	int fmt[2];
+	unsigned char *buf;
+	cairo_surface_t *surface;
+
+	switch (ci->key[0]) {
+	case 'w': /* width */
+		return MagickGetImageWidth(dii->wd);
+	case 'h': /* height */
+		return MagickGetImageHeight(dii->wd);
+	case 's': /* scale */
+		MagickAdaptiveResizeImage(dii->wd, ci->num, ci->num2);
+		return 1;
+	case 'c': /* crop or cursor */
+		if (ci->key[1] != 'u') {
+			/* crop */
+			dii->x = ci->x;
+			dii->y = ci->y;
+			dii->w = ci->num;
+			dii->h = ci->num2;
+			return 1;
+		} else {
+			/* cursor */
+			cairo_rectangle(dii->ps->ctx,
+					ci->x + dii->xo, ci->y + dii->yo,
+					ci->num, ci->num2);
+			cairo_set_line_width(dii->ps->ctx, 1.0);
+			cairo_set_source_rgb(dii->ps->ctx, 1.0, 0.0, 0.0);
+			cairo_stroke(dii->ps->ctx);
+			return 1;
+		}
+	case 'd': /* draw */
+		if (dii->w <= 0 || dii->h <= 0)
+			return Efail;
+		stride = cairo_format_stride_for_width(CAIRO_FORMAT_RGB24,
+						       dii->w);
+		buf = malloc(dii->h * stride);
+		// Cairo expects 32bit values with A in the high byte, then RGB.
+		// Magick provides 8bit values in the order requests.
+		// So depending on byte order, a different string is needed
+
+		fmt[0] = ('A'<<24) | ('R' << 16) | ('G' << 8) | ('B' << 0);
+		fmt[1] = 0;
+		MagickExportImagePixels(dii->wd, dii->x, dii->y,
+					dii->w, dii->h,
+					(char*)fmt, CharPixel, buf);
+		surface = cairo_image_surface_create_for_data(
+			buf, CAIRO_FORMAT_ARGB32, dii->w, dii->h, stride);
+		cairo_set_source_surface(dii->ps->ctx, surface,
+					 ci->num + dii->xo, ci->num2 + dii->yo);
+		cairo_paint(dii->ps->ctx);
+		cairo_surface_destroy(surface);
+		free(buf);
+		return 1;
+	default:
+		return Efail;
+	}
+}
+
 DEF_CMD(xcb_draw_image)
 {
 	/* 'str' identifies the image. Options are:
 	 *     file:filename  - load file from fs
 	 *     comm:command   - run command collecting bytes
-	 * 'str2' container 'mode' information.
-	 *     By default the image is placed centrally in the pane
-	 *     and scaled to use either fully height or fully width.
-	 *     Various letters modify this:
-	 *     'S' - stretch to use full height *and* full width
-	 *     'L' - place on left if full width isn't used
-	 *     'R' - place on right if full width isn't used
-	 *     'T' - place at top if full height isn't used
-	 *     'B' - place at bottom if full height isn't used.
-	 *
-	 *    Also a suffix ":NNxNN" will be parse and the two numbers used
-	 *    to give number of rows and cols to overlay on the image for
-	 *    the purpose of cursor positioning.  If these are present and
-	 *    p->cx,cy are not negative, draw a cursor at p->cx,cy highlighting
-	 *    the relevant cell.
-	 *
-	 * num,num2, if both positive, override the automatic scaling.
-	 *    The image is scaled to this many pixels.
-	 * x,y is top-left pixel in the scaled image to start display at.
-	 *    Negative values allow a margin between pane edge and this image.
+	 * 'str2' and numbers are handled by Draw:scale-image.
 	 */
 	struct xcb_data *xd = ci->home->data;
-	const char *mode = ci->str2 ?: "";
-	bool stretch = strchr(mode, 'S');
-	int w, h;
-	int x = 0, y = 0;
-	int pw, ph;
-	int xo, yo;
-	int cix, ciy;
-	int stride;
+	struct di_info dii;
+	MagickWand *wd = NULL;
 	struct panes *ps;
-	MagickBooleanType status;
-	MagickWand *wd;
-	int fmt[2];
-	unsigned char *buf;
-	cairo_surface_t *surface;
 
 	if (!ci->str)
 		return Enoarg;
-	ps = find_pixmap(xd, ci->focus, &xo, &yo);
+	ps = find_pixmap(xd, ci->focus, &dii.xo, &dii.yo);
 	if (!ps)
 		return Einval;
-	if (!ps->ctx)
-		instantiate_pixmap(xd, ps);
-	ps->bg.g = -1;
-	if (!ps->ctx)
+	dii.ps = ps;
+	if (!dii.ps->ctx)
+		instantiate_pixmap(xd, dii.ps);
+	dii.ps->bg.g = -1;
+	if (!dii.ps->ctx)
 		return Efail;
 	if (strstarts(ci->str, "file:")) {
+		MagickBooleanType status;
+
 		wd = NewMagickWand();
 		status = MagickReadImage(wd, ci->str + 5);
 		if (status == MagickFalse) {
@@ -865,7 +908,9 @@ DEF_CMD(xcb_draw_image)
 			return Efail;
 		}
 	} else if (strstarts(ci->str, "comm:")) {
+		MagickBooleanType status;
 		struct call_return cr;
+
 		wd = NewMagickWand();
 		cr = call_ret(bytes, ci->str+5, ci->focus);
 		if (!cr.s) {
@@ -878,106 +923,19 @@ DEF_CMD(xcb_draw_image)
 			DestroyMagickWand(wd);
 			return Efail;
 		}
-	} else
+	}
+
+	if (!wd)
 		return Einval;
 
 	MagickAutoOrientImage(wd);
-	w = ci->focus->w;
-	h = ci->focus->h;
-	if (ci->num > 0 && ci->num2 > 0) {
-		w = ci->num;
-		h = ci->num2;
-	} else if (ci->num > 0) {
-		int ih = MagickGetImageHeight(wd);
-		int iw = MagickGetImageWidth(wd);
+	dii.c = xcb_draw_image_cb;
+	dii.wd = wd;
+	dii.w = dii.h = dii.x = dii.y = dii.xo = dii.yo = 0;
+	call("Draw:scale-image", ci->focus,
+	     ci->num, NULL, NULL, ci->num2, NULL, ci->str2,
+	     ci->x, ci->y, &dii.c);
 
-		if (iw <= 0 || iw <= 0) {
-			DestroyMagickWand(wd);
-			return Efail;
-		}
-		w = iw * ci->num / 1024;
-		h = ih * ci->num / 1024;
-	} else if (!stretch) {
-		int ih = MagickGetImageHeight(wd);
-		int iw = MagickGetImageWidth(wd);
-
-		if (iw <= 0 || iw <= 0) {
-			DestroyMagickWand(wd);
-			return Efail;
-		}
-		if (iw * h > ih * w) {
-			/* Image is wider than space, use less height */
-			ih = ih * w / iw;
-			if (strchr(mode, 'B'))
-				/* bottom */
-				y = h - ih;
-			else if (!strchr(mode, 'T'))
-				/* center */
-				y = (h - ih) / 2;
-			h = ih;
-		} else {
-			/* image is too tall, use less width */
-			iw = iw * h / ih;
-			if (strchr(mode, 'R'))
-				/* right */
-				x = w - iw;
-			else if (!strchr(mode, 'L'))
-				x = (w - iw) / 2;
-			w = iw;
-		}
-	}
-	MagickAdaptiveResizeImage(wd, w, h);
-	pw = ci->focus->w;
-	ph = ci->focus->h;
-	cix = ci->x;
-	ciy = ci->y;
-	if (cix < 0) {
-		xo -= cix;
-		pw += cix;
-		cix = 0;
-	}
-	if (ciy < 0) {
-		yo -= ciy;
-		ph += ciy;
-		ciy = 0;
-	}
-	if (w - cix <= pw)
-		w -= cix;
-	else
-		w = pw;
-	if (h - ciy <= ph)
-		h -= ciy;
-	else
-		h = ph;
-	stride = cairo_format_stride_for_width(CAIRO_FORMAT_RGB24, w);
-	buf = malloc(h * stride);
-	// Cairo expects 32bit values with A in the high byte, then RGB.
-	// Magick provides 8bit values in the order requests.
-	// So depending on byte order, a different string is needed
-
-	fmt[0] = ('A'<<24) | ('R' << 16) | ('G' << 8) | ('B' << 0);
-	fmt[1] = 0;
-	MagickExportImagePixels(wd, cix, ciy, w, h,
-				(char*)fmt, CharPixel, buf);
-	surface = cairo_image_surface_create_for_data(buf, CAIRO_FORMAT_ARGB32,
-						      w, h, stride);
-	cairo_set_source_surface(ps->ctx, surface, x + xo, y + yo);
-	cairo_paint(ps->ctx);
-	cairo_surface_destroy(surface);
-	free(buf);
-
-	if (ci->focus->cx >= 0) {
-		struct pane *p = ci->focus;
-		int rows, cols;
-		char *cl = strchr(mode, ':');
-		if (cl && sscanf(cl, ":%dx%d", &cols, &rows) == 2) {
-			cairo_rectangle(ps->ctx, p->cx + xo, p->cy + yo,
-					w/cols, h/rows);
-			cairo_set_line_width(ps->ctx, 1.0);
-			cairo_set_source_rgb(ps->ctx, 1.0, 0.0, 0.0);
-			cairo_stroke(ps->ctx);
-		}
-	}
 	DestroyMagickWand(wd);
 
 	pane_damaged(ci->home, DAMAGED_POSTORDER);

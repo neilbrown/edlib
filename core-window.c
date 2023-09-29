@@ -138,6 +138,139 @@ DEF_CMD(selection_discard)
 	return 1;
 }
 
+DEF_CMD(scale_image)
+{
+	/* This is a helper for Draw:image which interprets str2
+	 * with other values and calls comm2 with:
+	 * "width" returns image width
+	 * "height" returns image height
+	 * "scale"  num=new width, num2=new height
+	 * "crop" x,y is top-left num,num2 - width,height
+	 *	    These numbers apply after scaling.
+	 * "draw"  num,num2 = offset
+	 * "cursor" x,y=pos, num,num2=size
+	 *
+	 * Inputs are:
+	 * 'str2' container 'mode' information.
+	 *     By default the image is placed centrally in the pane
+	 *     and scaled to use either fully height or fully width.
+	 *     Various letters modify this:
+	 *     'S' - stretch to use full height *and* full width
+	 *     'L' - place on left if full width isn't used
+	 *     'R' - place on right if full width isn't used
+	 *     'T' - place at top if full height isn't used
+	 *     'B' - place at bottom if full height isn't used.
+	 *
+	 *    Also a suffix ":NNxNN" will be parse and the two numbers used
+	 *    to give number of rows and cols to overlay on the image for
+	 *    the purpose of cursor positioning.  If these are present and
+	 *    p->cx,cy are not negative, draw a cursor at p->cx,cy highlighting
+	 *    the relevant cell.
+	 *
+	 * num,num2, if both positive, override the automatic scaling.
+	 *    The image is scaled to this many pixels.
+	 * x,y is top-left pixel in the scaled image to start display at.
+	 *    Negative values allow a margin between pane edge and this image.
+	 */
+	struct pane *p = ci->focus;
+	const char *mode = ci->str2 ?: "";
+	bool stretch = strchr(mode, 'S');
+	int w, h;
+	int x = 0, y = 0;
+	int pw, ph;
+	int xo = 0, yo = 0;
+	int cix, ciy;
+	const char *pxl;
+	short px, py;
+
+	if (!ci->comm2)
+		return Enoarg;
+
+	pxl = pane_attr_get(p, "Display:pixels");
+	if (sscanf(pxl ?: "1x1", "%hdx%hx", &px, &py) != 2)
+		px = py = 1;
+
+	w = p->w * px;
+	h = p->h * py;
+	if (ci->num > 0 && ci->num2 > 0) {
+		w = ci->num;
+		h = ci->num2;
+	} else if (ci->num > 0) {
+		int iw = comm_call(ci->comm2, "width", p);
+		int ih = comm_call(ci->comm2, "height", p);
+
+		if (iw <= 0 || ih <= 0)
+			return Efail;
+
+		w = iw * ci->num / 1024;
+		h = ih * ci->num / 1024;
+	} else if (!stretch) {
+		int iw = comm_call(ci->comm2, "width", p);
+		int ih = comm_call(ci->comm2, "height", p);
+
+		if (iw <= 0 || ih <= 0)
+			return Efail;
+
+		if (iw * h > ih * w) {
+			/* Image is wider than space, use less height */
+			ih = ih * w / iw;
+			if (strchr(mode, 'B'))
+				/* bottom */
+				y = h - ih;
+			else if (!strchr(mode, 'T'))
+				/* center */
+				y = (h - ih) / 2;
+			/* Round up to pixels-per-cell */
+			h = ((ih + py - 1) / py) * py;
+		} else {
+			/* image is too tall, use less width */
+			iw = iw * h / ih;
+			if (strchr(mode, 'R'))
+				/* right */
+				x = w - iw;
+			else if (!strchr(mode, 'L'))
+				x = (w - iw) / 2;
+			w = ((iw + px - 1) / px) * px;
+		}
+	}
+
+	comm_call(ci->comm2, "scale", p, w, NULL, NULL, h);
+	pw = p->w * px;
+	ph = p->h * py;
+	cix = ci->x;
+	ciy = ci->y;
+	if (cix < 0) {
+		xo -= cix;
+		pw += cix;
+		cix = 0;
+	}
+	if (ciy < 0) {
+		yo -= ciy;
+		ph += ciy;
+		ciy = 0;
+	}
+	if (w - cix <= pw)
+		w -= cix;
+	else
+		w = pw;
+	if (h - ciy <= ph)
+		h -= ciy;
+	else
+		h = ph;
+	comm_call(ci->comm2, "crop", p, w, NULL, NULL, h, NULL, NULL, cix, ciy);
+	comm_call(ci->comm2, "draw", p, x + xo, NULL, NULL, y + yo);
+
+	if (p->cx >= 0) {
+		int rows, cols;
+		char *cl = strchr(mode, ':');
+		if (cl && sscanf(cl, ":%dx%d", &cols, &rows) == 2)
+			comm_call(ci->comm2, "cursor", p,
+				  w/cols, NULL, NULL, h/rows, NULL, NULL,
+				  p->cx + xo, p->cy + yo);
+	}
+	return 1;
+}
+
 DEF_CMD(close_notify)
 {
 	struct window_data *wd = ci->home->data;
@@ -185,6 +318,8 @@ void window_setup(struct pane *ed safe)
 	key_add(window_map, "selection:commit", &selection_commit);
 	key_add(window_map, "selection:discard", &selection_discard);
 	key_add(window_map, "Notify:Close", &close_notify);
+
+	key_add(window_map, "Draw:scale-image", &scale_image);
 
 	call_comm("global-set-command", ed, &window_attach, 0, NULL,
 		  "attach-window-core");

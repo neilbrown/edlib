@@ -34,6 +34,7 @@ the file.
 - [ ] selection-menu item for spell-check ??
 - [ ] notmuch - capture errors about multiple Subject lines and
       display them better.
+- [ ] switch display-pygtk to use Draw:scale-image
 
 ### Small
 
@@ -56,7 +57,7 @@ the file.
 
 ### Large
 
-- [ ] image-display pane
+- [X] image-display pane
 - [ ] git-mode
 - [ ] render-markdown.py
 - [X] lib-menu
@@ -194,12 +195,19 @@ Core features
 Module features
 ---------------
 
+### render-imageview
+
+- [ ] use a document, not a magic command.  This requires multipart
+      to be able to hand over a document
+- [ ] activate from file browser somehow
+- [ ] cache the decompressed image somewhere.
+
 ### lib-menubar
 
-- enable activation via F10.  Cancel makes it disappear if configed
-  not too.  How to keep??
-- allow left/right arrows to move between menus
-- emacs to disable 'save' when cannot be saved.
+- [ ] enable activation via F10.  Cancel makes it disappear if
+      configured not too.  How to keep??
+- [ ] allow left/right arrows to move between menus
+- [ ] emacs to disable 'save' when cannot be saved.
 
 ### lib-qrcode
 
@@ -1017,7 +1025,7 @@ Possibly some of these will end up being features in other modules.
       This might support a menu-bar, or drop-downs for spelling or dynamic completion.
 - [ ] hex edit block device - mmap document type
 
-- [ ] image-display pane - e.g. can be given a png/jpeg etc file and display
+- [X] image-display pane - e.g. can be given a png/jpeg etc file and display
       it scaled, plus allow scaling and movement
 - [ ] pdf-display pane - like image-display but with multiple pages.
       Would use libpoppler.
