@@ -11,7 +11,7 @@ the file.
 
 - [X] unknown keysequence should be reported so e.g. if keyboard
       is is Greek mode, then I will be told that Cx-b doesn't work
-- [ ] menubar doesn't redraw background when resized wider.
+- [X] menubar doesn't redraw background when resized wider.
 - [X] open second x11 window, use selections.  Close it.  command
       in x11selection_Xcb gets freed???
 - [X] adding new lines at end of doc in x11 leaves phantom underline

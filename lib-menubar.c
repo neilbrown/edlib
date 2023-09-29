@@ -74,6 +74,7 @@ DEF_CMD(menubar_refresh_size)
 				    ci->home->w, ci->home->h);
 	} else {
 		pane_resize(p, 0, 0, ci->home->w, ci->home->h/3);
+		pane_damaged(p, DAMAGED_REFRESH);
 		call("render-line:measure", p, -1);
 		if (mbi->child && ci->home->h > p->h)
 			pane_resize(mbi->child, 0, p->h,
