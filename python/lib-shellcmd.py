@@ -252,6 +252,8 @@ def shell_attach(key, focus, comm2, num, str, str2, **a):
     if not p:
         return edlib.Efail
     focus['view-default'] = 'shell-viewer'
+    if str2:
+        focus['dirname'] = str2
     try:
         p.call("shell-run", num&1, num & 16, str, str2)
     except edlib.commandfailed:

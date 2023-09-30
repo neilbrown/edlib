@@ -24,7 +24,7 @@ the file.
 - [X] Add menubar menu with recent documents?
 - [X] why does clicking on status line go to top-of-file?
 - [X] search hangs when seeking "^( *)"
-- [ ] selection-menu item to show git-commit from list of known git
+- [X] selection-menu item to show git-commit from list of known git
       trees
 - [ ] selection-menu item for word-count
 - [ ] selection-menu item for QR-code
@@ -762,6 +762,7 @@ Module features
 
 ### git-mode
 
+- [ ] configure list of known git repos
 - [ ] log view (:C-c l?) which uses --max-count and --skip to only
       collect enough log entries to fill the display.  Or better: have a
       shell mode which only reads from pipe if insertion position is

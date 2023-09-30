@@ -2376,7 +2376,6 @@ DEF_CMD(emacs_selection_menu)
 {
 	struct pane *p;
 
-	call("Message", ci->focus, 0, NULL, "So .... you want a menu do you?");
 	p = call_ret(pane, "attach-menu", ci->focus, 0, NULL, "V", 0, NULL,
 		     "emacs:selection-menu-action", ci->x, ci->y+1);
 	if (!p)
@@ -2409,7 +2408,7 @@ DEF_CMD(emacs_selection_menu_add)
 	call("menu-add", p, 0, NULL, "Cut", 0, NULL, ":C-W");
 	call("menu-add", p, 0, NULL, "Copy", 0, NULL, ":A-w");
 	call("menu-add", p, 0, NULL, "Paste-in", 0, NULL, ":C-Y");
-	return 1;
+	return Efallthrough;
 }
 
 DEF_CMD(emacs_goto_line)
