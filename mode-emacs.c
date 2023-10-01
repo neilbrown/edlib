@@ -5,8 +5,6 @@
  * Define some keystrokes to create an editor with an
  * "emacs" feel.
  *
- * We register an 'emacs' mode and associate keys with that
- * in the global keymap.
  */
 #define _GNU_SOURCE /*  for asprintf */
 #include <unistd.h>
@@ -3605,7 +3603,11 @@ DEF_LOOKUP_CMD(mode_emacs, emacs_map);
 
 DEF_CMD(attach_mode_emacs)
 {
-	call_comm("global-set-keymap", ci->focus, &mode_emacs.c);
+	struct pane *p = pane_register(ci->focus, 0, &mode_emacs.c, NULL);
+
+	if (!p)
+		return Efail;
+	comm_call(ci->comm2, "cb", p);
 	return 1;
 }
 
