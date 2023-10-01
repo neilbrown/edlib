@@ -431,7 +431,10 @@ DEF_CMD(menubar_attach)
 	mbi->bar = mbp;
 	pane_add_notify(ret, mbp, "Notify:Close");
 	pane_damaged(ret, DAMAGED_VIEW);
-	return comm_call(ci->comm2, "callback:attach", ret);
+	comm_call(ci->comm2, "callback:attach", ret);
+	/* Allow pane close to root to register */
+	call("menubar:ready", ret);
+	return 1;
 }
 
 void edlib_init(struct pane *ed safe)

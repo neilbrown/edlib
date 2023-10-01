@@ -3381,6 +3381,28 @@ DEF_CMD(emacs_menu_refresh)
 	return 1;
 }
 
+static char *menus[][3] = {
+	{ "Help/Recent", ":F1 l", "R" },
+	{ "Documents/List all", ":C-X :C-B", "R"},
+	{ "File/Open", ":C-X :C-F", "L"},
+	{ "File/Save", ":C-X :C-S", "L"},
+	{ "File/Exit", ":C-X :C-C", "L"},
+	{ "Edit/Copy", ":A-w", "L"},
+};
+
+DEF_CMD(emacs_menubar_configure)
+{
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(menus); i++)
+		call("menubar-add", ci->focus,
+		     menus[i][2][0] == 'R' ? 2 : 0,
+		     NULL, menus[i][0],
+		     0, NULL, menus[i][1]);
+	/* Allow other ancestor to configure */
+	return Efallthrough;
+}
+
 DEF_PFX_CMD(cx_cmd, ":CX");
 DEF_PFX_CMD(cx4_cmd, ":CX4");
 DEF_PFX_CMD(cx5_cmd, ":CX5");
@@ -3574,29 +3596,16 @@ static void emacs_init(void)
 	key_add(m, "menu:refresh", &emacs_menu_refresh);
 	key_add_prefix(m, "emacs:doc-menu:", &emacs_doc_menu);
 
+	key_add(m, "menubar:ready", &emacs_menubar_configure);
+
 	emacs_map = m;
 }
 
 DEF_LOOKUP_CMD(mode_emacs, emacs_map);
 
-static char *menus[][3] = {
-	{ "Help/Recent", ":F1 l", "R" },
-	{ "Documents/List all", ":C-X :C-B", "R"},
-	{ "File/Open", ":C-X :C-F", "L"},
-	{ "File/Save", ":C-X :C-S", "L"},
-	{ "File/Exit", ":C-X :C-C", "L"},
-	{ "Edit/Copy", ":A-w", "L"},
-};
-
 DEF_CMD(attach_mode_emacs)
 {
-	unsigned int i;
 	call_comm("global-set-keymap", ci->focus, &mode_emacs.c);
-	for (i = 0; i < ARRAY_SIZE(menus); i++)
-		call("menubar-add", ci->focus,
-		     menus[i][2][0] == 'R' ? 2 : 0,
-		     NULL, menus[i][0],
-		     0, NULL, menus[i][1]);
 	return 1;
 }
 
