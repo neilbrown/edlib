@@ -90,7 +90,7 @@ SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
 	O/lib-menu.o O/lib-unicode-names.o O/lib-askpass.o \
 	O/lib-test-markup.o O/lib-menubar.o O/lib-rangetrack.o \
 	O/lang-python.o \
-	O/mode-emacs.o O/emacs-search.o \
+	O/mode-basic.o O/mode-emacs.o O/emacs-search.o \
 	O/display-ncurses.o
 XOBJ = O/rexel.o
 WOBJ = O/libwiggle.a

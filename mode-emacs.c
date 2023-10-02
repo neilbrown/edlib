@@ -21,7 +21,6 @@
 #include "core.h"
 #include "core-pane.h"
 
-static struct map *emacs_map;
 static const char * safe file_normalize(struct pane *p safe, const char *path,
 					const char *initial_path);
 
@@ -58,58 +57,6 @@ REDEF_CMD(emacs_delete);
 REDEF_CMD(emacs_kill);
 REDEF_CMD(emacs_case);
 REDEF_CMD(emacs_swap);
-
-/* emacs:active encodes 4 different states for the selection
- * 0 - inactive.  The other-end might exist but it is passive, not displayed
- *                and not used unless explicitly asked for (Cx Cx)
- * 1 - active.    Selection is active and will remain active if cursor
- *                moves or text is changed.  Is used in various ways.
- * 2 - transient. Is active, but will be canceled on movement or change.
- *                Will be used for copy/cut, but little else
- * 3 - replacable Transient plus text entry will delete selected content.
- */
-
-static void set_selection(struct pane *p safe, struct mark *pt,
-			  struct mark *mk, int type)
-{
-	int active;
-	if (!type || !mk)
-		return;
-	active = attr_find_int(mk->attrs, "emacs:active");
-	if (active == type)
-		return;
-	attr_set_int(&mk->attrs, "emacs:active", type);
-	if (!pt)
-		pt = call_ret(mark, "doc:point", p);
-	if (!pt)
-		return;
-	if (active <= 0)
-		attr_set_int(&pt->attrs, "selection:active", 1);
-	if (!mark_same(pt, mk))
-		call("view:changed", p, 0, pt, NULL, 0, mk);
-}
-
-static bool clear_selection(struct pane *p safe, struct mark *pt,
-			    struct mark *mk, int type)
-{
-	int active;
-	if (!mk)
-		return False;
-	active = attr_find_int(mk->attrs, "emacs:active");
-	if (active <= 0)
-		return False;
-	if (type && active < type)
-		return False;
-	attr_set_int(&mk->attrs, "emacs:active", 0);
-	if (!pt)
-		pt = call_ret(mark, "doc:point", p);
-	if (!pt)
-		return True;
-	attr_set_int(&pt->attrs, "selection:active", 0);
-	if (!mark_same(pt, mk))
-		call("view:changed", p, 0, pt, NULL, 0, mk);
-	return True;
-}
 
 static struct move_command {
 	struct command	cmd;
@@ -203,7 +150,7 @@ REDEF_CMD(emacs_move)
 	if (strcmp(mv->type, "doc:file") == 0) {
 		mk = call_ret(mark2, "doc:point", ci->focus);
 		if (mk)
-			/* Don't change emacs:active */
+			/* Don't change selection:active */
 			mark_to_mark(mk, ci->mark);
 		else {
 			call("Move-to", ci->focus, 1, ci->mark);
@@ -222,7 +169,7 @@ REDEF_CMD(emacs_move)
 
 	mk = call_ret(mark2, "doc:point", ci->focus);
 	/* Discard a transient selection */
-	clear_selection(ci->focus, NULL, mk, 2);
+	call("selection:clear", ci->focus, 2, mk);
 
 	return 1;
 }
@@ -238,9 +185,9 @@ REDEF_CMD(emacs_delete)
 
 	mk = call_ret(mark2, "doc:point", ci->focus);
 	/* If selection is replacable, clear it and use mk */
-	if (!clear_selection(ci->focus, NULL, mk, 3)) {
+	if (call("selection:clear", ci->focus, 3, mk) == Efalse) {
 		/* else clear any transient selection */
-		clear_selection(ci->focus, NULL, mk, 2);
+		call("selection:clear", ci->focus, 2, mk);
 		mk = NULL;
 	}
 
@@ -580,18 +527,16 @@ REDEF_CMD(emacs_simple_str)
 
 	if (!ci->mark)
 		return Enoarg;
-	if (clear_selection(ci->focus, NULL, mk, 0))
+	if (call("selection:clear", ci->focus, 0, mk) >= 1)
 		str = call_ret(strsave, "doc:get-str", ci->focus, 0, NULL, NULL, 0, mk);
 
 	return call(sc->type, ci->focus, ci->num, ci->mark, str, 0, mk);
 }
 
-REDEF_CMD(emacs_insert);
-
 DEF_CMD(emacs_close_others)
 {
 	if (strcmp(ci->key, "K-1") == 0 && N2(ci) != N2_close_others)
-		return emacs_insert_func(ci);
+		return Efallthrough;
 
 	if (call("Window:close-others", ci->focus) <= 0)
 		return Efalse;
@@ -649,36 +594,6 @@ DEF_CMD(emacs_exit)
 	return 1;
 }
 
-DEF_CMD(emacs_insert)
-{
-	int ret;
-	const char *str;
-	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
-	char dc[20];
-	bool first = N2(ci) != N2_undo_insert;
-
-	if (!ci->mark)
-		return Enoarg;
-
-	if (clear_selection(ci->focus, NULL, mk, 3)) {
-		call("Replace", ci->focus, 1, mk, NULL, !first);
-		first = False;
-	} else
-		clear_selection(ci->focus, NULL, mk, 2);
-
-	str = ksuffix(ci, "K-");
-	/* Resubmit as doc:char-$str.  By default this will be inserted
-	 * but panes like lib-viewer might have other plans.
-	 * lib-viewer could catch the original "K-", but sometimes
-	 * the major mode might not want that.
-	 */
-	strcat(strcpy(dc, "doc:char-"), str);
-	ret = call(dc, ci->focus, ci->num, ci->mark, NULL, !first);
-	call("Mode:set-num2", ci->focus, N2_undo_insert);
-
-	return ret < 0 ? ret : 1;
-}
-
 DEF_CMD(emacs_quote_insert)
 {
 	int ret;
@@ -689,11 +604,11 @@ DEF_CMD(emacs_quote_insert)
 	if (!ci->mark)
 		return Enoarg;
 
-	if (clear_selection(ci->focus, NULL, ci->mark, 3)) {
+	if (call("selection:clear", ci->focus, 3, ci->mark) >= 1) {
 		call("Replace", ci->focus, 1, ci->mark, NULL, !first);
 		first = False;
 	} else
-		clear_selection(ci->focus, NULL, ci->mark, 2);
+		call("selection:clear", ci->focus, 2, ci->mark);
 
 	str = ksuffix(ci, "K:CQ-");
 	if (!str[0]) {
@@ -710,96 +625,11 @@ DEF_CMD(emacs_quote_insert)
 	return ret < 0 ? ret : 1;
 }
 
-static struct {
-	char *key;
-	char *insert;
-} other_inserts[] = {
-	{"K:Tab", "\t"},
-	{"K:LF", "\n"},
-	{"K:Enter", "\n"},
-	{"K:C-O", "\0\n"},
-	{NULL, NULL}
-};
-
-DEF_CMD(emacs_insert_other)
+DEF_CMD(emacs_open_line)
 {
-	int ret;
-	int i;
-	struct mark *m = NULL;
-	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
-	bool first = N2(ci) != N2_undo_insert;
-	char *ins;
-
-	if (!ci->mark)
-		return Enoarg;
-
-	for (i = 0; other_inserts[i].key; i++)
-		if (strcmp(safe_cast other_inserts[i].key, ci->key) == 0)
-			break;
-	ins = other_inserts[i].insert;
-	if (ins == NULL)
-		return Efallthrough;
-
-	if (clear_selection(ci->focus, NULL, mk, 3)) {
-		call("Replace", ci->focus, 1, mk, NULL, !first);
-		first = False;
-	} else
-		clear_selection(ci->focus, NULL, mk, 2);
-
-	if (!*ins) {
-		ins++;
-		m = mark_dup(ci->mark);
-		/* Move m before ci->mark, so it doesn't move when we insert */
-		mark_step(m, 0);
-	}
-
-	ret = call("Replace", ci->focus, 1, m, ins, !first, ci->mark);
-	if (m) {
-		mark_to_mark(ci->mark, m);
-		mark_free(m);
-	}
-	/* A newline starts a new undo */
-	call("Mode:set-num2", ci->focus, (*ins == '\n') ? 0 : N2_undo_insert);
-	return ret < 0 ? ret : 1;
-}
-
-DEF_CMD(emacs_interactive_insert)
-{
-	/* If some pane want to insert text just like it was typed,
-	 * it calls this, and we set up for proper undo
-	 */
-	int ret;
-	bool first = N2(ci) != N2_undo_insert;
-
-	if (!ci->str)
-		return Enoarg;
-
-	if (clear_selection(ci->focus, NULL, ci->mark, 3)) {
-		call("Replace", ci->focus, 1, ci->mark, NULL, !first);
-		first = False;
-	} else
-		clear_selection(ci->focus, NULL, ci->mark, 2);
-	ret = call("Replace", ci->focus, 1, ci->mark, ci->str,
-		   !first);
-	call("Mode:set-num2", ci->focus,
-	     strchr(ci->str, '\n') ? 0 : N2_undo_insert);
-	return ret < 0 ? ret : 1;
-}
-
-DEF_CMD(emacs_interactive_delete)
-{
-	/* If some pane want to delete text just like backspace was typed,
-	 * it calls this, and we set up for proper undo
-	 */
-	int ret;
-
-	if (!ci->str)
-		return Enoarg;
-	ret = call("Replace", ci->focus, 1, ci->mark, "",
-		   N2(ci) == N2_undo_insert, ci->mark2);
-	call("Mode:set-num2", ci->focus,
-	     strchr(ci->str, '\n') ? 0 : N2_undo_delete);
-	return ret < 0 ? ret : 1;
+	if (call("Interactive:insert", ci->focus, 0, ci->mark, "\n") > 0)
+		call("Move-Char", ci->focus, -1, ci->mark);
+	return 1;
 }
 
 DEF_CMD(emacs_undo)
@@ -1769,7 +1599,7 @@ DEF_CB(shell_insert_cb)
 	char *str = call_ret(str, "doc:get-str", ci->focus);
 	struct mark *mk = call_ret(mark2, "doc:point", ci->home);
 
-	if (clear_selection(ci->home, NULL, mk, 3))
+	if (call("selection:clear", ci->home, 3, mk) >= 1)
 		call("Replace", ci->home, 1, mk);
 	call("Replace", ci->home, 0, NULL, str);
 	free(str);
@@ -1828,7 +1658,7 @@ DEF_CMD(emacs_shell)
 			input = call_ret(str, "doc:get-str", ci->focus,
 					 0, NULL, NULL, 0, mk);
 			/* make the selection replacable */
-			attr_set_int(&mk->attrs, "emacs:active", 3);
+			attr_set_int(&mk->attrs, "selection:active", 3);
 		}
 	}
 	doc = call_ret(pane, "doc:from-text", ci->focus, 0, NULL, name, 0, NULL,
@@ -2187,23 +2017,15 @@ DEF_CMD(emacs_mark)
 {
 	struct mark *m = call_ret(mark2, "doc:point", ci->focus);
 
-	clear_selection(ci->focus, NULL, m, 0);
+	call("selection:clear", ci->focus, 0, m);
 
 	call("Move-to", ci->focus, 1);
 	m = call_ret(mark2, "doc:point", ci->focus);
 	if (m)
 		/* ci->num == 1 means replacable */
-		set_selection(ci->focus, NULL, m, ci->num == 1 ? 3 : 1);
+		call("selection:set", ci->focus,
+		     ci->num == 1 ? 3 : 1, m);
 	return 1;
-}
-
-DEF_CMD(emacs_abort)
-{
-	/* On abort, forget mark */
-	struct mark *m = call_ret(mark2, "doc:point", ci->focus);
-
-	clear_selection(ci->focus, NULL, m, 0);
-	return Efallthrough;
 }
 
 DEF_CMD(emacs_swap_mark)
@@ -2216,7 +2038,8 @@ DEF_CMD(emacs_swap_mark)
 	m = mark_dup(mk);
 	call("Move-to", ci->focus, 1); /* Move mark to point */
 	call("Move-to", ci->focus, 0, m); /* Move point to old mark */
-	set_selection(ci->focus, NULL, mk, ci->num == 1 ? 3 : 1);
+	call("selection:set", ci->focus,
+	     ci->num == 1 ? 3 : 1, mk);
 	mark_free(m);
 	return 1;
 }
@@ -2239,7 +2062,7 @@ DEF_CMD(emacs_wipe)
 		call("copy:save", ci->focus, 0, NULL, str);
 	ret = call("Replace", ci->focus, 1, mk);
 	/* Clear mark */
-	clear_selection(ci->focus, NULL, mk, 0);
+	call("selection:clear", ci->focus, 0, mk);
 
 	return ret;
 }
@@ -2260,7 +2083,7 @@ DEF_CMD(emacs_copy)
 	if (str && *str)
 		call("copy:save", ci->focus, 0, NULL, str);
 	/* Clear current highlight */
-	clear_selection(ci->focus, NULL, mk, 0);
+	call("selection:clear", ci->focus, 0, mk);
 	return 1;
 }
 
@@ -2280,7 +2103,7 @@ DEF_CMD(emacs_yank)
 		return 1;
 	/* If mark exists and is active, replace marked regions */
 	mk = call_ret(mark2, "doc:point", ci->focus);
-	if (mk && clear_selection(ci->focus, NULL, mk, 0)) {
+	if (mk && call("selection:clear", ci->focus, 0, mk) >= 1) {
 		char *str2 = call_ret(strsave, "doc:get-str", ci->focus,
 				      0, NULL, NULL, 0, mk);
 		if (str2 && *str2)
@@ -2324,82 +2147,6 @@ DEF_CMD(emacs_yank_pop)
 	return 1;
 }
 
-DEF_CMD(emacs_attrs)
-{
-	struct call_return cr;
-	int active;
-	char *selection = "bg:white-80,vis-nl,menu-at-mouse,action-menu:emacs:selection-menu"; // grey
-
-	if (!ci->str)
-		return Enoarg;
-
-	cr = call_ret(all, "doc:point", ci->focus);
-	if (cr.ret <= 0 || !cr.m || !cr.m2 || !ci->mark)
-		return 1;
-	active = attr_find_int(cr.m2->attrs, "emacs:active");
-	if (active <= 0)
-		return 1;
-	if (active >= 3) /* replacable */
-		selection = "bg:red+80,vis-nl"; // pink
-	if (mark_same(cr.m, cr.m2))
-		return 1;
-	if (strcmp(ci->str, "render:interactive-mark") == 0) {
-		if (ci->mark == cr.m2 && cr.m2->seq < cr.m->seq)
-			return comm_call(ci->comm2, "attr:callback", ci->focus, 0,
-					 ci->mark, selection, 210);
-		if (ci->mark == cr.m2)
-			return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
-					 ci->mark, selection, 210);
-	}
-	if (strcmp(ci->str, "render:interactive-point") == 0) {
-		if (cr.m == ci->mark && cr.m->seq < cr.m2->seq)
-			return comm_call(ci->comm2, "attr:cb", ci->focus, 0,
-					 ci->mark, selection, 210);
-		if (cr.m == ci->mark)
-			return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
-					 ci->mark, selection, 210);
-	}
-	if (strcmp(ci->str, "start-of-line") == 0) {
-		if ((cr.m->seq < ci->mark->seq && ci->mark->seq < cr.m2->seq &&
-		     !mark_same(ci->mark, cr.m2)) ||
-		    (cr.m2->seq < ci->mark->seq && ci->mark->seq < cr.m->seq &&
-		     !mark_same(ci->mark, cr.m)))
-			return comm_call(ci->comm2, "attr:cb", ci->focus, 0,
-					 ci->mark, selection, 210);
-	}
-	return Efallthrough;
-}
-
-DEF_CMD(emacs_selection_menu)
-{
-	struct pane *p;
-
-	p = call_ret(pane, "attach-menu", ci->focus, 0, NULL, "V", 0, NULL,
-		     "emacs:selection-menu-action", ci->x, ci->y+1);
-	if (!p)
-		return Efail;
-	call("global-multicall-selection-menu:add-", p);
-	call("menu-add", p, 0, NULL, "de-select", 0, NULL, ":ESC");
-	return 1;
-}
-
-DEF_CMD(emacs_selection_menu_action)
-{
-	struct pane *home = ci->home;
-	const char *c = ci->str;
-
-	if (!c)
-		return 1;
-	if (*c == ' ') {
-		/* command for focus */
-		call(c+1, ci->focus, 0, ci->mark);
-		return 1;
-	}
-
-	call("Keystroke-sequence", home, 0, NULL, c);
-	return 1;
-}
-
 DEF_CMD(emacs_selection_menu_add)
 {
 	struct pane *p = ci->focus;
@@ -2429,7 +2176,7 @@ DEF_CMD(emacs_next_match)
 DEF_CMD(emacs_match_again)
 {
 	if (N2(ci) != N2_match)
-		return emacs_insert_func(ci);
+		return Efallthrough;
 	else
 		return emacs_next_match_func(ci);
 }
@@ -2439,205 +2186,6 @@ DEF_CMD(emacs_make)
 	call("interactive-cmd-make", ci->focus,
 	     ci->num, ci->mark, NULL,
 	     strcmp(ci->key, "K:CC:C-M") == 0);
-	return 1;
-}
-
-static void update_sel(struct pane *p safe,
-		       struct mark *pt safe, struct mark *m2 safe,
-		       const char *type)
-{
-	struct mark *mfirst, *mlast;
-	struct mark *mk;
-
-	call("Move-to", p, 1, m2);
-	mk = call_ret(mark2, "doc:point", p);
-	if (!mk)
-		return;
-	if (!type)
-		type = attr_find(m2->attrs, "emacs:selection-type");
-	else
-		attr_set_str(&m2->attrs, "emacs:selection-type", type);
-
-	if (type && strcmp(type, "char") != 0) {
-
-		if (pt->seq < mk->seq) {
-			mfirst = pt;
-			mlast = mk;
-		} else {
-			mfirst = mk;
-			mlast = pt;
-		}
-		if (strcmp(type, "word") == 0) {
-			wint_t wch = doc_prior(p, mfirst);
-			/* never move back over spaces */
-			if (wch != WEOF && !iswspace(wch))
-				call("doc:word", p, -1,  mfirst);
-			wch = doc_following(p, mlast);
-			/* For forward over a single space is OK */
-			if (wch != WEOF && iswspace(wch))
-				doc_next(p, mlast);
-			else
-				call("doc:word", p, 1, mlast);
-		} else {
-			call("doc:EOL", p, -1,  mfirst);
-			/* Include trailing newline */
-			call("doc:EOL", p, 1, mlast, NULL, 1);
-		}
-	}
-
-	/* Don't set selection until range is non-empty, else we
-	 * might clear some other selection too early.
-	 */
-	if (!mark_same(pt, mk)) {
-		/* Must call 'claim' first as it might be claiming from us */
-		call("selection:claim", p);
-		set_selection(p, pt, mk, 2);
-	}
-}
-
-DEF_CMD(emacs_press)
-{
-	/* The second mark (managed by core-doc) is used to record the
-	 * selected starting point.  When double- or triple- click
-	 * asks for word or line selection, the actually start, which
-	 * is stored in the first mark, may be different.
-	 * That selected starting point will record the current unit
-	 * siez in the emacs:selection-type attribute.
-	 */
-	struct mark *pt = call_ret(mark, "doc:point", ci->focus);
-	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
-	struct mark *m2 = call_ret(mark2, "doc:point", ci->focus, 2);
-	struct mark *m = mark_new(ci->focus);
-	char *type;
-
-	if (!m || !pt) {
-		/* Not in document, not my problem */
-		mark_free(m);
-		return Efallthrough;
-	}
-	/* NOTE must find new location before view changes. */
-	call("Move-CursorXY", ci->focus, 0, m, NULL, 0, NULL, NULL, ci->x, ci->y);
-
-	clear_selection(ci->focus, pt, mk, 0);
-	call("Move-to", ci->focus, 0, m);
-	pane_take_focus(ci->focus);
-
-	if (m2 && strcmp(ci->key, "M:DPress-1") == 0) {
-		type = attr_find(m2->attrs, "emacs:selection-type");
-		if (!type)
-			type = "char";
-		else if (strcmp(type, "char") == 0)
-			type = "word";
-		else if (strcmp(type, "word") == 0)
-			type = "line";
-		else
-			type = "char";
-	} else {
-		type = "char";
-		/* Record start of selection */
-		call("Move-to", ci->focus, 2, m);
-		m2 = call_ret(mark2, "doc:point", ci->focus, 2);
-		if (m2)
-			attr_set_str(&m2->attrs, "emacs:selection-type", type);
-	}
-	if (m2) {
-		/* Record co-ordinate of start so we can tell if the mouse moved. */
-		attr_set_int(&m2->attrs, "emacs:track-selection",
-			     1 + ci->x * 10000 + ci->y);
-		update_sel(ci->focus, pt, m2, type);
-	}
-	mark_free(m);
-
-	return 1;
-}
-
-DEF_CMD(emacs_release)
-{
-	struct mark *p = call_ret(mark, "doc:point", ci->focus);
-	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
-	struct mark *m2 = call_ret(mark2, "doc:point", ci->focus, 2);
-	struct mark *m = mark_new(ci->focus);
-	char *type;
-	int prev_pos;
-	int moved;
-
-	if (!p || !m2 || !m) {
-		/* Not in a document or no selection start - not my problem */
-		mark_free(m);
-		return Efallthrough;
-	}
-
-	prev_pos = attr_find_int(m2->attrs, "emacs:track-selection");
-	type = attr_find(m2->attrs, "emacs:selection-type");
-	moved = prev_pos != (1 + ci->x * 10000 + ci->y);
-	attr_set_int(&m2->attrs, "emacs:track-selection", 0);
-
-	call("Move-CursorXY", ci->focus,
-	     0, m, "activate", 0, NULL, NULL, ci->x, ci->y);
-	/* That action might have closed a pane.  Better check... */
-	if (ci->focus->damaged & DAMAGED_CLOSED) {
-		/* Do nothing */
-	} else if (moved) {
-		/* Moved the mouse, so new location is point */
-		call("Move-to", ci->focus, 0, m);
-		update_sel(ci->focus, p, m2, NULL);
-	} else if (type && strcmp(type, "char") != 0) {
-		/* Otherwise use the old location.  Point might not
-		 * be there exactly if it was moved to end of word/line
-		 */
-		call("Move-to", ci->focus, 0, m2);
-		update_sel(ci->focus, p, m2, NULL);
-	} else
-		clear_selection(ci->focus, p, mk, 0);
-
-	mark_free(m);
-
-	return 1;
-}
-
-DEF_CMD(emacs_menu_open)
-{
-	/* If there is a menu action here, activate it. */
-	/* Don't move the cursor though */
-	struct mark *m = mark_new(ci->focus);
-	int ret;
-
-	ret = call("Move-CursorXY", ci->focus, 0, m, "menu",
-		   0, NULL, NULL, ci->x, ci->y);
-	mark_free(m);
-	return ret;
-}
-
-DEF_CMD(emacs_menu_select)
-{
-	/* If a menu was opened it should have claimed the mouse focus
-	 * so ci->focus is now the menu.  We want to activate the entry
-	 * under the mouse
-	 */
-	struct mark *m = mark_new(ci->focus);
-	int ret;
-
-	ret = call("Move-CursorXY", ci->focus, 0, m, "activate",
-		   0, NULL, NULL, ci->x, ci->y);
-	mark_free(m);
-	return ret;
-}
-
-DEF_CMD(emacs_motion)
-{
-	struct mark *p = call_ret(mark, "doc:point", ci->focus);
-	struct mark *m2 = call_ret(mark2, "doc:point", ci->focus, 2);
-
-	if (!p || !m2)
-		return Enoarg;
-
-	if (attr_find_int(m2->attrs, "emacs:track-selection") <= 0)
-		return Efallthrough;
-
-	call("Move-CursorXY", ci->focus,
-	     0, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
-
-	update_sel(ci->focus, p, m2, NULL);
 	return 1;
 }
 
@@ -2658,59 +2206,6 @@ DEF_CMD(emacs_paste)
 	call("Replace", ci->focus, 0, NULL, str);
 
 	pane_take_focus(ci->focus);
-
-	return 1;
-}
-
-DEF_CMD(emacs_paste_direct)
-{
-	/* This command is an explicit paste command and the content
-	 * is available via "Paste:get".
-	 * It might come via the mouse (with x,y) or via a keystroke.
-	 */
-	char *s;
-	if (ci->key[0] == 'M') {
-		call("Move-CursorXY", ci->focus,
-		     0, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
-		pane_take_focus(ci->focus);
-	}
-
-	s = call_ret(str, "Paste:get", ci->focus);
-	if (s && *s) {
-		struct mark *pt = call_ret(mark, "doc:point", ci->focus);
-		struct mark *mk;
-		call("Move-to", ci->focus, 1);
-		mk = call_ret(mark2, "doc:point", ci->focus);
-		call("Replace", ci->focus, 0, mk, s, 0, pt);
-		set_selection(ci->focus, pt, mk, 2);
-	}
-	free(s);
-	return 1;
-}
-
-DEF_CMD(emacs_sel_claimed)
-{
-	/* Should possibly just change the color of our selection */
-	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
-
-	clear_selection(ci->focus, NULL, mk, 0);
-	return 1;
-}
-
-DEF_CMD(emacs_sel_commit)
-{
-	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
-	struct mark *p = call_ret(mark, "doc:point", ci->focus);
-
-	if (p && mk && !mark_same(p, mk)) {
-		char *str;
-
-		str = call_ret(strsave, "doc:get-str", ci->focus,
-			       0, p, NULL,
-			       0, mk);
-		if (str && *str)
-			call("copy:save", ci->focus, 0, NULL, str);
-	}
 
 	return 1;
 }
@@ -2776,7 +2271,7 @@ DEF_CMD(emacs_shift)
 DEF_CMD(emacs_shift_again)
 {
 	if (N2(ci) != N2_shift)
-		return emacs_insert_func(ci);
+		return Efallthrough;
 	else
 		return emacs_shift_func(ci);
 }
@@ -2795,7 +2290,7 @@ DEF_CMD(emacs_growx)
 DEF_CMD(emacs_growx_again)
 {
 	if (N2(ci) != N2_growx)
-		return emacs_insert_func(ci);
+		return Efallthrough;
 	else
 		return emacs_growx_func(ci);
 }
@@ -2879,7 +2374,7 @@ DEF_CMD(emacs_word_count)
 		return Enoarg;
 
 	mk = call_ret(mark2, "doc:point", p);
-	if (mk && attr_find_int(mk->attrs, "emacs:active") <= 0)
+	if (mk && attr_find_int(mk->attrs, "selection:active") <= 0)
 		mk = NULL;
 	call("CountLines", p, 0, ci->mark);
 	wp = attr_find_int(ci->mark->attrs, "word");
@@ -2903,7 +2398,7 @@ DEF_CMD(emacs_fill)
 	struct mark *p = call_ret(mark, "doc:point", ci->focus);
 	struct pane *p2;
 
-	if (!clear_selection(ci->focus, p, mk, 0))
+	if (call("selection:clear", ci->focus, 0, mk, NULL, 0, p) == Efalse)
 		mk = NULL;
 
 	if (strcmp(ci->key, "K:A-q") == 0) {
@@ -2995,7 +2490,7 @@ DEF_CMD(emacs_macro_run)
 	int cnt = RPT_NUM(ci);
 
 	if (strcmp(ci->key, "K-e") == 0 && N2(ci) != N2_runmacro)
-		return emacs_insert_func(ci);
+		return Efallthrough;
 
 	if (cnt < 1)
 		cnt = 1;
@@ -3280,7 +2775,7 @@ DEF_CMD(emacs_quote)
 		}
 	} else if (wch == WEOF && ci->mark &&
 		   (mk = call_ret(mark2, "doc:point", ci->focus)) != NULL &&
-		   clear_selection(ci->focus, NULL, mk, 0) &&
+		   call("selection:clear", ci->focus, 0, mk) >= 1 &&
 		   (str = call_ret(strsave, "doc:get-str", ci->focus,
 				   0, NULL, NULL, 0, mk)) != NULL) {
 		int x;
@@ -3406,7 +2901,9 @@ DEF_PFX_CMD(cx4_cmd, ":CX4");
 DEF_PFX_CMD(cx5_cmd, ":CX5");
 DEF_PFX_CMD(cx44_cmd, ":CX44");
 DEF_PFX_CMD(cc_cmd, ":CC");
-DEF_PFX_CMD(help_cmd, ":Help");
+
+static struct map *emacs_map;
+DEF_LOOKUP_CMD(mode_emacs, emacs_map);
 
 static void emacs_init(void)
 {
@@ -3424,7 +2921,6 @@ static void emacs_init(void)
 	key_add(m, "K:CX4-4", &cx44_cmd.c);
 	key_add(m, "K:CX4:C-\\", &cx44_cmd.c);
 	key_add(m, "K:C-C", &cc_cmd.c);
-	key_add(m, "K:F1", &help_cmd.c);
 
 	key_add(m, "K:C-Q", &emacs_quote);
 
@@ -3442,14 +2938,7 @@ static void emacs_init(void)
 		key_add(m, sc->k, &sc->cmd);
 	}
 
-	key_add_range(m, "K- ", "K-~", &emacs_insert);
-	key_add_range(m, "K-\200", "K-\377\377\377\377", &emacs_insert);
-	key_add(m, "K:Tab", &emacs_insert_other);
-	//key_add(m, "K:LF", &emacs_insert_other);
-	key_add(m, "K:Enter", &emacs_insert_other);
-	key_add(m, "K:C-O", &emacs_insert_other);
-	key_add(m, "Interactive:insert", &emacs_interactive_insert);
-	key_add(m, "Interactive:delete", &emacs_interactive_delete);
+	key_add(m, "K:C-O", &emacs_open_line);
 
 	key_add(m, "K:C-_", &emacs_undo);
 	key_add(m, "K:CX-u", &emacs_undo);
@@ -3527,15 +3016,10 @@ static void emacs_init(void)
 	key_add(m, "K:C- ", &emacs_mark);
 	key_add(m, "mode-set-mark", &emacs_mark);
 	key_add(m, "mode-swap-mark", &emacs_swap_mark);
-	key_add(m, "Abort", &emacs_abort);
-	key_add(m, "Cancel", &emacs_abort);
 	key_add(m, "K:C-W", &emacs_wipe);
 	key_add(m, "K:A-w", &emacs_copy);
 	key_add(m, "K:C-Y", &emacs_yank);
 	key_add(m, "K:A-y", &emacs_yank_pop);
-	key_add(m, "map-attr", &emacs_attrs);
-	key_add(m, "emacs:selection-menu", &emacs_selection_menu);
-	key_add(m, "emacs:selection-menu-action", &emacs_selection_menu_action);
 
 	key_add(m, "K:A-g", &emacs_goto_line);
 	key_add(m, "K:A-x", &emacs_command);
@@ -3572,19 +3056,8 @@ static void emacs_init(void)
 	key_add(m, "interactive-cmd-version", &emacs_version);
 	key_add(m, "interactive-cmd-log", &emacs_log);
 
-	key_add(m, "M:Press-1", &emacs_press);
-	key_add(m, "M:Release-1", &emacs_release);
-	key_add(m, "M:Press-3", &emacs_menu_open);
-	key_add(m, "M:Release-3", &emacs_menu_select);
-	key_add(m, "M:DPress-1", &emacs_press);
 	key_add(m, "M:Click-2", &emacs_paste);
 	key_add(m, "M:C:Click-1", &emacs_paste);
-	key_add(m, "M:Motion", &emacs_motion);
-	key_add(m, "K:Paste", &emacs_paste_direct);
-	key_add(m, "M:Paste", &emacs_paste_direct);
-
-	key_add(m, "Notify:selection:claimed", &emacs_sel_claimed);
-	key_add(m, "Notify:selection:commit", &emacs_sel_commit);
 
 	key_add(m, "K:CX-(", &emacs_macro_start);
 	key_add(m, "K:CX-)", &emacs_macro_stop);
@@ -3598,8 +3071,6 @@ static void emacs_init(void)
 
 	emacs_map = m;
 }
-
-DEF_LOOKUP_CMD(mode_emacs, emacs_map);
 
 DEF_CMD(attach_mode_emacs)
 {

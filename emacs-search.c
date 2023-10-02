@@ -406,7 +406,7 @@ DEF_CMD(search_done)
 	call("Move-to", esi->target, 1);
 	mk = call_ret(mark2, "doc:point", esi->target);
 	if (mk)
-		attr_set_int(&mk->attrs, "emacs:active", 0);
+		attr_set_int(&mk->attrs, "selection:active", 0);
 	call("Move-to", esi->target, 0, esi->end, NULL, 1);
 
 	call("popup:close", safe_cast ci->focus->parent, 0, NULL, str);
