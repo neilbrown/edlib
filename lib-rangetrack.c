@@ -110,7 +110,7 @@ DEF_CMD(rangetrack_add)
 	struct mark *m, *m1, *m2;
 
 	if (!i)
-		return Efail;
+		return Efalse;
 	if (!start || !end)
 		/* Testing if configured already */
 		return 1;
@@ -182,7 +182,7 @@ DEF_CMD(rangetrack_clear)
 	struct mark *m1, *m2;
 
 	if (!i)
-		return Efail;
+		return Efalse;
 	if (!start || !end) {
 		start = vmark_first(ci->home, i->view, ci->home);
 		end = vmark_last(ci->home, i->view, ci->home);
@@ -234,7 +234,7 @@ DEF_CMD(rangetrack_clear)
 		mark_step(m2, 0);
 	}
 	if (!m2)
-		return Efail;
+		return 1;
 	/* m2 is now the end of an active section that needs to bie discarded */
 	while (m1 && mark_ordered_not_same(m1, m2)) {
 		struct mark *m = m1;
