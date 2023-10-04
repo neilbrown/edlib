@@ -9,6 +9,8 @@ the file.
 
 ### Triage
 
+- [ ] There is a "window:close" and a "Window:close" and they are
+      different.  Fix this!
 - [X] unknown keysequence should be reported so e.g. if keyboard
       is is Greek mode, then I will be told that Cx-b doesn't work
 - [X] menubar doesn't redraw background when resized wider.
@@ -51,7 +53,7 @@ the file.
 - [X] split range management out of autospell so it can be used by other
       modules.
 - [ ] make it easy for a make-search command to search backwards
-- [ ] Make a start on CUA mode with mouse/menu/selection support.
+- [X] Make a start on CUA mode with mouse/menu/selection support.
       Also Function keys: help, close, refresh
 
 ### Large

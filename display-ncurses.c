@@ -1402,6 +1402,7 @@ DEF_CMD(force_redraw)
 	ncurses_start(p);
 
 	clearok(curscr, 1);
+	pane_damaged(p, DAMAGED_POSTORDER);
 	return 1;
 }
 

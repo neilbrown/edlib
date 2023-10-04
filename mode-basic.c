@@ -568,6 +568,18 @@ DEF_CMD(basic_interactive_delete)
 	return ret < 0 ? ret : 1;
 }
 
+DEF_CMD(basic_close)
+{
+	call("Window:close", ci->focus);
+	return 1;
+}
+
+DEF_CMD(basic_refresh)
+{
+	call("window:refresh", ci->focus);
+	return 1;
+}
+
 static struct map *basic_map;
 DEF_LOOKUP_CMD(mode_basic, basic_map);
 
@@ -579,7 +591,10 @@ static void basic_init(void)
 
 	m = key_alloc();
 
+	/* Some Function keys that CUA defines */
 	key_add(m, "K:F1", &help_cmd.c);
+	key_add(m, "K:F4", &basic_close);
+	key_add(m, "K:F5", &basic_refresh);
 
 	key_add_range(m, "K- ", "K-~", &basic_insert);
 	key_add_range(m, "K-\200", "K-\377\377\377\377", &basic_insert);
