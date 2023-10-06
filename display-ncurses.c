@@ -1048,11 +1048,15 @@ DEF_CB(nc_draw_image_cb)
 
 		for (i = 0; i < dii->h; i+= 2) {
 			static const wint_t hilo = 0x2580; /* L'▀' */
+			static unsigned char blk[4] = "\0\0\0";
 			for (j = 0; j < dii->w ; j+= 1) {
 				unsigned char *p1 = buf + i*dii->w*4 + j*4;
-				unsigned char *p2 = buf + (i+1)*dii->w*4 + j*4;
-				int rgb1[3] = { p1[0]*1000/255, p1[1]*1000/255, p1[2]*1000/255 };
-				int rgb2[3] = { p2[0]*1000/255, p2[1]*1000/255, p2[2]*1000/255 };
+				unsigned char *p2 = i + 1 < dii->h ?
+					buf + (i+1)*dii->w*4 + j*4 : blk;
+				int rgb1[3] = { p1[0]*1000/255, p1[1]*1000/255,
+					       p1[2]*1000/255 };
+				int rgb2[3] = { p2[0]*1000/255, p2[1]*1000/255,
+					       p2[2]*1000/255 };
 				int fg = find_col(dd, rgb1);
 				int bg = find_col(dd, rgb2);
 
