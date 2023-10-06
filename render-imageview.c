@@ -17,6 +17,7 @@ struct imageview_data {
 			 * Kept stable during zoom
 			 */
 	short px,py;	/* number of pixels in each pane cell */
+	bool integral;	/* Use integral scales */
 };
 #include "core-pane.h"
 
@@ -27,6 +28,18 @@ DEF_CMD_CLOSED(imageview_close)
 	free(ivd->image);
 	ivd->image = NULL;
 	return 1;
+}
+
+static int fix_scale(struct imageview_data *ivd safe, int scale)
+{
+	if (!ivd->integral)
+		return scale;
+
+	if (scale >= 1024)
+		return scale & ~1023;
+	if (scale > 0)
+		return 1024 / (1024 / scale);
+	return scale;
 }
 
 DEF_CMD(imageview_refresh)
@@ -47,11 +60,15 @@ DEF_CMD(imageview_refresh)
 		ivd->image = strdup(img);
 
 	if (ivd->w <= 0) {
+		char *i;
 		struct call_return cr = call_ret(all, "Draw:image-size",
 						 ci->focus,
 						 0, NULL, img);
 		ivd->w = cr.x;
 		ivd->h = cr.y;
+
+		i = pane_attr_get(ci->focus, "imageview:integral");
+		ivd->integral = (i && strcmp(i, "yes") == 0);
 	}
 	if (ivd->w <= 0 || ivd->h <= 0)
 		return 1;
@@ -59,7 +76,7 @@ DEF_CMD(imageview_refresh)
 	if (ivd->scale <= 0) {
 		int xs = pw * 1024 / ivd->w;
 		int ys = ph * 1024 / ivd->h;
-		ivd->scale = xs > ys ? ys : xs;
+		ivd->scale = fix_scale(ivd, xs > ys ? ys : xs);
 	}
 
 	x = (ivd->cx * ivd->scale) - pw * 1024 / 2;
@@ -114,13 +131,18 @@ DEF_CMD(imageview_zoom)
 	 * zooming.
 	 */
 	struct imageview_data *ivd = ci->home->data;
+	int scale = ivd->scale;
 
 	if (strcmp(ci->key, "K-+") == 0) {
 		/* zoom up */
-		ivd->scale += ivd->scale / 10;
+		ivd->scale = fix_scale(ivd, scale + scale / 10);
+		if (ivd->scale == scale)
+			ivd->scale += 1024;
 	} else {
 		/* zoom down */
-		ivd->scale -= ivd->scale / 11;
+		ivd->scale = fix_scale(ivd, scale - scale / 11);
+		if (ivd->scale == scale && scale > 1 && scale <= 1024)
+			ivd->scale = 1024 / (1024 / scale + 1);
 	}
 
 	pane_damaged(ci->home, DAMAGED_REFRESH);
@@ -183,6 +205,7 @@ DEF_CMD(imageview_attach)
 	if (ci->str)
 		ivd->image = strdup(ci->str);
 	ivd->scale = 0;
+	ivd->integral = False;
 	pxl = pane_attr_get(p, "Display:pixels");
 	if (sscanf(pxl ?: "1x1", "%hdx%hx", &ivd->px, &ivd->py) != 2)
 		ivd->px = ivd->py = 1;
