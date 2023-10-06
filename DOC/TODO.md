@@ -9,6 +9,8 @@ the file.
 
 ### Triage
 
+- [ ] when search succeeds near eof then trying again loops back to
+      there, redraw is strange
 - [ ] There is a "window:close" and a "Window:close" and they are
       different.  Fix this!
 - [X] unknown keysequence should be reported so e.g. if keyboard
@@ -29,7 +31,7 @@ the file.
 - [X] selection-menu item to show git-commit from list of known git
       trees
 - [ ] selection-menu item for word-count
-- [ ] selection-menu item for QR-code
+- [X] selection-menu item for QR-code
 - [ ] selection-menu sub-menu for UPPER lower Caps ??
 - [ ] selection-menu item for text-fill
 - [ ] selection-menu item for spell-check ??
@@ -212,7 +214,7 @@ Module features
 
 ### lib-qrcode
 
-- [ ] pop up window to show selection as QR code
+- [X] pop up window to show selection as QR code
 - [ ] text qrcode (qr --ascii foo) don't look right in xcb display
 
 ### workspaces
