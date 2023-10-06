@@ -9,7 +9,7 @@ the file.
 
 ### Triage
 
-- [ ] when search succeeds near eof then trying again loops back to
+- [X] when search succeeds on final line then trying again loops back to
       there, redraw is strange
 - [ ] There is a "window:close" and a "Window:close" and they are
       different.  Fix this!

@@ -1660,7 +1660,7 @@ DEF_CMD(render_lines_move_pos)
 		/* top line not fully displayed, being in that line is
 		 * not sufficient */
 		top = vmark_next(top);
-	if (bot)
+	if (bot && rl->tail_height)
 		/* last line might not be fully displayed, so don't assume */
 		bot = vmark_prev(bot);
 	if (!top || !bot ||
