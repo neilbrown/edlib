@@ -38,7 +38,22 @@ DEF_CMD(imageview_refresh)
 	int ph = ci->home->h * ivd->py;
 
 	call("Draw:clear", ci->focus, 0, NULL, "bg:black");
+
 	if (!img)
+		img = pane_attr_get(ci->focus, "imageview:image-source");
+	if (!img)
+		img = "comm:doc:get-bytes";
+	if (!ivd->image)
+		ivd->image = strdup(img);
+
+	if (ivd->w <= 0) {
+		struct call_return cr = call_ret(all, "Draw:image-size",
+						 ci->focus,
+						 0, NULL, img);
+		ivd->w = cr.x;
+		ivd->h = cr.y;
+	}
+	if (ivd->w <= 0 || ivd->h <= 0)
 		return 1;
 
 	if (ivd->scale <= 0) {
@@ -165,16 +180,8 @@ DEF_CMD(imageview_attach)
 	if (!p)
 		return Efail;
 	ivd = p->data;
-	if (ci->str) {
-		struct call_return cr;
-		cr = call_ret(bytes, ci->str+5, ci->focus);
-
+	if (ci->str)
 		ivd->image = strdup(ci->str);
-		cr = call_ret(all, "Draw:image-size", ci->focus,
-			      0, NULL, ivd->image);
-		ivd->w = cr.x;
-		ivd->h = cr.y;
-	}
 	ivd->scale = 0;
 	pxl = pane_attr_get(p, "Display:pixels");
 	if (sscanf(pxl ?: "1x1", "%hdx%hx", &ivd->px, &ivd->py) != 2)
