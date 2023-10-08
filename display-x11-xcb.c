@@ -827,7 +827,7 @@ DEF_CB(xcb_draw_image_cb)
 	case 'h': /* height */
 		return MagickGetImageHeight(dii->wd);
 	case 's': /* scale */
-		MagickAdaptiveResizeImage(dii->wd, ci->num, ci->num2);
+		MagickResizeImage(dii->wd, ci->num, ci->num2, BoxFilter, 1.0);
 		return 1;
 	case 'c': /* crop or cursor */
 		if (ci->key[1] != 'u') {
