@@ -1829,7 +1829,10 @@ static struct pane *xcb_display_init(const char *d safe,
 	if (xcb_connection_has_error(conn))
 		return NULL;
 
-	p = pane_register(pane_root(focus), 1, &xcb_handle.c);
+	p = call_ret(pane, "attach-window-core", focus);
+	if (!p)
+		return NULL;
+	p = pane_register(p, 1, &xcb_handle.c);
 	if (!p)
 		return NULL;
 	xd = p->data;
@@ -1965,7 +1968,6 @@ static struct pane *xcb_display_init(const char *d safe,
 	attr_set_str(&p->attrs, "scale:M", scale);
 	xd->last_event = time(NULL);
 	call("editor:request:all-displays", p);
-	p = call_ret(pane, "editor:activate-display", p);
 	return p;
 abort:
 	kbd_free(xd);
@@ -1993,8 +1995,9 @@ DEF_CMD(xcb_new_display)
 	if (!d)
 		return Enoarg;
 	p = xcb_display_init(d, disp_auth, ci->focus);
-	if (p)
-		home_call_ret(pane, ci->focus, "doc:attach-view", p, 1);
+	if (strcmp(ci->key, "interactive-cmd-x11window") == 0)
+		p = home_call_ret(pane, p,
+				  "window:activate-display", ci->focus);
 	if (p)
 		comm_call(ci->comm2, "cb", p);
 	return 1;

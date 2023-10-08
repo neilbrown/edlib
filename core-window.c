@@ -271,6 +271,54 @@ DEF_CMD(scale_image)
 	return 1;
 }
 
+DEF_CMD(window_activate_display)
+{
+	/* Given a display attached to the root, integrate it
+	 * into a full initial stack of panes.
+	 * The display is the focus of this pane.  This doc to
+	 * attach there is the focus in the command.
+	 */
+	struct pane *disp = ci->home->focus;
+	struct pane *p, *p2;
+	bool display_added = False;
+	char *ip;
+	char *save, *t, *m;
+
+	if (!disp || !list_empty(&disp->children))
+		return Efail;
+	ip = pane_attr_get(disp, "window-initial-panes");
+	if (!ip)
+		return Efail;
+	ip = strdup(ip);
+	p = ci->home;
+
+	for (t = strtok_r(ip, " \t\n", &save);
+	     t;
+	     t = strtok_r(NULL, " \t\n", &save)) {
+		if (!*t)
+			continue;
+		if (strcmp(t, "DISPLAY") == 0) {
+			if (!display_added) {
+				pane_reparent(disp, p);
+				p = disp;
+				display_added = True;
+			}
+		} else {
+			m = strconcat(NULL, "attach-", t);
+			p2 = call_ret(pane, m, p);
+			free(m);
+			if (p2)
+				p = p2;
+		}
+	}
+	free(ip);
+	if (p && ci->focus != disp)
+		p = home_call_ret(pane, ci->focus, "doc:attach-view", p, 1);
+	if (p)
+		comm_call(ci->comm2, "cb", p);
+	return 1;
+}
+
 DEF_CMD(close_notify)
 {
 	struct window_data *wd = ci->home->data;
@@ -290,7 +338,7 @@ DEF_CMD(window_attach)
 {
 	struct pane *p;
 
-	p = pane_register(ci->focus, 0, &window_handle.c);
+	p = pane_register(pane_root(ci->focus), 0, &window_handle.c);
 	if (!p)
 		return Efail;
 	comm_call(ci->comm2, "cb", p);
@@ -320,6 +368,8 @@ void window_setup(struct pane *ed safe)
 	key_add(window_map, "Notify:Close", &close_notify);
 
 	key_add(window_map, "Draw:scale-image", &scale_image);
+	key_add(window_map, "window:activate-display",
+		&window_activate_display);
 
 	call_comm("global-set-command", ed, &window_attach, 0, NULL,
 		  "attach-window-core");

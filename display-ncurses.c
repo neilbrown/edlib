@@ -1803,12 +1803,11 @@ DEF_CMD(display_ncurses)
 	if (!term)
 		term = "xterm-256color";
 
-	p = ncurses_init(ed, tty, term);
-	if (p)
-		p = call_ret(pane, "editor:activate-display", p);
-	if (p && ci->focus != ed)
-		/* Assume ci->focus is a document */
-		p = home_call_ret(pane, ci->focus, "doc:attach-view", p, 1);
+	p = call_ret(pane, "attach-window-core", ed);
+	if (!p)
+		return Efail;
+
+	p = ncurses_init(p, tty, term);
 	if (p)
 		return comm_call(ci->comm2, "callback:display", p);
 

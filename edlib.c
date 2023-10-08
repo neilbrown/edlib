@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
 	if (term) {
 		char *TERM = getenv("TERM");
 
-		p = call_ret(pane, "attach-display-ncurses", doc,
+		p = call_ret(pane, "attach-display-ncurses", ed,
 			     0, NULL, "-", 0, NULL, TERM);
 		if (p) {
 			char *e;
@@ -128,20 +128,23 @@ int main(int argc, char *argv[])
 				first_window = p;
 			call("window:set:no-close", p, 1, NULL,
 			     "Cannot close primary display");
+			home_call(p, "window:activate-display", doc);
 		}
 	}
 
 	if (gtk) {
 		p = call_ret(pane, "attach-display-gtk",
-			     doc, 0, NULL, getenv("DISPLAY"));
+			     ed, 0, NULL, getenv("DISPLAY"));
+		home_call(p, "window:activate-display", doc);
 		if (!first_window)
 			first_window = p;
 	}
 
 	if (x11) {
 		p = call_ret(pane, "attach-display-x11",
-			     doc, 0, NULL, getenv("DISPLAY"),
+			     ed, 0, NULL, getenv("DISPLAY"),
 			     0, NULL, getenv("XAUTHORITY"));
+		home_call(p, "window:activate-display", doc);
 		if (!first_window)
 			first_window = p;
 	}

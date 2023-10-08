@@ -232,49 +232,6 @@ DEF_CMD(editor_auto_event)
 	return key_lookup_prefix(map, ci, False);
 }
 
-DEF_CMD(editor_activate_display)
-{
-	/* Given a display attached to the root, integrate it
-	 * into a full initial stack of panes.
-	 */
-	struct pane *disp = ci->focus;
-	struct pane *p, *p2;
-	char *ip = attr_find(ci->home->attrs, "editor-initial-panes");
-	char *save, *t, *m;
-
-	if (!ip)
-		return Efail;
-	ip = strsave(ci->home, ip);
-	p = pane_root(ci->focus);
-
-	p2 = call_ret(pane, "attach-window-core", p);
-	if (!p2)
-		return Efail;
-	p = p2;
-
-	for (t = strtok_r(ip, " \t\n", &save);
-	     t;
-	     t = strtok_r(NULL, " \t\n", &save)) {
-		if (!*t)
-			continue;
-		if (strcmp(t, "DISPLAY") == 0) {
-			if (disp) {
-				pane_reparent(disp, p);
-				p = disp;
-				disp = NULL;
-			}
-			continue;
-		}
-		m = strconcat(NULL, "attach-", t);
-		p2 = call_ret(pane, m, p);
-		free(m);
-		if (p2)
-			p = p2;
-	}
-	comm_call(ci->comm2, "cb", p);
-	return 1;
-}
-
 DEF_CMD(editor_multicall)
 {
 	struct ed_info *ei = ci->home->data;
@@ -737,8 +694,6 @@ struct pane *editor_new(const char *comm_name)
 			       &editor_request_notify);
 		key_add_prefix(ed_map, "editor:notify:",
 			       &editor_send_notify);
-		key_add(ed_map, "editor:activate-display",
-			&editor_activate_display);
 		key_add(ed_map, "Close", &editor_close);
 	}
 	ed = pane_register_root(&ed_handle.c, NULL, sizeof(*ei));

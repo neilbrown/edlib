@@ -9,6 +9,8 @@ the file.
 
 ### Triage
 
+- [ ] in filename competion, TAB might add a '/' to a partial name and
+      then get confused.
 - [X] when search succeeds on final line then trying again loops back to
       there, redraw is strange
 - [ ] There is a "window:close" and a "Window:close" and they are

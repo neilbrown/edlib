@@ -150,9 +150,10 @@ if sys.argv[0] == "":
                     p = edlib.editor
                     p = p.call("attach-display-ncurses", path, env['TERM'],
                                ret='pane')
-                    self.term = p
                     for v in env:
-                        self.term.call("window:set:", env[v], v)
+                        p.call("window:set:", env[v], v)
+                    p = p.call("window:activate-display", ret='pane')
+                    self.term = p
                     self.disp = self.term
                     self.add_notify(self.disp, "Notify:Close")
                     self.sock.send(b"OK")

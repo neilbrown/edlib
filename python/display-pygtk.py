@@ -95,10 +95,11 @@ class EdDisplay(edlib.Pane):
 
     def handle_new(self, key, focus, **a):
         "handle:window:new"
-        newdisp = EdDisplay(edlib.editor, self['DISPLAY'])
-        p = newdisp.call("editor:activate-display", ret='pane')
-        if p:
-            focus.call("doc:attach-view", p, 1)
+        p = focus.call("attach-window-core", ret='pane')
+        if not p:
+            return edlib.Efail
+        newdisp = EdDisplay(p, self['DISPLAY'])
+        newdisp.call("window:activate-display", focus)
         return 1
 
     def handle_external(self, key, str, **a):
@@ -634,8 +635,11 @@ class EdDisplay(edlib.Pane):
         self.im.focus_out()
         self.in_focus = False
         f = self.final_focus
-        pt = f.call("doc:point", ret='mark')
-        f.call("view:changed", pt)
+        try:
+            pt = f.call("doc:point", ret='mark')
+            f.call("view:changed", pt)
+        except edlib.commandfailed:
+            pass
         edlib.time_stop(edlib.TIME_WINDOW)
 
     def reconfigure(self, w, ev):
@@ -790,17 +794,18 @@ def new_display(key, focus, comm2, str1, **a):
             return None
 
     focus.call("attach-glibevents")
-    ed = focus.root
 
     if 'SCALE' in os.environ:
         sc = int(os.environ['SCALE'])
         s = Gtk.settings_get_default()
         s.set_long_property("Gtk-xft-dpi",sc*Pango.SCALE, "code")
 
-    disp = EdDisplay(ed, display)
-    p = disp.call("editor:activate-display", ret='pane')
-    if p and focus != ed:
-        p = focus.call("doc:attach-view", p, 1, ret='pane')
+    p = focus.call("attach-window-core", ret='pane')
+    if not p:
+        return edlib.Efail;
+    disp = EdDisplay(p, display)
+    if key == "interactive-cmd-gtkwindow":
+        p = disp.call("window:activate-display", focus, ret='pane')
     if comm2:
         comm2('callback', p)
     return 1
