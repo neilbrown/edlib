@@ -152,8 +152,8 @@ class autospell_view(edlib.Pane):
             self.vstart = mark.dup()
             self.vend = mark2.dup()
             if (not self.helper_attached and
-                not self.call("doc:notify:rangetrack:add",
-                              "autospell")):
+                self.call("doc:notify:rangetrack:add",
+                              "autospell") <= 0):
                 if self.call("rangetrack:new", "autospell") > 0:
                     self.helper_attached = True
                 else:
