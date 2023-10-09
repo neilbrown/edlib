@@ -25,7 +25,6 @@
 struct rangetrack_data {
 	struct rci {
 		const char *set safe;
-		struct pane *owner safe;
 		int view;
 		struct rci *next;
 	} *info;
@@ -44,37 +43,16 @@ static struct rci *find_set(const struct cmd_info *ci safe)
 	return NULL;
 }
 
-static void add_set(struct pane *home safe, const char *set safe,
-		    struct pane *focus safe)
+static void add_set(struct pane *home safe, const char *set safe)
 {
 	struct rangetrack_data *rtd = home->data;
 	struct rci *i;
 
 	alloc(i, pane);
 	i->set = strdup(set);
-	i->owner = focus;
-	pane_add_notify(home, focus, "Notify:Close");
 	i->view = call("doc:add-view", home) - 1;
 	i->next = rtd->info;
 	rtd->info = i;
-}
-
-DEF_CMD(rangetrack_notify_close)
-{
-	struct rangetrack_data *rtd = ci->home->data;
-	struct rci **ip;
-
-	for (ip = &rtd->info; *ip; ip = &(*ip)->next) {
-		struct rci *i;
-		if ((*ip)->owner != ci->focus)
-			continue;
-		i = *ip;
-		*ip = i->next;
-		free((void*)i->set);
-		unalloc(i, pane);
-		break;
-	}
-	return Efallthrough;
 }
 
 DEF_CMD_CLOSED(rangetrack_close)
@@ -98,7 +76,7 @@ DEF_CMD(rangetrack_new)
 		return Enoarg;
 	if (i)
 		return Efalse;
-	add_set(ci->home, ci->str, ci->focus);
+	add_set(ci->home, ci->str);
 	return 1;
 }
 
@@ -304,7 +282,7 @@ DEF_CMD(rangetrack_attach)
 	pane_add_notify(p, doc, "rangetrack:add");
 	pane_add_notify(p, doc, "rangetrack:clear");
 	pane_add_notify(p, doc, "rangetrack:choose");
-	add_set(p, set, ci->focus);
+	add_set(p, set);
 	return 1;
 }
 
@@ -314,7 +292,6 @@ void edlib_init(struct pane *ed safe)
 		  0, NULL, "rangetrack:new");
 	rangetrack_map = key_alloc();
 	key_add(rangetrack_map, "Close", &rangetrack_close);
-	key_add(rangetrack_map, "Notify:Close", &rangetrack_notify_close);
 	key_add(rangetrack_map, "rangetrack:new", &rangetrack_new);
 	key_add(rangetrack_map, "rangetrack:add", &rangetrack_add);
 	key_add(rangetrack_map, "rangetrack:clear", &rangetrack_clear);
