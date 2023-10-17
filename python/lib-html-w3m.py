@@ -14,6 +14,7 @@ import edlib
 
 import os, fcntl
 import subprocess
+import tempfile
 
 def get_attr(tagl, tag, attr):
     # Find attr="stuff" in tag, but search for tag in tagl
@@ -43,6 +44,10 @@ class w3m_pane(edlib.Pane):
     def handle_visible(self, key, focus, **a):
         "handle:convert-now"
 
+        tf = tempfile.TemporaryFile()
+        tf.write(self.content.encode())
+        tf.seek(0)
+
         p = subprocess.Popen(["/usr/bin/w3m", "-halfdump", "-o", "ext_halfdump=1",
                               "-I", "UTF-8", "-O", "UTF-8",
                               "-o", "display_image=off",
@@ -52,12 +57,8 @@ class w3m_pane(edlib.Pane):
                              close_fds = True,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,
-                             stdin=subprocess.PIPE)
+                             stdin=tf.fileno())
         self.pipe = p
-        # FIXME this could block if pipe fills
-        os.write(p.stdin.fileno(), self.content.encode())
-        p.stdin.close()
-        p.stdin = None
         fd = p.stdout.fileno()
         fcntl.fcntl(fd, fcntl.F_SETFL,
                     fcntl.fcntl(fd, fcntl.F_GETFL) | os.O_NONBLOCK)

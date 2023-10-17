@@ -9,9 +9,9 @@ the file.
 
 ### Triage
 
-- [ ] w3m hangs for CAAmjac0r78WpiYW9FsJK=+E8-FG4MoxD2zkUJS_oCRyNW+=rug@mail.gmail.com
+- [X] w3m hangs for CAAmjac0r78WpiYW9FsJK=+E8-FG4MoxD2zkUJS_oCRyNW+=rug@mail.gmail.com
       It is writing to stdout which is reading very slowly.
-- [ ] in filename competion, TAB might add a '/' to a partial name and
+- [ ] in filename completion, TAB might add a '/' to a partial name and
       then get confused.
 - [X] when search succeeds on final line then trying again loops back to
       there, redraw is strange
