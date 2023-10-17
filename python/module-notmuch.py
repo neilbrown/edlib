@@ -2469,7 +2469,7 @@ class notmuch_master_view(edlib.Pane):
         if p0:
             p0.take_focus()
             return 1
-        p0 = self.call("OtherPane", ret='pane')
+        p0 = self.call("PopupTile", "MD3tsa", ret='pane')
         if p0:
             p2.call("doc:attach-view", p0, 1, "viewer")
         return 1

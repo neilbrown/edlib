@@ -9,6 +9,8 @@ the file.
 
 ### Triage
 
+- [ ] w3m hangs for CAAmjac0r78WpiYW9FsJK=+E8-FG4MoxD2zkUJS_oCRyNW+=rug@mail.gmail.com
+      It is writing to stdout which is reading very slowly.
 - [ ] in filename competion, TAB might add a '/' to a partial name and
       then get confused.
 - [X] when search succeeds on final line then trying again loops back to
@@ -37,6 +39,7 @@ the file.
 - [ ] selection-menu sub-menu for UPPER lower Caps ??
 - [ ] selection-menu item for text-fill
 - [ ] selection-menu item for spell-check ??
+- [ ] selection-menu item to view a named file - in Popup:Tile
 - [ ] notmuch - capture errors about multiple Subject lines and
       display them better.
 - [ ] switch display-pygtk to use Draw:scale-image
