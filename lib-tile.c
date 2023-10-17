@@ -106,7 +106,7 @@ DEF_CMD(tile_clone)
 		return Efail;
 	ti->p = p2;
 	/* Remove borders as our children will provide their own. */
-	call("Window:border", p2);
+	call("Tile:border", p2);
 	attr_set_str(&p2->attrs, "borders", "BL");
 	while (!cti->leaf && child->focus) {
 		child = child->focus;
@@ -130,7 +130,7 @@ DEF_CMD(tile_attach)
 	struct pane *p;
 
 	/* Remove borders as our children will provide their own. */
-	call("Window:border", display);
+	call("Tile:border", display);
 
 	alloc(ti, pane);
 	p = pane_register(display, 0, &tile_handle.c, ti);
@@ -1039,17 +1039,17 @@ void edlib_init(struct pane *ed safe)
 {
 	tile_map = key_alloc();
 
-	key_add(tile_map, "Window:next", &tile_window_next);
-	key_add(tile_map, "Window:prev", &tile_window_prev);
-	key_add(tile_map, "Window:x+", &tile_window_xplus);
-	key_add(tile_map, "Window:x-", &tile_window_xminus);
-	key_add(tile_map, "Window:y+", &tile_window_yplus);
-	key_add(tile_map, "Window:y-", &tile_window_yminus);
-	key_add(tile_map, "Window:split-x", &tile_window_splitx);
-	key_add(tile_map, "Window:split-y", &tile_window_splity);
-	key_add(tile_map, "Window:close", &tile_window_close);
-	key_add(tile_map, "Window:close-others", &tile_window_close_others);
-	key_add(tile_map, "Window:bury", &tile_window_bury);
+	key_add(tile_map, "Tile:next", &tile_window_next);
+	key_add(tile_map, "Tile:prev", &tile_window_prev);
+	key_add(tile_map, "Tile:x+", &tile_window_xplus);
+	key_add(tile_map, "Tile:x-", &tile_window_xminus);
+	key_add(tile_map, "Tile:y+", &tile_window_yplus);
+	key_add(tile_map, "Tile:y-", &tile_window_yminus);
+	key_add(tile_map, "Tile:split-x", &tile_window_splitx);
+	key_add(tile_map, "Tile:split-y", &tile_window_splity);
+	key_add(tile_map, "Tile:close", &tile_window_close);
+	key_add(tile_map, "Tile:close-others", &tile_window_close_others);
+	key_add(tile_map, "Tile:bury", &tile_window_bury);
 
 	key_add(tile_map, "OtherPane", &tile_other);
 	key_add(tile_map, "ThisPane", &tile_this);

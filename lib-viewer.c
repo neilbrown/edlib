@@ -115,7 +115,7 @@ DEF_CMD(viewer_bury)
 	ret = call("doc:cmd-q", ci->focus, ci->num, ci->mark);
 	switch (ret) {
 	case 0:
-		call("Window:bury", ci->focus);
+		call("Tile:bury", ci->focus);
 		break;
 	case 2: /* request to move to next line */
 		call("K:Down", ci->focus, ci->num, ci->mark);

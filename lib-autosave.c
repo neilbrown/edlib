@@ -100,7 +100,7 @@ DEF_CMD(autosave_dir_ignore)
 	doc_next(ci->home->parent, m);
 	if (call("doc:render-line", ci->focus, 0, m) < 0 ||
 	    m->ref.p == NULL)
-		call("Window:bury", ci->focus);
+		call("Tile:bury", ci->focus);
 	mark_free(m);
 	/* Ask viewer to move forward */
 	return 2;
@@ -134,7 +134,7 @@ DEF_CMD(autosave_dir_delete)
 
 DEF_CMD(autosave_dir_empty)
 {
-	call("Window:bury", ci->focus);
+	call("Tile:bury", ci->focus);
 	return 1;
 }
 

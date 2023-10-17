@@ -681,12 +681,12 @@ class PresenterPane(edlib.Pane):
     def handle_M_f(self, key, **a):
         "handle:K:A-f"
         if self.borderless:
-            self.call("Window:border", 1)
+            self.call("Tile:border", 1)
             self.call("window:border", 1)
             self.call("window:fullscreen", -1)
             self.borderless = False
         else:
-            self.call("Window:border", -1)
+            self.call("Tile:border", -1)
             self.call("window:border", -1)
             self.call("window:fullscreen", 1)
             self.borderless = True

@@ -423,7 +423,7 @@ class compose_email(edlib.Pane):
         self.complete_start = None
         self.complete_end = None
         if self.complete_menu:
-            self.complete_menu("Window:Close")
+            self.complete_menu("Tile:Close")
         self.complete_menu = None
         if not mark:
             mark = focus.call("doc:point", ret='mark')
@@ -556,7 +556,7 @@ class compose_email(edlib.Pane):
         self.complete_start = None
         self.complete_end = None
         if self.complete_menu:
-            self.complete_menu.call("Window:Close")
+            self.complete_menu.call("Tile:Close")
         self.complete_menu = None
         st = pt.dup()
         word = self.prev_addr(st)
@@ -884,7 +884,7 @@ class compose_email(edlib.Pane):
             root.call("event:read", p.stdout.fileno(),
                       lambda key, **a: read_status(p, key, **a))
             focus.call("Message", "Queueing message to %s." % whoto)
-            focus.call("Window:bury")
+            focus.call("Tile:bury")
             return 1
 
         # Cannot find pane to report status on, so do it sync
@@ -895,7 +895,7 @@ class compose_email(edlib.Pane):
             focus.call("Message", "Email submission gives err: " +
                        err.decode('utf-8','ignore'))
         focus.call("Message", "Email message to %s queued." % whoto)
-        focus.call("Window:bury")
+        focus.call("Tile:bury")
 
         return 1
 

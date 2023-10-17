@@ -557,7 +557,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(view_map, "M:TPress-1", &view_click);
 	key_add(view_map, "M:Press-4", &view_scroll);
 	key_add(view_map, "M:Press-5", &view_scroll);
-	key_add(view_map, "Window:border", &view_border);
+	key_add(view_map, "Tile:border", &view_border);
 	key_add(view_map, "Refresh:view", &view_refresh_view);
 	key_add(view_map, "Close", &view_close);
 	key_add(view_map, "Clone", &view_clone);

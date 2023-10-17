@@ -1877,7 +1877,7 @@ class notmuch_master_view(edlib.Pane):
             else:
                 w = ch * 10 * max / 1000
             if tile.w != w:
-                tile.call("Window:x+", "notmuch", int(w - tile.w))
+                tile.call("Tile:x+", "notmuch", int(w - tile.w))
         if self.query_pane and self.message_pane:
             # query_pane must be at least 4 lines, else 1/4 height
             # but never more than 1/2 the height
@@ -1892,7 +1892,7 @@ class notmuch_master_view(edlib.Pane):
                 if h > space / 2:
                     h = space / 2
             if tile.h != h:
-                tile.call("Window:y+", "notmuch", int(h - tile.h))
+                tile.call("Tile:y+", "notmuch", int(h - tile.h))
 
     def handle_getattr(self, key, focus, str, comm2, **a):
         "handle:get-attr"
@@ -2430,7 +2430,7 @@ class notmuch_master_view(edlib.Pane):
                 self.mark_read()
             p = self.message_pane
             self("notmuch-close-message", 1)
-            p.call("Window:close", "notmuch")
+            p.call("Tile:close", "notmuch")
         elif self.query_pane:
             if (self.query_pane.call("notmuch:close-whole-thread") == 1 and
                 key != "doc:char-Q"):
@@ -2450,7 +2450,7 @@ class notmuch_master_view(edlib.Pane):
             pnt['notmuch:query-name'] = ""
             self.list_pane.call("view:changed")
 
-            p.call("Window:close", "notmuch")
+            p.call("Tile:close", "notmuch")
         elif key == "doc:char-Q":
             p = self.call("ThisPane", ret='pane')
             if p and p.focus:
@@ -2477,13 +2477,13 @@ class notmuch_master_view(edlib.Pane):
     def handle_o(self, key, focus, **a):
         "handle:doc:char-o"
         # focus to next window
-        focus.call("Window:next", "notmuch")
+        focus.call("Tile:next", "notmuch")
         return 1
 
     def handle_O(self, key, focus, **a):
         "handle:doc:char-O"
         # focus to prev window
-        focus.call("Window:prev", "notmuch")
+        focus.call("Tile:prev", "notmuch")
         return 1
 
     def handle_g(self, key, focus, **a):
@@ -2504,7 +2504,7 @@ class notmuch_master_view(edlib.Pane):
         if self.message_pane:
             p = self.message_pane
             self("notmuch-close-message", 1)
-            p.call("Window:close", "notmuch")
+            p.call("Tile:close", "notmuch")
             self.message_pane = None
 
         # doc:notmuch:query might auto-select a message, which will

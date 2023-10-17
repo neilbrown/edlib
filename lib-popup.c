@@ -562,14 +562,14 @@ void edlib_init(struct pane *ed safe)
 	key_add(popup_map, "OtherPane", &popup_other);
 	key_add(popup_map, "ThisPopup", &popup_this);
 
-	key_add(popup_map, "Window:bury", &popup_do_close);
-	key_add(popup_map, "Window:close", &popup_abort);
-	key_add(popup_map, "Window:split-x", &popup_split);
-	key_add(popup_map, "Window:split-y", &popup_split);
-	key_add(popup_map, "Window:x+", &popup_ignore);
-	key_add(popup_map, "Window:x-", &popup_ignore);
-	key_add(popup_map, "Window:y+", &popup_ignore);
-	key_add(popup_map, "Window:y-", &popup_ignore);
-	key_add(popup_map, "Window:close-others", &popup_close_others);
+	key_add(popup_map, "Tile:bury", &popup_do_close);
+	key_add(popup_map, "Tile:close", &popup_abort);
+	key_add(popup_map, "Tile:split-x", &popup_split);
+	key_add(popup_map, "Tile:split-y", &popup_split);
+	key_add(popup_map, "Tile:x+", &popup_ignore);
+	key_add(popup_map, "Tile:x-", &popup_ignore);
+	key_add(popup_map, "Tile:y+", &popup_ignore);
+	key_add(popup_map, "Tile:y-", &popup_ignore);
+	key_add(popup_map, "Tile:close-others", &popup_close_others);
 	key_add(popup_map, "pane:defocus", &popup_defocus);
 }

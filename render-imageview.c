@@ -185,7 +185,7 @@ DEF_CMD(imageview_reset)
 
 DEF_CMD(imageview_quit)
 {
-	call("Window:close", ci->focus);
+	call("Tile:close", ci->focus);
 	return 1;
 }
 

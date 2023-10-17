@@ -474,13 +474,13 @@ static struct simple_command {
 	char		*type safe;
 	char		*k safe;
 } simple_commands[] = {
-	{CMD(emacs_simple), "Window:next", "K:CX-o"},
-	{CMD(emacs_simple), "Window:prev", "K:CX-O"},
-	{CMD(emacs_simple), "Window:y+", "K:CX-^"},
-	{CMD(emacs_simple), "Window:split-y", "K:CX-2"},
-	{CMD(emacs_simple), "Window:split-x", "K:CX-3"},
-	{CMD(emacs_simple), "Window:close", "K:CX-0"},
-	{CMD(emacs_simple), "Window:bury", "K:A-B"},
+	{CMD(emacs_simple), "Tile:next", "K:CX-o"},
+	{CMD(emacs_simple), "Tile:prev", "K:CX-O"},
+	{CMD(emacs_simple), "Tile:y+", "K:CX-^"},
+	{CMD(emacs_simple), "Tile:split-y", "K:CX-2"},
+	{CMD(emacs_simple), "Tile:split-x", "K:CX-3"},
+	{CMD(emacs_simple), "Tile:close", "K:CX-0"},
+	{CMD(emacs_simple), "Tile:bury", "K:A-B"},
 	{CMD(emacs_simple), "window:new", "K:CX5-2"},
 	{CMD(emacs_simple), "window:close", "K:CX5-0"},
 	{CMD(emacs_simple), "lib-server:done", "K:CX-#"},
@@ -538,7 +538,7 @@ DEF_CMD(emacs_close_others)
 	if (strcmp(ci->key, "K-1") == 0 && N2(ci) != N2_close_others)
 		return Efallthrough;
 
-	if (call("Window:close-others", ci->focus) <= 0)
+	if (call("Tile:close-others", ci->focus) <= 0)
 		return Efalse;
 	call("Mode:set-num2", ci->focus, N2_close_others);
 	call("Message:modal", ci->focus, 0, NULL, "Type 1 to close more");
@@ -2279,9 +2279,9 @@ DEF_CMD(emacs_shift_again)
 DEF_CMD(emacs_growx)
 {
 	if (ci->key[strlen(ci->key)-1] == '}')
-		call("Window:x+", ci->focus, ci->num);
+		call("Tile:x+", ci->focus, ci->num);
 	else
-		call("Window:x-", ci->focus, ci->num);
+		call("Tile:x-", ci->focus, ci->num);
 	call("Mode:set-num2", ci->focus, N2_growx);
 	call("Message:modal", ci->focus, 0, NULL, "Type { or } to grow again");
 	return 1;

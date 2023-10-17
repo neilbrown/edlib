@@ -570,7 +570,7 @@ DEF_CMD(basic_interactive_delete)
 
 DEF_CMD(basic_close)
 {
-	call("Window:close", ci->focus);
+	call("Tile:close", ci->focus);
 	return 1;
 }
 

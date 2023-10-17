@@ -130,7 +130,7 @@ if sys.argv[0] == "":
                 if  cmd == "request-close":
                     if self.term:
                         # trigger finding a new document
-                        self.term.call("Window:bury")
+                        self.term.call("Tile:bury")
                     self.want_close = True
                     self.sock.send(b"OK")
                     return 1
@@ -140,7 +140,7 @@ if sys.argv[0] == "":
                     if p:
                         for v in env:
                             p.call("window:set:", env[v], v)
-                        p.call("Window:bury")
+                        p.call("Tile:bury")
 
                     self.term = p
                     self.sock.send(b'OK')
@@ -269,7 +269,7 @@ if sys.argv[0] == "":
                 focus.call("doc:notify:doc:done")
                 # FIXME need something better than 'bury'
                 # If it was already visible, it should stay that way
-                focus.call("Window:bury")
+                focus.call("Tile:bury")
         else:
             # Find and visit a doc waiting to be done
             choice = []
