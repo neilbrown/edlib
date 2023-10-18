@@ -576,7 +576,7 @@ DEF_CMD(basic_close)
 
 DEF_CMD(basic_refresh)
 {
-	call("window:refresh", ci->focus);
+	call("Window:refresh", ci->focus);
 	return 1;
 }
 

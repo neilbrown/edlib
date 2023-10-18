@@ -682,13 +682,13 @@ class PresenterPane(edlib.Pane):
         "handle:K:A-f"
         if self.borderless:
             self.call("Tile:border", 1)
-            self.call("window:border", 1)
-            self.call("window:fullscreen", -1)
+            self.call("Window:border", 1)
+            self.call("Window:fullscreen", -1)
             self.borderless = False
         else:
             self.call("Tile:border", -1)
-            self.call("window:border", -1)
-            self.call("window:fullscreen", 1)
+            self.call("Window:border", -1)
+            self.call("Window:fullscreen", 1)
             self.borderless = True
         return 1
 
@@ -719,7 +719,7 @@ class MarkdownPane(edlib.Pane):
         return 1
 
     def handle_refresh(self, key, focus, mark, **a):
-        "handle:window:refresh"
+        "handle:Window:refresh"
         # Refresh causes presentation page to recenter
         # page-down just moves down to start of next page.
         focus.call("doc:notify:doc:Recentre", mark)

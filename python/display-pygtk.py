@@ -72,7 +72,7 @@ class EdDisplay(edlib.Pane):
         return 1
 
     def handle_close_window(self, key, focus, **a):
-        "handle:window:close"
+        "handle:Window:close"
         nc = self['no-close']
         if nc:
             focus.call("Message", nc)
@@ -86,7 +86,7 @@ class EdDisplay(edlib.Pane):
         return 1
 
     def handle_fullscreen(self, key, num, **a):
-        "handle:window:fullscreen"
+        "handle:Window:fullscreen"
         if num > 0:
             self.win.fullscreen()
         else:
@@ -94,16 +94,16 @@ class EdDisplay(edlib.Pane):
         return 1
 
     def handle_new(self, key, focus, **a):
-        "handle:window:new"
+        "handle:Window:new"
         p = focus.call("attach-window-core", ret='pane')
         if not p:
             return edlib.Efail
         newdisp = EdDisplay(p, self['DISPLAY'])
-        newdisp.call("window:activate-display", focus)
+        newdisp.call("Window:activate-display", focus)
         return 1
 
     def handle_external(self, key, str, **a):
-        "handle:window:external-viewer"
+        "handle:Window:external-viewer"
         disp = self['DISPLAY']
         if not str or not disp:
             return edlib.Enoarg
@@ -545,11 +545,11 @@ class EdDisplay(edlib.Pane):
         # This must not happen. What should I do?
 
     def close_win(self, *a):
-        self.call("window:close")
+        self.call("Window:close")
         return True
 
     def destroy_win(self, *a):
-        self.parent("window:close")
+        self.parent("Window:close")
         return False
 
     def create_ui(self):
@@ -805,7 +805,7 @@ def new_display(key, focus, comm2, str1, **a):
         return edlib.Efail;
     disp = EdDisplay(p, display)
     if key == "interactive-cmd-gtkwindow":
-        p = disp.call("window:activate-display", focus, ret='pane')
+        p = disp.call("Window:activate-display", focus, ret='pane')
     if comm2:
         comm2('callback', p)
     return 1

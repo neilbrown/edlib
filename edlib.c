@@ -117,25 +117,25 @@ int main(int argc, char *argv[])
 			char *e;
 			e = getenv("SSH_CONNECTION");
 			if (e && *e)
-				call("window:set:REMOTE_SESSION", p,
+				call("Window:set:REMOTE_SESSION", p,
 				     0, NULL, "yes");
 
-			call("window:set:DISPLAY", p,
+			call("Window:set:DISPLAY", p,
 			     0, NULL, getenv("DISPLAY"));
-			call("window:set:XAUTHORITY", p,
+			call("Window:set:XAUTHORITY", p,
 			     0, NULL, getenv("XAUTHORITY"));
 			if (!first_window)
 				first_window = p;
-			call("window:set:no-close", p, 1, NULL,
+			call("Window:set:no-close", p, 1, NULL,
 			     "Cannot close primary display");
-			home_call(p, "window:activate-display", doc);
+			home_call(p, "Window:activate-display", doc);
 		}
 	}
 
 	if (gtk) {
 		p = call_ret(pane, "attach-display-gtk",
 			     ed, 0, NULL, getenv("DISPLAY"));
-		home_call(p, "window:activate-display", doc);
+		home_call(p, "Window:activate-display", doc);
 		if (!first_window)
 			first_window = p;
 	}
@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
 		p = call_ret(pane, "attach-display-x11",
 			     ed, 0, NULL, getenv("DISPLAY"),
 			     0, NULL, getenv("XAUTHORITY"));
-		home_call(p, "window:activate-display", doc);
+		home_call(p, "Window:activate-display", doc);
 		if (!first_window)
 			first_window = p;
 	}

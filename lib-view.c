@@ -414,7 +414,7 @@ static struct pane *do_view_attach(struct pane *par safe, int border)
 	call("doc:request:doc:replaced", p);
 	call("doc:request:mark:moving", p);
 	/* And update display-context */
-	call("window:request:display-context", p);
+	call("Window:request:display-context", p);
 	return p;
 }
 

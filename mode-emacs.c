@@ -460,7 +460,7 @@ DEF_CMD(emacs_recenter)
 	} else {
 		/* Move point to middle and refresh */
 		call("Move-View-Line", ci->focus, 0, ci->mark);
-		call("window:refresh", ci->focus);
+		call("Window:refresh", ci->focus);
 	}
 	call("Mode:set-num2", ci->focus, N2_recentre | (step << 16));
 	return 1;
@@ -481,8 +481,8 @@ static struct simple_command {
 	{CMD(emacs_simple), "Tile:split-x", "K:CX-3"},
 	{CMD(emacs_simple), "Tile:close", "K:CX-0"},
 	{CMD(emacs_simple), "Tile:bury", "K:A-B"},
-	{CMD(emacs_simple), "window:new", "K:CX5-2"},
-	{CMD(emacs_simple), "window:close", "K:CX5-0"},
+	{CMD(emacs_simple), "Window:new", "K:CX5-2"},
+	{CMD(emacs_simple), "Window:close", "K:CX5-0"},
 	{CMD(emacs_simple), "lib-server:done", "K:CX-#"},
 	{CMD(emacs_simple), "mode-swap-mark", "K:CX:C-X"},
 	{CMD(emacs_simple), "Abort", "K:C-G"},
@@ -2323,7 +2323,7 @@ DEF_CMD(emacs_scale_relative)
 	else
 		scale = 12 * scale / 10;
 	snprintf(num, sizeof(num)-1, "%d", scale);
-	call("window:set:scale", p, 0, NULL, num);
+	call("Window:set:scale", p, 0, NULL, num);
 	return 1;
 }
 

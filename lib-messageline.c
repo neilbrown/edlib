@@ -69,8 +69,8 @@ DEF_CMD(messageline_msg)
 	if (ci->str && (strcmp(ci->key, "Message:default") != 0 ||
 			mli->message == NULL)) {
 		if (!mli->message) {
-			call("window:request:Keystroke-notify", ci->home);
-			call("window:request:Mouse-event-notify", ci->home);
+			call("Window:request:Keystroke-notify", ci->home);
+			call("Window:request:Mouse-event-notify", ci->home);
 		}
 		if (strcmp(ci->key, "Message:modal") == 0) {
 			free(mli->modal);
@@ -105,8 +105,8 @@ DEF_CMD(messageline_abort)
 	struct mlinfo *mli = ci->home->data;
 
 	if (!mli->message) {
-		call("window:request:Keystroke-notify", ci->home);
-		call("window:request:Mouse-event-notify", ci->home);
+		call("Window:request:Keystroke-notify", ci->home);
+		call("Window:request:Mouse-event-notify", ci->home);
 	}
 	free(mli->message);
 	mli->message = strdup("ABORTED");
@@ -298,7 +298,7 @@ void edlib_init(struct pane *ed safe)
 		return;
 	messageline_map = key_alloc();
 	key_add(messageline_map, "Clone", &messageline_clone);
-	key_add(messageline_map, "window:border", &messageline_border);
+	key_add(messageline_map, "Window:border", &messageline_border);
 	key_add(messageline_map, "Message", &messageline_msg);
 	key_add(messageline_map, "Message:modal", &messageline_msg);
 	key_add(messageline_map, "Message:default", &messageline_msg);

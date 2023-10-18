@@ -50,9 +50,9 @@ class CapturePane(edlib.Pane):
         while root.parent != root:
             root = root.parent
         edlib.Pane.__init__(self, root)
-        focus.call("window:request:Keystroke-notify", self)
-        focus.call("window:request:macro:capture-active", self)
-        focus.call("window:request:macro:capture-done", self)
+        focus.call("Window:request:Keystroke-notify", self)
+        focus.call("Window:request:macro:capture-active", self)
+        focus.call("Window:request:macro:capture-done", self)
         focus.call("Mode:set-mode", str2 = "()")
         self.line = []
 
@@ -82,23 +82,23 @@ class CapturePane(edlib.Pane):
         return ret
 
 def start_capture(key, focus, **a):
-    if focus.call("window:notify:macro:capture-active") >= 1:
+    if focus.call("Window:notify:macro:capture-active") >= 1:
         # capture currently active
         return edlib.Efalse
     CapturePane(focus)
-    if focus.call("window:notify:macro:capture-active") >= 1:
+    if focus.call("Window:notify:macro:capture-active") >= 1:
         # Good, it is active now
         return 1
     return edlib.Efail
 
 def end_capture(key, focus, num, **a):
     try:
-        if focus.call("window:notify:macro:capture-active") <= 0:
+        if focus.call("Window:notify:macro:capture-active") <= 0:
             # capture currently active
             return edlib.Efalse
     except edlib.commandfailed:
         return edlib.Efalse
-    ret = focus.call("window:notify:macro:capture-done", num)
+    ret = focus.call("Window:notify:macro:capture-done", num)
     if ret == 0:
         return edlib.Efalse
     if ret > 0:

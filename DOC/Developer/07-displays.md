@@ -97,11 +97,11 @@ Draw:image
 
 ## Window management commands
 
-window:close
-window:set:no-close
-window:external-viewer
-window:fullscreen
-window:new
+Window:close
+Window:set:no-close
+Window:external-viewer
+Window:fullscreen
+Window:new
 
 
 all-displays

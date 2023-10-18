@@ -107,7 +107,7 @@ DEF_CMD(set_mode)
 		free((void*)im->context);
 		im->context = strdup(ci->str2);
 		attr_set_str(&ci->home->attrs, "display-context", im->context);
-		call("window:notify:display-context", ci->home);
+		call("Window:notify:display-context", ci->home);
 	}
 	report_status(ci->focus, im);
 	return 1;
@@ -142,7 +142,7 @@ DEF_CMD(set_all)
 		free((void*)im->context);
 		im->context = strdup(ci->str2);
 		attr_set_str(&ci->home->attrs, "display-context", im->context);
-		call("window:notify:display-context", ci->home);
+		call("Window:notify:display-context", ci->home);
 	}
 	im->num = ci->num;
 	im->num2 = ci->num;
@@ -192,7 +192,7 @@ DEF_CMD(keystroke)
 	if (!ci->str)
 		return Enoarg;
 
-	call("window:notify:Keystroke-notify", ci->home, 0, NULL, ci->str);
+	call("Window:notify:Keystroke-notify", ci->home, 0, NULL, ci->str);
 	log_add(im, "K", ci->str);
 
 	im->mode = strdup("");
@@ -293,7 +293,7 @@ DEF_CMD(mouse_event)
 	if (!ci->str)
 		return Enoarg;
 
-	call("window:notify:Mouse-event-notify", ci->home,
+	call("Window:notify:Mouse-event-notify", ci->home,
 	     ci->num, NULL, ci->str,
 	     ci->num2);
 	log_add(im, "M", ci->str);

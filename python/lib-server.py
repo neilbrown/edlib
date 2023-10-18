@@ -51,7 +51,7 @@ if sys.argv[0] == "":
 
             if not msg :
                 if self.disp:
-                    self.disp.call("window:close")
+                    self.disp.call("Window:close")
                 if self.sock:
                     self.sock.close()
                 self.sock = None
@@ -123,7 +123,7 @@ if sys.argv[0] == "":
                     self.add_notify(d, "Notify:Close")
                     self.doc = d
                     if self.term:
-                        self.term.call("window:set:no-close",
+                        self.term.call("Window:set:no-close",
                                        "Cannot close display until document done - use 'C-x #'")
                     self.sock.send(b"OK")
                     return 1
@@ -139,7 +139,7 @@ if sys.argv[0] == "":
                                     arg, env['XAUTHORITY'], ret='pane')
                     if p:
                         for v in env:
-                            p.call("window:set:", env[v], v)
+                            p.call("Window:set:", env[v], v)
                         p.call("Tile:bury")
 
                     self.term = p
@@ -151,8 +151,8 @@ if sys.argv[0] == "":
                     p = p.call("attach-display-ncurses", path, env['TERM'],
                                ret='pane')
                     for v in env:
-                        p.call("window:set:", env[v], v)
-                    p = p.call("window:activate-display", ret='pane')
+                        p.call("Window:set:", env[v], v)
+                    p = p.call("Window:activate-display", ret='pane')
                     self.term = p
                     self.disp = self.term
                     self.add_notify(self.disp, "Notify:Close")
@@ -167,8 +167,8 @@ if sys.argv[0] == "":
                     return 1
                 if cmd == "close":
                     if self.disp:
-                        self.disp.call("window:set:no-close")
-                        self.disp.call("window:close")
+                        self.disp.call("Window:set:no-close")
+                        self.disp.call("Window:close")
                         self.disp = None
                     self.call("event:free", self.read)
                     self.sock.close()
@@ -201,8 +201,8 @@ if sys.argv[0] == "":
                 # same as doc:done
                 self.doc = None
                 if self.term:
-                    self.term.call("window:set:no-close")
-                    self.term.call("window:close")
+                    self.term.call("Window:set:no-close")
+                    self.term.call("Window:close")
                 self.sock.send(b"Done")
             return 1
 
@@ -210,8 +210,8 @@ if sys.argv[0] == "":
             "handle:doc:done"
             if str != "test":
                 if self.term:
-                    self.term.call("window:set:no-close")
-                    self.term.call("window:close")
+                    self.term.call("Window:set:no-close")
+                    self.term.call("Window:close")
                 self.sock.send(b"Done")
             return 1
 
@@ -243,7 +243,7 @@ if sys.argv[0] == "":
                 self.sock.close()
                 self.sock = None
             if self.disp:
-                self.disp.call("window:close")
+                self.disp.call("Window:close")
                 self.disp = None
 
     global server_sock
