@@ -1594,7 +1594,7 @@ DEF_CMD(render_lines_set_cursor)
 					;
 				}
 				call(tag, focus, 0, m2, xyattr,
-				     0, ci->mark, NULL,
+				     0, ci->mark, action,
 				     cih.x, cih.y);
 			}
 			m = m2;
@@ -1639,7 +1639,7 @@ DEF_CMD(render_lines_action)
 	tag = get_action_tag(ci->str, attr);
 	if (!tag)
 		return Efallthrough;
-	call(tag, focus, 0, m, attr);
+	call(tag, focus, 0, m, attr, 0, NULL, ci->str);
 	return 1;
 }
 

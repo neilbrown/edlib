@@ -70,10 +70,11 @@ class url_view(edlib.Pane):
             if str1 == "render:url-end":
                 leng = -1
             comm2("attr:callback", focus, leng, mark,
-                  "fg:cyan-60,underline,action-activate:Activate:url,url-tag="+tg, 120)
+                  "fg:cyan-60,underline,action-prepare:Activate:url,"
+                  "action-activate:Activate:url,url-tag="+tg, 120)
             return 1
 
-    def handle_click(self, key, focus, mark, str1, **a):
+    def handle_click(self, key, focus, mark, str1, str2, **a):
         "handle:Activate:url"
         a = str1.split(',')
         tag=""
@@ -91,7 +92,7 @@ class url_view(edlib.Pane):
             url = focus["url:" + tag]
         if url:
             focus.call("Message", "Url: <%s>" % url)
-            if self.displayed_tag == tag:
+            if self.displayed_tag == tag and str2 != "prepare":
                 focus.call("Window:external-viewer", url)
             self.displayed_tag = tag
         else:

@@ -183,7 +183,8 @@ DEF_CMD(basic_press)
 		return Efallthrough;
 	}
 	/* NOTE must find new location before view changes. */
-	call("Move-CursorXY", ci->focus, 0, m, NULL, 0, NULL, NULL, ci->x, ci->y);
+	call("Move-CursorXY", ci->focus, 0, m, "prepare",
+	     0, NULL, NULL, ci->x, ci->y);
 
 	clear_selection(ci->focus, pt, mk, 0);
 	call("Move-to", ci->focus, 0, m);
