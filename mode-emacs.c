@@ -1358,6 +1358,9 @@ REDEF_CMD(emacs_file_complete)
 		return Efail;
 	cr = call_ret(all, "Complete:prefix", p, 1, NULL, b,
 		      0, NULL, "format:plain");
+	if (cr.s && cr.ret-1 > 1 && cr.s[strlen(cr.s)-1] == '/')
+		/* Trailing slash on non-unique name must be removed */
+		cr.s[strlen(cr.s)-1] = '\0';
 	if (cr.s && (strlen(cr.s) <= strlen(b) && cr.ret-1 > 1)) {
 		/* We need the dropdown - delete prefix and drop-down will
 		 * insert result.

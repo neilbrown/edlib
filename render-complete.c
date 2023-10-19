@@ -455,6 +455,7 @@ DEF_CB(set_cb)
 		cb->common = NULL;
 		free(cb->common_pre);
 		cb->common_pre = NULL;
+		cb->cnt = 0;
 	}
 
 	if (this_match == cb->best_match) {
@@ -481,8 +482,8 @@ DEF_CB(set_cb)
 			cb->common_pre[match-c] = 0;
 		} else
 			adjust_pre(cb->common_pre, c, match-c);
+		cb->cnt += 1;
 	}
-	cb->cnt += 1;
 	return 1;
 }
 
