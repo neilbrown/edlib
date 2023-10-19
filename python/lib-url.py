@@ -12,6 +12,7 @@
 #  - handles Acivate:url to also activate the url
 
 import edlib
+import time
 
 def mark_urls(key, focus, mark, mark2, **a):
     doc = focus
@@ -56,6 +57,7 @@ class url_view(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
         self.displayed_tag = None
+        self.down_time = 0
 
     def handle_map_attr(self, key, focus, mark, str1, str2, comm2, **a):
         "handle:map-attr"
@@ -92,8 +94,13 @@ class url_view(edlib.Pane):
             url = focus["url:" + tag]
         if url:
             focus.call("Message", "Url: <%s>" % url)
-            if self.displayed_tag == tag and str2 != "prepare":
+            if str2 == "prepare":
+                self.down_time = time.time()
+            if (self.displayed_tag == tag and str2 != "prepare" and
+                (self.down_time == 0 or self.down_time + 1 > time.time())):
                 focus.call("Window:external-viewer", url)
+            if str2 != "prepare":
+                self.down_time = 0
             self.displayed_tag = tag
         else:
             focus.call("Message", "URL tag %s not found" % tag)
