@@ -269,7 +269,12 @@ if sys.argv[0] == "":
                 focus.call("doc:notify:doc:done")
                 # FIXME need something better than 'bury'
                 # If it was already visible, it should stay that way
-                focus.call("Tile:bury")
+
+                # tile might already be closed, so catch errors
+                try:
+                    focus.call("Tile:bury")
+                except edlib.commandfailed:
+                    pass
         else:
             # Find and visit a doc waiting to be done
             choice = []

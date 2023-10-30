@@ -43,6 +43,11 @@ the file.
 - [ ] notmuch - capture errors about multiple Subject lines and
       display them better.
 - [ ] switch display-pygtk to use Draw:scale-image
+- [ ] when add address to a query in notmuch, reassess the current
+      query.  Maybe don't reload, but make sure that next reload will
+      used updated query.
+- [ ] get too many Failed:: C-N C-P Up C-R history:C-R A-!
+      Maybe these should return Efalse, not Efail
 
 ### Small
 
@@ -269,6 +274,11 @@ Module features
 - [ ] catch broken-pipe errors when sending to sock
 - [ ] ctrl-z in elc doesn't ask edlib to release the terminal
 - [ ] do we need both .term and .disp?  When are they different?
+- [ ] Catch broken-pipe in all sock.send calls
+- [ ] elc: run edlib in background first if no socket
+- [ ] option to create a new frame
+- [ ] improve protocol
+
 
 ### lib-x11selection-xcb
 
@@ -539,13 +549,6 @@ Module features
 - [ ]  If no output, don't create a pane??  Or just one online.
 - [ ]  Detect ^M in output and handle it... delete from start of line?
 - [ ] always track time for a run and report it - or at least make it available
-
-###  edlibclient
-- [ ] Catch broken-pipe in all sock.send calls
-- [ ] run edlib directly if no socket
-- [ ] option to create a new frame
-- [ ] more work on server mode:
-- [ ] improve protocol
 
 ### line count
 
