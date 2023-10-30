@@ -46,7 +46,7 @@ the file.
 - [ ] when add address to a query in notmuch, reassess the current
       query.  Maybe don't reload, but make sure that next reload will
       used updated query.
-- [ ] get too many Failed:: C-N C-P Up C-R history:C-R A-!
+- [X] get too many Failed:: C-N C-P Up C-R history:C-R A-!
       Maybe these should return Efalse, not Efail
 
 ### Small

@@ -1726,13 +1726,13 @@ DEF_CMD(render_lines_move_line)
 	num = RPT_NUM(ci);
 	if (call("doc:EOL", ci->focus, num, m, NULL, 1) <= 0) {
 		rl->i_moved = 0;
-		return Efail;
+		return Efalse;
 	}
 	if (RPT_NUM(ci) < 0) {
 		/* at end of target line, move to start */
 		if (call("doc:EOL", ci->focus, -1, m) <= 0) {
 			rl->i_moved = 0;
-			return Efail;
+			return Efalse;
 		}
 	}
 
