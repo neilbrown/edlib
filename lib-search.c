@@ -217,6 +217,101 @@ DEF_CB(search_test)
 		free(ret);
 		return 1;
 	}
+	if (strcmp(ci->key, "reverse") == 0) {
+		/* Search backward from @mark in @focus for a match, or
+		 * until we hit @mark2.  Leave @mark at the start of the
+		 * match.  Return length of match, or negative.
+		 *
+		 * rexel only lets us search forwards, and stepping back one
+		 * char at a time to match the pattern is too slow.
+		 * So we step back a steadily growing number of chars and search
+		 * forward as far as the previous location.  Once we
+		 * find any match, we check if there is a later one that
+		 * still satisfies.
+		 */
+		int step_size = 65536;
+		int maxlen;
+		int ret = -1;
+		struct mark *m, *start, *end, *endmark;
+		struct mark *m2 = ci->mark2;
+		struct pane *p = ci->focus;
+
+		if (!ci->mark)
+			return Enoarg;
+		m = mark_dup(ci->mark); /* search cursor */
+		start = mark_dup(ci->mark); /* start of the range being searched */
+		end = mark_dup(ci->mark); /* end of the range being searched */
+
+		ss->end = end;
+		if (!ss->endmark)
+			ss->endmark = ci->mark;
+		endmark = ss->endmark;
+		ss->anchor_at_end = True;
+
+		pane_set_time(p);
+
+		while (!m2 || m2->seq < start->seq) {
+			mark_to_mark(end, start);
+			call("doc:char", p, -step_size, start, NULL, 0, m2);
+			if (mark_same(start, end))
+				/* We have hit the start(m2), don't continue */
+				break;
+			step_size *= 2;
+			ss->prev_ch = doc_prior(p, start);
+			ss->st = rxl_prepare(ss->rxl, 0);
+			ss->prev_point = ss->point ? mark_same(ss->point, m) : False;
+
+			mark_to_mark(m, start);
+			call_comm("doc:content", p, &ss->c, 0, m);
+			rxl_info(ss->st, &maxlen, NULL, NULL, NULL);
+			rxl_free_state(ss->st);
+			if (maxlen >= 0) {
+				/* found a match */
+				ret = maxlen;
+				break;
+			}
+
+			if (pane_too_long(p, 2000)) {
+				/* FIXME returning success is wrong if
+				 * we timed out But I want to move the
+				 * point, and this is easiest.  What do
+				 * I really want here?  Do I just need
+				 * to make reverse search faster?
+				 */
+				mark_to_mark(endmark, start);
+				ret = 0;
+				break;
+			}
+		}
+		while (maxlen >= 0) {
+			/* There is a match starting at 'endmark'.
+			 * The might be a later match - check for it.
+			 */
+			call("doc:char", p, -maxlen, ss->endmark);
+			if (mark_ordered_not_same(end, ss->endmark))
+				break;
+			ret = maxlen;
+			if (endmark != ss->endmark &&
+			    mark_ordered_or_same(ss->endmark, endmark))
+				/* Didn't move forward!!  Presumably
+				 * buggy doc:step implementation.
+				 */
+				break;
+
+			mark_to_mark(endmark, ss->endmark);
+			ss->endmark = m;
+			mark_to_mark(start, endmark);
+			ss->prev_ch = doc_next(p, start);
+			ss->st = rxl_prepare(ss->rxl, 0);
+			call_comm("doc:content", p, &ss->c, 0, start);
+			rxl_info(ss->st, &maxlen, NULL, NULL, NULL);
+			rxl_free_state(ss->st);
+		}
+		mark_free(start);
+		mark_free(end);
+		mark_free(m);
+		return ret;
+	}
 	return Efail;
 }
 
@@ -265,85 +360,24 @@ static int search_backward(struct pane *p safe,
 	 * rexel only lets us search forwards, and stepping back
 	 * one char at a time to match the pattern is too slow.
 	 * So we step back a steadily growing number of
-	 * chars, and search forward as far as the previous location.
+	 * chars, and search forward as pfar as the previous location.
 	 * Once we find any match, we check if there is a later one
 	 * that still satisfies.
 	 */
 	struct search_state ss;
-	int step_size = 65536;
-	int maxlen;
-	int ret = -1;
-	struct mark *start = mark_dup(m); /* Start of the range to search */
-	struct mark *end = mark_dup(m);
 
-	ss.end = end;
+	if (m2 && m->seq <= m2->seq)
+		return -1;
+
+	ss.rxl = rxl;
+	ss.st = rxl_prepare(rxl, 0);
+	ss.prefix_len = rxl_prefix(rxl, ss.prefix, sizeof(ss.prefix));
+	ss.end = m2;
 	ss.endmark = endmark;
 	ss.point = point;
+	ss.prev_point = point ? mark_same(point, m) : False;
 	ss.c = search_test;
-	ss.prefix_len = rxl_prefix(rxl, ss.prefix, sizeof(ss.prefix));
-	ss.anchor_at_end = True;
-
-	pane_set_time(p);
-
-	while (!m2 || m2->seq < start->seq) {
-		mark_to_mark(end, start);
-		call("doc:char", p, -step_size, start, NULL, 0, m2);
-		if (mark_same(start, end))
-			/* We have hit the start, don't continue */
-			break;
-		step_size *= 2;
-		ss.prev_ch = doc_prior(p, start);
-		ss.st = rxl_prepare(rxl, 0);
-		ss.prev_point = point ? mark_same(point, m) : False;
-
-		mark_to_mark(m, start);
-		call_comm("doc:content", p, &ss.c, 0, m);
-		rxl_info(ss.st, &maxlen, NULL, NULL, NULL);
-		rxl_free_state(ss.st);
-		if (maxlen >= 0) {
-			/* found a match */
-			ret = maxlen;
-			break;
-		}
-
-		if (pane_too_long(p, 2000)) {
-			/* FIXME returning success is wrong if we timed out
-			 * But I want to move the point, and this is easiest.
-			 * What do I really want here?
-			 * Do I just need to make reverse search faster?
-			 */
-			mark_to_mark(endmark, start);
-			ret = 0;
-			break;
-		}
-	}
-	while (maxlen >= 0) {
-		/* There is a match starting at 'endmark'.
-		 * The might be a later match - check for it.
-		 */
-		call("doc:char", p, -maxlen, ss.endmark);
-		if (mark_ordered_not_same(end, ss.endmark))
-			break;
-		ret = maxlen;
-		if (endmark != ss.endmark &&
-		    mark_ordered_or_same(ss.endmark, endmark))
-			/* Didn't move forward!!  Presumably
-			 * buggy doc:step implementation.
-			 */
-			break;
-
-		mark_to_mark(endmark, ss.endmark);
-		ss.endmark = m;
-		mark_to_mark(start, endmark);
-		ss.prev_ch = doc_next(p, start);
-		ss.st = rxl_prepare(rxl, 0);
-		call_comm("doc:content", p, &ss.c, 0, start);
-		rxl_info(ss.st, &maxlen, NULL, NULL, NULL);
-		rxl_free_state(ss.st);
-	}
-	mark_free(start);
-	mark_free(end);
-	return ret;
+	return comm_call(&ss.c, "reverse", p, 0, m, NULL, 0, m2);
 }
 
 DEF_CMD(text_search)

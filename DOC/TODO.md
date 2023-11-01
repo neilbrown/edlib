@@ -34,18 +34,7 @@ the file.
 - [X] search hangs when seeking "^( *)"
 - [X] selection-menu item to show git-commit from list of known git
       trees
-- [ ] selection-menu item for word-count
 - [X] selection-menu item for QR-code
-- [ ] selection-menu sub-menu for UPPER lower Caps ??
-- [ ] selection-menu item for text-fill
-- [ ] selection-menu item for spell-check ??
-- [ ] selection-menu item to view a named file - in Popup:Tile
-- [ ] notmuch - capture errors about multiple Subject lines and
-      display them better.
-- [ ] switch display-pygtk to use Draw:scale-image
-- [ ] when add address to a query in notmuch, reassess the current
-      query.  Maybe don't reload, but make sure that next reload will
-      used updated query.
 - [X] get too many Failed:: C-N C-P Up C-R history:C-R A-!
       Maybe these should return Efalse, not Efail
 
@@ -64,7 +53,7 @@ the file.
 
 - [X] split range management out of autospell so it can be used by other
       modules.
-- [ ] make it easy for a make-search command to search backwards
+- [X] make it easy for a make-search command to search backwards
 - [X] Make a start on CUA mode with mouse/menu/selection support.
       Also Function keys: help, close, refresh
 
@@ -265,6 +254,7 @@ Module features
 
 ### lib-linecount
 
+- [ ] selection-menu item for word-count
 - [ ] handle view:changed properly, and make sure total count changes
       appropriately in notmuch-query-view.  Maybe view:changed should
       report if content changed, or just attributes.
@@ -295,6 +285,7 @@ Module features
 - [X] auto-wrap on a line like this one doesn't recognize all the
   punctuation a the start of the line ... should it?
 - [X] fill mode to handle all punctuation at start of this line
+- [ ] selection-menu item for text-fill
 
 ### render-format
 
@@ -303,7 +294,7 @@ Module features
 
 ### lib-search
 
-- [ ] make it easy for a make-search command to search backwards
+- [X] make it easy for a make-search command to search backwards
 
 ### autosave
 
@@ -356,6 +347,8 @@ Module features
 
 ### emacs
 
+- [ ] selection-menu sub-menu for UPPER lower Caps ??
+- [ ] selection-menu item to view a named file - in Popup:Tile
 - [ ] multi-file search-replace.  Find files with 'git-grep'
 - [ ] there is no way to count characters in a range, or find how many
       characters into the document I am.  Maybe bytes would be good too.
@@ -400,6 +393,7 @@ Module features
 
 ### pygtk
 
+- [ ] switch display-pygtk to use Draw:scale-image
 - [ ] can we capture the substates of character composition, and give
       feed-back?
 
@@ -629,6 +623,9 @@ Module features
 
 ###  Notmuch message display
 
+- [ ] when add address to a query in notmuch, reassess the current
+      query.  Maybe don't reload, but make sure that next reload will
+      used updated query.
 - [X] notmuch addresses in From: list to have menu to add address to
       any from-* query
 - [ ] "%d quoted lines" still not quite right.  Moving 'down' past it
@@ -683,6 +680,8 @@ Module features
 
 ### Notmuch composition
 
+- [ ] notmuch - capture errors about multiple Subject lines and
+      display them better.
 - [ ] when aborting email composition, unlink the file if it is
       empty.  Probably dispose of autosave too.
 - [ ] should I look for Delivered-to headers. Even;
@@ -849,6 +848,7 @@ Module features
 - [ ] Some way for 'c-mode' to report where comments are so they can be spell-checked
 - [ ] drop-down with options
 - [ ] unify UI with dynamic-completion
+- [ ] selection-menu item for spell-check ??
 - [X] split range management out of autospell so it can be used by other
   modules.
 
