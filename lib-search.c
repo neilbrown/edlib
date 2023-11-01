@@ -217,6 +217,33 @@ DEF_CB(search_test)
 		free(ret);
 		return 1;
 	}
+	if (strcmp(ci->key, "forward") == 0) {
+		/* Search forward from @mark in @focus for a match, or
+		 * until we hit @mark2.  Leave @mark at the end of the
+		 * match unless ->endmark was set in which case leave that
+		 * at the end.
+		 */
+		int maxlen;
+		struct mark *m2 = ci->mark2;
+		struct pane *p = ci->focus;
+		struct mark *m;
+
+		if (!ci->mark)
+			return Enoarg;
+		if (m2 && ci->mark->seq >= m2->seq)
+			return -1;
+
+		m = mark_dup(ci->mark); /* search cursor */
+		ss->st = rxl_prepare(ss->rxl, ci->num & 1 ? RXLF_ANCHORED : 0);
+		ss->anchor_at_end = False;
+		ss->prev_ch = doc_prior(p, m);
+		ss->prev_point = ss->point ? mark_same(ss->point, m) : False;
+		call_comm("doc:content", p, &ss->c, 0, m, NULL, 0, m2);
+		rxl_info(ss->st, &maxlen, NULL, NULL, NULL);
+		rxl_free_state(ss->st);
+		mark_free(m);
+		return maxlen;
+	}
 	if (strcmp(ci->key, "reverse") == 0) {
 		/* Search backward from @mark in @focus for a match, or
 		 * until we hit @mark2.  Leave @mark at the start of the
@@ -330,18 +357,13 @@ static int search_forward(struct pane *p safe,
 
 	if (m2 && m->seq >= m2->seq)
 		return -1;
-	ss.st = rxl_prepare(rxl, anchored ? RXLF_ANCHORED : 0);
+	ss.rxl = rxl;
 	ss.prefix_len = rxl_prefix(rxl, ss.prefix, sizeof(ss.prefix));
 	ss.end = m2;
 	ss.endmark = endmark;
 	ss.point = point;
-	ss.prev_point = point ? mark_same(point, m) : False;
 	ss.c = search_test;
-	ss.prev_ch = doc_prior(p, m);
-	ss.anchor_at_end = False;
-	call_comm("doc:content", p, &ss.c, 0, m, NULL, 0, m2);
-	rxl_info(ss.st, &maxlen, NULL, NULL, NULL);
-	rxl_free_state(ss.st);
+	return comm_call(&ss.c, "forward", p, anchored, m, NULL, 0, m2);
 	return maxlen;
 }
 
