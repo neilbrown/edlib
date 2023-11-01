@@ -9,68 +9,22 @@ the file.
 
 ### Triage
 
-- [X] w3m hangs for CAAmjac0r78WpiYW9FsJK=+E8-FG4MoxD2zkUJS_oCRyNW+=rug@mail.gmail.com
-      It is writing to stdout which is reading very slowly.
-- [X] in filename completion, TAB might add a '/' to a partial name and
-      then get confused.
-- [X] when search succeeds on final line then trying again loops back to
-      there, redraw is strange
-- [X] There is a "window:close" and a "Window:close" and they are
-      different.  Fix this!
-- [X] unknown keysequence should be reported so e.g. if keyboard
-      is is Greek mode, then I will be told that Cx-b doesn't work
-- [X] menubar doesn't redraw background when resized wider.
-- [X] open second x11 window, use selections.  Close it.  command
-      in x11selection_Xcb gets freed???
-- [X] adding new lines at end of doc in x11 leaves phantom underline
-      cursors.
-- [X] 20230908090027.6AA0DC05B9@prodcs.lwn.net has a wrapped
-      <a> tag which isn't parsed well.
-- [X] find-document - if default doc has <>, displays wrongly.
-- [X] From start-of-file move to end, then up, then down.
-      Display jumps.  Why?
-- [X] Add menubar menu with recent documents?
-- [X] why does clicking on status line go to top-of-file?
-- [X] search hangs when seeking "^( *)"
-- [X] selection-menu item to show git-commit from list of known git
-      trees
-- [X] selection-menu item for QR-code
-- [X] get too many Failed:: C-N C-P Up C-R history:C-R A-!
-      Maybe these should return Efalse, not Efail
 
 ### Small
 
-- [X] notmuch addresses in From: list to have menu to add address to any
-      from-* query
-- [X] Disable <hide> if cursor is in the hidden region.
-- [X] fill mode to handle all punctuation at start of this line
-- [X] Enable lib-menu to show short-cut keys
-- [X] Add menu-bar to lib-menu.  Pop it up on F10 with simple commands
-- [X] attach an extensible menu to the selection
-        cut, copy, paste-in, QR, git-view
 
 ### Medium
 
-- [X] split range management out of autospell so it can be used by other
-      modules.
-- [X] make it easy for a make-search command to search backwards
-- [X] Make a start on CUA mode with mouse/menu/selection support.
-      Also Function keys: help, close, refresh
 
 ### Large
 
-- [X] image-display pane
 - [ ] git-mode
 - [ ] render-markdown.py
-- [X] lib-menu
 - [ ] Remote display
 
 Requirements for a v1.0 release
 -------------------------------
 
-- [X] logo!!!  to use as icon in X11 for example.  Building blocks?
-      Window pane?
-      Maybe a pencil in a window pane
 - [ ] configuration
 - [ ] vi mode
 - [ ] CUA mode
@@ -97,16 +51,10 @@ Core features
       should be much easier
 - [ ] gather memory usage stats per-pane, ensure 0 on close, and allow a dump
 - [ ] show doc size in doc list - include undo size?
-- [X] Ensure all panes that should use "Free" properly, and find some
-      way to encourage its use.
 - [ ] Add optional unit-test interface for modules.  This should be
       implemented at least by lib-search, doc-text and probably many
       others.  It is particularly for things that are awkward to test
       with the ncurses/replay test approach.
-- [X] Send global notify before/after refresh.  LOG must suspend logging
-      (or notifications at least) during refresh if is visible anywhere
-- [X] Do I want "Display" as in "window:close", or "window" as in
-      "window:notify".  Decide, and make everything consistent.
 - [ ] Do I really need global-multicall- or can I just use
       notifications.
       It would mean more modules would need a private pane, but might
@@ -123,39 +71,25 @@ Core features
       hitting a python error - there will be no active view so the
       screen will be meaningless.  I need to properly abort and
       auto-choose a new pane.
-- [X] LOG_BT() doesn't see TYPE_pane and TYPE_comm calls.
 - [ ] LOG should take a pane arg, and not use any static vars.
 - [ ] reduce size of $(nm O/*.o | grep ' b ' | grep -v '_map$')
-- [X] give every pane a link to root/editor main and use that
       instead of statics.  Then maybe times_up() can use pane_too_long()
 - [ ] teach input to allow a repeat command to be registered so that e.g.
       search/replace and do a bit of work, then ask to be called again.
       input can cancel this on suitable input.
 - [ ] should input leave mode unchanged for key that isn't handled at
       all
-- [X] marks can be used after they go invalid too easily.  How to fix??
 - [ ] catching doc:replace in a pane doesn't catch doc:insert-file.
       I need a simple way to intercept any change.
-- [X] switch-buffer in pop-up window - shouldn't kill the popup (does it?)
-- [X] explicitly guard against infinite loops in consistency checks
-- [X] skip consistency checks after several with no stop for input.
 - [ ] unwanted docs too easily appear high in recent-list - *Output*
 - [ ] design a way for a keystroke to interrupt a long-running function.
 - [ ] extend Draw:measure protocol to allow constant-width-fonts to
       cannot-scale displays can be detected and measurement optimised for.
-- [X] improve timeout.  Set timer once, then set a flag so that all commands fail
-      until some top-level clears the flag.
 - [ ] reconsider all 'return comm_call()' calls.  Do we every really
       care if the callback succeeded?
 - [ ] Change Efallthough to -1 so I can return '0' meaningfully.
       Efalse probably becomes 0.
-- [X] send warning message when recursive notification is prohibited.
-       editor:notify:Message:broadcast
 - [ ] Make DEF_CB really different from DEF_CMD and ensure it is used properly.
-- [X] is DocLeaf really a good idea?  Maybe panes should have 'leafward'
-      pointer separate to 'focus'?  Maybe panes could have optional
-      'child' method which returns main child - pane_focus() calls that.
-      Maybe pane_focus() find a pane with z=0 and matching w,h ??
 - [ ] support text-replace as easy as text-insert (doc:char...)
 - [ ] for doc:cmd transformation,  what about :Enter and BS TAB ESC ???
 - [ ] For a notify handler, returning non-zero doesn't stop other handlers
@@ -213,7 +147,6 @@ Module features
 
 ### lib-qrcode
 
-- [X] pop up window to show selection as QR code
 - [ ] text qrcode (qr --ascii foo) don't look right in xcb display
 
 ### workspaces
@@ -282,9 +215,6 @@ Module features
 
 ### lib-textfill
 
-- [X] auto-wrap on a line like this one doesn't recognize all the
-  punctuation a the start of the line ... should it?
-- [X] fill mode to handle all punctuation at start of this line
 - [ ] selection-menu item for text-fill
 
 ### render-format
@@ -293,8 +223,6 @@ Module features
 - [ ] profile performance to find opportunities for optimisation.
 
 ### lib-search
-
-- [X] make it easy for a make-search command to search backwards
 
 ### autosave
 
@@ -434,12 +362,8 @@ Module features
 
 ### lib-markup
 
-- [X] Move <hide> handling to lib-renderline so we can disable <hide>
-      if cursor is in the hidden region.
-
 ### lib-macro
 
-- [X] don't allow starting macro inside a macro
 - [ ] detect errors including Abort and search failure etc. Abort capture or
       replay on error
 - [ ] Possibly wait for a shell-command etc to complete before continuing.
@@ -469,7 +393,6 @@ Module features
 - [ ] things slow down after lots of edits.  Maybe track
       number of chunk, marks, undos etc and display them somewhere
 - [ ] stop consistency checking a doc when it gets "big" ??
-- [X] avoid infinite loops in consistency checks
 - [ ] doc-text: opening file with e.g. 200,000 lines is very slow
       Check this..
 - [ ] moving in a big file is slow - check this
@@ -626,8 +549,6 @@ Module features
 - [ ] when add address to a query in notmuch, reassess the current
       query.  Maybe don't reload, but make sure that next reload will
       used updated query.
-- [X] notmuch addresses in From: list to have menu to add address to
-      any from-* query
 - [ ] "%d quoted lines" still not quite right.  Moving 'down' past it
       jumps to end of line.
 - [ ] Don't wrap email header lines when cursor isn't on the line - too noisy
@@ -806,7 +727,6 @@ Module features
 ### lang-python
 
 - [ ] review python doc:char implementations for simplification.
-- [X] repeated alarm(10)/alarm(0) calls slow things down
 - [ ] array index should allow two args, second being a mark for
       doc:get-attr etc.
 - [ ] should be able to test if a mark is NULL or Freed
@@ -849,8 +769,6 @@ Module features
 - [ ] drop-down with options
 - [ ] unify UI with dynamic-completion
 - [ ] selection-menu item for spell-check ??
-- [X] split range management out of autospell so it can be used by other
-  modules.
 
 ### calculator
 - [ ] regression test
@@ -868,8 +786,6 @@ Module features
 ### lib-menu
 
 - [ ] remove that blank line at the end of menus
-- [X] Enable lib-menu to show short-cut keys
-- [X] menu-bar to which we can add menus from which commands are sent
 - [ ] track movement so entry under cursor can be highlighted
 - [ ] support positioning above the target is no space below.
 - [ ] support single-click to open modal menu.??
@@ -1034,12 +950,8 @@ Possibly some of these will end up being features in other modules.
 - [ ] tags handling - and easy tag-search without tags. e.g. git-search.
       alt-S looks for TAGS or .git and either does a tags-search or a grep-l and
       check every match.  So maybe this is part of the 'make' module
-- [X] menus
-      This might support a menu-bar, or drop-downs for spelling or dynamic completion.
 - [ ] hex edit block device - mmap document type
 
-- [X] image-display pane - e.g. can be given a png/jpeg etc file and display
-      it scaled, plus allow scaling and movement
 - [ ] pdf-display pane - like image-display but with multiple pages.
       Would use libpoppler.
 
